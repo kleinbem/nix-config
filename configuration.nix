@@ -28,30 +28,18 @@
 
   # Use the latest kernel for 13th Gen Intel support
   boot.kernelPackages = pkgs.linuxPackages_latest;
-
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 8;
   boot.loader.efi.canTouchEfiVariables = true;
 
   # --- SILENCE & FIXES ---
-  
-  # 1. Kill the PC Speaker driver to prevent "screaming" on error
   boot.blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
-  
-  # 2. Force silent boot (hides Zotac BIOS errors)
-  boot.consoleLogLevel = 0; 
-  
+  boot.consoleLogLevel = 0;
   boot.kernelParams = [
-    "quiet"                     # Force kernel silence
-    "loglevel=0"                # Only show Emergency errors
-    "udev.log_level=3"          
-    "acpi_osi=Linux"            # Zotac ACPI Fix
-    "intel_idle.max_cstate=1"   # Zotac Freeze Fix
-    "i915.enable_psr=0"         # Screen Flicker Fix
-    
-    # Audio Fix: Prevent audio card sleep (stops popping/screaming loops)
-    "snd_hda_intel.power_save=0"
-    "snd_hda_intel.power_save_controller=N"
+    "quiet" "loglevel=0" "udev.log_level=3"          
+    "acpi_osi=Linux" "intel_idle.max_cstate=1"   
+    "i915.enable_psr=0"         
+    "snd_hda_intel.power_save=0" "snd_hda_intel.power_save_controller=N"
   ];
 
   networking.hostName = "nixos-nvme";
@@ -72,23 +60,18 @@
   ## Graphics / Wayland     ##
   ############################
 
-  # /etc/nixos/configuration.nix
-
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
-    
-    # Drivers for Intel UHD Graphics (13th Gen/Raptor Lake)
     extraPackages = with pkgs; [
-      intel-media-driver   # LIBVA_DRIVER_NAME=iHD (Crucial for hardware accel)
+      intel-media-driver
       libva-vdpau-driver
       libvdpau-va-gl
     ];
   };
 
-  # Force Intel to use the correct driver backend
   environment.sessionVariables = { 
-    LIBVA_DRIVER_NAME = "iHD"; 
+    LIBVA_DRIVER_NAME = "iHD";
   };
 
   programs.xwayland.enable = true;
@@ -114,7 +97,7 @@
   };
   security.sudo.wheelNeedsPassword = true;
 
-  # Autostart the Polkit Agent for GUI apps (Password popups)
+  # Autostart the Polkit Agent for GUI apps
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
     wantedBy = [ "graphical-session.target" ];
@@ -137,13 +120,19 @@
   programs.hyprland.enable = true;
   programs.niri.enable = true;
 
-  services.greetd = {
-    enable = true;
-    settings.default_session = {
-      command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd Hyprland";
-      user = "greeter";
-    };
-  };
+  # --- COSMIC DESKTOP ---
+  services.desktopManager.cosmic.enable = true;
+  services.displayManager.cosmic-greeter.enable = true; 
+
+  # --- OLD GREETD CONFIG (DISABLED) ---
+  # We disabled this because you cannot have two login screens active at once.
+  # services.greetd = {
+  #   enable = true;
+  #   settings.default_session = {
+  #     command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd Hyprland";
+  #     user = "greeter";
+  #   };
+  # };
 
   ############################
   ## Flatpak / portals      ##
@@ -152,8 +141,7 @@
   services.flatpak.enable = true;
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs;
-    [
+    extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
       xdg-desktop-portal-hyprland
     ];
@@ -173,7 +161,7 @@
   ## Audio (PipeWire)       ##
   ############################
 
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
 
   services.pipewire = {
@@ -185,15 +173,11 @@
   };
 
   ############################
-  ## DBus / Polkit          ##
+  ## DBus / Polkit / FS     ##
   ############################
 
   services.dbus.enable = true;
   security.polkit.enable = true;
-
-  ############################
-  ## Filesystems / tmpfs    ##
-  ############################
 
   fileSystems."/tmp" = {
     device = "tmpfs";
@@ -205,12 +189,8 @@
   ## Dev / Desktop packages ##
   ############################
 
-  environment.systemPackages = with pkgs;
-  [
-    # Browser
+  environment.systemPackages = with pkgs; [
     google-chrome
-
-    # Wayland / desktop bits
     kitty
     alacritty
     waybar
@@ -222,7 +202,6 @@
     wl-clipboard
     tuigreet
 
-    # Desktop Plumbing (Must have)
     xfce.thunar          
     pavucontrol          
     networkmanagerapplet 
@@ -233,10 +212,10 @@
     hyprlock             
     hypridle             
     hyprpaper            
+ 
     libsForQt5.qt5.qtwayland 
     qt6.qtwayland            
 
-    # Dev / CLI tools
     git
     just
     jq
@@ -253,19 +232,16 @@
     file
     vscode-fhs
 
-    # Nix / DX
     direnv
     nix-direnv
     home-manager
     nixfmt-rfc-style
     nil
 
-    # Containers
     podman
     podman-tui
     docker-compose
 
-    # AI CLIs
     gemini-cli
     claude-code
     copilot-cli
@@ -275,16 +251,8 @@
     nwg-look
   ];
 
-  ############################
-  ## Direnv integration     ##
-  ############################
-
   programs.direnv.enable = true;
   programs.direnv.nix-direnv.enable = true;
-
-  ############################
-  ## System version         ##
-  ############################
 
   system.stateVersion = "25.11";
 }
