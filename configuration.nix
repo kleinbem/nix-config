@@ -10,11 +10,20 @@
   ############################
 
   nixpkgs.config.allowUnfree = true;
+
   nix = {
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
       auto-optimise-store = true;
+
+      substituters = [
+        "https://cache.nixos.org"
+      ];
+      trusted-public-keys = [
+        "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
+      ];
     };
+
     gc = {
       automatic = true;
       dates = "weekly";
@@ -26,19 +35,17 @@
   ## Boot / basic system    ##
   ############################
 
-  # Use the latest kernel for 13th Gen Intel support
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 8;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # --- SILENCE & FIXES ---
   boot.blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
   boot.consoleLogLevel = 0;
   boot.kernelParams = [
-    "quiet" "loglevel=0" "udev.log_level=3"          
-    "acpi_osi=Linux" "intel_idle.max_cstate=1"   
-    "i915.enable_psr=0"         
+    "quiet" "loglevel=0" "udev.log_level=3"
+    "acpi_osi=Linux" "intel_idle.max_cstate=1"
+    "i915.enable_psr=0"
     "snd_hda_intel.power_save=0" "snd_hda_intel.power_save_controller=N"
   ];
 
@@ -70,7 +77,7 @@
     ];
   };
 
-  environment.sessionVariables = { 
+  environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "iHD";
   };
 
@@ -97,7 +104,6 @@
   };
   security.sudo.wheelNeedsPassword = true;
 
-  # Autostart the Polkit Agent for GUI apps
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
     wantedBy = [ "graphical-session.target" ];
@@ -120,19 +126,12 @@
   programs.hyprland.enable = true;
   programs.niri.enable = true;
 
-  # --- COSMIC DESKTOP ---
+  # COSMIC from nixpkgs
+  services.displayManager.cosmic-greeter.enable = true;
   services.desktopManager.cosmic.enable = true;
-  services.displayManager.cosmic-greeter.enable = true; 
 
-  # --- OLD GREETD CONFIG (DISABLED) ---
-  # We disabled this because you cannot have two login screens active at once.
-  # services.greetd = {
-  #   enable = true;
-  #   settings.default_session = {
-  #     command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd Hyprland";
-  #     user = "greeter";
-  #   };
-  # };
+  # Optional: System76 scheduler (COSMIC docs recommend this)
+  services.system76-scheduler.enable = true;
 
   ############################
   ## Flatpak / portals      ##
@@ -181,7 +180,7 @@
 
   fileSystems."/tmp" = {
     device = "tmpfs";
-    fsType  = "tmpfs";
+    fsType = "tmpfs";
     options = [ "mode=1777" "nodev" "nosuid" "noexec" ];
   };
 
@@ -202,19 +201,19 @@
     wl-clipboard
     tuigreet
 
-    xfce.thunar          
-    pavucontrol          
-    networkmanagerapplet 
-    blueman              
-    libnotify            
-    swaynotificationcenter 
-    polkit_gnome         
-    hyprlock             
-    hypridle             
-    hyprpaper            
- 
-    libsForQt5.qt5.qtwayland 
-    qt6.qtwayland            
+    xfce.thunar
+    pavucontrol
+    networkmanagerapplet
+    blueman
+    libnotify
+    swaynotificationcenter
+    polkit_gnome
+    hyprlock
+    hypridle
+    hyprpaper
+
+    libsForQt5.qt5.qtwayland
+    qt6.qtwayland
 
     git
     just
