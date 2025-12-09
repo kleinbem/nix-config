@@ -1,5 +1,5 @@
 {
-  description = "Martin's NixOS config with COSMIC + Hyprland + Niri";
+  description = "Martin's NixOS config with COSMIC";
 
   inputs = {
     # Use unstable for fresh COSMIC + Wayland stuff
