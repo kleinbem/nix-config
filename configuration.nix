@@ -1,5 +1,9 @@
 { config, pkgs, ... }:
 
+let
+  # Import the official driver wrapper
+  ricohDriver = pkgs.callPackage ./ricoh-driver.nix {};
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -15,15 +19,9 @@
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
       auto-optimise-store = true;
-
-      substituters = [
-        "https://cache.nixos.org"
-      ];
-      trusted-public-keys = [
-        "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
-      ];
+      substituters = [ "https://cache.nixos.org" ];
+      trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
     };
-
     gc = {
       automatic = true;
       dates = "weekly";
@@ -118,20 +116,37 @@
     };
   };
 
-  ############################
-  ## Wayland: Hyprland/Niri ##
-  ############################
-
-  services.xserver.enable = false;
-  programs.hyprland.enable = true;
-  programs.niri.enable = true;
-
   # COSMIC from nixpkgs
   services.displayManager.cosmic-greeter.enable = true;
   services.desktopManager.cosmic.enable = true;
-
-  # Optional: System76 scheduler (COSMIC docs recommend this)
   services.system76-scheduler.enable = true;
+
+  ############################
+  ## Printing (Official RPM)##
+  ############################
+
+  services.printing = {
+    enable = true;
+    logLevel = "debug";
+    # Install the official Ricoh driver package wrapper
+    drivers = [ ricohDriver ]; 
+  };
+
+  hardware.printers = {
+    ensurePrinters = [
+      {
+        name = "Ricoh_SP_220Nw";
+        # Correct Port (9100) per Windows settings
+        deviceUri = "socket://10.0.5.10:9100";
+        
+        # CORRECTED: This matches the exact file found in your RPM
+        model = "ricoh/RICOH-SP-220Nw.ppd"; 
+        
+        ppdOptions = { PageSize = "A4"; };
+      }
+    ];
+    ensureDefaultPrinter = "Ricoh_SP_220Nw";
+  };
 
   ############################
   ## Flatpak / portals      ##
@@ -142,7 +157,6 @@
     enable = true;
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
-      xdg-desktop-portal-hyprland
     ];
   };
 
@@ -190,28 +204,8 @@
 
   environment.systemPackages = with pkgs; [
     google-chrome
-    kitty
-    alacritty
     waybar
-    wofi
-    fuzzel
-    swaybg
-    grim
-    slurp
-    wl-clipboard
-    tuigreet
-
-    xfce.thunar
     pavucontrol
-    networkmanagerapplet
-    blueman
-    libnotify
-    swaynotificationcenter
-    polkit_gnome
-    hyprlock
-    hypridle
-    hyprpaper
-
     libsForQt5.qt5.qtwayland
     qt6.qtwayland
 
@@ -248,7 +242,22 @@
     llm
 
     nwg-look
+
+    cosmic-files
+    cosmic-term
+    cosmic-edit
+    cosmic-screenshot
   ];
+
+  # Keep Avahi for network discovery
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      userServices = true;
+    };
+  };
 
   programs.direnv.enable = true;
   programs.direnv.nix-direnv.enable = true;
