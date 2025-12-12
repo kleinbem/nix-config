@@ -81,6 +81,16 @@ in
 
   programs.xwayland.enable = true;
 
+  # Combined Portal Configuration (Removed duplicate block below)
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ 
+      pkgs.xdg-desktop-portal-cosmic 
+      pkgs.xdg-desktop-portal-gtk 
+    ];
+    config.common.default = "cosmic";
+  };
+
   ############################
   ## Memory / swap          ##
   ############################
@@ -128,7 +138,6 @@ in
   services.printing = {
     enable = true;
     logLevel = "debug";
-    # Install the official Ricoh driver package wrapper
     drivers = [ ricohDriver ]; 
   };
 
@@ -136,12 +145,8 @@ in
     ensurePrinters = [
       {
         name = "Ricoh_SP_220Nw";
-        # Correct Port (9100) per Windows settings
         deviceUri = "socket://10.0.5.10:9100";
-        
-        # CORRECTED: This matches the exact file found in your RPM
         model = "ricoh/RICOH-SP-220Nw.ppd"; 
-        
         ppdOptions = { PageSize = "A4"; };
       }
     ];
@@ -149,16 +154,11 @@ in
   };
 
   ############################
-  ## Flatpak / portals      ##
+  ## Flatpak                ##
   ############################
-
+  
   services.flatpak.enable = true;
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-    ];
-  };
+  # Note: Portals moved to "Graphics / Wayland" section above
 
   ############################
   ## Containers (Podman)    ##
@@ -203,50 +203,39 @@ in
   ############################
 
   environment.systemPackages = with pkgs; [
-    google-chrome
-    waybar
-    pavucontrol
-    libsForQt5.qt5.qtwayland
-    qt6.qtwayland
-
+    # Core System Utils
     git
-    just
-    jq
     curl
     wget
     htop
     btop
-    ripgrep
-    fd
-    neovim
-    tree
     unzip
     zip
     file
-    vscode-fhs
-
-    direnv
-    nix-direnv
-    home-manager
-    nixfmt-rfc-style
-    nil
-
-    podman
-    podman-tui
-    docker-compose
-
-    gemini-cli
-    claude-code
-    copilot-cli
-    awscli2
-    llm
-
-    nwg-look
-
+    
+    # Wayland/DE Utils
+    libsForQt5.qt5.qtwayland
+    qt6.qtwayland
+    
+    # Cosmic Apps
     cosmic-files
     cosmic-term
     cosmic-edit
+    cosmic-store
     cosmic-screenshot
+    cosmic-settings
+    cosmic-randr
+    
+    # TODO Do I need to clarify
+    cosmic-applibrary
+    cosmic-comp
+    cosmic-panel
+    cosmic-greeter
+
+    # Podman/Docker
+    podman
+    podman-tui
+    docker-compose
   ];
 
   # Keep Avahi for network discovery
