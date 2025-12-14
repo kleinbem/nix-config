@@ -16,7 +16,7 @@
     };
 
     # --- AI & Operations ---
-    # FIX: The correct repo URL includes '.nix'
+    # Repo for Gemini CLI and other specialized agents
     llm-agents.url = "github:numtide/llm-agents.nix";
     
     # Secret Management
@@ -35,8 +35,12 @@
     # ---------------------------------------------------------
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = [
-        llm-agents.packages.${system}.aider-chat
+        # FIXED: Aider is in standard nixpkgs
+        pkgs.aider-chat
+        
+        # Gemini CLI is in the llm-agents flake
         llm-agents.packages.${system}.gemini-cli
+        
         pkgs.statix           # Linting for AI
         pkgs.nixfmt-rfc-style # Formatting for AI
         pkgs.sops             # Secret editing
