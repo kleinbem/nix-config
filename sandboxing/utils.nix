@@ -1,54 +1,77 @@
-# sandboxing/utils.nix
 { pkgs, nixpak }:
 
 rec {
-  # 1. Initialize the builder
   mkNixPak = nixpak.lib.nixpak {
     inherit (pkgs) lib;
     inherit pkgs;
   };
 
-  # 2. Define the Reusable Function
-  # It takes a package, a name, and a list of specific permissions (extraPerms)
   mkSandboxed = { package, name ? package.pname, binPath ? "bin/${name}", extraPerms ? {} }:
-    mkNixPak {
-      config = { sloth, ... }: {
-        
-        # --- App Basics ---
-        app.package = package;
-        app.binPath = binPath;
-        flatpak.appId = "com.sandboxed.${name}"; # Helps Window Managers track it
+    let
+      sandbox = mkNixPak {
+        config = { sloth, ... }: {
+          imports = [
+            ({ sloth, ... }: {
+              app.package = package;
+              app.binPath = binPath;
+              flatpak.appId = "com.sandboxed.${name}";
 
-        # --- The "Base" COSMIC/Wayland Sandbox ---
-        bubblewrap = {
-          network = true; # Default to true, override in extraPerms if needed
-          
-          # Force Wayland (Critical for COSMIC)
-          env = {
-            NIXOS_OZONE_WL = "1";
-            WAYLAND_DISPLAY = "wayland-0";
-            XDG_SESSION_TYPE = "wayland";
-          };
+              bubblewrap = {
+                network = true;
+                env = {
+                  NIXOS_OZONE_WL = "1";
+                  XDG_SESSION_TYPE = "wayland";
+                  WAYLAND_DISPLAY = sloth.env "WAYLAND_DISPLAY";
+                };
 
-          # Common Read-Only Paths (Fonts, SSL, Icons)
-          bind.ro = [
-            "/etc/fonts"
-            "/etc/ssl/certs"
-            "/etc/profiles/per-user" # Helps find themes
-            (sloth.concat' sloth.homeDir "/.icons") 
-          ];
+                bind.dev = [ "/dev/dri" ]; 
 
-          # Common Read-Write Paths (Wayland Sockets, Audio, Temp)
-          bind.rw = [
-            (sloth.env "XDG_RUNTIME_DIR")
-            "/tmp"
-            
-            # Allow app to save its own config in ~/.config/app-name
-            (sloth.concat' sloth.homeDir "/.config/${name}")
+                bind.ro = [
+                  # --- Basics ---
+                  "/etc/fonts"
+                  "/etc/ssl/certs"
+                  "/etc/profiles/per-user"
+                  "/run/dbus"
+                  (sloth.concat' sloth.homeDir "/.icons") 
+
+                  # --- The "Nuclear" Graphics Fix for Intel ---
+                  "/run/opengl-driver"
+                  "/sys/class/drm"
+                  "/sys/devices"
+                  "/sys/dev"     # <--- Critical for identifying devices
+                  "/etc/udev"    # <--- Sometimes needed for device lookup
+                ];
+
+                bind.rw = [
+                  (sloth.env "XDG_RUNTIME_DIR")
+                  "/tmp"
+                  (sloth.concat' sloth.homeDir "/.config/${name}")
+                ];
+              };
+            })
+            extraPerms 
           ];
         };
-      } 
-      # 3. Merge app-specific permissions
-      // extraPerms; 
-    };
+      };
+      
+      script = sandbox.config.script;
+
+    in
+    pkgs.runCommand "${name}-sandboxed" { } ''
+      mkdir -p $out/bin
+      ln -s ${script}/bin/${name} $out/bin/${name}
+
+      if [ -d "${package}/share" ]; then
+        mkdir -p $out/share
+        if [ -d "${package}/share/icons" ]; then
+          ln -s ${package}/share/icons $out/share/icons
+        fi
+        if [ -d "${package}/share/applications" ]; then
+          cp -r ${package}/share/applications $out/share/applications
+          chmod -R u+w $out/share/applications
+          sed -i "s|^Exec=.*|Exec=$out/bin/${name} %u|" $out/share/applications/*.desktop
+          sed -i "s|^Name=${package.meta.description or name}|Name=${name} (Secure)|" $out/share/applications/*.desktop
+        fi
+      fi
+    '';
 }

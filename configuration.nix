@@ -21,6 +21,13 @@ in
       auto-optimise-store = true;
       substituters = [ "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
+      
+      # --- Performance Tweaks for 64GB RAM ---
+      # Fixes "download buffer is full" warning (Set to 1GB)
+      download-buffer-size = 1073741824; 
+      # Utilize all CPU cores for compilation
+      max-jobs = "auto";
+      cores = 0;
     };
     gc = {
       automatic = true;
@@ -53,6 +60,7 @@ in
   time.timeZone = "Europe/Dublin";
   i18n.defaultLocale = "en_IE.UTF-8";
   console.keyMap = "us";
+  fonts.fontconfig.enable = true;
 
   ############################
   ## Hardware / Firmware    ##
@@ -81,7 +89,7 @@ in
 
   programs.xwayland.enable = true;
 
-  # Combined Portal Configuration (Removed duplicate block below)
+  # Combined Portal Configuration
   xdg.portal = {
     enable = true;
     extraPortals = [ 
@@ -158,7 +166,6 @@ in
   ############################
   
   services.flatpak.enable = true;
-  # Note: Portals moved to "Graphics / Wayland" section above
 
   ############################
   ## Containers (Podman)    ##
@@ -192,10 +199,13 @@ in
   services.dbus.enable = true;
   security.polkit.enable = true;
 
+  # Optimize /tmp for 64GB RAM
   fileSystems."/tmp" = {
     device = "tmpfs";
     fsType = "tmpfs";
-    options = [ "mode=1777" "nodev" "nosuid" "noexec" ];
+    # size=75% allows using ~48GB RAM for builds.
+    # Removed "noexec" to prevent issues with dev scripts.
+    options = [ "mode=1777" "nodev" "nosuid" "size=75%" ];
   };
 
   ############################
@@ -218,6 +228,8 @@ in
     qt6.qtwayland
     
     # Cosmic Apps
+    # Note: These are installed by desktopManager.cosmic.enable,
+    # but listing them here keeps them explicit in your shell PATH.
     cosmic-files
     cosmic-term
     cosmic-edit
@@ -226,7 +238,6 @@ in
     cosmic-settings
     cosmic-randr
     
-    # TODO Do I need to clarify
     cosmic-applibrary
     cosmic-comp
     cosmic-panel

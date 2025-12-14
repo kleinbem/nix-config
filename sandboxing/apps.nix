@@ -1,4 +1,3 @@
-# sandboxing/apps.nix
 { pkgs, nixpak, ... }:
 
 let
@@ -6,7 +5,6 @@ let
 in
 {
   # --- OBSIDIAN ---
-  # Only sees ~/Documents. Cannot see Code, SSH keys, or Photos.
   obsidian = utils.mkSandboxed {
     package = pkgs.obsidian;
     extraPerms = { sloth, ... }: {
@@ -16,15 +14,27 @@ in
     };
   };
 
-  # --- DISCORD ---
-  # Has access to Downloads and Camera/GPU, but nothing else.
-  discord = utils.mkSandboxed {
-    package = pkgs.discord;
+  # --- GOOGLE CHROME ---
+  google-chrome = utils.mkSandboxed {
+    package = pkgs.google-chrome;
     extraPerms = { sloth, ... }: {
-      bubblewrap.bind.dev = [ "/dev/video0" "/dev/dri" ]; # Webcam + GPU
-      bubblewrap.bind.rw = [
-        (sloth.concat' sloth.homeDir "/Downloads")
-      ];
+      bubblewrap = {
+        # 1. Camera Access (for Google Meet/Zoom)
+        bind.dev = [ 
+          "/dev/video0" 
+          "/dev/video1"
+        ]; 
+
+        # 2. File Access
+        bind.rw = [
+          # Downloads
+          (sloth.concat' sloth.homeDir "/Downloads")
+          
+          # Config & Cache (Crucial for keeping you logged in)
+          (sloth.concat' sloth.homeDir "/.config/google-chrome")
+          (sloth.concat' sloth.homeDir "/.cache/google-chrome")
+        ];
+      };
     };
   };
 }

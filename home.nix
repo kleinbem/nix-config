@@ -24,7 +24,8 @@ in
     
     # -- Sandboxed Apps --
     # This replaces the standard 'obsidian' package
-    sandboxedApps.obsidian.config.script 
+    sandboxedApps.obsidian
+    # sandboxedApps.google-chrome
 
     # -- Dev & AI Tools --
     gemini-cli
