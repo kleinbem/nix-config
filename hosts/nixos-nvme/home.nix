@@ -42,11 +42,16 @@ in
   ];
 
   # Git configuration
-  programs.git = {
+programs.git = {
     enable = true;
-    userName = "Martin Kleinberger";
-    userEmail = "martin.kleinberger@gmail.com";
+    settings = {
+      user = {
+        name = "Martin Kleinberger";
+        email = "martin.kleinberger@gmail.com";
+      };
+    };
   };
+
 
   programs.neovim = {
     enable = true;
