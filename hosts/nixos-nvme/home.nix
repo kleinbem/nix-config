@@ -17,17 +17,14 @@ in
     
     # -- Sandboxed Apps --
     sandboxedApps.obsidian
-    google-chrome
-    # sandboxedApps.google-chrome  # Enabled now!
+    google-chrome            # Standard (Unsafe) - Disabled
+    # sandboxedApps.google-chrome  # Nixpak (Safe) - Enabled
 
     # -- Dev & AI Tools --
     gh                  # GitHub CLI
-    github-copilot-cli  # <--- FIXED: The correct AI Agent
+    github-copilot-cli  
     gemini-cli          # Google Gemini (Free Tier)
     claude-code
-    
-    # AWS Copilot (Only keep this if you actually use AWS Containers)
-    # awscli2 
     
     llm
     nil           
@@ -65,7 +62,6 @@ in
   };
 
   programs.waybar.enable = true;
-
   programs.home-manager.enable = true;
 
   home.stateVersion = "24.11"; 

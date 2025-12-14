@@ -4,10 +4,12 @@
   inputs = {
     # --- Core ---
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     nixpak = {
       url = "github:nixpak/nixpak";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -22,7 +24,7 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, nixpak, llm-agents, sops-nix, ... }: 
+  outputs = { self, nixpkgs, home-manager, nixpak, llm-agents, sops-nix, ... }@inputs: 
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -44,7 +46,6 @@
         pkgs.sops             # Secret editing
       ];
 
-      # FIXED: Generic welcome message (no hardcoded model names)
       shellHook = ''
         echo "🤖 Spec-Driven NixOS Environment Loaded"
         echo "   - System: NixOS + COSMIC + Nixpak"
@@ -62,6 +63,9 @@
     nixosConfigurations = {
       nixos-nvme = nixpkgs.lib.nixosSystem {
         inherit system;
+        # Pass 'inputs' to all modules (Critical for Registry Pinning)
+        specialArgs = { inherit inputs; };
+        
         modules = [
           # The moved configuration file
           ./hosts/nixos-nvme/default.nix
@@ -74,8 +78,6 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = { inherit nixpak; };
-            
-            # Updated path for home.nix
             home-manager.users.martin = import ./hosts/nixos-nvme/home.nix;
           }
         ];

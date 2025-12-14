@@ -17,12 +17,8 @@
   };
 
   boot.initrd.services.lvm.enable = true;
-
   boot.kernelModules = [ "kvm-intel" ];
-  # Removed boot.kernelPackages here; it is now in configuration.nix
   boot.extraModulePackages = [ ];
-
-  # Removed manual boot.kernelParams; they are now in configuration.nix
 
   fileSystems."/" =
     { device = "/dev/mapper/vg0-root";
@@ -60,5 +56,4 @@
     ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  # Removed updateMicrocode here to avoid conflicts; it is now in configuration.nix
 }

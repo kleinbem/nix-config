@@ -1,12 +1,12 @@
-{ config, pkgs, ... }:
+{ config, pkgs, inputs, ... }:
 
-let
-  # Relative path to driver wrapper in the same folder
-  ricohDriver = pkgs.callPackage ./ricoh-driver.nix {};
-in
 {
   imports = [
     ./hardware-configuration.nix
+    
+    # Modularized Configurations
+    ./modules/intel-compute.nix
+    ./modules/printing.nix
   ];
 
   ############################
@@ -14,12 +14,17 @@ in
   ############################
 
   nixpkgs.config.allowUnfree = true;
+  
   nix = {
+    # Pin the registry to the flake input to avoid re-downloading nixpkgs
+    registry.nixpkgs.flake = inputs.nixpkgs;
+    
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
       auto-optimise-store = true;
       substituters = [ "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
+      
       # --- Performance Tweaks for 64GB RAM ---
       download-buffer-size = 1073741824;
       max-jobs = "auto";
@@ -66,30 +71,9 @@ in
   hardware.enableAllFirmware = true;
 
   ############################
-  ## Graphics / Wayland     ##
+  ## Desktop Environment    ##
   ############################
 
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-    extraPackages = with pkgs; [
-      intel-media-driver
-      libva-vdpau-driver
-      libvdpau-va-gl
-      
-      # --- AI/Compute Drivers for Intel iGPU ---
-      intel-compute-runtime # OpenCL for Intel
-      level-zero            # Level Zero API
-      ocl-icd               # OpenCL Installable Client Driver
-    ];
-  };
-
-  environment.sessionVariables = {
-    LIBVA_DRIVER_NAME = "iHD";
-  };
-
-  programs.xwayland.enable = true;
-  
   # Combined Portal Configuration
   xdg.portal = {
     enable = true;
@@ -99,6 +83,13 @@ in
     ];
     config.common.default = "cosmic";
   };
+
+  programs.xwayland.enable = true;
+
+  # COSMIC from nixpkgs
+  services.displayManager.cosmic-greeter.enable = true;
+  services.desktopManager.cosmic.enable = true;
+  services.system76-scheduler.enable = true;
 
   ############################
   ## Memory / swap          ##
@@ -123,7 +114,6 @@ in
     enable = true;
     # Uses CPU/AVX2 by default (optimized for i3-1315U)
   };
-  
   # Ensure Ollama starts automatically
   systemd.services.ollama.wantedBy = [ "multi-user.target" ];
 
@@ -137,7 +127,7 @@ in
     initialPassword = "changeme";
   };
   security.sudo.wheelNeedsPassword = true;
-  
+
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
     wantedBy = [ "graphical-session.target" ];
@@ -150,33 +140,6 @@ in
       RestartSec = 1;
       TimeoutStopSec = 10;
     };
-  };
-
-  # COSMIC from nixpkgs
-  services.displayManager.cosmic-greeter.enable = true;
-  services.desktopManager.cosmic.enable = true;
-  services.system76-scheduler.enable = true;
-
-  ############################
-  ## Printing (Official RPM)##
-  ############################
-
-  services.printing = {
-    enable = true;
-    logLevel = "debug";
-    drivers = [ ricohDriver ]; 
-  };
-
-  hardware.printers = {
-    ensurePrinters = [
-      {
-        name = "Ricoh_SP_220Nw";
-        deviceUri = "socket://10.0.5.10:9100";
-        model = "ricoh/RICOH-SP-220Nw.ppd"; 
-        ppdOptions = { PageSize = "A4"; };
-      }
-    ];
-    ensureDefaultPrinter = "Ricoh_SP_220Nw";
   };
 
   ############################
@@ -232,8 +195,6 @@ in
     zip
     file
     pciutils
-    
-    # (Removed User Tools: gh, copilot) - Now in home.nix
     
     # Wayland/DE Utils
     libsForQt5.qt5.qtwayland

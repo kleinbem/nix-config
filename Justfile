@@ -20,6 +20,10 @@ update:
 
 # --- AI Workflow ---
 
+# Check for linting errors (Statix)
+lint:
+    nix develop --command statix check
+
 # Enter the AI Environment
 dev:
     nix develop
