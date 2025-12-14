@@ -16,7 +16,6 @@
     };
 
     # --- AI & Operations ---
-    # Repo for Gemini CLI and other specialized agents
     llm-agents.url = "github:numtide/llm-agents.nix";
 
     # Secret Management
@@ -31,28 +30,22 @@
   in {
     # ---------------------------------------------------------
     # 1. The Agentic Development Shell
-    # Run `nix develop` to enter the AI-Workspace
     # ---------------------------------------------------------
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = [
-        # Aider is in standard nixpkgs
         pkgs.aider-chat
-        
-        # Gemini CLI is in the llm-agents flake
         llm-agents.packages.${system}.gemini-cli
-        
-        pkgs.statix           # Linting for AI
-        pkgs.nixfmt-rfc-style # Formatting for AI
-        pkgs.sops             # Secret editing
+        pkgs.statix           
+        pkgs.nixfmt-rfc-style 
+        pkgs.sops             
       ];
 
       shellHook = ''
         echo "🤖 Spec-Driven NixOS Environment Loaded"
         echo "   - System: NixOS + COSMIC + Nixpak"
-        echo "   - Tools: Aider, Statix, Nixfmt"
         
         if [ -z "$GEMINI_API_KEY" ] && [ -z "$OLLAMA_API_BASE" ]; then
-            echo "ℹ️  Note: No API keys detected. Ensure you are running 'just local' or have set keys."
+            echo "ℹ️  Note: No API keys detected."
         fi
       '';
     };
@@ -63,22 +56,21 @@
     nixosConfigurations = {
       nixos-nvme = nixpkgs.lib.nixosSystem {
         inherit system;
-        # Pass 'inputs' to all modules (Critical for Registry Pinning)
         specialArgs = { inherit inputs; };
         
         modules = [
-          # The moved configuration file
           ./hosts/nixos-nvme/default.nix
           
-          # Modules
           sops-nix.nixosModules.sops
           home-manager.nixosModules.home-manager
           
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit nixpak; };
-            home-manager.users.martin = import ./hosts/nixos-nvme/home.nix;
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = { inherit nixpak; };
+              users.martin = import ./hosts/nixos-nvme/home.nix;
+            };
           }
         ];
       };

@@ -3,8 +3,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    
-    # Modularized Configurations
     ./modules/intel-compute.nix
     ./modules/printing.nix
   ];
@@ -16,7 +14,6 @@
   nixpkgs.config.allowUnfree = true;
   
   nix = {
-    # Pin the registry to the flake input to avoid re-downloading nixpkgs
     registry.nixpkgs.flake = inputs.nixpkgs;
     
     settings = {
@@ -25,7 +22,6 @@
       substituters = [ "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
       
-      # --- Performance Tweaks for 64GB RAM ---
       download-buffer-size = 1073741824;
       max-jobs = "auto";
       cores = 0;
@@ -41,19 +37,25 @@
   ## Boot / basic system    ##
   ############################
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 8;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot = {
+    kernelPackages = pkgs.linuxPackages_latest;
+    loader = {
+      systemd-boot = {
+        enable = true;
+        configurationLimit = 8;
+      };
+      efi.canTouchEfiVariables = true;
+    };
 
-  boot.blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
-  boot.consoleLogLevel = 0;
-  boot.kernelParams = [
-    "quiet" "loglevel=0" "udev.log_level=3"
-    "acpi_osi=Linux" "intel_idle.max_cstate=1"
-    "i915.enable_psr=0"
-    "snd_hda_intel.power_save=0" "snd_hda_intel.power_save_controller=N"
-  ];
+    blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
+    consoleLogLevel = 0;
+    kernelParams = [
+      "quiet" "loglevel=0" "udev.log_level=3"
+      "acpi_osi=Linux" "intel_idle.max_cstate=1"
+      "i915.enable_psr=0"
+      "snd_hda_intel.power_save=0" "snd_hda_intel.power_save_controller=N"
+    ];
+  };
 
   networking.hostName = "nixos-nvme";
   networking.networkmanager.enable = true;
@@ -74,7 +76,6 @@
   ## Desktop Environment    ##
   ############################
 
-  # Combined Portal Configuration
   xdg.portal = {
     enable = true;
     extraPortals = [ 
@@ -84,17 +85,49 @@
     config.common.default = "cosmic";
   };
 
-  programs.xwayland.enable = true;
+  services = {
+    displayManager.cosmic-greeter.enable = true;
+    desktopManager.cosmic.enable = true;
+    system76-scheduler.enable = true;
 
-  # COSMIC from nixpkgs
-  services.displayManager.cosmic-greeter.enable = true;
-  services.desktopManager.cosmic.enable = true;
-  services.system76-scheduler.enable = true;
+    ollama.enable = true;
+    
+    flatpak.enable = true;
 
-  ############################
-  ## Memory / swap          ##
-  ############################
+    pulseaudio.enable = false;
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+      jack.enable = true;
+    };
 
+    dbus.enable = true;
+
+    # Keep Avahi for network discovery
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      publish = {
+        enable = true;
+        userServices = true;
+      };
+    };
+  };
+
+  programs = {
+    xwayland.enable = true;
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+    };
+  };
+
+  # Build in RAM (Speed Boost)
+  boot.tmp.useTmpfs = true;
+  boot.tmp.tmpfsSize = "75%";
+  
   # Massive Swap for 64GB RAM
   zramSwap = {
     enable = true;
@@ -102,18 +135,6 @@
     memoryPercent = 50; 
   };
 
-  # Build in RAM (Speed Boost)
-  boot.tmp.useTmpfs = true;
-  boot.tmp.tmpfsSize = "75%";
-
-  ############################
-  ## Local AI (Ollama)      ##
-  ############################
-
-  services.ollama = {
-    enable = true;
-    # Uses CPU/AVX2 by default (optimized for i3-1315U)
-  };
   # Ensure Ollama starts automatically
   systemd.services.ollama.wantedBy = [ "multi-user.target" ];
 
@@ -126,7 +147,12 @@
     extraGroups = [ "wheel" "networkmanager" "podman" "video" "render" ];
     initialPassword = "changeme";
   };
-  security.sudo.wheelNeedsPassword = true;
+  
+  security = {
+    sudo.wheelNeedsPassword = true;
+    rtkit.enable = true;
+    polkit.enable = true;
+  };
 
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
@@ -142,50 +168,13 @@
     };
   };
 
-  ############################
-  ## Flatpak                ##
-  ############################
-  
-  services.flatpak.enable = true;
-
-  ############################
-  ## Containers (Podman)    ##
-  ############################
-
   virtualisation.podman = {
     enable = true;
     dockerCompat = true;
     defaultNetwork.settings.dns_enabled = true;
   };
 
-  ############################
-  ## Audio (PipeWire)       ##
-  ############################
-
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-  };
-
-  ############################
-  ## DBus / Polkit          ##
-  ############################
-
-  services.dbus.enable = true;
-  security.polkit.enable = true;
-
-  ############################
-  ## Dev / Desktop packages ##
-  ############################
-
   environment.systemPackages = with pkgs; [
-    # Core System Utils
     git
     curl
     wget
@@ -195,12 +184,8 @@
     zip
     file
     pciutils
-    
-    # Wayland/DE Utils
     libsForQt5.qt5.qtwayland
     qt6.qtwayland
-    
-    # Cosmic Apps
     cosmic-files
     cosmic-term
     cosmic-edit
@@ -212,25 +197,10 @@
     cosmic-comp
     cosmic-panel
     cosmic-greeter
-
-    # Podman/Docker
     podman
     podman-tui
     docker-compose
   ];
-
-  # Keep Avahi for network discovery
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    publish = {
-      enable = true;
-      userServices = true;
-    };
-  };
-
-  programs.direnv.enable = true;
-  programs.direnv.nix-direnv.enable = true;
 
   system.stateVersion = "25.11";
 }
