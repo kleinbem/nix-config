@@ -24,14 +24,24 @@ update:
 dev:
     nix develop
 
-# Run Aider (The Architect)
+# Run Aider (The Architect) - Uses Gemini 2.0 Flash Thinking (Free API)
 architect:
     nix develop --command aider
 
-# Run Aider with a specific model (e.g. for coding)
+# Run Aider with DeepSeek API (Fast Coding)
 code:
     nix develop --command aider --model deepseek/deepseek-chat
 
-# Run Aider with Gemini (Reasoning)
+# Run Aider with Gemini Pro (Deep Reasoning)
 plan:
     nix develop --command aider --model gemini/gemini-2.0-flash-thinking-exp
+
+# Run Aider LOCALLY (Free, Private, Uses Ollama)
+local:
+    # Ensure BOTH models are present
+    @ollama pull deepseek-r1:8b 
+    @ollama pull qwen2.5-coder:7b
+    # Run Aider with DeepSeek (Architect) and Qwen (Editor)
+    @OLLAMA_API_BASE=http://127.0.0.1:11434 nix develop --command aider \
+      --model ollama/deepseek-r1:8b \
+      --editor-model ollama/qwen2.5-coder:7b

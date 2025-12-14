@@ -99,11 +99,28 @@ in
   ## Memory / swap          ##
   ############################
 
+  # Massive Swap for 64GB RAM
   zramSwap = {
     enable = true;
     algorithm = "zstd";
-    memoryPercent = 25;
+    memoryPercent = 50; 
   };
+
+  # Build in RAM (Speed Boost)
+  boot.tmp.useTmpfs = true;
+  boot.tmp.tmpfsSize = "75%";
+
+  ############################
+  ## Local AI (Ollama)      ##
+  ############################
+
+  services.ollama = {
+    enable = true;
+    # Uses CPU/AVX2 by default which is perfect for your i7 + 64GB RAM
+  };
+  
+  # Ensure Ollama starts automatically
+  systemd.services.ollama.wantedBy = [ "multi-user.target" ];
 
   ############################
   ## Users / sudo           ##
@@ -189,18 +206,11 @@ in
   };
 
   ############################
-  ## DBus / Polkit / FS     ##
+  ## DBus / Polkit          ##
   ############################
 
   services.dbus.enable = true;
   security.polkit.enable = true;
-
-  # Optimize /tmp for 64GB RAM
-  fileSystems."/tmp" = {
-    device = "tmpfs";
-    fsType = "tmpfs";
-    options = [ "mode=1777" "nodev" "nosuid" "size=75%" ];
-  };
 
   ############################
   ## Dev / Desktop packages ##
