@@ -233,10 +233,8 @@ in
     file
     pciutils
     
-    # AI & Cloud Tools
-    gh                  # GitHub CLI
-    github-copilot-cli  # Copilot Agent (Subscription)
-
+    # (Removed User Tools: gh, copilot) - Now in home.nix
+    
     # Wayland/DE Utils
     libsForQt5.qt5.qtwayland
     qt6.qtwayland

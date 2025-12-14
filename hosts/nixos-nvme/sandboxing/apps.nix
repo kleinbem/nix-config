@@ -19,14 +19,18 @@ in
     package = pkgs.google-chrome;
     extraPerms = { sloth, ... }: {
       bubblewrap = {
-        # 1. Camera Access (for Google Meet/Zoom)
+        # 1. Device Access
         bind.dev = [ 
-          "/dev/video0" 
+          "/dev/video0" # Webcam
           "/dev/video1"
-        ]; 
+          "/dev/dri"    # GPU Acceleration (Essential for Intel iGPU)
+        ];
 
-        # 2. File Access
+        # 2. File & Socket Access
         bind.rw = [
+          # Audio (PipeWire Socket) - REQUIRED for Sound
+          (sloth.concat' sloth.runtimeDir "/pipewire-0")
+
           # Downloads
           (sloth.concat' sloth.homeDir "/Downloads")
           

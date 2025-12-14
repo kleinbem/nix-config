@@ -9,28 +9,28 @@ in
   home.username = "martin";
   home.homeDirectory = "/home/martin";
 
-  # Targets genericLinux is not needed for pure NixOS
-  # targets.genericLinux.enable = true; 
-
   home.packages = with pkgs; [
     # -- GUI Apps --
-    google-chrome
     vscode-fhs
     pavucontrol
     nwg-look
     
     # -- Sandboxed Apps --
     sandboxedApps.obsidian
-    # sandboxedApps.google-chrome
+    google-chrome
+    # sandboxedApps.google-chrome  # Enabled now!
 
     # -- Dev & AI Tools --
-    gemini-cli
+    gh                  # GitHub CLI
+    github-copilot-cli  # <--- FIXED: The correct AI Agent
+    gemini-cli          # Google Gemini (Free Tier)
     claude-code
-    copilot-cli
-    awscli2
+    
+    # AWS Copilot (Only keep this if you actually use AWS Containers)
+    # awscli2 
+    
     llm
     nil           
-    # Nix language server
     nixfmt-rfc-style
     
     # -- CLI Utils --
@@ -42,7 +42,7 @@ in
   ];
 
   # Git configuration
-programs.git = {
+  programs.git = {
     enable = true;
     settings = {
       user = {
@@ -51,7 +51,6 @@ programs.git = {
       };
     };
   };
-
 
   programs.neovim = {
     enable = true;
@@ -69,6 +68,5 @@ programs.git = {
 
   programs.home-manager.enable = true;
 
-  # State version
   home.stateVersion = "24.11"; 
 }
