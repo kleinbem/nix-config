@@ -121,9 +121,7 @@ in
 
   services.ollama = {
     enable = true;
-    # On Intel iGPU, standard "rocm" or "cuda" acceleration won't work.
-    # We rely on the CPU AVX2 optimizations (which are active) 
-    # and the compute drivers added above.
+    # Uses CPU/AVX2 by default (optimized for i3-1315U)
   };
   
   # Ensure Ollama starts automatically
@@ -135,7 +133,7 @@ in
 
   users.users.martin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "podman" "video" "render" ]; # Added video/render groups
+    extraGroups = [ "wheel" "networkmanager" "podman" "video" "render" ];
     initialPassword = "changeme";
   };
   security.sudo.wheelNeedsPassword = true;
@@ -233,8 +231,12 @@ in
     unzip
     zip
     file
-    pciutils # Added for lspci diagnostics
+    pciutils
     
+    # AI & Cloud Tools
+    gh                  # GitHub CLI
+    github-copilot-cli  # Copilot Agent (Subscription)
+
     # Wayland/DE Utils
     libsForQt5.qt5.qtwayland
     qt6.qtwayland
