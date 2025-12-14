@@ -4,12 +4,10 @@
   inputs = {
     # --- Core ---
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     nixpak = {
       url = "github:nixpak/nixpak";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,7 +16,7 @@
     # --- AI & Operations ---
     # Repo for Gemini CLI and other specialized agents
     llm-agents.url = "github:numtide/llm-agents.nix";
-    
+
     # Secret Management
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
@@ -35,7 +33,7 @@
     # ---------------------------------------------------------
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = [
-        # FIXED: Aider is in standard nixpkgs
+        # Aider is in standard nixpkgs
         pkgs.aider-chat
         
         # Gemini CLI is in the llm-agents flake
@@ -46,13 +44,14 @@
         pkgs.sops             # Secret editing
       ];
 
+      # FIXED: Generic welcome message (no hardcoded model names)
       shellHook = ''
         echo "🤖 Spec-Driven NixOS Environment Loaded"
-        echo "   - Model: Gemini 3 Pro (Architect Mode)"
         echo "   - System: NixOS + COSMIC + Nixpak"
+        echo "   - Tools: Aider, Statix, Nixfmt"
         
-        if [ -z "$GEMINI_API_KEY" ]; then
-            echo "⚠️  WARNING: GEMINI_API_KEY is not set. Aider will not function."
+        if [ -z "$GEMINI_API_KEY" ] && [ -z "$OLLAMA_API_BASE" ]; then
+            echo "ℹ️  Note: No API keys detected. Ensure you are running 'just local' or have set keys."
         fi
       '';
     };

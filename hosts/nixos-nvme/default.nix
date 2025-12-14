@@ -76,6 +76,11 @@ in
       intel-media-driver
       libva-vdpau-driver
       libvdpau-va-gl
+      
+      # --- AI/Compute Drivers for Intel iGPU ---
+      intel-compute-runtime # OpenCL for Intel
+      level-zero            # Level Zero API
+      ocl-icd               # OpenCL Installable Client Driver
     ];
   };
 
@@ -116,7 +121,9 @@ in
 
   services.ollama = {
     enable = true;
-    # Uses CPU/AVX2 by default which is perfect for your i7 + 64GB RAM
+    # On Intel iGPU, standard "rocm" or "cuda" acceleration won't work.
+    # We rely on the CPU AVX2 optimizations (which are active) 
+    # and the compute drivers added above.
   };
   
   # Ensure Ollama starts automatically
@@ -128,7 +135,7 @@ in
 
   users.users.martin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "podman" ];
+    extraGroups = [ "wheel" "networkmanager" "podman" "video" "render" ]; # Added video/render groups
     initialPassword = "changeme";
   };
   security.sudo.wheelNeedsPassword = true;
@@ -226,6 +233,7 @@ in
     unzip
     zip
     file
+    pciutils # Added for lspci diagnostics
     
     # Wayland/DE Utils
     libsForQt5.qt5.qtwayland

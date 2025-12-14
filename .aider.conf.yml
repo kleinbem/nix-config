@@ -1,7 +1,9 @@
 # Architecture: High Reasoning for Planning
 architect: true
-model: gemini/gemini-3-pro-preview
-editor-model: gemini/gemini-2.5-flash
+
+# Models: Local-First Strategy
+model: ollama/deepseek-r1:8b
+editor-model: ollama/qwen2.5-coder:7b
 
 # Mental Sandbox: Context Files
 read:
@@ -9,13 +11,19 @@ read:
   - .context/system-architecture.md
   - flake.nix
 
+# Performance Tuning for Intel i3 CPU
+# Reducing this from 4096 to 1024 drastically speeds up 
+# the "thinking" phase on CPU-only setups.
+map-tokens: 1024
+cache-prompts: true
+
 # Thinking Protocol
 reasoning-effort: high
 check-model-accepts-settings: false
 
 # Automated Hygiene
 auto-commits: true
-attribute-author: true   # <--- FIXED: Must be boolean
-attribute-committer: true # <--- OPTIONAL: Tags the committer identity too
+attribute-author: true
+attribute-committer: true
 lint-cmd: "statix check"
 test-cmd: "nixos-rebuild dry-build --flake .#nixos-nvme"
