@@ -1,8 +1,7 @@
-{ config, pkgs, nixpak, ... }: # <--- 1. We accept 'nixpak' here
+{ config, pkgs, nixpak, ... }:
 
 let
-  # 2. Load your modular apps catalog
-  # This looks for ./sandboxing/apps.nix
+  # Import modular apps catalog (relative to this file)
   sandboxedApps = import ./sandboxing/apps.nix { inherit pkgs nixpak; };
 in
 {
@@ -10,10 +9,8 @@ in
   home.username = "martin";
   home.homeDirectory = "/home/martin";
 
-  # NOTE: On NixOS, 'targets.genericLinux' is usually not needed. 
-  # It is mostly for using Home Manager on Ubuntu/Debian. 
-  # You can safely remove this line if you are fully on NixOS.
-  targets.genericLinux.enable = true; 
+  # Targets genericLinux is not needed for pure NixOS
+  # targets.genericLinux.enable = true; 
 
   home.packages = with pkgs; [
     # -- GUI Apps --
@@ -23,7 +20,6 @@ in
     nwg-look
     
     # -- Sandboxed Apps --
-    # This replaces the standard 'obsidian' package
     sandboxedApps.obsidian
     # sandboxedApps.google-chrome
 
@@ -33,7 +29,8 @@ in
     copilot-cli
     awscli2
     llm
-    nil              # Nix language server
+    nil           
+    # Nix language server
     nixfmt-rfc-style
     
     # -- CLI Utils --

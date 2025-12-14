@@ -1,0 +1,20 @@
+# Architecture: High Reasoning for Planning
+architect: true
+model: gemini/gemini-3-pro-preview
+editor-model: gemini/gemini-2.5-flash
+
+# Mental Sandbox: Context Files
+read:
+  - .context/constitution.md
+  - .context/system-architecture.md
+  - flake.nix
+
+# Thinking Protocol
+reasoning-effort: high
+check-model-accepts-settings: false
+
+# Automated Hygiene
+auto-commits: true
+attribute-author: "gemini-architect"
+lint-cmd: "statix check"
+test-cmd: "nixos-rebuild dry-build --flake .#nixos-nvme"

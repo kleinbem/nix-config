@@ -1,8 +1,8 @@
 {
-  description = "My NixOS config with COSMIC";
+  description = "AI-Augmented NixOS with COSMIC and Nixpak";
 
   inputs = {
-    # Use unstable for fresh COSMIC + Wayland stuff
+    # --- Core ---
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {
@@ -14,23 +14,66 @@
       url = "github:nixpak/nixpak";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # --- AI & Operations ---
+    # FIX: The correct repo URL includes '.nix'
+    llm-agents.url = "github:numtide/llm-agents.nix";
+    
+    # Secret Management
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, nixpak, ... }: {
+  outputs = { self, nixpkgs, home-manager, nixpak, llm-agents, sops-nix, ... }: 
+  let
+    system = "x86_64-linux";
+    pkgs = nixpkgs.legacyPackages.${system};
+  in {
+    # ---------------------------------------------------------
+    # 1. The Agentic Development Shell
+    # Run `nix develop` to enter the AI-Workspace
+    # ---------------------------------------------------------
+    devShells.${system}.default = pkgs.mkShell {
+      buildInputs = [
+        llm-agents.packages.${system}.aider-chat
+        llm-agents.packages.${system}.gemini-cli
+        pkgs.statix           # Linting for AI
+        pkgs.nixfmt-rfc-style # Formatting for AI
+        pkgs.sops             # Secret editing
+      ];
+
+      shellHook = ''
+        echo "🤖 Spec-Driven NixOS Environment Loaded"
+        echo "   - Model: Gemini 3 Pro (Architect Mode)"
+        echo "   - System: NixOS + COSMIC + Nixpak"
+        
+        if [ -z "$GEMINI_API_KEY" ]; then
+            echo "⚠️  WARNING: GEMINI_API_KEY is not set. Aider will not function."
+        fi
+      '';
+    };
+
+    # ---------------------------------------------------------
+    # 2. System Configurations
+    # ---------------------------------------------------------
     nixosConfigurations = {
       nixos-nvme = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+        inherit system;
         modules = [
-          ./configuration.nix
+          # The moved configuration file
+          ./hosts/nixos-nvme/default.nix
           
+          # Modules
+          sops-nix.nixosModules.sops
           home-manager.nixosModules.home-manager
+          
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit nixpak; };
             
-            home-manager.extraSpecialArgs = { inherit nixpak; }; 
-            
-            home-manager.users.martin = import ./home.nix;
+            # Updated path for home.nix
+            home-manager.users.martin = import ./hosts/nixos-nvme/home.nix;
           }
         ];
       };

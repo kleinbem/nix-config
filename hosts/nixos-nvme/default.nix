@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  # Import the official driver wrapper
+  # Relative path to driver wrapper in the same folder
   ricohDriver = pkgs.callPackage ./ricoh-driver.nix {};
 in
 {
@@ -14,18 +14,14 @@ in
   ############################
 
   nixpkgs.config.allowUnfree = true;
-
   nix = {
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
       auto-optimise-store = true;
       substituters = [ "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
-      
       # --- Performance Tweaks for 64GB RAM ---
-      # Fixes "download buffer is full" warning (Set to 1GB)
-      download-buffer-size = 1073741824; 
-      # Utilize all CPU cores for compilation
+      download-buffer-size = 1073741824;
       max-jobs = "auto";
       cores = 0;
     };
@@ -88,7 +84,7 @@ in
   };
 
   programs.xwayland.enable = true;
-
+  
   # Combined Portal Configuration
   xdg.portal = {
     enable = true;
@@ -119,7 +115,7 @@ in
     initialPassword = "changeme";
   };
   security.sudo.wheelNeedsPassword = true;
-
+  
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
     wantedBy = [ "graphical-session.target" ];
@@ -203,8 +199,6 @@ in
   fileSystems."/tmp" = {
     device = "tmpfs";
     fsType = "tmpfs";
-    # size=75% allows using ~48GB RAM for builds.
-    # Removed "noexec" to prevent issues with dev scripts.
     options = [ "mode=1777" "nodev" "nosuid" "size=75%" ];
   };
 
@@ -228,8 +222,6 @@ in
     qt6.qtwayland
     
     # Cosmic Apps
-    # Note: These are installed by desktopManager.cosmic.enable,
-    # but listing them here keeps them explicit in your shell PATH.
     cosmic-files
     cosmic-term
     cosmic-edit
@@ -237,7 +229,6 @@ in
     cosmic-screenshot
     cosmic-settings
     cosmic-randr
-    
     cosmic-applibrary
     cosmic-comp
     cosmic-panel
