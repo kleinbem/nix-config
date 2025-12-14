@@ -36,8 +36,15 @@ code:
 plan:
     nix develop --command aider --model gemini/gemini-2.0-flash-thinking-exp
 
-# Run Aider LOCALLY (Free, Private, Uses Ollama)
+# Fast Local Mode (No Reasoning Wait)
 local:
+    @ollama pull qwen2.5-coder:7b
+    @OLLAMA_API_BASE=http://127.0.0.1:11434 nix develop --command aider \
+      --model ollama/qwen2.5-coder:7b \
+      --editor-model ollama/qwen2.5-coder:7b
+
+# Run Aider LOCALLY (Free, Private, Uses Ollama)
+localDeep:
     # Ensure BOTH models are present
     @ollama pull deepseek-r1:8b 
     @ollama pull qwen2.5-coder:7b
