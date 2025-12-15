@@ -24,29 +24,32 @@ rec {
                   WAYLAND_DISPLAY = sloth.env "WAYLAND_DISPLAY";
                 };
 
-                bind.dev = [ "/dev/dri" ]; 
+                # Grouped bindings to satisfy linter
+                bind = {
+                    dev = [ "/dev/dri" ]; 
 
-                bind.ro = [
-                  # --- Basics ---
-                  "/etc/fonts"
-                  "/etc/ssl/certs"
-                  "/etc/profiles/per-user"
-                  "/run/dbus"
-                  (sloth.concat' sloth.homeDir "/.icons") 
+                    ro = [
+                      # --- Basics ---
+                      "/etc/fonts"
+                      "/etc/ssl/certs"
+                      "/etc/profiles/per-user"
+                      "/run/dbus"
+                      (sloth.concat' sloth.homeDir "/.icons") 
 
-                  # --- The "Nuclear" Graphics Fix for Intel ---
-                  "/run/opengl-driver"
-                  "/sys/class/drm"
-                  "/sys/devices"
-                  "/sys/dev"     # <--- Critical for identifying devices
-                  "/etc/udev"    # <--- Sometimes needed for device lookup
-                ];
-
-                bind.rw = [
-                  (sloth.env "XDG_RUNTIME_DIR")
-                  "/tmp"
-                  (sloth.concat' sloth.homeDir "/.config/${name}")
-                ];
+                      # --- The "Nuclear" Graphics Fix for Intel ---
+                      "/run/opengl-driver"
+                      "/sys/class/drm"
+                      "/sys/devices"
+                      "/sys/dev"     # <--- Critical for identifying devices
+                      "/etc/udev"    # <--- Sometimes needed for device lookup
+                    ];
+                    
+                    rw = [
+                      (sloth.env "XDG_RUNTIME_DIR")
+                      "/tmp"
+                      (sloth.concat' sloth.homeDir "/.config/${name}")
+                    ];
+                };
               };
             })
             extraPerms 
@@ -54,7 +57,8 @@ rec {
         };
       };
       
-      script = sandbox.config.script;
+      # Fixed W04: Assignment instead of inherit
+      inherit (sandbox.config) script;
 
     in
     pkgs.runCommand "${name}-sandboxed" { } ''

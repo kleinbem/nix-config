@@ -8,48 +8,57 @@
     [ (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "ahci" "nvme" "usbhid" "ums_realtek" "uas" "sd_mod" ];
-  boot.initrd.kernelModules = [ "dm-snapshot" ];
+  boot = {
+    initrd = {
+      availableKernelModules = [ "xhci_pci" "thunderbolt" "ahci" "nvme" "usbhid" "ums_realtek" "uas" "sd_mod" ];
+      kernelModules = [ "dm-snapshot" ];
+      
+      luks.devices."cryptroot" = {
+        device = "/dev/disk/by-uuid/1f46beca-dc9a-481b-86fe-275a697e3dc2";
+        preLVM = true;
+        # --- ADDED: Allow unlocking with FIDO2 (YubiKey) ---
+        crypttabExtraOpts = [ "fido2-device=auto" ];
+      };
 
-  boot.initrd.luks.devices."cryptroot" = {
-    device = "/dev/disk/by-uuid/1f46beca-dc9a-481b-86fe-275a697e3dc2";
-    preLVM = true;
+      services.lvm.enable = true;
+    };
+    
+    kernelModules = [ "kvm-intel" ];
+    extraModulePackages = [ ];
   };
 
-  boot.initrd.services.lvm.enable = true;
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.extraModulePackages = [ ];
-
-  fileSystems."/" =
-    { device = "/dev/mapper/vg0-root";
+  fileSystems = {
+    "/" = { 
+      device = "/dev/mapper/vg0-root";
       fsType = "ext4";
     };
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/D223-DA20";
+    "/boot" = { 
+      device = "/dev/disk/by-uuid/D223-DA20";
       fsType = "vfat";
       options = [ "fmask=0022" "dmask=0022" ];
     };
 
-  fileSystems."/var" =
-    { device = "/dev/mapper/vg0-var";
+    "/var" = { 
+      device = "/dev/mapper/vg0-var";
       fsType = "ext4";
     };
 
-  fileSystems."/home" =
-    { device = "/dev/mapper/vg0-home";
+    "/home" = { 
+      device = "/dev/mapper/vg0-home";
       fsType = "btrfs";
     };
 
-  fileSystems."/nix" =
-    { device = "/dev/mapper/vg0-nix";
+    "/nix" = { 
+      device = "/dev/mapper/vg0-nix";
       fsType = "btrfs";
     };
 
-  fileSystems."/images" =
-    { device = "/dev/mapper/vg0-images";
+    "/images" = { 
+      device = "/dev/mapper/vg0-images";
       fsType = "ext4";
     };
+  };
 
   swapDevices =
     [ { device = "/dev/mapper/vg0-swap"; }

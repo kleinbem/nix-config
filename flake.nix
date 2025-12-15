@@ -37,7 +37,11 @@
         llm-agents.packages.${system}.gemini-cli
         pkgs.statix           
         pkgs.nixfmt-rfc-style 
-        pkgs.sops             
+        pkgs.sops
+        
+        # --- Secret Management Tools ---
+        pkgs.age
+        pkgs.age-plugin-yubikey
       ];
 
       shellHook = ''

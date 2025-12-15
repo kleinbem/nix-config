@@ -18,6 +18,10 @@ switch:
 update:
     nix flake update
 
+# Run Lint -> Test -> Switch automatically
+deploy: lint test switch
+    @echo "✅ System successfully deployed and switched!"
+
 # --- AI Workflow ---
 
 # Check for linting errors (Statix)
