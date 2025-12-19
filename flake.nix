@@ -15,15 +15,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # --- AI & Operations ---
-    llm-agents.url = "github:numtide/llm-agents.nix";
-
     # Secret Management
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, nixpak, llm-agents, sops-nix, ... }@inputs: 
+  outputs = { self, nixpkgs, home-manager, nixpak, sops-nix, ... }@inputs: 
   let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
@@ -34,8 +31,8 @@
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = [
         pkgs.aider-chat
-        llm-agents.packages.${system}.gemini-cli
-        pkgs.statix           
+        pkgs.gemini-cli
+        pkgs.statix            
         pkgs.nixfmt-rfc-style 
         pkgs.sops
         

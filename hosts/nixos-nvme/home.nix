@@ -13,6 +13,7 @@ in
     packages = with pkgs; [
       # -- GUI Apps --
       vscode-fhs
+      antigravity-fhs
       pavucontrol
       nwg-look
       
@@ -49,13 +50,38 @@ in
     stateVersion = "24.11"; 
   };
 
+  systemd.user.services.rclone-gdrive-mount = {
+    Unit = {
+      Description = "Mount Google Drive via Rclone";
+      After = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "simple";
+      # Ensure the mount point exists: mkdir -p ~/GoogleDrive
+      ExecStart = ''
+        ${pkgs.rclone}/bin/rclone mount gdrive: %h/GoogleDrive \
+          --vfs-cache-mode full \
+          --vfs-cache-max-size 10G \
+          --vfs-cache-max-age 24h \
+          --dir-cache-time 1000h \
+          --log-level INFO
+      '';
+      ExecStop = "/run/wrappers/bin/fusermount -u %h/GoogleDrive";
+      Restart = "on-failure";
+      RestartSec = "10s";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   # Git configuration
   programs = {
     git = {
       enable = true;
       settings = {
         user = {
-          name = "Martin Kleinberger";
+          name = "kleinbem";
           email = "martin.kleinberger@gmail.com";
         };
       };
