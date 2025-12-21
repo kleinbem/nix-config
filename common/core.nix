@@ -79,5 +79,6 @@
 
   environment.sessionVariables = {
     FLAKE = "/home/martin/Develop/github.com/kleinbem/nix-config";
+    NH_FLAKE = "/home/martin/Develop/github.com/kleinbem/nix-config"; # nh 4.2+ support
   };
 }

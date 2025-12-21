@@ -18,6 +18,7 @@ in
     sandboxedApps.obsidian
     # google-chrome # Standard (Unsafe) - PWAs
     sandboxedApps.google-chrome # Nixpak (Safe) - Banking
+    chromium # Fallback (Unsafe) - Local Dev
 
     # -- Security & Keys --
     keepassxc # Offline Password Manager
