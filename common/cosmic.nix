@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   # ==========================================
@@ -57,14 +57,15 @@
 
   environment.systemPackages = with pkgs; [
     # Desktop Utilities
-    libsForQt5.qt5.qtwayland qt6.qtwayland
+    libsForQt5.qt5.qtwayland
+    qt6.qtwayland
 
     # Cosmic Apps (Core components like comp/shell are installed by the desktopManager module)
-    cosmic-files 
-    cosmic-term 
-    cosmic-edit 
+    cosmic-files
+    cosmic-term
+    cosmic-edit
     cosmic-store
-    cosmic-screenshot 
+    cosmic-screenshot
     cosmic-randr
   ];
 }

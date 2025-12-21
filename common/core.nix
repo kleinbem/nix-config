@@ -1,4 +1,8 @@
-{ config, pkgs, inputs, ... }:
+{
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
   # ==========================================
@@ -12,13 +16,20 @@
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
-      experimental-features = [ "nix-command" "flakes" ];
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
       auto-optimise-store = true;
       substituters = [ "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
       download-buffer-size = 1073741824;
       max-jobs = "auto";
       cores = 0;
+      trusted-users = [
+        "root"
+        "@wheel"
+      ];
     };
     gc = {
       automatic = true;
@@ -38,10 +49,28 @@
     };
     # Allow non-root users to mount FUSE
     fuse.userAllowOther = true;
+
+    # Run unpatched binaries
+    nix-ld.enable = true;
   };
 
   environment.systemPackages = with pkgs; [
     # Core Tools
-    git curl wget htop btop unzip zip file pciutils
+    git
+    curl
+    wget
+    htop
+    btop
+    unzip
+    zip
+    file
+    pciutils
+
+    # Modern CLI Tools
+    just
+    jq
+    ripgrep
+    fd
+    tree
   ];
 }

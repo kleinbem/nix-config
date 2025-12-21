@@ -27,6 +27,7 @@ deploy: lint test switch
 # Check for linting errors (Statix)
 lint:
     nix develop --command statix check
+    nix develop --command deadnix .
 
 # Enter the AI Environment
 dev:

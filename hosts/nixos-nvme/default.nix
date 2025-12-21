@@ -1,4 +1,8 @@
-{ config, pkgs, inputs, ... }:
+{
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
   imports = [
@@ -25,13 +29,20 @@
     initrd.systemd.enable = true;
 
     # Performance & Tweaks
-    blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
+    blacklistedKernelModules = [
+      "pcspkr"
+      "snd_pcsp"
+    ];
     consoleLogLevel = 0;
     kernelParams = [
-      "quiet" "loglevel=0" "udev.log_level=3"
-      "acpi_osi=Linux" "intel_idle.max_cstate=1"
+      "quiet"
+      "loglevel=0"
+      "udev.log_level=3"
+      "acpi_osi=Linux"
+      "intel_idle.max_cstate=1"
       "i915.enable_psr=0"
-      "snd_hda_intel.power_save=0" "snd_hda_intel.power_save_controller=N"
+      "snd_hda_intel.power_save=0"
+      "snd_hda_intel.power_save_controller=N"
     ];
 
     tmp.useTmpfs = true;
@@ -65,8 +76,6 @@
     networkmanager.enable = true;
   };
 
-
-
   # ==========================================
   # 5. VIRTUALIZATION
   # ==========================================
@@ -79,17 +88,17 @@
     };
   };
 
-# ==========================================
+  # ==========================================
   # 7. SERVICES & AI (Ollama Brain)
   # ==========================================
   services = {
     ollama = {
       enable = true;
-      host = "0.0.0.0";     
+      host = "0.0.0.0";
       loadModels = [
-        "llama3.1:70b-instruct-q4_K_M" 
-        "llama3.2:3b"                    
-        "nomic-embed-text"               
+        "llama3.1:70b-instruct-q4_K_M"
+        "llama3.2:3b"
+        "nomic-embed-text"
       ];
     };
 
@@ -111,15 +120,20 @@
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/martin/.config/sops/age/keys.txt";
 
-    package = pkgs.runCommand "sops-with-plugins" {
-      nativeBuildInputs = [ pkgs.makeWrapper ];
-    } ''
-      mkdir -p $out/bin
-      makeWrapper ${pkgs.sops}/bin/sops $out/bin/sops \
-        --prefix PATH : "${pkgs.age-plugin-yubikey}/bin"
-      makeWrapper ${inputs.sops-nix.packages.${pkgs.system}.sops-install-secrets}/bin/sops-install-secrets $out/bin/sops-install-secrets \
-        --prefix PATH : "${pkgs.age-plugin-yubikey}/bin"
-    '';
+    package =
+      pkgs.runCommand "sops-with-plugins"
+        {
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+        }
+        ''
+          mkdir -p $out/bin
+          makeWrapper ${pkgs.sops}/bin/sops $out/bin/sops \
+            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin"
+          makeWrapper ${
+            inputs.sops-nix.packages.${pkgs.system}.sops-install-secrets
+          }/bin/sops-install-secrets $out/bin/sops-install-secrets \
+            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin"
+        '';
   };
 
   # ==========================================
@@ -129,11 +143,16 @@
   environment.systemPackages = with pkgs; [
 
     # Containers
-    podman podman-tui docker-compose
+    podman
+    podman-tui
+    docker-compose
 
     # Security & Tokens
-    sops age age-plugin-yubikey
-    libfido2 pam_u2f
+    sops
+    age
+    age-plugin-yubikey
+    libfido2
+    pam_u2f
 
     # AI Diagnostics
     intel-gpu-tools

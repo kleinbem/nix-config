@@ -25,7 +25,7 @@ pkgs.stdenv.mkDerivation rec {
 
   installPhase = ''
     mkdir -p $out
-    
+
     # 1. Copy the standard unix structure from the RPM
     cp -r usr/* $out/
 

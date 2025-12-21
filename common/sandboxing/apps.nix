@@ -7,24 +7,28 @@ in
   # --- OBSIDIAN ---
   obsidian = utils.mkSandboxed {
     package = pkgs.obsidian;
-    extraPerms = { sloth, ... }: {
-      bubblewrap.bind.rw = [
-        (sloth.concat' sloth.homeDir "/Documents")
-      ];
-    };
+    extraPerms =
+      { sloth, ... }:
+      {
+        bubblewrap.bind.rw = [
+          (sloth.concat' sloth.homeDir "/Documents")
+        ];
+      };
   };
 
   # --- GOOGLE CHROME ---
   google-chrome = utils.mkSandboxed {
     package = pkgs.google-chrome;
-    extraPerms = { sloth, ... }: {
-      bubblewrap = {
-        bind = {
+    extraPerms =
+      { sloth, ... }:
+      {
+        bubblewrap = {
+          bind = {
             # 1. Device Access
-            dev = [ 
+            dev = [
               "/dev/video0" # Webcam
               "/dev/video1"
-              "/dev/dri"    # GPU Acceleration
+              "/dev/dri" # GPU Acceleration
             ];
 
             # 2. File & Socket Access
@@ -34,7 +38,7 @@ in
 
               # Downloads
               (sloth.concat' sloth.homeDir "/Downloads")
-              
+
               # Cache
               (sloth.concat' sloth.homeDir "/.cache/google-chrome")
 
@@ -51,8 +55,8 @@ in
               # GTK Bookmarks
               (sloth.concat' sloth.homeDir "/.config/gtk-3.0")
             ];
+          };
         };
       };
-    };
   };
 }

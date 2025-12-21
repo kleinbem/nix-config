@@ -1,8 +1,12 @@
-{ config, pkgs, nixpak, ... }:
+{
+  pkgs,
+  nixpak,
+  ...
+}:
 
 let
   # Import modular apps catalog (relative to this file)
-  sandboxedApps = import ./sandboxing/apps.nix { inherit pkgs nixpak; };
+  sandboxedApps = import ../../common/sandboxing/apps.nix { inherit pkgs nixpak; };
 in
 {
   # User Details
@@ -16,38 +20,32 @@ in
       antigravity-fhs
       pavucontrol
       nwg-look
-      
+
       # -- Sandboxed Apps --
       sandboxedApps.obsidian
-      google-chrome            # Standard (Unsafe) - Disabled
+      google-chrome # Standard (Unsafe) - Disabled
       # sandboxedApps.google-chrome  # Nixpak (Safe) - Enabled
 
       # -- Dev & AI Tools --
-      gh                  # GitHub CLI
-      github-copilot-cli  
-      gemini-cli          # Google Gemini (Free Tier)
+      gh # GitHub CLI
+      github-copilot-cli
+      gemini-cli # Google Gemini (Free Tier)
       claude-code
-      
+
       llm
-      nil           
+      nil
       nixfmt-rfc-style
 
       # -- Security & Keys --
-      keepassxc           # Offline Password Manager
-      yubikey-manager     # CLI Tool (Essential for scripts/backend)
-      yubioath-flutter    # Modern GUI (Replaces yubikey-manager-qt)
+      keepassxc # Offline Password Manager
+      yubikey-manager # CLI Tool (Essential for scripts/backend)
+      yubioath-flutter # Modern GUI (Replaces yubikey-manager-qt)
       rbw
-      pinentry-gnome3      
+      pinentry-gnome3
 
-      # -- CLI Utils --
-      just
-      jq
-      ripgrep
-      fd
-      tree
     ];
-    
-    stateVersion = "24.11"; 
+
+    stateVersion = "24.11";
   };
 
   systemd.user.services.rclone-gdrive-mount = {
@@ -77,6 +75,13 @@ in
 
   # Git configuration
   programs = {
+    starship = {
+      enable = true;
+      settings = {
+        add_newline = false;
+      };
+    };
+
     git = {
       enable = true;
       settings = {

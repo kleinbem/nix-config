@@ -10,7 +10,15 @@
 
   users.users.martin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "podman" "video" "render" "libvirtd" "kvm" ];
+    extraGroups = [
+      "wheel"
+      "networkmanager"
+      "podman"
+      "video"
+      "render"
+      "libvirtd"
+      "kvm"
+    ];
     hashedPasswordFile = config.sops.secrets.martin_password.path;
   };
 
@@ -25,7 +33,7 @@
     polkit.enable = true;
     pam.u2f = {
       enable = true;
-      cue = true;
+      settings.cue = true;
     };
   };
 
