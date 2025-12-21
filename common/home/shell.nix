@@ -36,6 +36,7 @@
 
     git = {
       enable = true;
+      delta.enable = true; # Beautiful syntax-highlighted diffs
       settings = {
         alias = {
           st = "status";

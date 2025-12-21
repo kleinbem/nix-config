@@ -59,7 +59,6 @@
     git
     curl
     wget
-    wget
     # htop # Replaced by btop
     btop
     # unzip # Replaced by ouch

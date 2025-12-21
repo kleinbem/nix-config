@@ -5,6 +5,7 @@ _:
     ../../common/home/shell.nix
     ../../common/home/dev.nix
     ../../common/home/desktop.nix
+    ../../common/home/security.nix
   ];
 
   # User Details

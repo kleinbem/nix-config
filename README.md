@@ -9,8 +9,9 @@ A modular, highly-opinionated NixOS configuration built for **AI-assisted develo
 
 ## ✨ Features
 
-*   **🤖 AI-First Workflow**: Pre-configured with `Ollama` (70B models), `Aider`, and `Gemini CLI`.
+*   **🤖 AI-First Workflow**: `Ollama` (70B models), `Aider`, and `Fabric` (AI-Augmented Hacking pattern engine).
 *   **🚀 Modern Desktop**: Bleeding-edge **COSMIC DE** with tiling support.
+*   **🕵️‍♂️ Security Research**: Full Bug Bounty stack (`Burp`, `Nuclei`, `Nmap`, `Zap`) defined in `security.nix`.
 *   **🔒 Secure by Design**:
     *   **Secrets**: Managed via `sops-nix` (encrypted with Age/YubiKey).
     *   **Sandboxing**: Critical apps (Chrome, Obsidian) are isolated using `nixpak`.
@@ -26,6 +27,9 @@ This repository follows a modular "common + host" pattern:
 ├── 📂 common/           # Shared configuration modules
 │   ├── core.nix         # Base system settings (Nix, Locale, Utils)
 │   ├── cosmic.nix       # Desktop Environment & GUI apps
+│   ├── home/            # Home Manager Modules
+│   │   ├── security.nix # 🛡️ Bug Bounty & Pentest Tools
+│   │   └── shell.nix    # Shell aliases & Starship
 │   ├── intel-compute.nix# Hardware acceleration
 │   ├── sandboxing/      # Nixpak wrappers
 │   └── users.nix        # User accounts & Security
