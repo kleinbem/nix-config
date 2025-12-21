@@ -17,6 +17,7 @@ in
   };
 
   # --- GOOGLE CHROME ---
+  # --- GOOGLE CHROME ---
   google-chrome = utils.mkSandboxed {
     package = pkgs.google-chrome;
     extraPerms =
@@ -55,6 +56,10 @@ in
               # GTK Bookmarks
               (sloth.concat' sloth.homeDir "/.config/gtk-3.0")
             ];
+          };
+          env = {
+            # Enable System Integration (Open Links/Apps) via DBus
+            DBUS_SESSION_BUS_ADDRESS = sloth.env "DBUS_SESSION_BUS_ADDRESS";
           };
         };
       };

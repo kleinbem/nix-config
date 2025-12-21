@@ -11,14 +11,13 @@ in
     vscode-fhs
     antigravity-fhs
     pavucontrol
-    pavucontrol
     nwg-look
     mpv # Media Player
 
     # -- Sandboxed Apps --
     sandboxedApps.obsidian
-    google-chrome # Standard (Unsafe) - Disabled
-    # sandboxedApps.google-chrome  # Nixpak (Safe) - Enabled
+    # google-chrome # Standard (Unsafe) - PWAs
+    sandboxedApps.google-chrome # Nixpak (Safe) - Banking
 
     # -- Security & Keys --
     keepassxc # Offline Password Manager
