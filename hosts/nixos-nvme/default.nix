@@ -3,7 +3,9 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./modules/intel-compute.nix
+    ../../common/core.nix
+    ../../common/cosmic.nix
+    ../../common/intel-compute.nix
     ../../common/printing.nix
     ../../common/users.nix
   ];
@@ -56,15 +58,6 @@
   hardware = {
     cpu.intel.updateMicrocode = true;
     enableAllFirmware = true;
-
-    # Enable Intel iGPU Compute for AI
-    graphics = {
-      enable = true;
-      extraPackages = with pkgs; [
-        intel-media-driver
-        intel-compute-runtime
-      ];
-    };
   };
 
   networking = {
@@ -72,71 +65,7 @@
     networkmanager.enable = true;
   };
 
-  time.timeZone = "Europe/Dublin";
-  i18n.defaultLocale = "en_IE.UTF-8";
-  console.keyMap = "us";
 
-  # ==========================================
-  # 3. NIX SETTINGS
-  # ==========================================
-  nixpkgs.config.allowUnfree = true;
-  nix = {
-    registry.nixpkgs.flake = inputs.nixpkgs;
-    settings = {
-      experimental-features = [ "nix-command" "flakes" ];
-      auto-optimise-store = true;
-      substituters = [ "https://cache.nixos.org" ];
-      trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
-      download-buffer-size = 1073741824;
-      max-jobs = "auto";
-      cores = 0;
-    };
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 14d";
-    };
-  };
-
-  # ==========================================
-  # 4. DESKTOP (COSMIC)
-  # ==========================================
-  services = {
-    displayManager.cosmic-greeter.enable = true;
-    desktopManager.cosmic.enable = true;
-    system76-scheduler.enable = true;
-
-    pulseaudio.enable = false;
-    pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-      jack.enable = true;
-    };
-
-    dbus.enable = true;
-    avahi = {
-      enable = true;
-      nssmdns4 = true;
-      publish = {
-        enable = true;
-        userServices = true;
-      };
-    };
-  };
-
-  xdg.portal = {
-    enable = true;
-    extraPortals = [
-      pkgs.xdg-desktop-portal-cosmic
-      pkgs.xdg-desktop-portal-gtk
-    ];
-    config.common.default = "cosmic";
-  };
-
-  fonts.fontconfig.enable = true;
-  # NOTE: programs.xwayland moved to 'programs' block in Section 10
 
   # ==========================================
   # 5. VIRTUALIZATION
@@ -153,32 +82,26 @@
 # ==========================================
   # 7. SERVICES & AI (Ollama Brain)
   # ==========================================
-  services.ollama = {
-    enable = true;
+  services = {
+    ollama = {
+      enable = true;
+      host = "0.0.0.0";     
+      loadModels = [
+        "llama3.1:70b-instruct-q4_K_M" 
+        "llama3.2:3b"                    
+        "nomic-embed-text"               
+      ];
+    };
 
-    
-    # Optional: For Intel iGPU, Vulkan is often the best backend. 
-    # If the default package is slow, try uncommenting the line below:
-    # package = pkgs.ollama-vulkan;
-
-    host = "0.0.0.0";     
-    
-    # Models will be downloaded but NOT loaded into RAM until requested
-    loadModels = [
-      "llama3.1:70b-instruct-q4_K_M" 
-      "llama3.2:3b"                    
-      "nomic-embed-text"               
+    # ==========================================
+    # 8. HARDWARE TOKENS
+    # ==========================================
+    pcscd.enable = true;
+    udev.packages = [
+      pkgs.yubikey-personalization
+      pkgs.libfido2
     ];
   };
-
-  # ==========================================
-  # 8. HARDWARE TOKENS
-  # ==========================================
-  services.pcscd.enable = true;
-  services.udev.packages = [
-    pkgs.yubikey-personalization
-    pkgs.libfido2
-  ];
 
   # ==========================================
   # 9. SECRETS (SOPS)
@@ -203,34 +126,7 @@
   # 10. SYSTEM PACKAGES & PROGRAMS
   # ==========================================
 
-  # Refactored 'programs' block to satisfy statix check
-  programs = {
-    # Enable XWayland for legacy app support (Steam, older GUI tools)
-    xwayland.enable = true;
-
-    # Direnv for per-project environment loading (essential for Nix dev)
-    direnv = {
-      enable = true;
-      nix-direnv.enable = true;
-    };
-
-    # Allow non-root users to mount FUSE (needed for some Flatpaks/mounting tools)
-    fuse.userAllowOther = true;
-  };
-
-  services.flatpak.enable = true;
-
   environment.systemPackages = with pkgs; [
-    # Core Tools
-    git curl wget htop btop unzip zip file pciutils
-
-    # Desktop Utilities
-    libsForQt5.qt5.qtwayland qt6.qtwayland
-
-    # Cosmic Apps
-    cosmic-files cosmic-term cosmic-edit cosmic-store
-    cosmic-screenshot cosmic-settings cosmic-randr
-    cosmic-applibrary cosmic-comp cosmic-panel cosmic-greeter
 
     # Containers
     podman podman-tui docker-compose
