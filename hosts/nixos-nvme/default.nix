@@ -12,6 +12,7 @@
     ../../common/intel-compute.nix
     ../../common/printing.nix
     ../../common/users.nix
+    ../../common/scripts.nix
   ];
 
   # ==========================================
@@ -100,6 +101,17 @@
         "llama3.2:3b"
         "nomic-embed-text"
       ];
+      # Note: Intel iGPU acceleration for Ollama via IPEX-LLM/Vulkan
+      # is not yet upstreamed in nixpkgs (late 2025). Using CPU for now.
+    };
+
+    open-webui = {
+      enable = true;
+      port = 8080;
+      environment = {
+        # Optional: Enable if you want to expose to LAN, otherwise localhost only
+        # OLLAMA_BASE_URL = "http://127.0.0.1:11434";
+      };
     };
 
     # ==========================================

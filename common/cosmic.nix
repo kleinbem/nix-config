@@ -2,14 +2,6 @@
 
 {
   # ==========================================
-  # COSMIC BINARY CACHE
-  # ==========================================
-  nix.settings = {
-    substituters = [ "https://cosmic.cachix.org/" ];
-    trusted-public-keys = [ "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=" ];
-  };
-
-  # ==========================================
   # DESKTOP (COSMIC)
   # ==========================================
   services = {
@@ -50,6 +42,12 @@
     ];
     config.common.default = "cosmic";
   };
+
+  # Persistence for GSettings/Cosmic
+  programs.dconf.enable = true;
+
+  # Electron apps use Wayland natively
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
   fonts.fontconfig.enable = true;
 

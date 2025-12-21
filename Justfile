@@ -7,20 +7,26 @@ default:
 # --- System Management ---
 
 # Apply changes (Safe Mode)
+# Apply changes (Safe Mode)
 test:
-    sudo nixos-rebuild test --flake .#nixos-nvme
+    nh os test .
 
 # Apply changes (Permanent)
 switch:
-    sudo nixos-rebuild switch --flake .#nixos-nvme
+    # sudo nixos-rebuild switch --flake .#nixos-nvme
+    nh os switch .
 
 # Update dependencies (flake.lock)
 update:
     nix flake update
 
-# Run Lint -> Test -> Switch automatically
-deploy: lint test switch
-    @echo "✅ System successfully deployed and switched!"
+# Verify system health
+verify:
+    verify-system
+
+# Run Lint -> Test -> Switch -> Verify automatically
+deploy: lint test switch verify
+    @echo "✅ System successfully deployed and verified!"
 
 # --- AI Workflow ---
 

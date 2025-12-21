@@ -1,4 +1,4 @@
-_:
+{ pkgs, ... }:
 
 {
   programs = {
@@ -25,5 +25,14 @@ _:
       enable = true;
       nix-direnv.enable = true;
     };
+
+    fzf = {
+      enable = true;
+      enableBashIntegration = true;
+    };
+
+    bat.enable = true; # Syntax highlighting for cat
   };
+
+  home.packages = [ pkgs.fastfetch ];
 }

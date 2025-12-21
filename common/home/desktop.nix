@@ -11,7 +11,9 @@ in
     vscode-fhs
     antigravity-fhs
     pavucontrol
+    pavucontrol
     nwg-look
+    mpv # Media Player
 
     # -- Sandboxed Apps --
     sandboxedApps.obsidian
