@@ -4,7 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ./modules/intel-compute.nix
-    ./modules/printing.nix
+    ../../common/printing.nix
   ];
 
   # ==========================================
@@ -19,8 +19,8 @@
       };
       efi.canTouchEfiVariables = true;
     };
-    initrd.systemd.enable = true; 
-    
+    initrd.systemd.enable = true;
+
     # Performance & Tweaks
     blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
     consoleLogLevel = 0;
@@ -33,12 +33,12 @@
 
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "75%";
-    
+
     # Network Tuning for Cluster Performance
     kernel.sysctl = {
       "net.core.rmem_max" = 16777216;
       "net.core.wmem_max" = 16777216;
-      "net.ipv4.tcp_congestion_control" = "bbr"; 
+      "net.ipv4.tcp_congestion_control" = "bbr";
     };
   };
 
@@ -46,7 +46,7 @@
   zramSwap = {
     enable = true;
     algorithm = "zstd";
-    memoryPercent = 50; 
+    memoryPercent = 50;
   };
 
   # ==========================================
@@ -55,13 +55,13 @@
   hardware = {
     cpu.intel.updateMicrocode = true;
     enableAllFirmware = true;
-    
+
     # Enable Intel iGPU Compute for AI
     graphics = {
       enable = true;
       extraPackages = with pkgs; [
         intel-media-driver
-        intel-compute-runtime 
+        intel-compute-runtime
       ];
     };
   };
@@ -104,7 +104,7 @@
     displayManager.cosmic-greeter.enable = true;
     desktopManager.cosmic.enable = true;
     system76-scheduler.enable = true;
-    
+
     pulseaudio.enable = false;
     pipewire = {
       enable = true;
@@ -113,7 +113,7 @@
       pulse.enable = true;
       jack.enable = true;
     };
-    
+
     dbus.enable = true;
     avahi = {
       enable = true;
@@ -127,21 +127,21 @@
 
   xdg.portal = {
     enable = true;
-    extraPortals = [ 
-      pkgs.xdg-desktop-portal-cosmic 
-      pkgs.xdg-desktop-portal-gtk 
+    extraPortals = [
+      pkgs.xdg-desktop-portal-cosmic
+      pkgs.xdg-desktop-portal-gtk
     ];
     config.common.default = "cosmic";
   };
 
   fonts.fontconfig.enable = true;
-  programs.xwayland.enable = true;
+  # NOTE: programs.xwayland moved to 'programs' block in Section 10
 
   # ==========================================
   # 5. VIRTUALIZATION
   # ==========================================
   virtualisation = {
-    libvirtd.enable = true; 
+    libvirtd.enable = true;
     podman = {
       enable = true;
       dockerCompat = true;
@@ -168,7 +168,7 @@
     polkit.enable = true;
     pam.u2f = {
       enable = true;
-      cue = true; 
+      cue = true;
     };
   };
 
@@ -186,19 +186,24 @@
     };
   };
 
-  # ==========================================
+# ==========================================
   # 7. SERVICES & AI (Ollama Brain)
   # ==========================================
   services.ollama = {
     enable = true;
-    acceleration = null; 
-    host = "0.0.0.0";    
+
+    
+    # Optional: For Intel iGPU, Vulkan is often the best backend. 
+    # If the default package is slow, try uncommenting the line below:
+    # package = pkgs.ollama-vulkan;
+
+    host = "0.0.0.0";     
     
     # Models will be downloaded but NOT loaded into RAM until requested
     loadModels = [
       "llama3.1:70b-instruct-q4_K_M" 
-      "llama3.2:3b"                   
-      "nomic-embed-text"              
+      "llama3.2:3b"                    
+      "nomic-embed-text"               
     ];
   };
 
@@ -206,11 +211,11 @@
   # 8. HARDWARE TOKENS
   # ==========================================
   services.pcscd.enable = true;
-  services.udev.packages = [ 
-    pkgs.yubikey-personalization 
-    pkgs.libfido2 
+  services.udev.packages = [
+    pkgs.yubikey-personalization
+    pkgs.libfido2
   ];
-  
+
   # ==========================================
   # 9. SECRETS (SOPS)
   # ==========================================
@@ -218,7 +223,7 @@
     defaultSopsFile = ./secrets.yaml;
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/martin/.config/sops/age/keys.txt";
-    
+
     package = pkgs.runCommand "sops-with-plugins" {
       nativeBuildInputs = [ pkgs.makeWrapper ];
     } ''
@@ -235,37 +240,47 @@
   };
 
   # ==========================================
-  # 10. SYSTEM PACKAGES
+  # 10. SYSTEM PACKAGES & PROGRAMS
   # ==========================================
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
+
+  # Refactored 'programs' block to satisfy statix check
+  programs = {
+    # Enable XWayland for legacy app support (Steam, older GUI tools)
+    xwayland.enable = true;
+
+    # Direnv for per-project environment loading (essential for Nix dev)
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+    };
+
+    # Allow non-root users to mount FUSE (needed for some Flatpaks/mounting tools)
+    fuse.userAllowOther = true;
   };
-  
+
   services.flatpak.enable = true;
-  programs.fuse.userAllowOther = true;
 
   environment.systemPackages = with pkgs; [
     # Core Tools
     git curl wget htop btop unzip zip file pciutils
-    
+
     # Desktop Utilities
     libsForQt5.qt5.qtwayland qt6.qtwayland
-    
+
     # Cosmic Apps
     cosmic-files cosmic-term cosmic-edit cosmic-store
     cosmic-screenshot cosmic-settings cosmic-randr
     cosmic-applibrary cosmic-comp cosmic-panel cosmic-greeter
-    
+
     # Containers
     podman podman-tui docker-compose
-    
+
     # Security & Tokens
     sops age age-plugin-yubikey
     libfido2 pam_u2f
 
     # AI Diagnostics
-    intel-gpu-tools 
+    intel-gpu-tools
   ];
 
   system.stateVersion = "25.11";
