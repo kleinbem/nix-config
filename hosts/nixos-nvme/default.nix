@@ -110,6 +110,19 @@
       pkgs.yubikey-personalization
       pkgs.libfido2
     ];
+
+    # Firmware Updates
+    fwupd.enable = true;
+
+    # Btrfs Maintenance
+    btrfs.autoScrub = {
+      enable = true;
+      interval = "weekly";
+      fileSystems = [
+        "/home"
+        "/nix"
+      ];
+    };
   };
 
   # ==========================================
