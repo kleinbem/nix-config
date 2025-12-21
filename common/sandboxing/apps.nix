@@ -68,6 +68,7 @@ in
   # --- MPV (Media Player) ---
   mpv = utils.mkSandboxed {
     package = pkgs.mpv;
+    name = "mpv";
     extraPerms =
       { sloth, ... }:
       {
