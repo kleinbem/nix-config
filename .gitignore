@@ -1,3 +1,6 @@
 .envrc
 .aider*
 result
+.direnv/
+.pre-commit-config.yaml
+tmp/

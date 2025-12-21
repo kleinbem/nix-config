@@ -103,6 +103,26 @@
         "type": "github"
       }
     },
+    "nh": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1766234633,
+        "narHash": "sha256-0BES8Gas4ci6Q/TTPToOANZNbgznjnWpqpNxgJspLlM=",
+        "owner": "viperML",
+        "repo": "nh",
+        "rev": "84785ab6f981ef6d0615a94e7f48ba572e8a884a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "viperML",
+        "repo": "nh",
+        "type": "github"
+      }
+    },
     "nixpak": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -166,6 +186,7 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
+        "nh": "nh",
         "nixpak": "nixpak",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",

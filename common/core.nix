@@ -72,5 +72,12 @@
     ripgrep
     fd
     tree
+    inputs.nh.packages.${pkgs.system}.default
+    nix-output-monitor
+    nvd
   ];
+
+  environment.sessionVariables = {
+    FLAKE = "/home/martin/Develop/github.com/kleinbem/nix-config";
+  };
 }
