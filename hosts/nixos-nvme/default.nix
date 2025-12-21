@@ -19,7 +19,7 @@
       };
       efi.canTouchEfiVariables = true;
     };
-    initrd.systemd.enable = true; # Required for TPM2/FIDO2
+    initrd.systemd.enable = true; 
     
     # Performance & Tweaks
     blacklistedKernelModules = [ "pcspkr" "snd_pcsp" ];
@@ -31,12 +31,18 @@
       "snd_hda_intel.power_save=0" "snd_hda_intel.power_save_controller=N"
     ];
 
-    # Build Speed & RAM Usage
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "75%";
+    
+    # Network Tuning for Cluster Performance
+    kernel.sysctl = {
+      "net.core.rmem_max" = 16777216;
+      "net.core.wmem_max" = 16777216;
+      "net.ipv4.tcp_congestion_control" = "bbr"; 
+    };
   };
 
-  # Massive Swap for 64GB RAM
+  # Massive Swap for 64GB RAM (Essential for 70B Model Overflow)
   zramSwap = {
     enable = true;
     algorithm = "zstd";
@@ -49,6 +55,15 @@
   hardware = {
     cpu.intel.updateMicrocode = true;
     enableAllFirmware = true;
+    
+    # Enable Intel iGPU Compute for AI
+    graphics = {
+      enable = true;
+      extraPackages = with pkgs; [
+        intel-media-driver
+        intel-compute-runtime 
+      ];
+    };
   };
 
   networking = {
@@ -61,7 +76,7 @@
   console.keyMap = "us";
 
   # ==========================================
-  # 3. NIX SETTINGS & OPTIMIZATION
+  # 3. NIX SETTINGS
   # ==========================================
   nixpkgs.config.allowUnfree = true;
   nix = {
@@ -83,14 +98,13 @@
   };
 
   # ==========================================
-  # 4. DESKTOP ENVIRONMENT (COSMIC)
+  # 4. DESKTOP (COSMIC)
   # ==========================================
   services = {
     displayManager.cosmic-greeter.enable = true;
     desktopManager.cosmic.enable = true;
     system76-scheduler.enable = true;
     
-    # Audio (Pipewire)
     pulseaudio.enable = false;
     pipewire = {
       enable = true;
@@ -100,7 +114,6 @@
       jack.enable = true;
     };
     
-    # Network Discovery
     dbus.enable = true;
     avahi = {
       enable = true;
@@ -125,10 +138,10 @@
   programs.xwayland.enable = true;
 
   # ==========================================
-  # 5. VIRTUALIZATION & CONTAINERS
+  # 5. VIRTUALIZATION
   # ==========================================
   virtualisation = {
-    libvirtd.enable = true; # Required for SnowflakeOS VM
+    libvirtd.enable = true; 
     podman = {
       enable = true;
       dockerCompat = true;
@@ -153,15 +166,12 @@
     sudo.wheelNeedsPassword = true;
     rtkit.enable = true;
     polkit.enable = true;
-
-    # FIDO2 / YubiKey Auth
     pam.u2f = {
       enable = true;
-      cue = true; # Prompt message "Touch Device"
+      cue = true; 
     };
   };
 
-  # Polkit Agent for GUI prompts
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";
     wantedBy = [ "graphical-session.target" ];
@@ -177,13 +187,23 @@
   };
 
   # ==========================================
-  # 7. SERVICES & AI (Ollama)
+  # 7. SERVICES & AI (Ollama Brain)
   # ==========================================
-  services.ollama.enable = true;
-  systemd.services.ollama.wantedBy = [ "multi-user.target" ];
+  services.ollama = {
+    enable = true;
+    acceleration = null; 
+    host = "0.0.0.0";    
+    
+    # Models will be downloaded but NOT loaded into RAM until requested
+    loadModels = [
+      "llama3.1:70b-instruct-q4_K_M" 
+      "llama3.2:3b"                   
+      "nomic-embed-text"              
+    ];
+  };
 
   # ==========================================
-  # 8. HARDWARE TOKENS (YubiKey / Kensington)
+  # 8. HARDWARE TOKENS
   # ==========================================
   services.pcscd.enable = true;
   services.udev.packages = [ 
@@ -199,7 +219,6 @@
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/martin/.config/sops/age/keys.txt";
     
-    # Custom Wrapper for YubiKey Plugin Support
     package = pkgs.runCommand "sops-with-plugins" {
       nativeBuildInputs = [ pkgs.makeWrapper ];
     } ''
@@ -224,7 +243,7 @@
   };
   
   services.flatpak.enable = true;
-  services.programs.fuse.userAllowOther = true;
+  programs.fuse.userAllowOther = true;
 
   environment.systemPackages = with pkgs; [
     # Core Tools
@@ -244,6 +263,9 @@
     # Security & Tokens
     sops age age-plugin-yubikey
     libfido2 pam_u2f
+
+    # AI Diagnostics
+    intel-gpu-tools 
   ];
 
   system.stateVersion = "25.11";
