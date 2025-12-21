@@ -36,13 +36,13 @@
 
     git = {
       enable = true;
-      aliases = {
-        st = "status";
-        co = "checkout";
-        sw = "switch";
-        br = "branch";
-      };
       settings = {
+        alias = {
+          st = "status";
+          co = "checkout";
+          sw = "switch";
+          br = "branch";
+        };
         user = {
           name = "kleinbem";
           email = "martin.kleinberger@gmail.com";

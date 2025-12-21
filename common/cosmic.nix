@@ -62,7 +62,7 @@
     cosmic-files
     cosmic-term
     cosmic-edit
-    cosmic-store
+    # cosmic-store # Broken on NixOS (Use Nix!)
     cosmic-screenshot
     cosmic-randr
   ];
