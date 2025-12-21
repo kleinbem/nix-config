@@ -15,9 +15,42 @@ let
       ripgrep
       starship
       podman
+      nixfmt-rfc-style
+      deadnix
+      statix
     ];
     text = ''
       echo "🔍 Verifying System State..."
+
+      # 0. Check Code Quality (If in a flake repo)
+      if [ -n "''${FLAKE:-}" ] && [ -d "$FLAKE" ]; then
+          echo "Checking Code Quality..."
+          cd "$FLAKE" || exit 1
+          
+          echo -n "  - Nix Formatting... "
+          if nixfmt --check . &>/dev/null; then
+             echo "✅ Passed"
+          else
+             echo "❌ FAILED (Run 'just lint' to fix)"
+             # Optional: exit 1 to strict fail
+          fi
+
+          echo -n "  - Dead Code (deadnix)... "
+          if deadnix --fail . &>/dev/null; then
+             echo "✅ Passed"
+          else
+             echo "❌ FAILED (Run 'just lint' to fix)"
+          fi
+
+          echo -n "  - Anti-patterns (statix)... "
+          if statix check . &>/dev/null; then
+             echo "✅ Passed"
+          else
+             echo "❌ FAILED (Run 'just lint' to fix)"
+          fi
+      else
+          echo "ℹ️  Skipping Code Quality checks (FLAKE env var not set)"
+      fi
 
       # 1. Check Core System
       echo -n "Checking NixOS Version... "
