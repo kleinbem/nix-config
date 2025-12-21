@@ -1,6 +1,7 @@
 # ❄️ AI-Augmented NixOS Configuration
 
 ![NixOS](https://img.shields.io/badge/NixOS-Unstable-blue.svg?style=for-the-badge&logo=nixos&logoColor=white)
+![CI](https://github.com/kleinbem/nix-config/actions/workflows/ci.yml/badge.svg)
 ![COSMIC](https://img.shields.io/badge/Desktop-COSMIC-purple.svg?style=for-the-badge)
 ![AI](https://img.shields.io/badge/AI-Ready-green.svg?style=for-the-badge)
 
