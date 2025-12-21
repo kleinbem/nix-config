@@ -16,3 +16,4 @@
 - [ ] **Maintenance**:
     - [ ] Enable `system.autoUpgrade` for unattended security patches.
     - [ ] Verify `rclone` restore workflow (Simulate data loss).
+    - [ ] **Ollama**: Manually run `ollama pull llama3.1:70b-instruct-q4_K_M` (Removed from config to unblock deploy).

@@ -96,11 +96,9 @@
     ollama = {
       enable = true;
       host = "0.0.0.0";
-      loadModels = [
-        "llama3.1:70b-instruct-q4_K_M"
-        "llama3.2:3b"
-        "nomic-embed-text"
-      ];
+      host = "0.0.0.0";
+      # loadModels = [ ... ]; # Too large for declarative download (>40GB).
+      # Run 'ollama pull llama3.1:70b-instruct-q4_K_M' manually.
       # Note: Intel iGPU acceleration for Ollama via IPEX-LLM/Vulkan
       # is not yet upstreamed in nixpkgs (late 2025). Using CPU for now.
     };
