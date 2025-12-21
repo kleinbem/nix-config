@@ -12,6 +12,9 @@ in
     antigravity-fhs
     pavucontrol
     nwg-look
+    zathura # PDF Viewer
+    imv # Image Viewer
+    p7zip # Archives
 
     # -- Sandboxed Apps --
     sandboxedApps.obsidian

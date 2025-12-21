@@ -59,10 +59,12 @@
     git
     curl
     wget
-    htop
+    wget
+    # htop # Replaced by btop
     btop
-    unzip
-    zip
+    # unzip # Replaced by ouch
+    # zip # Replaced by ouch
+    ouch # Modern compression tool
     file
     pciutils
 
@@ -71,7 +73,8 @@
     jq
     ripgrep
     fd
-    tree
+    eza # Modern ls replacement
+    # tree # Replaced by eza --tree
     inputs.nh.packages.${pkgs.system}.default
     nix-output-monitor
     nvd
