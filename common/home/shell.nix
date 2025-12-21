@@ -2,7 +2,15 @@
 
 {
   programs = {
-    bash.enable = true;
+    bash = {
+      enable = true;
+      shellAliases = {
+        ll = "ls -l";
+        update = "nh os switch";
+        cleanup = "nh clean all";
+        hm-logs = "journalctl -xeu home-manager-martin.service";
+      };
+    };
 
     starship = {
       enable = true;
@@ -13,6 +21,12 @@
 
     git = {
       enable = true;
+      aliases = {
+        st = "status";
+        co = "checkout";
+        sw = "switch";
+        br = "branch";
+      };
       settings = {
         user = {
           name = "kleinbem";

@@ -118,6 +118,7 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 extraSpecialArgs = { inherit nixpak; };
+                backupFileExtension = "backup";
                 users.martin = import ./hosts/nixos-nvme/home.nix;
               };
             }

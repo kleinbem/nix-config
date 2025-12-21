@@ -64,4 +64,27 @@ in
         };
       };
   };
+
+  # --- MPV (Media Player) ---
+  mpv = utils.mkSandboxed {
+    package = pkgs.mpv;
+    extraPerms =
+      { sloth, ... }:
+      {
+        bubblewrap.bind = {
+          # GPU & Audio
+          dev = [ "/dev/dri" ];
+          rw = [
+            (sloth.concat' sloth.runtimeDir "/pipewire-0")
+            (sloth.concat' sloth.homeDir "/.config/mpv")
+          ];
+          # Media Folders (Read-only for safety)
+          ro = [
+            (sloth.concat' sloth.homeDir "/Videos")
+            (sloth.concat' sloth.homeDir "/Music")
+            (sloth.concat' sloth.homeDir "/Downloads")
+          ];
+        };
+      };
+  };
 }

@@ -12,11 +12,10 @@ in
     antigravity-fhs
     pavucontrol
     nwg-look
-    mpv # Media Player
 
     # -- Sandboxed Apps --
     sandboxedApps.obsidian
-    # google-chrome # Standard (Unsafe) - PWAs
+    sandboxedApps.mpv # Nixpak (Safe)
     sandboxedApps.google-chrome # Nixpak (Safe) - Banking
     chromium # Fallback (Unsafe) - Local Dev
 
