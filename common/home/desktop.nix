@@ -9,11 +9,11 @@ in
   home.packages = with pkgs; [
     # -- GUI Apps --
     vscode-fhs
-    cursor # AI Code Editor (New in 25.05)
+    code-cursor # AI Code Editor (New in 25.05)
     antigravity-fhs
     pavucontrol
     nwg-look
-    firewall-config # GUI for Firewalld
+    firewalld-gui # GUI for Firewalld
     zathura # PDF Viewer
     imv # Image Viewer
     p7zip # Archives

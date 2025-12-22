@@ -29,9 +29,6 @@
     };
     initrd.systemd.enable = true;
 
-    # 25.11 Feature: Rust-based bashless initrd (Faster Boot)
-    system.nixos-init.enable = true;
-
     # Performance & Tweaks
     blacklistedKernelModules = [
       "pcspkr"
@@ -85,7 +82,7 @@
 
     # Switch to Firewalld for dynamic port management (Reverse Shells / Listeners)
     firewall.enable = false;
-    firewalld.enable = true;
+    nftables.enable = true;
   };
 
   # ==========================================
@@ -133,6 +130,9 @@
 
     # Firmware Updates
     fwupd.enable = true;
+
+    # Dynamic Firewall (Firewalld)
+    firewalld.enable = true;
 
     # Btrfs Maintenance
     btrfs.autoScrub = {
