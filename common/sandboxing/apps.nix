@@ -20,6 +20,8 @@ in
   # --- GOOGLE CHROME ---
   google-chrome = utils.mkSandboxed {
     package = pkgs.google-chrome;
+    name = "google-chrome-stable";
+    configDir = "google-chrome"; # Use existing profile data
     extraPerms =
       { sloth, ... }:
       {
@@ -60,6 +62,8 @@ in
           env = {
             # Enable System Integration (Open Links/Apps) via DBus
             DBUS_SESSION_BUS_ADDRESS = sloth.env "DBUS_SESSION_BUS_ADDRESS";
+            # Force Chrome to use the standard profile directory despite binary rename
+            CHROME_USER_DATA_DIR = sloth.concat' sloth.homeDir "/.config/google-chrome";
           };
         };
       };

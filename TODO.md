@@ -13,6 +13,12 @@
 - [ ] **Impermanence ("Erase Your Darlings")**:
     - [ ] Move root `/` to tmpfs (RAM).
     - [ ] Persist only `/nix` and `/persist` via `environment.persistence`.
+    - [ ] **State to Persist**:
+        - [ ] Neovim Config (`~/.config/nvim`) - *Critical* (Imperative Git Clone).
+        - [ ] Secrets (`/etc/ssh/ssh_host_*`, `~/.config/sops/age/keys.txt`).
+        - [ ] Network (`/etc/NetworkManager/system-connections`, `/var/lib/bluetooth`).
+        - [ ] Browsers (`~/.config/google-chrome`).
+        - [ ] AI Models (`/var/lib/ollama`).
 - [ ] **Maintenance**:
     - [ ] Enable `system.autoUpgrade` for unattended security patches.
     - [ ] Verify `rclone` restore workflow (Simulate data loss).

@@ -10,6 +10,7 @@ rec {
     {
       package,
       name ? package.pname,
+      configDir ? name,
       binPath ? "bin/${name}",
       extraPerms ? { },
     }:
@@ -57,7 +58,7 @@ rec {
                       rw = [
                         (sloth.env "XDG_RUNTIME_DIR")
                         "/tmp"
-                        (sloth.concat' sloth.homeDir "/.config/${name}")
+                        (sloth.concat' sloth.homeDir "/.config/${configDir}")
                       ];
                     };
                   };
