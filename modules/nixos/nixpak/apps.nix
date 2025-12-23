@@ -7,6 +7,11 @@ in
   # --- OBSIDIAN ---
   obsidian = utils.mkSandboxed {
     package = pkgs.obsidian;
+    presets = [
+      "wayland"
+      "gpu"
+      "network"
+    ];
     extraPerms =
       { sloth, ... }:
       {
@@ -17,27 +22,37 @@ in
   };
 
   # --- GOOGLE CHROME ---
-  # --- GOOGLE CHROME ---
   google-chrome = utils.mkSandboxed {
     package = pkgs.google-chrome;
     name = "google-chrome-stable";
-    configDir = "google-chrome"; # Use existing profile data
+    configDir = "google-chrome";
+    extraPackages = [
+      pkgs.xdg-utils
+      pkgs.cosmic-files
+    ];
+    presets = [
+      "network"
+      "wayland"
+      "audio"
+      "gpu"
+      "usb"
+    ];
     extraPerms =
       { sloth, ... }:
       {
         bubblewrap = {
           bind = {
-            # 1. Device Access
+            # 1. Device Access (Webcams are not covered by standard GPU preset)
             dev = [
-              "/dev/video0" # Webcam
+              "/dev/video0"
               "/dev/video1"
-              "/dev/dri" # GPU Acceleration
-            ];
+            ]
+            ++ (map (i: "/dev/hidraw" + toString i) (pkgs.lib.lists.range 0 19));
 
             # 2. File & Socket Access
             rw = [
-              # Audio
-              (sloth.concat' sloth.runtimeDir "/pipewire-0")
+              # YubiKey / Smart Card (FIDO2)
+              "/run/pcscd/pcscd.comm"
 
               # Downloads
               (sloth.concat' sloth.homeDir "/Downloads")
@@ -57,6 +72,10 @@ in
               (sloth.concat' sloth.homeDir "/.local/share/fonts")
               # GTK Bookmarks
               (sloth.concat' sloth.homeDir "/.config/gtk-3.0")
+
+              # --- Additional Device Metadata ---
+              "/sys/class/hidraw"
+              "/sys/bus/hid"
             ];
           };
           env = {
@@ -73,14 +92,17 @@ in
   mpv = utils.mkSandboxed {
     package = pkgs.mpv;
     name = "mpv";
+    presets = [
+      "wayland"
+      "gpu"
+      "audio"
+      "network"
+    ];
     extraPerms =
       { sloth, ... }:
       {
         bubblewrap.bind = {
-          # GPU & Audio
-          dev = [ "/dev/dri" ];
           rw = [
-            (sloth.concat' sloth.runtimeDir "/pipewire-0")
             (sloth.concat' sloth.homeDir "/.config/mpv")
           ];
           # Media Folders (Read-only for safety)

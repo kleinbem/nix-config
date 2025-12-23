@@ -39,9 +39,7 @@
     {
       self,
       nixpkgs,
-      home-manager,
       nixpak,
-      sops-nix,
       treefmt-nix,
       pre-commit-hooks,
       ...
@@ -55,6 +53,9 @@
         projectRootFile = "flake.nix";
         programs.nixfmt.enable = true;
       };
+
+      # Import Custom Library
+      mylib = import ./lib/mkSystem.nix { inherit nixpkgs inputs nixpak; };
     in
     {
       # ---------------------------------------------------------
@@ -103,26 +104,9 @@
       # 3. System Configurations
       # ---------------------------------------------------------
       nixosConfigurations = {
-        nixos-nvme = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = { inherit inputs; };
-
-          modules = [
-            ./hosts/nixos-nvme/default.nix
-
-            sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
-
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                extraSpecialArgs = { inherit nixpak; };
-                backupFileExtension = "backup";
-                users.martin = import ./hosts/nixos-nvme/home.nix;
-              };
-            }
-          ];
+        nixos-nvme = mylib.mkSystem {
+          hostname = "nixos-nvme";
+          user = "martin";
         };
       };
     };

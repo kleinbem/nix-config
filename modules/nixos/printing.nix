@@ -2,7 +2,8 @@
 
 let
   # Relative path to driver wrapper in the parent folder
-  ricohDriver = pkgs.callPackage ./ricoh-driver.nix { };
+  # Relative path to driver wrapper in the hardware folder
+  ricohDriver = pkgs.callPackage ./hardware/ricoh-driver.nix { };
 in
 {
   services.printing = {

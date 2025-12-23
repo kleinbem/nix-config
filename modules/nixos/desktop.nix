@@ -65,5 +65,8 @@
     # cosmic-store # Broken on NixOS (Use Nix!)
     cosmic-screenshot
     cosmic-randr
+
+    # GUI Tools
+    github-desktop
   ];
 }

@@ -68,6 +68,7 @@
     pciutils
 
     # Modern CLI Tools
+    gh # GitHub CLI
     just
     jq
     ripgrep

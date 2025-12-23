@@ -7,12 +7,12 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../common/core.nix
-    ../../common/cosmic.nix
-    ../../common/intel-compute.nix
-    ../../common/printing.nix
-    ../../common/users.nix
-    ../../common/scripts.nix
+    ../../modules/nixos/core.nix
+    ../../modules/nixos/desktop.nix
+    ../../modules/nixos/intel-compute.nix
+    ../../modules/nixos/printing.nix
+    ../../modules/nixos/users.nix
+    ../../modules/nixos/scripts.nix
   ];
 
   # ==========================================
@@ -123,6 +123,7 @@
     # 8. HARDWARE TOKENS
     # ==========================================
     pcscd.enable = true;
+    fprintd.enable = true;
     udev.packages = [
       pkgs.yubikey-personalization
       pkgs.libfido2

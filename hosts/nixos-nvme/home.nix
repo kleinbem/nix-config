@@ -2,10 +2,10 @@ _:
 
 {
   imports = [
-    ../../common/home/shell.nix
-    ../../common/home/dev.nix
-    ../../common/home/desktop.nix
-    ../../common/home/security.nix
+    ../../modules/home-manager/shell.nix
+    ../../modules/home-manager/dev.nix
+    ../../modules/home-manager/desktop.nix
+    ../../modules/home-manager/security.nix
   ];
 
   # User Details
