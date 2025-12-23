@@ -13,6 +13,7 @@
     ../../modules/nixos/printing.nix
     ../../modules/nixos/users.nix
     ../../modules/nixos/scripts.nix
+    ../../modules/nixos/security.nix
   ];
 
   # ==========================================
