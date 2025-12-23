@@ -2,8 +2,9 @@
 
 let
   # Import modular apps catalog
-  # We are in common/home/desktop.nix, so we go up two levels to common, then to sandboxing
-  sandboxedApps = import ../sandboxing/apps.nix { inherit pkgs nixpak; };
+  # Import modular apps catalog
+  # We are in modules/home-manager/desktop.nix, so we go up to modules, then to nixos/nixpak
+  sandboxedApps = import ../nixos/nixpak/apps.nix { inherit pkgs nixpak; };
 in
 {
   home.packages = with pkgs; [
