@@ -36,7 +36,7 @@
         -not -path "*/node_modules/*" \
         -not -path "*/.git/*" \
         -print0 | \
-        ${pkgs.xargs}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan --multiscan --fdpass
+        ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan --multiscan --fdpass
     '';
   };
 
