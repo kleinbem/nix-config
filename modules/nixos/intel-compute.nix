@@ -13,7 +13,7 @@
       intel-compute-runtime # OpenCL for Intel
       level-zero # Level Zero API
       ocl-icd # OpenCL Installable Client Driver
-      onevpl-intel-gpu # Media Driver for 12th/13th Gen+
+      vpl-gpu-rt # Media Driver for 12th/13th Gen+ (formerly onevpl-intel-gpu)
     ];
   };
 

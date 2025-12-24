@@ -4,22 +4,43 @@
   # ==========================================
   # USERS & SECURITY
   # ==========================================
-  users.users.root = {
-    initialPassword = "backup-root-password";
-  };
+  users = {
+    users = {
+      root = {
+        initialPassword = "backup-root-password";
+      };
 
-  users.users.martin = {
-    isNormalUser = true;
-    extraGroups = [
-      "wheel"
-      "networkmanager"
-      "podman"
-      "video"
-      "render"
-      "libvirtd"
-      "kvm"
-    ];
-    hashedPasswordFile = config.sops.secrets.martin_password.path;
+      ollama = {
+        isSystemUser = true;
+        group = "ollama";
+        description = "Ollama User";
+      };
+
+      open-webui = {
+        isSystemUser = true;
+        group = "open-webui";
+        description = "Open WebUI User";
+      };
+
+      martin = {
+        isNormalUser = true;
+        extraGroups = [
+          "wheel"
+          "networkmanager"
+          "podman"
+          "video"
+          "render"
+          "libvirtd"
+          "kvm"
+        ];
+        hashedPasswordFile = config.sops.secrets.martin_password.path;
+      };
+    };
+
+    groups = {
+      ollama = { };
+      open-webui = { };
+    };
   };
 
   # Required for password file

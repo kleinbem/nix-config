@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   inputs,
   ...
 }:
@@ -161,10 +162,16 @@
   # ==========================================
   # FIX: Relocate massive AI state to /images
   # ==========================================
-  systemd.tmpfiles.rules = [
-    "d /images/ollama 0750 ollama ollama - -"
-    "d /images/open-webui 0750 open-webui open-webui - -"
-  ];
+  systemd = {
+    tmpfiles.rules = [
+      "d /images/ollama 0750 ollama ollama - -"
+      "d /images/open-webui 0750 open-webui open-webui - -"
+    ];
+
+    # Override services to use static users (resolves bind mount permission issues)
+    services.ollama.serviceConfig.DynamicUser = lib.mkForce false;
+    services.open-webui.serviceConfig.DynamicUser = lib.mkForce false;
+  };
 
   fileSystems = {
     "/var/lib/ollama" = {
