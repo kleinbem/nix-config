@@ -196,7 +196,7 @@
       DynamicUser = lib.mkForce false;
       # Hardening
       # CapabilityBoundingSet = "";
-      ProtectSystem = "full";
+      ProtectSystem = lib.mkForce "full";
       ProtectHome = true;
       PrivateTmp = true;
       NoNewPrivileges = true;
@@ -215,7 +215,7 @@
       DynamicUser = lib.mkForce false;
       # Hardening
       # CapabilityBoundingSet = "";
-      ProtectSystem = "full";
+      ProtectSystem = lib.mkForce "full";
       # We need to access /images, so strict ReadWritePaths might be needed if ProtectSystem is strict
       # But for now, systemd binds should handle it via the service module's StateDirectory logic
       # or explicit ReadWritePaths if the module doesn't handle /images automatically.
