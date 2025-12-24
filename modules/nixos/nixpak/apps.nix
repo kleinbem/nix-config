@@ -114,4 +114,24 @@ in
         };
       };
   };
+
+  # --- LM STUDIO ---
+  lmstudio = utils.mkSandboxed {
+    package = pkgs.lmstudio;
+    name = "lmstudio";
+    presets = [
+      "wayland"
+      "gpu"
+      "audio"
+      "network"
+    ];
+    extraPerms = _: {
+      bubblewrap.bind = {
+        rw = [
+          # Model storage
+          "/images/lmstudio"
+        ];
+      };
+    };
+  };
 }

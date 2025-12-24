@@ -24,14 +24,9 @@ in
     sandboxedApps.obsidian
     sandboxedApps.mpv # Nixpak (Safe)
     sandboxedApps.google-chrome # Nixpak (Safe) - Banking
+    sandboxedApps.lmstudio # Nixpak (Safe)
     chromium # Fallback (Unsafe) - Local Dev
 
-    # -- Security & Keys --
-    keepassxc # Offline Password Manager
-    yubikey-manager # CLI Tool (Essential for scripts/backend)
-    yubioath-flutter # Modern GUI (Replaces yubikey-manager-qt)
-    rbw
-    pinentry-gnome3
   ];
 
   programs.waybar.enable = true;

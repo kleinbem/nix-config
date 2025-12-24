@@ -25,7 +25,7 @@
       enable = true;
       nssmdns4 = true;
       publish = {
-        enable = true;
+        enable = false;
         userServices = true;
       };
     };

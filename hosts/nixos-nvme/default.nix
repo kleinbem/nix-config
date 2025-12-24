@@ -10,7 +10,7 @@
     ./hardware-configuration.nix
     ../../modules/nixos/core.nix
     ../../modules/nixos/desktop.nix
-    ../../modules/nixos/intel-compute.nix
+    ../../modules/nixos/hardware/intel-compute.nix
     ../../modules/nixos/printing.nix
     ../../modules/nixos/users.nix
     ../../modules/nixos/scripts.nix
@@ -28,6 +28,7 @@
         enable = true;
         configurationLimit = 8;
         memtest86.enable = true; # Bootable memory test
+        editor = false; # Prevent editing kernel params at boot
       };
       efi.canTouchEfiVariables = true;
     };
@@ -64,6 +65,17 @@
       # Desktop Responsiveness
       "vm.swappiness" = 10;
       "vm.vfs_cache_pressure" = 50;
+
+      # Security Hardening (Network)
+      "net.ipv4.conf.all.log_martians" = true;
+      "net.ipv4.conf.all.rp_filter" = "1";
+      "net.ipv4.icmp_echo_ignore_broadcasts" = "1";
+      "net.ipv4.conf.default.accept_redirects" = "0";
+      "net.ipv4.conf.all.accept_redirects" = "0";
+
+      # Security Hardening (Kernel)
+      "kernel.dmesg_restrict" = "1";
+      "kernel.kptr_restrict" = "2";
     };
   };
 
@@ -92,7 +104,6 @@
 
     # Switch to Firewalld for dynamic port management (Reverse Shells / Listeners)
     firewall.enable = false;
-    nftables.enable = true;
   };
 
   # ==========================================
@@ -165,28 +176,52 @@
   systemd = {
     tmpfiles.rules = [
       "d /images/ollama 0750 ollama ollama - -"
+      "d /images/ollama/models 0750 ollama ollama - -"
       "d /images/open-webui 0750 open-webui open-webui - -"
+      "d /images/lmstudio 0750 martin users - -"
     ];
 
     # Override services to use static users (resolves bind mount permission issues)
-    services.ollama.serviceConfig.DynamicUser = lib.mkForce false;
-    services.open-webui.serviceConfig.DynamicUser = lib.mkForce false;
+    services.ollama = {
+      serviceConfig = {
+        DynamicUser = lib.mkForce false;
+        # Hardening
+        CapabilityBoundingSet = "";
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        ProtectKernelTunables = true;
+        ProtectControlGroups = true;
+        RestrictNamespaces = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+      };
+      models = "/images/ollama/models";
+    };
+    services.open-webui = {
+      serviceConfig = {
+        DynamicUser = lib.mkForce false;
+        # Hardening
+        CapabilityBoundingSet = "";
+        ProtectSystem = "strict";
+        # We need to access /images, so strict ReadWritePaths might be needed if ProtectSystem is strict
+        # But for now, systemd binds should handle it via the service module's StateDirectory logic
+        # or explicit ReadWritePaths if the module doesn't handle /images automatically.
+        # Since we use stateDir option, the module *should* handle permission, but let's be safe.
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        ProtectKernelTunables = true;
+        ProtectControlGroups = true;
+        RestrictNamespaces = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+      };
+      stateDir = "/images/open-webui";
+    };
   };
 
-  fileSystems = {
-    "/var/lib/ollama" = {
-      device = "/images/ollama";
-      options = [ "bind" ];
-    };
-    "/var/lib/private/ollama" = {
-      device = "/images/ollama";
-      options = [ "bind" ];
-    };
-    "/var/lib/open-webui" = {
-      device = "/images/open-webui";
-      options = [ "bind" ];
-    };
-  };
   # (Note: open-webui might use /var/lib/private/open-webui depending on DynamicUser settings)
   # But the module usually sets StateDirectory=open-webui which maps to /var/lib/open-webui
   # or /var/lib/private/open-webui if DynamicUser is on.

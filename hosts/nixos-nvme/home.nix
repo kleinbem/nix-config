@@ -6,6 +6,7 @@ _:
     ../../modules/home-manager/dev.nix
     ../../modules/home-manager/desktop.nix
     ../../modules/home-manager/security.nix
+    ../../modules/home-manager/pentesting.nix
   ];
 
   # User Details

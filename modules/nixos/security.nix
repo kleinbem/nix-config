@@ -35,6 +35,22 @@ in
     libnotify # For notifications
   ];
 
+  # ==========================================
+  # HARDENING & AUDITING
+  # ==========================================
+  security = {
+    apparmor = {
+      enable = true;
+      killUnconfinedConfinables = true;
+    };
+    audit = {
+      enable = true;
+      rules = [ "-a exit,always -F arch=b64 -S execve" ]; # Log all command executions
+    };
+    auditd.enable = true;
+    protectKernelImage = true;
+  };
+
   services.clamav = {
     daemon = {
       enable = true;
