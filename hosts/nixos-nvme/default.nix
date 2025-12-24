@@ -104,6 +104,7 @@
 
     # Switch to Firewalld for dynamic port management (Reverse Shells / Listeners)
     firewall.enable = false;
+    nftables.enable = true;
   };
 
   # ==========================================
@@ -139,6 +140,7 @@
         # Optional: Enable if you want to expose to LAN, otherwise localhost only
         # OLLAMA_BASE_URL = "http://127.0.0.1:11434";
       };
+      stateDir = "/images/open-webui";
     };
 
     # ==========================================
@@ -176,49 +178,58 @@
   # ==========================================
   systemd = {
     tmpfiles.rules = [
+      "d /images 0755 root root - -"
+      "z /images 0755 root root - -"
       "d /images/ollama 0750 ollama ollama - -"
+      "z /images/ollama 0750 ollama ollama - -"
       "d /images/ollama/models 0750 ollama ollama - -"
+      "z /images/ollama/models 0750 ollama ollama - -"
       "d /images/open-webui 0750 open-webui open-webui - -"
+      "z /images/open-webui 0750 open-webui open-webui - -"
       "d /images/lmstudio 0750 martin users - -"
+      "z /images/lmstudio 0750 martin users - -"
     ];
+  };
 
-    # Override services to use static users (resolves bind mount permission issues)
-    services.ollama = {
-      serviceConfig = {
-        DynamicUser = lib.mkForce false;
-        # Hardening
-        CapabilityBoundingSet = "";
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        PrivateTmp = true;
-        NoNewPrivileges = true;
-        ProtectKernelTunables = true;
-        ProtectControlGroups = true;
-        RestrictNamespaces = true;
-        LockPersonality = true;
-        MemoryDenyWriteExecute = true;
-      };
+  systemd.services.ollama = {
+    serviceConfig = {
+      DynamicUser = lib.mkForce false;
+      # Hardening
+      # CapabilityBoundingSet = "";
+      ProtectSystem = "full";
+      ProtectHome = true;
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+      ProtectKernelTunables = true;
+      ProtectControlGroups = true;
+      RestrictNamespaces = true;
+      LockPersonality = true;
+      MemoryDenyWriteExecute = true;
+      # Allow access to custom storage
+      ReadWritePaths = [ "/images/ollama" ];
     };
-    services.open-webui = {
-      serviceConfig = {
-        DynamicUser = lib.mkForce false;
-        # Hardening
-        CapabilityBoundingSet = "";
-        ProtectSystem = "strict";
-        # We need to access /images, so strict ReadWritePaths might be needed if ProtectSystem is strict
-        # But for now, systemd binds should handle it via the service module's StateDirectory logic
-        # or explicit ReadWritePaths if the module doesn't handle /images automatically.
-        # Since we use stateDir option, the module *should* handle permission, but let's be safe.
-        ProtectHome = true;
-        PrivateTmp = true;
-        NoNewPrivileges = true;
-        ProtectKernelTunables = true;
-        ProtectControlGroups = true;
-        RestrictNamespaces = true;
-        LockPersonality = true;
-        MemoryDenyWriteExecute = true;
-      };
-      stateDir = "/images/open-webui";
+  };
+
+  systemd.services.open-webui = {
+    serviceConfig = {
+      DynamicUser = lib.mkForce false;
+      # Hardening
+      # CapabilityBoundingSet = "";
+      ProtectSystem = "full";
+      # We need to access /images, so strict ReadWritePaths might be needed if ProtectSystem is strict
+      # But for now, systemd binds should handle it via the service module's StateDirectory logic
+      # or explicit ReadWritePaths if the module doesn't handle /images automatically.
+      # Since we use stateDir option, the module *should* handle permission, but let's be safe.
+      ProtectHome = true;
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+      ProtectKernelTunables = true;
+      ProtectControlGroups = true;
+      RestrictNamespaces = true;
+      LockPersonality = true;
+      MemoryDenyWriteExecute = lib.mkForce true;
+      # Allow access to custom storage
+      ReadWritePaths = [ "/images/open-webui" ];
     };
   };
 

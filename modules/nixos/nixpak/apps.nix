@@ -83,6 +83,8 @@ in
             DBUS_SESSION_BUS_ADDRESS = sloth.env "DBUS_SESSION_BUS_ADDRESS";
             # Force Chrome to use the standard profile directory despite binary rename
             CHROME_USER_DATA_DIR = sloth.concat' sloth.homeDir "/.config/google-chrome";
+            # Fix Wayland popup/dialog rendering issues
+            NIXOS_OZONE_WL = "1";
           };
         };
       };
