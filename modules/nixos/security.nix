@@ -1,51 +1,121 @@
-{ pkgs, ... }:
-
 {
-  # ==========================================
-  # ANTIVIRUS (ClamAV)
-  # ==========================================
+  pkgs,
+  ...
+}:
+
+let
+  user = "martin";
+  home = "/home/${user}";
+  clamDir = "/var/lib/clamav";
+
+  # Notification script that bridges systemd (root/clamav) -> user session (dbus)
+  notifyScript = pkgs.writeShellScript "clamav-notify" ''
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
+    export DISPLAY=":0"
+
+    VIRUS="$CLAM_VIRUSEVENT_VIRUSNAME"
+    FILE="$CLAM_VIRUSEVENT_FILENAME"
+
+    # Send desktop notification
+    ${pkgs.libnotify}/bin/notify-send \
+      -u critical \
+      -a "ClamAV" \
+      -i "security-high" \
+      "🚨 VIRUS DETECTED" \
+      "<b>Virus:</b> $VIRUS\n<b>File:</b> $FILE"
+
+    # Log to system journal
+    echo "VIRUS DETECTED: $VIRUS in $FILE"
+  '';
+in
+{
+  environment.systemPackages = with pkgs; [
+    clamav
+    clamtk # GUI
+    libnotify # For notifications
+  ];
+
   services.clamav = {
-    daemon.enable = true;
+    daemon = {
+      enable = true;
+      settings = {
+        DatabaseDirectory = clamDir;
+        LogSyslog = true;
+        LogTime = true;
+        VirusEvent = "${notifyScript}";
+
+        # PUA Detection & Performance
+        DetectPUA = true;
+        ConcurrentDatabaseReload = true;
+
+        # Performance & On-Access
+        OnAccessPrevention = true;
+        OnAccessIncludePath = [ "${home}/Downloads" ];
+        OnAccessExcludeUname = "clamav";
+        OnAccessExtraScanning = true;
+      };
+    };
+
     updater = {
       enable = true;
-      interval = "daily"; # Check for updates daily
-      frequency = 12; # Checks per day
+      frequency = 12; # Update every 2 hours
+      settings = {
+        DatabaseDirectory = clamDir;
+        LogSyslog = true;
+      };
     };
+
+    clamonacc.enable = true;
   };
 
-  # Optional: Scanner utility
-  environment.systemPackages = [ pkgs.clamav ];
-
-  # ==========================================
-  # SMART SCAN (Incremental)
-  # ==========================================
-  systemd.services.clamav-smart-scan = {
-    description = "ClamAV Smart Scan (Recently Modified Files)";
-    serviceConfig = {
-      Type = "oneshot";
-      User = "root";
+  # ---------------------------
+  # Smart Scan (Nightly)
+  # ---------------------------
+  systemd = {
+    services.clamav-smart-scan = {
+      description = "ClamAV Smart Scan (Recently Modified Files)";
+      serviceConfig = {
+        Type = "oneshot";
+        User = "root";
+      };
+      script = ''
+        echo "🛡️ Starting ClamAV Smart Scan..."
+        ${pkgs.findutils}/bin/find ${home} \
+          -mtime -1 -type f \
+          -not -path "*/.cache/*" -not -path "*/.git/*" -not -path "*/node_modules/*" \
+          -print0 \
+        | ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan --multiscan --fdpass
+      '';
     };
-    script = ''
-      echo "🛡️ Starting ClamAV Smart Scan..."
-      # Find files modified in the last 24 hours in home and scan them
-      # Exclude various caches and dotfiles to speed it up
-      ${pkgs.findutils}/bin/find /home/martin \
-        -mtime -1 \
-        -type f \
-        -not -path "*/.cache/*" \
-        -not -path "*/node_modules/*" \
-        -not -path "*/.git/*" \
-        -print0 | \
-        ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan --multiscan --fdpass
-    '';
+
+    timers.clamav-smart-scan = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        Persistent = true;
+      };
+    };
+
+    # ---------------------------
+    # Permissions Fixes
+    # ---------------------------
+    # Ensure ClamAV directories exist with correct permissions
+    tmpfiles.rules = [
+      "d ${clamDir} 0755 clamav clamav - -"
+      "d /var/log/clamav 0755 clamav clamav - -"
+    ];
   };
 
-  systemd.timers.clamav-smart-scan = {
-    description = "Run ClamAV Smart Scan nightly";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
-    };
+  # ---------------------------
+  # Resource Optimization
+  # ---------------------------
+  # Run scans in background priority to avoid slowing down the system
+  systemd.services.clamav-daemon.serviceConfig = {
+    Nice = 19;
+    IOSchedulingClass = "idle";
+  };
+  systemd.services.clamav-clamonacc.serviceConfig = {
+    Nice = 19;
+    IOSchedulingClass = "idle";
   };
 }

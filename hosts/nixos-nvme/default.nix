@@ -50,11 +50,18 @@
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "75%";
 
-    # Network Tuning for Cluster Performance
+    # Network Tuning & Kernel Optimizations
     kernel.sysctl = {
       "net.core.rmem_max" = 16777216;
       "net.core.wmem_max" = 16777216;
       "net.ipv4.tcp_congestion_control" = "bbr";
+
+      # ClamAV On-Access Scanning (essential for large directories)
+      "fs.inotify.max_user_watches" = 524288;
+
+      # Desktop Responsiveness
+      "vm.swappiness" = 10;
+      "vm.vfs_cache_pressure" = 50;
     };
   };
 
@@ -149,6 +156,33 @@
     # SSD Optimization (Trim)
     fstrim.enable = true;
   };
+
+  # ==========================================
+  # FIX: Relocate massive AI state to /images
+  # ==========================================
+  systemd.tmpfiles.rules = [
+    "d /images/ollama 0750 ollama ollama - -"
+    "d /images/open-webui 0750 open-webui open-webui - -"
+  ];
+
+  fileSystems = {
+    "/var/lib/ollama" = {
+      device = "/images/ollama";
+      options = [ "bind" ];
+    };
+    "/var/lib/private/ollama" = {
+      device = "/images/ollama";
+      options = [ "bind" ];
+    };
+    "/var/lib/open-webui" = {
+      device = "/images/open-webui";
+      options = [ "bind" ];
+    };
+  };
+  # (Note: open-webui might use /var/lib/private/open-webui depending on DynamicUser settings)
+  # But the module usually sets StateDirectory=open-webui which maps to /var/lib/open-webui
+  # or /var/lib/private/open-webui if DynamicUser is on.
+  # Let's cover the StateDirectory path safely.
 
   # ==========================================
   # 9. SECRETS (SOPS)
