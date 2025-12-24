@@ -38,6 +38,9 @@
     };
   };
 
+  # Prevent /var/log/journal from growing indefinitely
+  services.journald.extraConfig = "SystemMaxUse=1G";
+
   # ==========================================
   # CORE UTILITIES
   # ==========================================

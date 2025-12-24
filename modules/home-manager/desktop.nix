@@ -14,6 +14,7 @@ in
     antigravity-fhs
     pavucontrol
     nwg-look
+    mission-center # System Monitor (Task Manager)
     firewalld-gui # GUI for Firewalld
     zathura # PDF Viewer
     imv # Image Viewer

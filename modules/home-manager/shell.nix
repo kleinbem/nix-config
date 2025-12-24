@@ -62,7 +62,18 @@
     };
 
     bat.enable = true; # Syntax highlighting for cat
+
+    # Smarter cd
+    zoxide = {
+      enable = true;
+      enableBashIntegration = true;
+    };
   };
 
-  home.packages = [ pkgs.fastfetch ];
+  home.packages = with pkgs; [
+    fastfetch
+    zellij # Terminal multiplexer
+    yazi # Terminal file manager
+    lazygit # Terminal git UI
+  ];
 }

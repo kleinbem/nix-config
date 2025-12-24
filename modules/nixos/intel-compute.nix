@@ -13,8 +13,12 @@
       intel-compute-runtime # OpenCL for Intel
       level-zero # Level Zero API
       ocl-icd # OpenCL Installable Client Driver
+      onevpl-intel-gpu # Media Driver for 12th/13th Gen+
     ];
   };
+
+  # Thermal Management
+  services.thermald.enable = true;
 
   environment.sessionVariables = {
     LIBVA_DRIVER_NAME = "iHD";

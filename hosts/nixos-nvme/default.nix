@@ -22,9 +22,11 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
+      timeout = 2; # Fast boot
       systemd-boot = {
         enable = true;
         configurationLimit = 8;
+        memtest86.enable = true; # Bootable memory test
       };
       efi.canTouchEfiVariables = true;
     };
@@ -41,7 +43,6 @@
       "loglevel=0"
       "udev.log_level=3"
       "acpi_osi=Linux"
-      "intel_idle.max_cstate=1"
       "i915.enable_psr=0"
       "snd_hda_intel.power_save=0"
       "snd_hda_intel.power_save_controller=N"
@@ -228,6 +229,7 @@
 
     # AI Diagnostics
     intel-gpu-tools
+    lm_sensors # Hardware sensors (Fanless temp monitoring)
   ];
 
   system.stateVersion = "25.11";
