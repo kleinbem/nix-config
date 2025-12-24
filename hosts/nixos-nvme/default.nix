@@ -129,6 +129,7 @@
       # Run 'ollama pull llama3.1:70b-instruct-q4_K_M' manually.
       # Note: Intel iGPU acceleration for Ollama via IPEX-LLM/Vulkan
       # is not yet upstreamed in nixpkgs (late 2025). Using CPU for now.
+      models = "/images/ollama/models";
     };
 
     open-webui = {
@@ -197,7 +198,6 @@
         LockPersonality = true;
         MemoryDenyWriteExecute = true;
       };
-      models = "/images/ollama/models";
     };
     services.open-webui = {
       serviceConfig = {
