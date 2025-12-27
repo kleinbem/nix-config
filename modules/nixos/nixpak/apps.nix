@@ -2,24 +2,6 @@
 
 let
   utils = import ./utils.nix { inherit pkgs nixpak; };
-in
-{
-  # --- OBSIDIAN ---
-  obsidian = utils.mkSandboxed {
-    package = pkgs.obsidian;
-    presets = [
-      "wayland"
-      "gpu"
-      "network"
-    ];
-    extraPerms =
-      { sloth, ... }:
-      {
-        bubblewrap.bind.rw = [
-          (sloth.concat' sloth.homeDir "/Documents")
-        ];
-      };
-  };
 
   ### Helper for Sandboxed xdg-open
   # This replaces the standard xdg-open with one that talks to the portal via DBus.
@@ -60,6 +42,24 @@ in
       mkSandboxedXdgUtils
       pkgs.xdg-utils
     ]; # Prefer our xdg-open over the one in xdg-utils
+  };
+in
+{
+  # --- OBSIDIAN ---
+  obsidian = utils.mkSandboxed {
+    package = pkgs.obsidian;
+    presets = [
+      "wayland"
+      "gpu"
+      "network"
+    ];
+    extraPerms =
+      { sloth, ... }:
+      {
+        bubblewrap.bind.rw = [
+          (sloth.concat' sloth.homeDir "/Documents")
+        ];
+      };
   };
 
   # --- GOOGLE CHROME ---

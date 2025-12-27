@@ -67,10 +67,8 @@
     cosmic-randr
 
     # GUI Tools
-    github-desktop
-    bitwarden-desktop
-    mission-center
-    stacer
+
+    bleachbit
 
     # CLI Tools
     just

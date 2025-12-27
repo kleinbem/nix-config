@@ -200,10 +200,6 @@
     age-plugin-yubikey
     libfido2
     pam_u2f
-
-    # AI Diagnostics
-    intel-gpu-tools
-    lm_sensors # Hardware sensors (Fanless temp monitoring)
   ];
 
   system.stateVersion = "25.11";

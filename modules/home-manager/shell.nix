@@ -21,12 +21,8 @@
       enable = true;
     };
 
-    # Init Starship Config
-    xdg.configFile."starship.toml".source = ../files/starship.toml;
-
     git = {
       enable = true;
-      delta.enable = true; # Beautiful syntax-highlighted diffs
       settings = {
         alias = {
           st = "status";
@@ -58,7 +54,14 @@
       enable = true;
       enableBashIntegration = true;
     };
+
+    delta = {
+      enable = true;
+    };
   };
+
+  # Init Starship Config
+  xdg.configFile."starship.toml".source = ./files/starship.toml;
 
   home.packages = with pkgs; [
     fastfetch

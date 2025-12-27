@@ -23,6 +23,24 @@ ai-logs:
 
 # --- System ---
 
+# --- Generic Service Control ---
+
+# Start a system service
+start service:
+    sudo systemctl start {{service}}
+
+# Stop a system service
+stop service:
+    sudo systemctl stop {{service}}
+
+# Restart a system service
+restart service:
+    sudo systemctl restart {{service}}
+
+# Check service status
+status service:
+    systemctl status {{service}}
+
 # --- System Management ---
 
 # Rebuild system (Apply changes)

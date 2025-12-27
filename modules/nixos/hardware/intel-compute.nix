@@ -14,6 +14,10 @@
       level-zero # Level Zero API
       ocl-icd # OpenCL Installable Client Driver
       vpl-gpu-rt # Media Driver for 12th/13th Gen+ (formerly onevpl-intel-gpu)
+
+      # --- Diagnostics ---
+      intel-gpu-tools
+      lm_sensors
     ];
   };
 

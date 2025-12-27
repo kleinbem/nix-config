@@ -96,6 +96,9 @@ in
           # LoadCredential puts the secret in /run/credentials/n8n.service/n8n.env
           LoadCredential = [ "n8n_password:${config.sops.secrets."n8n.env".path}" ];
         };
+        environment = {
+          N8N_USER_FOLDER = lib.mkForce n8nHome;
+        };
       };
     };
   };
@@ -135,7 +138,7 @@ in
         N8N_PORT = "5678";
         N8N_PROTOCOL = "http";
         N8N_HOST = "localhost";
-        N8N_USER_FOLDER = n8nHome;
+
         N8N_DEFAULT_BINARY_DATA_MODE = "filesystem";
         N8N_BINARY_DATA_STORAGE_PATH = n8nBinary;
         # Read secret from Systemd Credential Store

@@ -15,6 +15,8 @@ in
     pavucontrol
     nwg-look
     mission-center # System Monitor (Task Manager)
+    github-desktop
+    bitwarden-desktop
     firewalld-gui # GUI for Firewalld
     zathura # PDF Viewer
     imv # Image Viewer
@@ -32,7 +34,7 @@ in
 
     # Modern LaTeX alternative. Much faster for writing docs.
     typst
-    typst-lsp # autocompletion in VS Code/Neovim
+    tinymist # autocompletion in VS Code/Neovim (formerly typst-lsp)
   ];
 
   programs.waybar.enable = true;
