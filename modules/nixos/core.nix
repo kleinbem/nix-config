@@ -41,6 +41,24 @@
   # Prevent /var/log/journal from growing indefinitely
   services.journald.extraConfig = "SystemMaxUse=1G";
 
+  # Web-based System Administration
+  # Web-based System Administration
+  services.cockpit = {
+    enable = true;
+    port = 9090;
+    openFirewall = true;
+  };
+
+  # Generic Boot Preferences
+  boot.loader.timeout = 2; # Fast boot
+
+  # Massive Swap (Essential for AI workloads)
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+  };
+
   # ==========================================
   # CORE UTILITIES
   # ==========================================

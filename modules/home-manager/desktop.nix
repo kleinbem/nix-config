@@ -12,11 +12,10 @@ in
     vscode-fhs
     code-cursor # AI Code Editor (New in 25.05)
     antigravity-fhs
+    warp-terminal # Rust-based AI Terminal
     pavucontrol
     nwg-look
     mission-center # System Monitor (Task Manager)
-    github-desktop
-    bitwarden-desktop
     firewalld-gui # GUI for Firewalld
     zathura # PDF Viewer
     imv # Image Viewer
@@ -27,6 +26,8 @@ in
     sandboxedApps.mpv # Nixpak (Safe)
     sandboxedApps.google-chrome # Nixpak (Safe) - Banking
     sandboxedApps.lmstudio # Nixpak (Safe)
+    sandboxedApps.bitwarden # Nixpak (Safe) - Password Manager
+    sandboxedApps.github-desktop # Nixpak (Safe) - Code
     chromium # Fallback (Unsafe) - Local Dev
 
     # Math and Matrix stuff. Using 'octaveFull' to get the standard packages included.

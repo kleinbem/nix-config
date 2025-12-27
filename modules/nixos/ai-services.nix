@@ -141,6 +141,8 @@ in
 
         N8N_DEFAULT_BINARY_DATA_MODE = "filesystem";
         N8N_BINARY_DATA_STORAGE_PATH = n8nBinary;
+        N8N_BASIC_AUTH_ACTIVE = "true";
+        N8N_BASIC_AUTH_USER = "admin";
         # Read secret from Systemd Credential Store
         N8N_BASIC_AUTH_PASSWORD_FILE = "%d/n8n_password";
       };

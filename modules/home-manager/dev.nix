@@ -4,6 +4,7 @@
   home.packages = with pkgs; [
     # -- Dev & AI Tools --
     gh # GitHub CLI
+    fabric-ai # AI Augmentation Framework
     github-copilot-cli
     gemini-cli
     claude-code

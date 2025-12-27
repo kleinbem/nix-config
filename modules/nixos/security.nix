@@ -134,4 +134,43 @@ in
     Nice = 19;
     IOSchedulingClass = "idle";
   };
+
+  # ==========================================
+  # KERNEL HARDENING & PERFORMANCE
+  # ==========================================
+  boot = {
+    # Privacy & Performance Tweaks
+    blacklistedKernelModules = [
+      "pcspkr"
+      "snd_pcsp"
+    ];
+    consoleLogLevel = 0;
+    kernelParams = [
+      "quiet"
+      "loglevel=0"
+      "udev.log_level=3"
+      "acpi_osi=Linux"
+      "i915.enable_psr=0"
+      "snd_hda_intel.power_save=0"
+      "snd_hda_intel.power_save_controller=N"
+      "audit=0"
+    ];
+
+    # Sysctl Hardening
+    kernel.sysctl = {
+      # ClamAV On-Access Scanning (essential for large directories)
+      "fs.inotify.max_user_watches" = 524288;
+
+      # Security Hardening (Network)
+      "net.ipv4.conf.all.log_martians" = true;
+      "net.ipv4.conf.all.rp_filter" = "1";
+      "net.ipv4.icmp_echo_ignore_broadcasts" = "1";
+      "net.ipv4.conf.default.accept_redirects" = "0";
+      "net.ipv4.conf.all.accept_redirects" = "0";
+
+      # Security Hardening (Kernel)
+      "kernel.dmesg_restrict" = "1";
+      "kernel.kptr_restrict" = "2";
+    };
+  };
 }

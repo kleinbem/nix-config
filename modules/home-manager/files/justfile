@@ -44,7 +44,7 @@ status service:
 # --- System Management ---
 
 # Rebuild system (Apply changes)
-rebuild:
+rebuild: fix
     nh os switch ~/Develop/github.com/kleinbem/nix-config
 
 # Update flake inputs
@@ -74,6 +74,15 @@ bios:
 # Verify system integrity
 verify:
     nix-store --verify --check-contents
+
+# Auto-fix (Format & Cleanup)
+fix:
+    # Format all Nix files
+    fd -e nix -X nixfmt
+    # Remove unused code
+    fd -e nix -X deadnix -e
+    # Fix linting issues
+    statix fix .
 
 # Garbage Collect (Free space)
 clean:

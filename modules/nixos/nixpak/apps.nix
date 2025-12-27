@@ -181,4 +181,61 @@ in
       };
     };
   };
+
+  # --- BITWARDEN ---
+  bitwarden = utils.mkSandboxed {
+    package = pkgs.bitwarden-desktop;
+    name = "bitwarden";
+    configDir = "Bitwarden";
+    presets = [
+      "wayland"
+      "gpu"
+      "network"
+    ];
+    extraPerms = _: {
+      bubblewrap.bind = {
+        rw = [
+          # No extra file access needed, just the config dir which utils handles
+        ];
+      };
+    };
+  };
+
+  # --- GITHUB DESKTOP ---
+  github-desktop = utils.mkSandboxed {
+    package = pkgs.github-desktop;
+    name = "github-desktop";
+    configDir = "GitHub Desktop";
+    extraPackages = [
+      sandboxedXdgUtils
+      pkgs.git
+      pkgs.openssh
+    ];
+    presets = [
+      "wayland"
+      "gpu"
+      "network"
+    ];
+    extraPerms =
+      { sloth, ... }:
+      {
+        bubblewrap = {
+          bind = {
+            rw = [
+              # Code Repositories
+              (sloth.concat' sloth.homeDir "/Develop")
+            ];
+            ro = [
+              # Git & SSH Config
+              (sloth.concat' sloth.homeDir "/.gitconfig")
+              (sloth.concat' sloth.homeDir "/.ssh")
+            ];
+          };
+          env = {
+            # SSH Agent for YubiKey auth
+            SSH_AUTH_SOCK = sloth.env "SSH_AUTH_SOCK";
+          };
+        };
+      };
+  };
 }
