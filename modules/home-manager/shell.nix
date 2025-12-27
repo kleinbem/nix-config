@@ -63,6 +63,9 @@
   # Init Starship Config
   xdg.configFile."starship.toml".source = ./files/starship.toml;
 
+  # Manage Justfile declaratively
+  home.file.".justfile".source = ./files/justfile;
+
   home.packages = with pkgs; [
     fastfetch
     zellij # Terminal multiplexer

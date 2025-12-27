@@ -24,6 +24,11 @@
         inputs.sops-nix.nixosModules.sops
         inputs.home-manager.nixosModules.home-manager
 
+        # NUR Overlay
+        (_: {
+          nixpkgs.overlays = [ inputs.nur.overlays.default ];
+        })
+
         # Home Manager Configuration
         {
           home-manager = {

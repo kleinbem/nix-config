@@ -45,7 +45,7 @@
   # Web-based System Administration
   services.cockpit = {
     enable = true;
-    port = 9090;
+    port = 9091;
     openFirewall = true;
   };
 
@@ -99,7 +99,16 @@
     inputs.nh.packages.${pkgs.system}.default
     nix-output-monitor
     nvd
+
+    # Cockpit Tools
+    pkgs.nur.repos.nikpkgs.cockpit-podman
+    # pkgs.nur.repos.nikpkgs.cockpit-machines # Verify if present
+    kexec-tools # Kernel Crash Dumps
+    sosreport # System Analysis
   ];
+
+  # Enable Kernel Crash Dumps (satisfies Cockpit Kdump check)
+  boot.crashDump.enable = true;
 
   environment.sessionVariables = {
     FLAKE = "/home/martin/Develop/github.com/kleinbem/nix-config";

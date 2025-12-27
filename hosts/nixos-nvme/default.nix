@@ -24,6 +24,12 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
+      systemd-boot = {
+        enable = true;
+        configurationLimit = 8;
+        memtest86.enable = true;
+        editor = false;
+      };
       efi.canTouchEfiVariables = true;
     };
     initrd.systemd.enable = true;

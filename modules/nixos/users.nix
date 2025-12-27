@@ -12,10 +12,12 @@
 
       martin = {
         isNormalUser = true;
+        linger = true;
         extraGroups = [
           "wheel"
           "networkmanager"
           "podman"
+          "docker"
           "video"
           "render"
           "libvirtd"
