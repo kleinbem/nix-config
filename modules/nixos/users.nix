@@ -10,18 +10,6 @@
         initialPassword = "backup-root-password";
       };
 
-      ollama = {
-        isSystemUser = true;
-        group = "ollama";
-        description = "Ollama User";
-      };
-
-      open-webui = {
-        isSystemUser = true;
-        group = "open-webui";
-        description = "Open WebUI User";
-      };
-
       martin = {
         isNormalUser = true;
         extraGroups = [
@@ -38,14 +26,18 @@
     };
 
     groups = {
-      ollama = { };
-      open-webui = { };
+      # ollama = { };
+      # open-webui = { };
     };
   };
 
   # Required for password file
-  sops.secrets.martin_password = {
-    neededForUsers = true;
+  sops.secrets = {
+    martin_password = {
+      neededForUsers = true;
+    };
+    "n8n.env" = { };
+    "open-webui.env" = { };
   };
 
   security = {

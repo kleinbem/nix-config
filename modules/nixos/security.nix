@@ -44,10 +44,10 @@ in
       killUnconfinedConfinables = true;
     };
     audit = {
-      enable = true;
-      rules = [ "-a exit,always -F arch=b64 -S execve" ]; # Log all command executions
+      enable = false;
+      # rules = [ "-a exit,always -F arch=b64 -S execve" ]; # Log all command executions
     };
-    auditd.enable = true;
+    auditd.enable = false;
     protectKernelImage = true;
   };
 

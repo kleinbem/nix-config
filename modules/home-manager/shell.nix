@@ -11,28 +11,18 @@
         update = "nh os switch";
         cleanup = "nh clean all";
         hm-logs = "journalctl -xeu home-manager-martin.service";
+
+        # System Control
+        os = "just --justfile ~/.justfile";
       };
     };
 
     starship = {
       enable = true;
-      settings = {
-        add_newline = true;
-        scan_timeout = 10;
-        character = {
-          success_symbol = "[➜](bold green)";
-          error_symbol = "[✗](bold red)";
-        };
-        directory = {
-          truncation_length = 0;
-          truncate_to_repo = false;
-        };
-        git_status = {
-          disabled = false;
-          ignore_submodules = true;
-        };
-      };
     };
+
+    # Init Starship Config
+    xdg.configFile."starship.toml".source = ../files/starship.toml;
 
     git = {
       enable = true;

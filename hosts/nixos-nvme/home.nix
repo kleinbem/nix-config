@@ -16,6 +16,9 @@ _:
     stateVersion = "24.11";
   };
 
+  # System Control Justfile
+  home.file.".justfile".source = ../../modules/home-manager/files/justfile;
+
   # Host-specific tweaks can stay here if needed
   # (e.g. monitor config, unique vars)
   programs.home-manager.enable = true;

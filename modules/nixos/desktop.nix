@@ -68,5 +68,11 @@
 
     # GUI Tools
     github-desktop
+    bitwarden-desktop
+    mission-center
+    stacer
+
+    # CLI Tools
+    just
   ];
 }

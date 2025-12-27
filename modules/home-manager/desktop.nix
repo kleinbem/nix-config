@@ -27,6 +27,12 @@ in
     sandboxedApps.lmstudio # Nixpak (Safe)
     chromium # Fallback (Unsafe) - Local Dev
 
+    # Math and Matrix stuff. Using 'octaveFull' to get the standard packages included.
+    octaveFull
+
+    # Modern LaTeX alternative. Much faster for writing docs.
+    typst
+    typst-lsp # autocompletion in VS Code/Neovim
   ];
 
   programs.waybar.enable = true;

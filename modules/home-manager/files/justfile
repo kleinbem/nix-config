@@ -1,0 +1,68 @@
+# System Control Center
+
+default:
+    @just --list --justfile ~/.justfile
+
+# --- AI Services ---
+
+# Start AI stack (Ollama, WebUI, n8n)
+ai-up:
+    sudo systemctl start ai-services.target
+
+# Stop AI stack
+ai-down:
+    sudo systemctl stop ai-services.target
+
+# Check AI status
+ai-status:
+    systemctl status ai-services.target ollama open-webui n8n
+
+# Follow AI logs
+ai-logs:
+    journalctl -u ollama -u open-webui -u n8n -f
+
+# --- System ---
+
+# --- System Management ---
+
+# Rebuild system (Apply changes)
+rebuild:
+    nh os switch ~/Develop/github.com/kleinbem/nix-config
+
+# Update flake inputs
+update:
+    nix flake update ~/Develop/github.com/kleinbem/nix-config
+
+# Fast Rebuild (Skip flakes updates)
+fast:
+    sudo nixos-rebuild switch --flake ~/Develop/github.com/kleinbem/nix-config#nixos-nvme
+
+# Rollback to previous generation
+rollback:
+    sudo nixos-rebuild switch --rollback --flake ~/Develop/github.com/kleinbem/nix-config#nixos-nvme
+
+# Show generation history
+history:
+    nix profile history --profile /nix/var/nix/profiles/system
+
+# Show what changed between generations
+changelogs:
+    nix store diff-closures /run/booted-system /run/current-system
+
+# Reboot into BIOS/UEFI
+bios:
+    systemctl reboot --firmware-setup
+
+# Verify system integrity
+verify:
+    nix-store --verify --check-contents
+
+# Garbage Collect (Free space)
+clean:
+    nh clean all
+    # Also clean old generations (keep last 3 days)
+    sudo nix-collect-garbage --delete-older-than 3d
+
+# System Logs
+logs:
+    journalctl -f

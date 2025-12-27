@@ -1,6 +1,5 @@
 {
   pkgs,
-  lib,
   inputs,
   ...
 }:
@@ -15,6 +14,7 @@
     ../../modules/nixos/users.nix
     ../../modules/nixos/scripts.nix
     ../../modules/nixos/security.nix
+    ../../modules/nixos/ai-services.nix
   ];
 
   # ==========================================
@@ -48,6 +48,7 @@
       "i915.enable_psr=0"
       "snd_hda_intel.power_save=0"
       "snd_hda_intel.power_save_controller=N"
+      "audit=0"
     ];
 
     tmp.useTmpfs = true;
@@ -111,7 +112,10 @@
   # 5. VIRTUALIZATION
   # ==========================================
   virtualisation = {
-    libvirtd.enable = true;
+    libvirtd = {
+      enable = true;
+      onBoot = "ignore";
+    };
     podman = {
       enable = true;
       dockerCompat = true;
@@ -120,32 +124,9 @@
   };
 
   # ==========================================
-  # 7. SERVICES & AI (Ollama Brain)
+  # 8. HARDWARE TOKENS & MAINTENANCE
   # ==========================================
   services = {
-    ollama = {
-      enable = true;
-      host = "0.0.0.0";
-      # loadModels = [ ... ]; # Too large for declarative download (>40GB).
-      # Run 'ollama pull llama3.1:70b-instruct-q4_K_M' manually.
-      # Note: Intel iGPU acceleration for Ollama via IPEX-LLM/Vulkan
-      # is not yet upstreamed in nixpkgs (late 2025). Using CPU for now.
-      models = "/images/ollama/models";
-    };
-
-    open-webui = {
-      enable = true;
-      port = 8080;
-      environment = {
-        # Optional: Enable if you want to expose to LAN, otherwise localhost only
-        # OLLAMA_BASE_URL = "http://127.0.0.1:11434";
-      };
-      stateDir = "/images/open-webui";
-    };
-
-    # ==========================================
-    # 8. HARDWARE TOKENS
-    # ==========================================
     pcscd.enable = true;
     fprintd.enable = true;
     udev.packages = [
@@ -153,13 +134,9 @@
       pkgs.libfido2
     ];
 
-    # Firmware Updates
     fwupd.enable = true;
-
-    # Dynamic Firewall (Firewalld)
     firewalld.enable = true;
 
-    # Btrfs Maintenance
     btrfs.autoScrub = {
       enable = true;
       interval = "weekly";
@@ -169,74 +146,18 @@
       ];
     };
 
-    # SSD Optimization (Trim)
     fstrim.enable = true;
   };
 
   # ==========================================
-  # FIX: Relocate massive AI state to /images
+  # IMAGE STATE STORAGE
   # ==========================================
-  systemd = {
-    tmpfiles.rules = [
-      "d /images 0755 root root - -"
-      "z /images 0755 root root - -"
-      "d /images/ollama 0750 ollama ollama - -"
-      "z /images/ollama 0750 ollama ollama - -"
-      "d /images/ollama/models 0750 ollama ollama - -"
-      "z /images/ollama/models 0750 ollama ollama - -"
-      "d /images/open-webui 0750 open-webui open-webui - -"
-      "z /images/open-webui 0750 open-webui open-webui - -"
-      "d /images/lmstudio 0750 martin users - -"
-      "z /images/lmstudio 0750 martin users - -"
-    ];
-  };
-
-  systemd.services.ollama = {
-    serviceConfig = {
-      DynamicUser = lib.mkForce false;
-      # Hardening
-      # CapabilityBoundingSet = "";
-      ProtectSystem = lib.mkForce "full";
-      ProtectHome = true;
-      PrivateTmp = true;
-      NoNewPrivileges = true;
-      ProtectKernelTunables = true;
-      ProtectControlGroups = true;
-      RestrictNamespaces = true;
-      LockPersonality = true;
-      MemoryDenyWriteExecute = true;
-      # Allow access to custom storage
-      ReadWritePaths = [ "/images/ollama" ];
-    };
-  };
-
-  systemd.services.open-webui = {
-    serviceConfig = {
-      DynamicUser = lib.mkForce false;
-      # Hardening
-      # CapabilityBoundingSet = "";
-      ProtectSystem = lib.mkForce "full";
-      # We need to access /images, so strict ReadWritePaths might be needed if ProtectSystem is strict
-      # But for now, systemd binds should handle it via the service module's StateDirectory logic
-      # or explicit ReadWritePaths if the module doesn't handle /images automatically.
-      # Since we use stateDir option, the module *should* handle permission, but let's be safe.
-      ProtectHome = true;
-      PrivateTmp = true;
-      NoNewPrivileges = true;
-      ProtectKernelTunables = true;
-      ProtectControlGroups = true;
-      RestrictNamespaces = true;
-      LockPersonality = true;
-      MemoryDenyWriteExecute = lib.mkForce true;
-      # Allow access to custom storage
-      ReadWritePaths = [ "/images/open-webui" ];
-    };
-  };
-
-  # (Note: open-webui might use /var/lib/private/open-webui depending on DynamicUser settings)
-  # But the module usually sets StateDirectory=open-webui which maps to /var/lib/open-webui
-  # or /var/lib/private/open-webui if DynamicUser is on.
-  # Let's cover the StateDirectory path safely.
+  systemd.tmpfiles.rules = [
+    "d /images 0755 root root - -"
+    "z /images 0755 root root - -"
+    "d /images/lmstudio 0750 martin users - -"
+    "z /images/lmstudio 0750 martin users - -"
+  ];
 
   # ==========================================
   # 9. SECRETS (SOPS)
