@@ -36,7 +36,7 @@
             useUserPackages = true;
             extraSpecialArgs = { inherit nixpak; };
             backupFileExtension = "backup";
-            users.${user} = import ../hosts/${hostname}/home.nix;
+            users.${user} = import ../users/${user}/home.nix;
           };
         }
       ]

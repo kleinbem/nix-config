@@ -1,6 +1,20 @@
 .envrc
-.aider*
+.agent/aider/aider*
 result
 .direnv/
 .pre-commit-config.yaml
 tmp/
+*.qcow2
+*.iso
+
+# Google Antigravity Runtime.
+.agent/workspaces/
+.agent/logs/
+.agent/temp/
+.agent/browser/
+
+# Aider junk and unrelevant files
+.agent/aider/.aider.input.history
+.agent/aider/.aider.tags.cache*
+.agent/aider/.aider.chat.history.md
+.agent/aider/.env

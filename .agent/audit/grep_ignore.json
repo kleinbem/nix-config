@@ -1,0 +1,7 @@
+[
+  "prohibit-password",
+  "secrets/secrets.yaml",
+  "modules/nixos/secrets",
+  "defaultSopsFile",
+  "example-secret"
+]

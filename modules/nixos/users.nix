@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   # ==========================================
@@ -9,37 +9,12 @@
       root = {
         initialPassword = "backup-root-password";
       };
-
-      martin = {
-        isNormalUser = true;
-        linger = true;
-        extraGroups = [
-          "wheel"
-          "networkmanager"
-          "podman"
-          "docker"
-          "video"
-          "render"
-          "libvirtd"
-          "kvm"
-        ];
-        hashedPasswordFile = config.sops.secrets.martin_password.path;
-      };
     };
 
     groups = {
       # ollama = { };
       # open-webui = { };
     };
-  };
-
-  # Required for password file
-  sops.secrets = {
-    martin_password = {
-      neededForUsers = true;
-    };
-    "n8n.env" = { };
-    "open-webui.env" = { };
   };
 
   security = {

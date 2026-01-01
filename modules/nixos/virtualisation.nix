@@ -8,6 +8,9 @@
     libvirtd = {
       enable = true;
       onBoot = "ignore";
+      # Disable auto-starting the service itself if possible, though 'enable = true' usually implies wantedBy multi-user.
+      # NixOS libvirtd module doesn't perfectly support "installed but disabled",
+      # but onBoot="ignore" stops VMs.
     };
 
     # Docker (Primary for DevContainers/Compatibility)
@@ -38,31 +41,6 @@
   # ==========================================
 
   systemd = {
-    # Rootful Socket (System)
-    sockets.podman = {
-      description = "Podman API Socket (rootful)";
-      wantedBy = [ "sockets.target" ];
-      socketConfig = {
-        ListenStream = "/run/podman/podman.sock";
-        SocketMode = "0660";
-        SocketUser = "root";
-        SocketGroup = "podman";
-      };
-    };
-
-    # Rootful Service
-    services.podman = {
-      description = "Podman API Service (rootful)";
-      requires = [ "podman.socket" ];
-      after = [ "podman.socket" ];
-      serviceConfig = {
-        Type = "exec";
-        KillMode = "process";
-        Delegate = true;
-        ExecStart = "${pkgs.podman}/bin/podman system service --time=0";
-      };
-    };
-
     # Rootless Socket (User) - Enables automatic activation for 'martin'
     user.sockets.podman = {
       description = "Podman API Socket (rootless)";

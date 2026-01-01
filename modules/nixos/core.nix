@@ -100,6 +100,11 @@
     nix-output-monitor
     nvd
 
+    # Nix Tooling
+    nixfmt-rfc-style
+    deadnix
+    statix
+
     # Cockpit Tools
     pkgs.nur.repos.nikpkgs.cockpit-podman
     # pkgs.nur.repos.nikpkgs.cockpit-machines # Verify if present

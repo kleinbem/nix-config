@@ -64,15 +64,14 @@ echo -n "Checking Ollama Service... "
 if systemctl is-active --quiet ollama.service; then
     echo "✅ Active"
 else
-    echo "❌ INACTIVE (Is it enabled?)"
-    # exit 1 (Optional: strict mode)
+    echo "⚠️  INACTIVE (Manual Start)"
 fi
 
 echo -n "Checking Open WebUI Service... "
 if systemctl is-active --quiet open-webui.service; then
     echo "✅ Active"
 else
-    echo "❌ INACTIVE"
+    echo "⚠️  INACTIVE (Manual Start)"
 fi
 
 # 3. Check Ports (Open WebUI)
@@ -80,7 +79,7 @@ echo -n "Checking Open WebUI Port (3000)... " # Updated to port 3000
 if timeout 1 bash -c '</dev/tcp/localhost/3000' &>/dev/null; then
   echo "✅ Accessible"
 else
-  echo "❌ Unreachable"
+  echo "⚠️  Unreachable (Service Inactive)"
 fi
 
 # 4. Check Tools existence

@@ -94,7 +94,7 @@ in
             # 2. File & Socket Access
             rw = [
               # YubiKey / Smart Card (FIDO2)
-              "/run/pcscd/pcscd.comm"
+              "/run/pcscd"
 
               # Downloads
               (sloth.concat' sloth.homeDir "/Downloads")

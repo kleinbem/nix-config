@@ -27,6 +27,11 @@ let
     # Log to system journal
     echo "VIRUS DETECTED: $VIRUS in $FILE"
   '';
+
+  # Config for clamdscan client
+  scanConfig = pkgs.writeText "clamd-scan.conf" ''
+    LocalSocket /run/clamav/clamd.ctl
+  '';
 in
 {
   environment.systemPackages = with pkgs; [
@@ -100,7 +105,7 @@ in
           -mtime -1 -type f \
           -not -path "*/.cache/*" -not -path "*/.git/*" -not -path "*/node_modules/*" \
           -print0 \
-        | ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan --multiscan --fdpass
+        | ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan -c ${scanConfig} --multiscan --fdpass
       '';
     };
 

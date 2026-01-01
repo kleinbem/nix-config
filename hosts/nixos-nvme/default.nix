@@ -12,6 +12,7 @@
     ../../modules/nixos/hardware/intel-compute.nix
     ../../modules/nixos/printing.nix
     ../../modules/nixos/users.nix
+    ../../users/martin/nixos.nix
     ../../modules/nixos/scripts.nix
     ../../modules/nixos/security.nix
     ../../modules/nixos/ai-services.nix
@@ -101,7 +102,7 @@
   sops = {
     defaultSopsFile = ./secrets.yaml;
     defaultSopsFormat = "yaml";
-    age.keyFile = "/home/martin/.config/sops/age/keys.txt";
+    age.keyFile = "/home/martin/.config/sops/age/host.txt";
 
     package =
       pkgs.runCommand "sops-with-plugins"
