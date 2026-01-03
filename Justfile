@@ -35,9 +35,14 @@ update:
 verify:
     verify-system
 
-# Run Lint -> Test -> Switch -> Verify automatically
+# Run Flake Checks (Tests)
 
-deploy: lint test switch verify
+check:
+    nix flake check
+
+# Run Lint -> Check -> Test -> Switch -> Verify automatically
+
+deploy: lint check test switch verify
     @echo "✅ System successfully deployed and verified!"
 
 # --- AI Workflow ---
@@ -47,6 +52,12 @@ deploy: lint test switch verify
 lint:
     nix develop --command statix check
     nix develop --command deadnix .
+
+# Automatically fix linting errors
+
+fix:
+    nix develop --command statix fix
+    nix develop --command deadnix -e .
 
 # Enter the AI Environment
 

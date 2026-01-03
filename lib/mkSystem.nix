@@ -26,7 +26,15 @@
 
         # NUR Overlay
         (_: {
-          nixpkgs.overlays = [ inputs.nur.overlays.default ];
+          nixpkgs.overlays = [
+            inputs.nur.overlays.default
+            (_: prev: {
+              stable = import inputs.nixpkgs-stable {
+                inherit (prev) system;
+                config.allowUnfree = true;
+              };
+            })
+          ];
         })
 
         # Home Manager Configuration

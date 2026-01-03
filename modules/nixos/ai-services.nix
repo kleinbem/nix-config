@@ -117,21 +117,22 @@ in
     };
 
     # --- OPEN-WEBUI ---
-    open-webui = {
-      enable = true;
-      host = "127.0.0.1";
-      port = 3000;
-      stateDir = openWebuiState;
-      environment = {
-        OLLAMA_BASE_URL = "http://127.0.0.1:11434";
-        # Read secret from Systemd Credential Store
-        WEBUI_SECRET_KEY_FILE = "%d/webui_secret";
-      };
-    };
+    # open-webui = {
+    #   enable = true;
+    #   host = "127.0.0.1";
+    #   port = 3000;
+    #   stateDir = openWebuiState;
+    #   environment = {
+    #     OLLAMA_BASE_URL = "http://127.0.0.1:11434";
+    #     # Read secret from Systemd Credential Store
+    #     WEBUI_SECRET_KEY_FILE = "%d/webui_secret";
+    #   };
+    # };
 
     # --- N8N ---
     n8n = {
       enable = true;
+      package = pkgs.stable.n8n;
       openFirewall = false;
       environment = {
         N8N_LISTEN_ADDRESS = "127.0.0.1";

@@ -132,6 +132,8 @@
     age-plugin-yubikey
     libfido2
     pam_u2f
+    sbctl
+    niv
   ];
 
   system.stateVersion = "25.11";

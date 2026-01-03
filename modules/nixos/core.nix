@@ -96,7 +96,7 @@
     fd
     eza # Modern ls replacement
     # tree # Replaced by eza --tree
-    inputs.nh.packages.${pkgs.system}.default
+    nh
     nix-output-monitor
     nvd
 

@@ -13,6 +13,7 @@
       "render"
       "libvirtd"
       "kvm"
+      "incus-admin"
     ];
     hashedPasswordFile = config.sops.secrets.martin_password.path;
   };

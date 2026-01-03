@@ -4,6 +4,7 @@
   inputs = {
     # --- Core ---
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -17,12 +18,8 @@
 
     # Secret Management
     sops-nix.url = "github:Mic92/sops-nix";
-    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    nh = {
-      url = "github:viperML/nh";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -38,6 +35,12 @@
     nur = {
       url = "github:nix-community/NUR";
     };
+
+    # Image Generation
+    nixos-generators = {
+      url = "github:nix-community/nixos-generators";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -47,6 +50,7 @@
       nixpak,
       treefmt-nix,
       pre-commit-hooks,
+      nixos-generators,
       ...
     }@inputs:
     let
@@ -71,7 +75,8 @@
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = [
           pkgs.aider-chat
-          pkgs.gemini-cli
+          # pkgs.gemini-cli ## temp disabled
+
           pkgs.statix
           pkgs.nixfmt-rfc-style
           pkgs.deadnix
@@ -80,6 +85,9 @@
           # --- Secret Management Tools ---
           pkgs.age
           pkgs.age-plugin-yubikey
+
+          # Generative
+          nixos-generators.packages.${system}.nixos-generate
         ];
 
         shellHook = ''

@@ -16,10 +16,14 @@
     # Docker (Primary for DevContainers/Compatibility)
     docker = {
       enable = true;
-      # rootless = {
-      #   enable = true;
-      #   setSocketVariable = true;
-      # };
+    };
+
+    # Incus (System Containers)
+    incus = {
+      enable = true;
+      package = pkgs.incus;
+      ui.enable = false;
+      # Disable auto-start (requires manual 'systemctl start incus' or socket activation)
     };
 
     # Podman (Side-by-side)

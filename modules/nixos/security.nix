@@ -46,7 +46,7 @@ in
   security = {
     apparmor = {
       enable = true;
-      killUnconfinedConfinables = true;
+      killUnconfinedConfinables = false;
     };
     audit = {
       enable = false;
