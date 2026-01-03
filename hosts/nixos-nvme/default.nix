@@ -25,13 +25,12 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
-      systemd-boot = {
-        enable = true;
-        configurationLimit = 8;
-        memtest86.enable = true;
-        editor = false;
-      };
+      systemd-boot.enable = pkgs.lib.mkForce false; # Disabled for Lanzaboote
       efi.canTouchEfiVariables = true;
+    };
+    lanzaboote = {
+      enable = true;
+      pkiBundle = "/etc/secureboot";
     };
     initrd.systemd.enable = true;
 
