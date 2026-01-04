@@ -111,11 +111,11 @@
         ''
           mkdir -p $out/bin
           makeWrapper ${pkgs.sops}/bin/sops $out/bin/sops \
-            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin"
+            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin:${pkgs.age-plugin-tpm}/bin"
           makeWrapper ${
             inputs.sops-nix.packages.${pkgs.system}.sops-install-secrets
           }/bin/sops-install-secrets $out/bin/sops-install-secrets \
-            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin"
+            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin:${pkgs.age-plugin-tpm}/bin"
         '';
   };
 
@@ -129,6 +129,7 @@
     sops
     age
     age-plugin-yubikey
+    age-plugin-tpm
     libfido2
     pam_u2f
     sbctl

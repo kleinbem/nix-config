@@ -7,4 +7,5 @@ creation_rules:
           # YubiKey Backup
           - "age1yubikey1qg379rzgajvstx6vhk2fsvc0eu9zyjjk7q24pd3pf5dq22xvlqew23e08l2"
           # Host Key (nixos-nvme)
-          - "age1uachd7n7c3cr7vyxcm5cskxtaj7vm796wrv3lhtf432wk6r379lslrk0ea"
+          # TPM Key (nixos-nvme)
+          - "age1tag1qg5qj4sam725ez6a53hkp5mnerf8m9dq4wy4nsfaraj3y5v6x8h0qexzvt7"
