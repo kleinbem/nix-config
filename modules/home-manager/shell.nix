@@ -24,24 +24,21 @@
     git = {
       enable = true;
       settings = {
+        user = {
+          name = "kleinbem";
+          email = "martin.kleinberger@gmail.com";
+          signingKey = "/home/martin/.ssh/id_ed25519_sk.pub";
+        };
+
+        commit.gpgsign = true;
+        gpg.format = "ssh";
+        "gpg \"ssh\"".program = "${pkgs.openssh}/bin/ssh-keygen";
+
         alias = {
           st = "status";
           co = "checkout";
           sw = "switch";
           br = "branch";
-        };
-        signing = {
-          key = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIHv/QOJAllPiFXUrLhpexjLKD8xDEu878ROd21+XlCsdAAAABHNzaDo= yubikey-primary-github";
-          signByDefault = true;
-        };
-        extraConfig = {
-          gpg.format = "ssh";
-          "gpg \"ssh\"".program = "${pkgs.openssh}/bin/ssh-keygen";
-        };
-
-        user = {
-          name = "kleinbem";
-          email = "martin.kleinberger@gmail.com";
         };
       };
     };
