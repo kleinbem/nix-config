@@ -2,8 +2,8 @@
 
 ## Security Enhancements
 
-- [ ] **Secure Boot**: Implement `lanzaboote` to cryptographically sign the NixOS kernel and bootloader.
-- [ ] **YubiKey LUKS**: Bind disk encryption directly to YubiKey (Slot 2) for "Touch to Decrypt" boot.
+- [x] **Secure Boot**: Implement `lanzaboote` to cryptographically sign the NixOS kernel and bootloader.
+- [x] **YubiKey LUKS**: Bind disk encryption directly to YubiKey (Slot 2) for "Touch to Decrypt" boot.
 
 ## Architecture
 

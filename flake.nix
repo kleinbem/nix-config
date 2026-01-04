@@ -43,7 +43,7 @@
     };
 
     lanzaboote = {
-      url = "github:nix-community/lanzaboote/v0.4.1";
+      url = "github:nix-community/lanzaboote"; # Use master to fix build issues
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
