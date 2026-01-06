@@ -18,8 +18,13 @@
 
     # Secret Management
     sops-nix.url = "github:Mic92/sops-nix";
-
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Private Secrets (Local Repo)
+    nix-secrets = {
+      url = "git+file:///home/martin/Develop/github.com/kleinbem/nix-secrets";
+      flake = false;
+    };
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -44,6 +49,11 @@
 
     lanzaboote = {
       url = "github:nix-community/lanzaboote"; # Use master to fix build issues
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

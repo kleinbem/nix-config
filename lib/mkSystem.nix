@@ -43,7 +43,7 @@
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
-            extraSpecialArgs = { inherit nixpak; };
+            extraSpecialArgs = { inherit nixpak inputs; };
             backupFileExtension = "backup";
             users.${user} = import ../users/${user}/home.nix;
           };

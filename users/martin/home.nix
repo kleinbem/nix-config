@@ -7,6 +7,9 @@ _:
     ../../modules/home-manager/desktop.nix
     ../../modules/home-manager/security.nix
     ../../modules/home-manager/pentesting.nix
+    ../../modules/home-manager/vscode.nix
+    ../../modules/home-manager/nixvim.nix
+    ../../modules/home-manager/secrets.nix
   ];
 
   # User Details

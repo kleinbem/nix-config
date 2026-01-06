@@ -25,7 +25,10 @@
       enable = true;
       settings.cue = true;
     };
+    tpm2.enable = true;
   };
+
+  programs.fuse.userAllowOther = true;
 
   systemd.user.services.polkit-gnome-authentication-agent-1 = {
     description = "polkit-gnome-authentication-agent-1";

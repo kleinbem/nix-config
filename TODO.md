@@ -25,3 +25,6 @@
   - [ ] Enable `system.autoUpgrade` for unattended security patches.
   - [ ] Verify `rclone` restore workflow (Simulate data loss).
   - [ ] **Ollama**: Manually run `ollama pull llama3.1:70b-instruct-q4_K_M` (Removed from config to unblock deploy).
+- [ ] **Advanced User Management**:
+  - [ ] **Migrate to `systemd-homed`**: Encrypt user home directory with YubiKey/FIDO2. (Solves "Keyring Login" issue).
+  - [ ] **Facial Authentication (`howdy`)**: Evaluate when officially packaged. (Wait for Nixpkgs support).

@@ -99,9 +99,13 @@
   # 9. SECRETS (SOPS)
   # ==========================================
   sops = {
-    defaultSopsFile = ./secrets.yaml;
+    defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/martin/.config/sops/age/host.txt";
+
+    secrets.rclone_config = {
+      owner = "martin";
+    };
 
     package =
       pkgs.runCommand "sops-with-plugins"

@@ -9,7 +9,7 @@ in
 {
   home.packages = with pkgs; [
     # -- GUI Apps --
-    vscode-fhs
+    # vscode-fhs (Moved to declarative module)
     code-cursor # AI Code Editor (New in 25.05)
     antigravity-fhs
     warp-terminal # Rust-based AI Terminal
@@ -20,6 +20,7 @@ in
     zathura # PDF Viewer
     imv # Image Viewer
     p7zip # Archives
+    rclone-browser # GUI for Rclone
 
     # -- Sandboxed Apps --
     sandboxedApps.obsidian
@@ -36,7 +37,22 @@ in
     # Modern LaTeX alternative. Much faster for writing docs.
     typst
     tinymist # autocompletion in VS Code/Neovim (formerly typst-lsp)
+    nixd # Nix Language Server
   ];
+
+  # Force Qt apps to use GTK theme (fixes rclone-browser dark mode)
+  gtk = {
+    enable = true;
+    theme = {
+      name = "Adwaita-dark";
+      package = pkgs.gnome-themes-extra;
+    };
+  };
+
+  qt = {
+    enable = true;
+    platformTheme.name = "gtk";
+  };
 
   programs.waybar.enable = true;
 
@@ -47,7 +63,9 @@ in
     };
     Service = {
       Type = "simple";
+      Environment = "PATH=/run/wrappers/bin:$PATH";
       # Ensure the mount point exists: mkdir -p ~/GoogleDrive
+      ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/GoogleDrive";
       ExecStart = ''
         ${pkgs.rclone}/bin/rclone mount gdrive: %h/GoogleDrive \
           --vfs-cache-mode full \
@@ -56,7 +74,34 @@ in
           --dir-cache-time 1000h \
           --log-level INFO
       '';
-      ExecStop = "/run/wrappers/bin/fusermount -u %h/GoogleDrive";
+      ExecStop = "/run/wrappers/bin/fusermount3 -u %h/GoogleDrive";
+      Restart = "on-failure";
+      RestartSec = "10s";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  systemd.user.services.rclone-onedrive-mount = {
+    Unit = {
+      Description = "Mount OneDrive via Rclone";
+      After = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "simple";
+      Environment = "PATH=/run/wrappers/bin:$PATH";
+      # Ensure the mount point exists: mkdir -p ~/OneDrive
+      ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/OneDrive";
+      ExecStart = ''
+        ${pkgs.rclone}/bin/rclone mount onedrive: %h/OneDrive \
+          --vfs-cache-mode full \
+          --vfs-cache-max-size 10G \
+          --vfs-cache-max-age 24h \
+          --dir-cache-time 1000h \
+          --log-level INFO
+      '';
+      ExecStop = "/run/wrappers/bin/fusermount3 -u %h/OneDrive";
       Restart = "on-failure";
       RestartSec = "10s";
     };

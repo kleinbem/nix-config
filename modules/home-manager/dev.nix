@@ -37,13 +37,6 @@
     '';
 
     # Helper to bootstrap LazyVim
-    shellAliases.lazy-install = "git clone https://github.com/LazyVim/starter ~/.config/nvim && nvim";
-  };
-
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
+    # shellAliases.lazy-install = "git clone https://github.com/LazyVim/starter ~/.config/nvim && nvim";
   };
 }
