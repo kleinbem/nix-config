@@ -118,6 +118,15 @@
 
     sessionVariables = {
       TERMINAL = "cosmic-terminal";
+      # Ensure SSH asks for passphrase via GUI
+      SSH_ASKPASS = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
+      SSH_ASKPASS_REQUIRE = "prefer";
+
+      # Force use of standard ssh-agent (fixes YubiKey signing)
+      # Gnome Keyring interferes with FIDO2/SK keys
+      SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
+      # Or if seahorse is not the right path, maybe try:
+      # SSH_ASKPASS = "${pkgs.gnome.seahorse}/libexec/seahorse/ssh-askpass";
     };
 
     packages = with pkgs; [

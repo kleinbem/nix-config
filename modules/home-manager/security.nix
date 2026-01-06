@@ -10,5 +10,6 @@
     # -- Hardware Tokens (YubiKey) --
     yubikey-manager # CLI Tool (Essential for scripts/backend)
     yubioath-flutter # Modern GUI (Replaces yubikey-manager-qt)
+    seahorse # Gnome Keyring Manager (and SSH Askpass provider)
   ];
 }
