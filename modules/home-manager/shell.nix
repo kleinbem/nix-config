@@ -92,6 +92,9 @@
       matchBlocks = {
         "*" = {
           addKeysToAgent = "yes";
+          controlMaster = "auto";
+          controlPath = "~/.ssh/control-%C";
+          controlPersist = "10m";
         };
         "github.com" = {
           user = "git";
