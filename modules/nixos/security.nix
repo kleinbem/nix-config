@@ -34,6 +34,18 @@ let
   '';
 in
 {
+  # Overlay to disable SSH Agent in Gnome Keyring
+  # This fixes the conflict with YubiKey/FIDO2 hardware keys
+  nixpkgs.overlays = [
+    (_: prev: {
+      gnome-keyring = prev.gnome-keyring.overrideAttrs (old: {
+        configureFlags = old.configureFlags or [ ] ++ [
+          "--disable-ssh-agent"
+        ];
+      });
+    })
+  ];
+
   environment.systemPackages = with pkgs; [
     clamav
     clamtk # GUI
