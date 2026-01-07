@@ -1,5 +1,19 @@
 { pkgs, ... }:
 
+let
+  gitSshKeygen = pkgs.writeShellScript "git-ssh-keygen" ''
+    #!${pkgs.bash}/bin/bash
+    set -euo pipefail
+
+    # VS Code-like GUIs run git without a TTY.
+    # We MUST use the system ssh-agent (not Gnome Keyring's) for YubiKey
+    # and we definitely need SSH_ASKPASS for the PIN prompt.
+    export SSH_AUTH_SOCK=/run/user/$UID/ssh-agent
+    export SSH_ASKPASS="${pkgs.seahorse}/libexec/seahorse/ssh-askpass"
+
+    exec ${pkgs.openssh}/bin/ssh-keygen "$@"
+  '';
+in
 {
   programs = {
     bash = {
@@ -35,7 +49,7 @@
 
         commit.gpgsign = true;
         gpg.format = "ssh";
-        "gpg \"ssh\"".program = "${pkgs.openssh}/bin/ssh-keygen";
+        "gpg \"ssh\"".program = "${gitSshKeygen}";
 
         alias = {
           st = "status";
@@ -121,15 +135,11 @@
 
     sessionVariables = {
       TERMINAL = "cosmic-terminal";
-      # Ensure SSH asks for passphrase via GUI
-      SSH_ASKPASS = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
-      SSH_ASKPASS_REQUIRE = "prefer";
 
       # Force use of standard ssh-agent (fixes YubiKey signing)
       # Gnome Keyring interferes with FIDO2/SK keys
       SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
-      # Or if seahorse is not the right path, maybe try:
-      # SSH_ASKPASS = "${pkgs.gnome.seahorse}/libexec/seahorse/ssh-askpass";
+      SSH_ASKPASS = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
     };
 
     packages = with pkgs; [
