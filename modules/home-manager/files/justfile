@@ -1,5 +1,8 @@
 # System Control Center
 
+# Path to the configuration flake
+FLAKE_PATH := "~/Develop/github.com/kleinbem/nix-config"
+
 default:
     @just --list --justfile ~/.justfile
 
@@ -44,20 +47,12 @@ status service:
 # --- System Management ---
 
 # Rebuild system (Apply changes)
-rebuild: fix
-    nh os switch ~/Develop/github.com/kleinbem/nix-config
-
-# Update flake inputs
-update:
-    nix flake update ~/Develop/github.com/kleinbem/nix-config
-
-# Fast Rebuild (Skip flakes updates)
-fast:
-    sudo nixos-rebuild switch --flake ~/Develop/github.com/kleinbem/nix-config#nixos-nvme
+rebuild:
+    nh os switch {{FLAKE_PATH}}
 
 # Rollback to previous generation
 rollback:
-    sudo nixos-rebuild switch --rollback --flake ~/Develop/github.com/kleinbem/nix-config#nixos-nvme
+    nh os switch --rollback {{FLAKE_PATH}}
 
 # Show generation history
 history:
@@ -71,18 +66,11 @@ changelogs:
 bios:
     systemctl reboot --firmware-setup
 
-# Verify system integrity
-verify:
+# Verify store integrity
+verify-store:
     nix-store --verify --check-contents
 
-# Auto-fix (Format & Cleanup)
-fix:
-    # Format all Nix files
-    fd -e nix -X nixfmt
-    # Remove unused code
-    fd -e nix -X deadnix -e
-    # Fix linting issues
-    statix fix .
+
 
 # Garbage Collect (Free space)
 clean:

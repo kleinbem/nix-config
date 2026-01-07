@@ -5,43 +5,41 @@
 default:
     @just --list
 
-# --- System Management ---
+# --- Build & Deployment ---
 
-# Apply changes (Safe Mode)
+# Build the system (No Switch)
+build:
+    nh os build .
 
-# Apply changes (Safe Mode)
-
+# System Test (Build & Activate, No Bootloader)
 test:
     nh os test .
 
-# Apply changes (Permanent)
-
+# System Switch (Build & Activate & Bootloader)
 switch:
-    # sudo nixos-rebuild switch --flake .#nixos-nvme
     nh os switch .
 
-# Apply changes with full debug output
+# Switch with local overrides (Useful for secrets testing)
+switch-local:
+    nh os switch . -- --override-input nix-secrets "git+file:///home/martin/Develop/github.com/kleinbem/nix-secrets"
 
+# Switch with Debug Output
 switch-debug:
     nh os switch . -- --show-trace --verbose || (echo "❌ Activation failed! Tailing logs..." && journalctl -n 20 --no-pager -u ollama.service -u open-webui.service && exit 1)
 
-# Update dependencies (flake.lock)
-
+# Update Flake Lockfile
 update:
     nix flake update
 
-# Verify system health
-
+# Verify Deployment (Post-Switch Check)
 verify:
     verify-system
 
-# Run Flake Checks (Tests)
-
+# Run Flake Checks (CI Tests)
 check:
     nix flake check
 
-# Run Lint -> Check -> Test -> Switch -> Verify automatically
-
+# Full Deployment Pipeline (Lint -> Check -> Test -> Switch -> Verify)
 deploy: lint check test switch verify
     @echo "✅ System successfully deployed and verified!"
 

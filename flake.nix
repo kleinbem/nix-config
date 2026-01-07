@@ -20,9 +20,9 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Private Secrets (Local Path for Stability)
+    # Private Secrets (GitHub Repo)
     nix-secrets = {
-      url = "git+file:///home/martin/Develop/github.com/kleinbem/nix-secrets";
+      url = "git+ssh://git@github.com/kleinbem/nix-secrets.git";
       flake = false;
     };
 
