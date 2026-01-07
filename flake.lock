@@ -221,6 +221,22 @@
         "type": "github"
       }
     },
+    "nix-secrets": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767785236,
+        "narHash": "sha256-xpQChhcyDxxf4bnkgls/ID4ynRxra3mRhAlX+kJWPR0=",
+        "ref": "refs/heads/main",
+        "rev": "033cd8d1ab8ecdf1b531479f35fd035bea41a2a0",
+        "revCount": 2,
+        "type": "git",
+        "url": "file:///home/martin/Develop/github.com/kleinbem/nix-secrets"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:///home/martin/Develop/github.com/kleinbem/nix-secrets"
+      }
+    },
     "nixlib": {
       "locked": {
         "lastModified": 1736643958,
@@ -417,6 +433,7 @@
       "inputs": {
         "home-manager": "home-manager",
         "lanzaboote": "lanzaboote",
+        "nix-secrets": "nix-secrets",
         "nixos-generators": "nixos-generators",
         "nixpak": "nixpak",
         "nixpkgs": "nixpkgs",

@@ -20,7 +20,7 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Private Secrets (Local Repo)
+    # Private Secrets (Local Path for Stability)
     nix-secrets = {
       url = "git+file:///home/martin/Develop/github.com/kleinbem/nix-secrets";
       flake = false;
@@ -113,6 +113,9 @@
           if [ -z "$GEMINI_API_KEY" ] && [ -z "$OLLAMA_API_BASE" ]; then
               echo "ℹ️  Note: No API keys detected."
           fi
+
+          # Unset SSH_ASKPASS_REQUIRE to allow YubiKey interaction
+          unset SSH_ASKPASS_REQUIRE
         '';
       };
 

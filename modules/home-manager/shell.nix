@@ -1,31 +1,9 @@
 { pkgs, ... }:
 
-let
-  gitSshKeygen = pkgs.writeShellScript "git-ssh-keygen" ''
-    #!${pkgs.bash}/bin/bash
-    set -euo pipefail
-
-    if [ -t 0 ] || [ -t 1 ]; then
-      # If we have a TTY, prioritize it!
-      unset SSH_ASKPASS
-      unset SSH_ASKPASS_REQUIRE
-    else
-      # No TTY (e.g. VS Code background), force Askpass
-      export SSH_ASKPASS="${pkgs.seahorse}/libexec/seahorse/ssh-askpass"
-      export SSH_ASKPASS_REQUIRE="force"
-    fi
-    export SSH_AUTH_SOCK=/run/user/$UID/ssh-agent
-
-    exec ${pkgs.openssh}/bin/ssh-keygen "$@"
-  '';
-in
 {
   programs = {
     bash = {
       enable = true;
-      initExtra = ''
-        export SSH_AUTH_SOCK=/run/user/$UID/ssh-agent
-      '';
       shellAliases = {
         ls = "eza --icons";
         ll = "eza -l --icons --git";
@@ -54,7 +32,6 @@ in
 
         commit.gpgsign = true;
         gpg.format = "ssh";
-        "gpg \"ssh\"".program = "${gitSshKeygen}";
 
         alias = {
           st = "status";
@@ -132,7 +109,6 @@ in
   xdg.configFile."starship.toml".source = ./files/starship.toml;
 
   # Manage Justfile declaratively
-  # Manage Justfile declaratively
   home = {
     file = {
       ".justfile".source = ./files/justfile;
@@ -142,10 +118,8 @@ in
       TERMINAL = "cosmic-terminal";
 
       # Force use of standard ssh-agent (fixes YubiKey signing)
-      # Gnome Keyring interferes with FIDO2/SK keys
+      # Gnome Keyring interferes with FIDO2/SK keys so we point to the standard agent
       SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
-      SSH_ASKPASS = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
-      SSH_ASKPASS_REQUIRE = "never";
     };
 
     packages = with pkgs; [
