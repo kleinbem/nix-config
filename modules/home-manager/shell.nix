@@ -4,6 +4,9 @@
   programs = {
     bash = {
       enable = true;
+      initExtra = ''
+        export SSH_AUTH_SOCK=/run/user/$UID/ssh-agent
+      '';
       shellAliases = {
         ls = "eza --icons";
         ll = "eza -l --icons --git";
