@@ -21,6 +21,7 @@ in
     imv # Image Viewer
     p7zip # Archives
     rclone-browser # GUI for Rclone
+    obs-studio # Streaming/Recording Software
 
     # -- Sandboxed Apps --
     sandboxedApps.obsidian

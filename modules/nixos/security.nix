@@ -50,7 +50,23 @@ in
     clamav
     clamtk # GUI
     libnotify # For notifications
+    lxqt.lxqt-openssh-askpass # <--- ENSURE THIS IS ADDED
   ];
+
+  # ==========================================
+  # SSH & YUBIKEY SECURITY
+  # ==========================================
+  programs.ssh = {
+    # Start the standard OpenSSH agent system-wide (replaces HM service)
+    startAgent = true;
+
+    # Enable the graphical PIN prompt (essential for Git signing)
+    enableAskPassword = true;
+    askPassword = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
+  };
+
+  # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
+  services.gnome.gcr-ssh-agent.enable = false;
 
   # ==========================================
   # HARDENING & AUDITING

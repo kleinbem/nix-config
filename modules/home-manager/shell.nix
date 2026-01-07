@@ -4,6 +4,7 @@
   programs = {
     bash = {
       enable = true;
+
       shellAliases = {
         ls = "eza --icons";
         ll = "eza -l --icons --git";
@@ -23,6 +24,9 @@
 
     git = {
       enable = true;
+
+      # Modern Home Manager puts everything in 'settings'
+      # This matches the structure of your ~/.gitconfig
       settings = {
         user = {
           name = "kleinbem";
@@ -52,9 +56,8 @@
       enableBashIntegration = true;
     };
 
-    bat.enable = true; # Syntax highlighting for cat
+    bat.enable = true;
 
-    # Smarter cd
     zoxide = {
       enable = true;
       enableBashIntegration = true;
@@ -89,6 +92,7 @@
 
     ssh = {
       enable = true;
+      enableDefaultConfig = false;
       matchBlocks = {
         "*" = {
           addKeysToAgent = "yes";
@@ -102,16 +106,10 @@
         };
       };
     };
-
   };
 
-  # Fix for YubiKey Git Signing (Gnome Keyring doesn't support FIDO2/SK keys well)
-  services.ssh-agent.enable = true;
-
-  # Init Starship Config
   xdg.configFile."starship.toml".source = ./files/starship.toml;
 
-  # Manage Justfile declaratively
   home = {
     file = {
       ".justfile".source = ./files/justfile;
@@ -119,20 +117,18 @@
 
     sessionVariables = {
       TERMINAL = "cosmic-terminal";
-
-      # Force use of standard ssh-agent (fixes YubiKey signing)
-      # Gnome Keyring interferes with FIDO2/SK keys so we point to the standard agent
       SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
     };
 
     packages = with pkgs; [
       fastfetch
-      yazi # Terminal file manager
+      yazi
       rclone
+      lxqt.lxqt-openssh-askpass
     ];
   };
 
-  # Rclone needs a writable config to update tokens, so we copy it from secrets
+  # Rclone setup (Unchanged)
   systemd.user.services.setup-rclone-config = {
     Unit = {
       Description = "Setup Rclone Config from Secrets";

@@ -138,6 +138,8 @@
     pam_u2f
     sbctl
     niv
+    yubikey-personalization # Contains the Udev rules
+    libfido2
   ];
 
   system.stateVersion = "25.11";
