@@ -5,11 +5,16 @@ let
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
 
-    # VS Code-like GUIs run git without a TTY.
-    # We MUST use the system ssh-agent (not Gnome Keyring's) for YubiKey
-    # and we definitely need SSH_ASKPASS for the PIN prompt.
+    if [ -t 0 ] || [ -t 1 ]; then
+      # If we have a TTY, prioritize it!
+      unset SSH_ASKPASS
+      unset SSH_ASKPASS_REQUIRE
+    else
+      # No TTY (e.g. VS Code background), force Askpass
+      export SSH_ASKPASS="${pkgs.seahorse}/libexec/seahorse/ssh-askpass"
+      export SSH_ASKPASS_REQUIRE="force"
+    fi
     export SSH_AUTH_SOCK=/run/user/$UID/ssh-agent
-    export SSH_ASKPASS="${pkgs.seahorse}/libexec/seahorse/ssh-askpass"
 
     exec ${pkgs.openssh}/bin/ssh-keygen "$@"
   '';
@@ -140,6 +145,7 @@ in
       # Gnome Keyring interferes with FIDO2/SK keys
       SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
       SSH_ASKPASS = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
+      SSH_ASKPASS_REQUIRE = "never";
     };
 
     packages = with pkgs; [
