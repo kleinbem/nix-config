@@ -53,6 +53,18 @@ in
     lxqt.lxqt-openssh-askpass # <--- ENSURE THIS IS ADDED
   ];
 
+  # Force the correct SSH_AUTH_SOCK for all sessions.
+  # environment.sessionVariables is not enough because PAM/Gnome Keyring
+  # overwrites it during X session initialization.
+  # extraInit runs after that, allowing us to enforce our agent.
+  environment.extraInit = ''
+    export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
+  '';
+
+  # Explicitly disable Gnome Keyring in PAM for the greeter
+  # so it doesn't try to start its own agent or set the variable.
+  security.pam.services.cosmic-greeter.enableGnomeKeyring = false;
+
   # ==========================================
   # SSH & YUBIKEY SECURITY
   # ==========================================
