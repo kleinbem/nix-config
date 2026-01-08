@@ -78,7 +78,46 @@ in
   };
 
   # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
-  services.gnome.gcr-ssh-agent.enable = false;
+  services = {
+    gnome = {
+      # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
+      gcr-ssh-agent.enable = false;
+      gnome-keyring.enable = true;
+    };
+
+    clamav = {
+      daemon = {
+        enable = true;
+        settings = {
+          DatabaseDirectory = clamDir;
+          LogSyslog = true;
+          LogTime = true;
+          VirusEvent = "${notifyScript}";
+
+          # PUA Detection & Performance
+          DetectPUA = true;
+          ConcurrentDatabaseReload = true;
+
+          # Performance & On-Access
+          OnAccessPrevention = true;
+          OnAccessIncludePath = [ "${home}/Downloads" ];
+          OnAccessExcludeUname = "clamav";
+          OnAccessExtraScanning = true;
+        };
+      };
+
+      updater = {
+        enable = true;
+        frequency = 12; # Update every 2 hours
+        settings = {
+          DatabaseDirectory = clamDir;
+          LogSyslog = true;
+        };
+      };
+
+      clamonacc.enable = true;
+    };
+  };
 
   # ==========================================
   # HARDENING & AUDITING
@@ -94,39 +133,6 @@ in
     };
     auditd.enable = false;
     protectKernelImage = true;
-  };
-
-  services.clamav = {
-    daemon = {
-      enable = true;
-      settings = {
-        DatabaseDirectory = clamDir;
-        LogSyslog = true;
-        LogTime = true;
-        VirusEvent = "${notifyScript}";
-
-        # PUA Detection & Performance
-        DetectPUA = true;
-        ConcurrentDatabaseReload = true;
-
-        # Performance & On-Access
-        OnAccessPrevention = true;
-        OnAccessIncludePath = [ "${home}/Downloads" ];
-        OnAccessExcludeUname = "clamav";
-        OnAccessExtraScanning = true;
-      };
-    };
-
-    updater = {
-      enable = true;
-      frequency = 12; # Update every 2 hours
-      settings = {
-        DatabaseDirectory = clamDir;
-        LogSyslog = true;
-      };
-    };
-
-    clamonacc.enable = true;
   };
 
   # ---------------------------

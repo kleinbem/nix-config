@@ -27,9 +27,8 @@
 
     git = {
       enable = true;
+      lfs.enable = true;
 
-      # Modern Home Manager puts everything in 'settings'
-      # This matches the structure of your ~/.gitconfig
       settings = {
         user = {
           name = "kleinbem";
@@ -38,13 +37,23 @@
         };
 
         commit.gpgsign = true;
+
+        # SSH Signing Configuration
         gpg.format = "ssh";
+        # This file tells Git which public keys belong to which email addresses.
+        # Without this, your local 'git log' will show "Unknown Signature" for your own commits.
+        "gpg.ssh".allowedSignersFile = "/home/martin/.ssh/allowed_signers";
 
         alias = {
           st = "status";
           co = "checkout";
           sw = "switch";
           br = "branch";
+
+          # 'gl' - Graph Log with Signature Verification
+          # %h: Hash | %G?: Signature Status (G=Good, B=Bad, U=Unknown)
+          # %d: Refs (branches/tags) | %s: Subject | %cr: Date | %an: Author
+          gl = "log --graph --pretty=format:'%C(yellow)%h%C(reset) %C(bold magenta)%G?%C(reset) -%C(red)%d%C(reset) %s %C(dim green)(%cr) %C(bold blue)<%an>%C(reset)'";
         };
       };
     };
@@ -121,6 +130,7 @@
     sessionVariables = {
       TERMINAL = "cosmic-terminal";
       SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
+      SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
     };
 
     packages = with pkgs; [

@@ -29,7 +29,9 @@ in
     sandboxedApps.google-chrome # Nixpak (Safe) - Banking
     sandboxedApps.lmstudio # Nixpak (Safe)
     sandboxedApps.bitwarden # Nixpak (Safe) - Password Manager
-    sandboxedApps.github-desktop # Nixpak (Safe) - Code
+    sandboxedApps.bitwarden # Nixpak (Safe) - Password Manager
+    # sandboxedApps.github-desktop # Nixpak (Safe) - Code
+    github-desktop # Standard (Unsafe) - Temporarily disabled sandbox for auth debugging
     chromium # Fallback (Unsafe) - Local Dev
 
     # Math and Matrix stuff. Using 'octaveFull' to get the standard packages included.
@@ -53,6 +55,13 @@ in
   qt = {
     enable = true;
     platformTheme.name = "gtk";
+  };
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "x-scheme-handler/x-github-client" = [ "github-desktop.desktop" ];
+    };
   };
 
   programs.waybar.enable = true;

@@ -10,6 +10,11 @@ let
     # Using dbus-send to communicate with xdg-desktop-portal
     # https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.OpenURI.html
 
+    LOGFILE="/tmp/xdg-open-debug.log"
+    echo "--- xdg-open called at $(date) ---" >> "$LOGFILE"
+    echo "Args: $@" >> "$LOGFILE"
+    echo "DBUS_SESSION_BUS_ADDRESS: $DBUS_SESSION_BUS_ADDRESS" >> "$LOGFILE"
+
     # Check if we have arguments
     if [ -z "$1" ]; then
       echo "Usage: xdg-open <url>"
@@ -32,7 +37,7 @@ let
       org.freedesktop.portal.OpenURI.OpenURI \
       string:"" \
       string:"$1" \
-      array:dict:string:variant:
+      array:dict:string:variant: >> "$LOGFILE" 2>&1
   '';
 
   # Wrap the script in a package structure similar to xdg-utils
@@ -234,6 +239,10 @@ in
           env = {
             # SSH Agent for YubiKey auth
             SSH_AUTH_SOCK = sloth.env "SSH_AUTH_SOCK";
+            # Enable System Integration (Open Links/Apps) via DBus
+            DBUS_SESSION_BUS_ADDRESS = sloth.env "DBUS_SESSION_BUS_ADDRESS";
+            # Force invocation of our xdg-open wrapper
+            BROWSER = "xdg-open";
           };
         };
       };

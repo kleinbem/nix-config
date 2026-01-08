@@ -22,7 +22,7 @@
 
     # Private Secrets (GitHub Repo)
     nix-secrets = {
-      url = "git+ssh://git@github.com/kleinbem/nix-secrets.git";
+      url = "git+ssh://git@github.com/kleinbem/nix-secrets.git?ref=main";
       flake = false;
     };
 
