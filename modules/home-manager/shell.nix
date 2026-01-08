@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 {
   programs = {
@@ -139,6 +144,20 @@
       rclone
       lxqt.lxqt-openssh-askpass
     ];
+
+    activation = {
+      fixSshConfigPermissions = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        if [ -L "$HOME/.ssh/config" ]; then
+          $DRY_RUN_CMD rm -f $HOME/.ssh/config
+          $DRY_RUN_CMD cp -L ${config.home.file.".ssh/config".source} $HOME/.ssh/config
+          $DRY_RUN_CMD chmod 600 $HOME/.ssh/config
+        fi
+        # Ensure correct ownership/permissions if it's already a file (idempotency)
+        if [ -f "$HOME/.ssh/config" ]; then
+            $DRY_RUN_CMD chmod 600 $HOME/.ssh/config
+        fi
+      '';
+    };
   };
 
   # Rclone setup (Unchanged)
