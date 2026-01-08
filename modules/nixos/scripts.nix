@@ -15,7 +15,7 @@ let
       ripgrep
       starship
       podman
-      nixfmt-rfc-style
+      nixfmt
       deadnix
       statix
     ];

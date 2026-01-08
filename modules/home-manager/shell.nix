@@ -86,7 +86,7 @@
 
     zellij = {
       enable = true;
-      enableBashIntegration = true;
+      enableBashIntegration = false;
       settings = {
         theme = "tokyo-night";
       };
@@ -115,7 +115,8 @@
           addKeysToAgent = "yes";
           controlMaster = "auto";
           controlPath = "~/.ssh/control-%C";
-          controlPersist = "10m";
+          controlPersist = "4h";
+          serverAliveInterval = 60;
         };
         "github.com" = {
           user = "git";

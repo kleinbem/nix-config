@@ -76,6 +76,7 @@
       treefmtEval = treefmt-nix.lib.evalModule pkgs {
         projectRootFile = "flake.nix";
         programs.nixfmt.enable = true;
+        programs.nixfmt.package = pkgs.nixfmt;
       };
 
       # Import Custom Library
@@ -93,7 +94,7 @@
           # pkgs.gemini-cli ## temp disabled
 
           pkgs.statix
-          pkgs.nixfmt-rfc-style
+          pkgs.nixfmt
           pkgs.deadnix
           pkgs.sops
 

@@ -71,8 +71,12 @@
     };
   };
 
+  programs.virt-manager.enable = true;
+
   # Virtualization Tools
   environment.systemPackages = with pkgs; [
+    virt-manager
+
     podman
     podman-tui
     podman-compose

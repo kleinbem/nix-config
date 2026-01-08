@@ -101,7 +101,7 @@
     nvd
 
     # Nix Tooling
-    nixfmt-rfc-style
+    nixfmt
     deadnix
     statix
 

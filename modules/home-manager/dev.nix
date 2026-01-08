@@ -16,7 +16,7 @@
         doInstallCheck = false;
       }))
       nil
-      nixfmt-rfc-style
+      nixfmt
 
       # -- LazyVim Prerequisites --
       ripgrep
