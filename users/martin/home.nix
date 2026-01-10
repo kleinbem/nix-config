@@ -2,7 +2,7 @@ _:
 
 {
   imports = [
-    ../../modules/home-manager/shell.nix
+    ../../modules/home-manager/terminal.nix
     ../../modules/home-manager/dev.nix
     ../../modules/home-manager/desktop.nix
     ../../modules/home-manager/security.nix

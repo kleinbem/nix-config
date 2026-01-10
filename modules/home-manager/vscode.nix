@@ -3,7 +3,7 @@
 {
   programs.vscode = {
     enable = true;
-    # package = pkgs.vscode; # usage of FHS is debated, sticking to standard for now.
+    package = pkgs.vscode-fhs;
 
     profiles.default = {
       # Recommended Extensions
@@ -14,6 +14,7 @@
         github.copilot-chat
         usernamehw.errorlens
         ms-vscode-remote.remote-ssh
+        hashicorp.terraform
       ];
 
       # Settings Sync

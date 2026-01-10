@@ -10,7 +10,7 @@ in
   home.packages = with pkgs; [
     # -- GUI Apps --
     # vscode-fhs (Moved to declarative module)
-    code-cursor # AI Code Editor (New in 25.05)
+    code-cursor-fhs # AI Code Editor (FHS Version)
     antigravity-fhs
     warp-terminal # Rust-based AI Terminal
     pavucontrol
@@ -21,6 +21,8 @@ in
     imv # Image Viewer
     p7zip # Archives
     rclone-browser # GUI for Rclone
+    restic-browser # GUI for Restic Backups
+    restic # CLI Tool (Required for Restic Browser)
     obs-studio # Streaming/Recording Software
 
     # -- Sandboxed Apps --

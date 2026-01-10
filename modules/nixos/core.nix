@@ -42,7 +42,6 @@
   services.journald.extraConfig = "SystemMaxUse=1G";
 
   # Web-based System Administration
-  # Web-based System Administration
   services.cockpit = {
     enable = true;
     port = 9091;
@@ -63,11 +62,6 @@
   # CORE UTILITIES
   # ==========================================
   programs = {
-    # Direnv for per-project environment loading
-    direnv = {
-      enable = true;
-      nix-direnv.enable = true;
-    };
     # Allow non-root users to mount FUSE
     fuse.userAllowOther = true;
 

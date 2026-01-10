@@ -8,38 +8,47 @@ default:
 # --- Build & Deployment ---
 
 # Build the system (No Switch)
+
 build:
     nh os build .
 
 # System Test (Build & Activate, No Bootloader)
+
 test:
     nh os test .
 
 # System Switch (Build & Activate & Bootloader)
+
 switch:
     nh os switch .
 
 # Switch with local overrides (Useful for secrets testing)
+
 switch-local:
     nh os switch . -- --override-input nix-secrets "git+file:///home/martin/Develop/github.com/kleinbem/nix-secrets"
 
 # Switch with Debug Output
+
 switch-debug:
     nh os switch . -- --show-trace --verbose || (echo "❌ Activation failed! Tailing logs..." && journalctl -n 20 --no-pager -u ollama.service -u open-webui.service && exit 1)
 
 # Update Flake Lockfile
+
 update:
     nix flake update
 
 # Verify Deployment (Post-Switch Check)
+
 verify:
     verify-system
 
 # Run Flake Checks (CI Tests)
+
 check:
     nix flake check
 
 # Full Deployment Pipeline (Lint -> Check -> Test -> Switch -> Verify)
+
 deploy: lint check test switch verify
     @echo "✅ System successfully deployed and verified!"
 
@@ -95,3 +104,23 @@ localDeep:
     @OLLAMA_API_BASE=<http://127.0.0.1:11434> nix develop --command aider \
       --model ollama/deepseek-r1:8b \
       --editor-model ollama/qwen2.5-coder:7b
+
+# --- Terranix Fleet Orchestration ---
+
+# Generate & Plan Infrastructure Changes
+
+infra-plan:
+    cd infra && nix run .
+    cd infra && nix develop --command bash -c "tofu init && tofu plan"
+
+# Generate & Apply Infrastructure Changes
+
+infra-apply:
+    cd infra && nix run .
+    cd infra && nix develop --command bash -c "tofu init && tofu apply"
+
+# Deploy Fleet (Non-Interactive)
+
+infra-deploy:
+    cd infra && nix run .
+    cd infra && nix develop --command bash -c "tofu init && tofu apply -auto-approve"

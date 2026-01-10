@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -101,6 +102,66 @@ in
         };
       };
     };
+    # --- Auto-Deploy n8n Container ---
+    # Disabled in favor of Terranix Orchestration (infra/)
+    services.deploy-n8n = {
+      enable = false;
+      description = "Deploy n8n Incus Container";
+      wantedBy = [ "multi-user.target" ];
+      after = [
+        "incus.service"
+        "network-online.target"
+      ];
+      requires = [ "incus.service" ];
+      path = [ pkgs.incus ];
+      script = ''
+        IMAGE_TAR="${
+          inputs.self.packages.${pkgs.system}.n8n-image
+        }/tarball/nixos-system-x86_64-linux.tar.xz"
+        ALIAS="n8n-declarative"
+        CONTAINER="n8n"
+
+        echo "📦 Importing n8n image..."
+        incus image import "$IMAGE_TAR" --alias "$ALIAS"
+
+        if ! incus info "$CONTAINER" > /dev/null 2>&1; then
+          echo "🚀 Launching n8n container..."
+          # Launch with CPU limit (2 cores) and immediate config
+          incus launch "$ALIAS" "$CONTAINER" -c limits.cpu=2 -c security.nesting=true
+
+          # Share Host Nix Store (Saves space, instant deployment)
+          echo "🔗 Binding host Nix Store..."
+          incus config device add "$CONTAINER" nix-store disk source=/nix/store path=/nix/store readonly=true 2>/dev/null || true
+          incus config device add "$CONTAINER" nix-db disk source=/nix/var/nix/db path=/nix/var/nix/db readonly=true 2>/dev/null || true
+          
+          # Networking & Integration
+          # 1. Expose n8n to Host (Host:5678 -> Container:5678)
+          incus config device add "$CONTAINER" hostport5678 proxy listen=tcp:0.0.0.0:5678 connect=tcp:127.0.0.1:5678 2>/dev/null || true
+          
+          # 2. Mount Host Ollama into Container (Container:11434 -> Host:11434)
+          # Allows n8n to access Ollama via 'http://localhost:11434' securely
+          incus config device add "$CONTAINER" ollama-link proxy bind=container listen=tcp:127.0.0.1:11434 connect=tcp:127.0.0.1:11434 2>/dev/null || true
+
+          # Restart to apply mounts if needed
+          incus restart "$CONTAINER"
+        else
+          echo "✅ Container exists. (To upgrade: incus delete $CONTAINER --force && systemctl restart deploy-n8n)"
+          
+          # Enforce runtime limits/configs on existing container
+          incus config set "$CONTAINER" limits.cpu 2
+          incus config set "$CONTAINER" limits.memory 4GiB
+          incus config set "$CONTAINER" boot.autostart true
+          
+          # Apply network bindings dynamically (idempotent)
+          incus config device add "$CONTAINER" hostport5678 proxy listen=tcp:0.0.0.0:5678 connect=tcp:127.0.0.1:5678 2>/dev/null || true
+          incus config device add "$CONTAINER" ollama-link proxy bind=container listen=tcp:127.0.0.1:11434 connect=tcp:127.0.0.1:11434 2>/dev/null || true
+        fi
+      '';
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+    };
   };
 
   # --- Services Configuration ---
@@ -131,7 +192,7 @@ in
 
     # --- N8N ---
     n8n = {
-      enable = true;
+      enable = false; # Migrated to Incus Container
       package = pkgs.stable.n8n;
       openFirewall = false;
       environment = {

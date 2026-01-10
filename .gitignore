@@ -22,3 +22,11 @@ tmp/
 # Workspace
 !nixos.code-workspace
 
+# -------------------------
+# Infrastructure (Terranix)
+# -------------------------
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+config.tf.json

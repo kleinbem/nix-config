@@ -18,22 +18,22 @@
       enable = true;
     };
 
+    # Podman (Side-by-side)
+    # Note: We do NOT alias docker to podman (dockerCompat=false) to allow them to co-exist.
+    # Docker handles DevContainers/NVIDIA, while Podman handles System Containers/RHEL workflows.
+    podman = {
+      enable = true;
+      dockerCompat = false;
+      dockerSocket.enable = false; # Do NOT hijack /run/docker.sock
+      defaultNetwork.settings.dns_enabled = true;
+    };
+
     # Incus (System Containers)
     incus = {
       enable = true;
       package = pkgs.incus;
       ui.enable = false;
-      # Disable auto-start (requires manual 'systemctl start incus' or socket activation)
     };
-
-    # Podman (Side-by-side)
-    podman = {
-      enable = true;
-      dockerCompat = false; # Do NOT alias docker to podman
-      dockerSocket.enable = false; # Do NOT hijack /run/docker.sock
-      defaultNetwork.settings.dns_enabled = true;
-    };
-    containers.enable = true;
   };
 
   # ==========================================
@@ -45,30 +45,10 @@
   # ==========================================
 
   systemd = {
-    # Rootless Socket (User) - Enables automatic activation for 'martin'
-    user.sockets.podman = {
-      description = "Podman API Socket (rootless)";
-      wantedBy = [ "sockets.target" ];
-      unitConfig.ConditionUser = "martin";
-      socketConfig = {
-        ListenStream = "%t/podman/podman.sock"; # %t = $XDG_RUNTIME_DIR
-        SocketMode = "0600";
-      };
-    };
-
-    # Rootless Service
-    user.services.podman = {
-      description = "Podman API Service (rootless)";
-      unitConfig.ConditionUser = "martin";
-      requires = [ "podman.socket" ];
-      after = [ "podman.socket" ];
-      serviceConfig = {
-        Type = "exec";
-        KillMode = "process";
-        Delegate = true;
-        ExecStart = "${pkgs.podman}/bin/podman system service --time=0";
-      };
-    };
+    # Ensure /images is owned by the user and libvirtd group
+    tmpfiles.rules = [
+      "z /images 0775 martin libvirtd - -"
+    ];
   };
 
   programs.virt-manager.enable = true;

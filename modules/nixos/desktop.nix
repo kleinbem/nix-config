@@ -4,6 +4,11 @@
   # ==========================================
   # DESKTOP (COSMIC)
   # ==========================================
+  boot.plymouth = {
+    enable = true;
+    theme = "bgrt";
+  };
+
   services = {
     displayManager.cosmic-greeter.enable = true;
     desktopManager.cosmic.enable = true;

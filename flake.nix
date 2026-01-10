@@ -126,7 +126,7 @@
       checks.${system}.pre-commit-check = pre-commit-hooks.lib.${system}.run {
         src = ./.;
         hooks = {
-          nixfmt-rfc-style.enable = true;
+          nixfmt.enable = true;
           statix.enable = true;
           deadnix.enable = true;
         };
@@ -140,6 +140,18 @@
           hostname = "nixos-nvme";
           user = "martin";
         };
+      };
+
+      # ---------------------------------------------------------
+      # 4. Image Generation
+      # ---------------------------------------------------------
+      packages.${system}.n8n-image = nixos-generators.nixosGenerate {
+        inherit system;
+        modules = [
+          ./hosts/n8n/configuration.nix
+        ];
+        format = "lxc-metadata"; # Or 'lxc' depending on incus vs lxd preference, usually lxc-metadata for import
+        specialArgs = { inherit inputs; };
       };
     };
 }

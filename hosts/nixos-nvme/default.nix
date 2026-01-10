@@ -17,6 +17,7 @@
     ../../modules/nixos/security.nix
     ../../modules/nixos/ai-services.nix
     ../../modules/nixos/virtualisation.nix
+    ../../modules/nixos/backup.nix
   ];
 
   # ==========================================
@@ -26,6 +27,7 @@
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
       systemd-boot.enable = pkgs.lib.mkForce false; # Disabled for Lanzaboote
+      systemd-boot.configurationLimit = 10; # Keep boot menu clean
       efi.canTouchEfiVariables = true;
     };
     lanzaboote = {
@@ -55,6 +57,7 @@
     };
 
     # Switch to Firewalld for dynamic port management (Reverse Shells / Listeners)
+    # networking.firewall.enable = false; # Disabled static firewall to use firewalld instead
     firewall.enable = false;
     nftables.enable = true;
   };
@@ -139,7 +142,7 @@
     sbctl
     niv
     yubikey-personalization # Contains the Udev rules
-    libfido2
+    # libfido2 # Removed duplicate
   ];
 
   system.stateVersion = "25.11";
