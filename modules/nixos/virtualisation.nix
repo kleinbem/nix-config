@@ -32,7 +32,7 @@
     incus = {
       enable = true;
       package = pkgs.incus;
-      ui.enable = false;
+      ui.enable = true;
     };
   };
 

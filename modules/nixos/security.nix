@@ -77,6 +77,14 @@ in
     askPassword = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
   };
 
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
+    };
+  };
+
   # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
   services = {
     gnome = {

@@ -30,3 +30,5 @@ tmp/
 *.tfstate
 *.tfstate.backup
 config.tf.json
+*.tar
+*.tar.xz

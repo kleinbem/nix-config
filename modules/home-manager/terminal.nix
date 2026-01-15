@@ -11,6 +11,13 @@
       enable = true;
       initExtra = ''
         export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
+
+        # History Sync
+        export HISTCONTROL=ignoreboth:erasedups
+        export HISTSIZE=100000
+        export HISTFILESIZE=100000
+        shopt -s histappend
+        PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
       '';
 
       shellAliases = {
@@ -145,6 +152,9 @@
       yazi
       rclone
       lxqt.lxqt-openssh-askpass
+      btop # Essential for monitoring n8n/Ollama resources
+      usbutils # lsusb
+      pciutils # lspci
     ];
 
     activation = {

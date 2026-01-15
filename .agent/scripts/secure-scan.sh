@@ -74,8 +74,8 @@ check_option() {
     
     echo -n "- Checking $option on $host... " >> "$REPORT_FILE"
     
-    # Eval the option from the flake
-    ACTUAL=$(nix eval --raw ".#nixosConfigurations.$host.config.$option" 2>/dev/null || echo "ERROR")
+    # Eval the option using JSON to handle booleans and lists correctly
+    ACTUAL=$(nix eval --json ".#nixosConfigurations.$host.config.$option" 2>/dev/null | jq -c -r . || echo "ERROR")
     
     if [[ "$ACTUAL" == "$expected" ]]; then
         echo "✅ PASS" >> "$REPORT_FILE"
@@ -86,10 +86,21 @@ check_option() {
 }
 
 echo "### Workstation Compliance" >> "$REPORT_FILE"
-check_option "workstation" "services.openssh.settings.PermitRootLogin" "prohibit-password"
-check_option "workstation" "services.openssh.settings.PasswordAuthentication" "no"
-check_option "workstation" "networking.firewall.enable" "true"
-check_option "workstation" "nix.settings.trusted-users.0" "root"
+echo "### Workstation Compliance" >> "$REPORT_FILE"
+check_option "nixos-nvme" "services.openssh.settings.PermitRootLogin" "no"
+check_option "nixos-nvme" "services.openssh.settings.PasswordAuthentication" "false"
+# Check for EITHER networking.firewall OR firewalld
+FIREWALLD=$(nix eval --json ".#nixosConfigurations.nixos-nvme.config.services.firewalld.enable" 2>/dev/null | jq -r . || echo "false")
+NET_FIREWALL=$(nix eval --json ".#nixosConfigurations.nixos-nvme.config.networking.firewall.enable" 2>/dev/null | jq -r . || echo "false")
+
+echo -n "- Checking Firewall status... " >> "$REPORT_FILE"
+if [[ "$FIREWALLD" == "true" || "$NET_FIREWALL" == "true" ]]; then
+    echo "✅ PASS (Firewall enabled)" >> "$REPORT_FILE"
+else
+     echo "❌ FAIL (Neither firewalld nor networking.firewall enabled)" >> "$REPORT_FILE"
+     echo "⚠️  Compliance Fail: Firewall"
+fi
+check_option "nixos-nvme" "nix.settings.trusted-users" '["root","@wheel"]'
 
 # ==============================================================================
 # 5. SECRET SCAN
@@ -107,6 +118,7 @@ LEAK_REGEX="(BEGIN .* PRIVATE KEY|AWS_ACCESS_KEY_ID|AKIA[0-9A-Z]{16}|[a-zA-Z0-9.
 if grep -rE "$LEAK_REGEX" . \
     --exclude-dir=.git \
     --exclude-dir=.agent \
+    --exclude-dir=.terraform \
     --exclude-dir=result \
     --exclude="flake.lock" \
     | grep -vFf <(jq -r '.[]' .agent/audit/grep_ignore.json) >> "$REPORT_FILE"; then

@@ -52,30 +52,57 @@
   programs.dconf.enable = true;
 
   # Electron apps use Wayland natively
-  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+  environment = {
+    sessionVariables.NIXOS_OZONE_WL = "1";
+
+    etc."chromium/policies/managed/lab_policies.json".text = builtins.toJSON {
+      # 1. Ephemeral Session (Wipe on Close)
+      ClearSiteDataOnExit = true;
+      # 2. Privacy (Block 3rd party cookies)
+      BlockThirdPartyCookies = true;
+      # 3. No Sync (It is a throwaway browser)
+      SignInAllowed = false;
+      # 4. DevTools enabled by default
+      DeveloperToolsAvailability = 1;
+
+      # 5. Disable Telemetry
+      MetricsReportingEnabled = false;
+      SpellCheckServiceEnabled = false;
+
+      # 6. Add uBlock Origin Automatically
+      # This installs uBlock Origin (lite or full) by default for all users
+      ExtensionSettings = {
+        "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
+          # uBlock Origin ID
+          installation_mode = "force_installed";
+          update_url = "https://clients2.google.com/service/update2/crx";
+        };
+      };
+    };
+
+    systemPackages = with pkgs; [
+      # Desktop Utilities
+      libsForQt5.qt5.qtwayland
+      qt6.qtwayland
+
+      # Cosmic Apps (Core components like comp/shell are installed by the desktopManager module)
+      cosmic-files
+      cosmic-term
+      cosmic-edit
+      # cosmic-store # Broken on NixOS (Use Nix!)
+      cosmic-screenshot
+      cosmic-randr
+
+      # GUI Tools
+
+      bleachbit
+
+      # CLI Tools
+      just
+    ];
+  };
 
   fonts.fontconfig.enable = true;
 
   programs.xwayland.enable = true;
-
-  environment.systemPackages = with pkgs; [
-    # Desktop Utilities
-    libsForQt5.qt5.qtwayland
-    qt6.qtwayland
-
-    # Cosmic Apps (Core components like comp/shell are installed by the desktopManager module)
-    cosmic-files
-    cosmic-term
-    cosmic-edit
-    # cosmic-store # Broken on NixOS (Use Nix!)
-    cosmic-screenshot
-    cosmic-randr
-
-    # GUI Tools
-
-    bleachbit
-
-    # CLI Tools
-    just
-  ];
 }

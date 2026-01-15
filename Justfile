@@ -107,6 +107,22 @@ localDeep:
 
 # --- Terranix Fleet Orchestration ---
 
+# Build & Import n8n Image (Required before deploy)
+
+import-n8n:
+    @echo "📦 Building n8n image..."
+    nix build .#n8n-image
+    incus image delete n8n-image || true
+    ./scripts/patch-incus-image.sh result/tarball/*.tar.xz "n8n-image" "NixOS n8n Container"
+
+# Build & Import Open WebUI Image
+
+import-open-webui:
+    @echo "📦 Building Open WebUI image..."
+    nix build .#open-webui-image
+    incus image delete open-webui-image || true
+    ./scripts/patch-incus-image.sh result/tarball/*.tar.xz "open-webui-image" "NixOS Open WebUI Container"
+
 # Generate & Plan Infrastructure Changes
 
 infra-plan:

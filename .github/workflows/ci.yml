@@ -29,3 +29,8 @@ jobs:
       # Full build might timeout on free runners, dry-run checks evaluation
       run: |
         nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --dry-run
+
+    - name: Build n8n Image
+      # Validate the container image builds successfully
+      run: nix build .#n8n-image --dry-run
+

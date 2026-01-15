@@ -96,6 +96,7 @@
           pkgs.statix
           pkgs.nixfmt
           pkgs.deadnix
+          pkgs.nil # Nix Language Server (Required for VS Code)
           pkgs.sops
 
           # --- Secret Management Tools ---
@@ -145,13 +146,26 @@
       # ---------------------------------------------------------
       # 4. Image Generation
       # ---------------------------------------------------------
-      packages.${system}.n8n-image = nixos-generators.nixosGenerate {
-        inherit system;
-        modules = [
-          ./hosts/n8n/configuration.nix
-        ];
-        format = "lxc-metadata"; # Or 'lxc' depending on incus vs lxd preference, usually lxc-metadata for import
-        specialArgs = { inherit inputs; };
+      packages.${system} = {
+        n8n-image = nixos-generators.nixosGenerate {
+          inherit system;
+          modules = [
+            ./hosts/n8n/configuration.nix
+            { nixpkgs.config.allowUnfree = true; }
+          ];
+          format = "lxc";
+          specialArgs = { inherit inputs; };
+        };
+
+        open-webui-image = nixos-generators.nixosGenerate {
+          inherit system;
+          modules = [
+            ./hosts/open-webui/configuration.nix
+            { nixpkgs.config.allowUnfree = true; }
+          ];
+          format = "lxc";
+          specialArgs = { inherit inputs; };
+        };
       };
     };
 }

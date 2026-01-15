@@ -30,6 +30,9 @@
     };
   };
 
+  # Fix: Disable DynamicUser to prevent migration of /var/lib/n8n (which is a bind mount)
+  systemd.services.n8n.serviceConfig.DynamicUser = pkgs.lib.mkForce false;
+
   # Disable documentation to save space
   documentation.enable = false;
   documentation.nixos.enable = false;

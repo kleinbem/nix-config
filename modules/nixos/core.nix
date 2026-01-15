@@ -27,7 +27,6 @@
       max-jobs = "auto";
       cores = 0;
       trusted-users = [
-        "root"
         "@wheel"
       ];
     };

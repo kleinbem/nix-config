@@ -17,6 +17,9 @@
       }))
       nil
       nixfmt
+      dbeaver-bin # SQL Client for n8n databases
+      jujutsu # jj - Git-compatible VCS
+      bruno # API Client (Postman alternative)
 
       # -- LazyVim Prerequisites --
       ripgrep

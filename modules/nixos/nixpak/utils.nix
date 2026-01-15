@@ -10,11 +10,13 @@ rec {
     {
       package,
       name ? package.pname,
+      executableName ? package.meta.mainProgram or package.pname or name,
       configDir ? name,
-      binPath ? "bin/${name}",
+      binPath ? "bin/${executableName}",
       extraPerms ? { },
       extraPackages ? [ ],
       presets ? [ ],
+      exportDesktopFiles ? true,
     }:
     let
       # If extra packages are requested, create a combined environment
@@ -111,9 +113,9 @@ rec {
     in
     pkgs.runCommand "${name}-sandboxed" { } ''
       mkdir -p $out/bin
-      ln -s ${script}/bin/${name} $out/bin/${name}
+      ln -s ${script}/bin/${executableName} $out/bin/${name}
 
-      if [ -d "${package}/share" ]; then
+      if ${pkgs.lib.boolToString exportDesktopFiles} && [ -d "${package}/share" ]; then
         mkdir -p $out/share
         if [ -d "${package}/share/icons" ]; then
           ln -s ${package}/share/icons $out/share/icons

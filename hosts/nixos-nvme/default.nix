@@ -16,8 +16,11 @@
     ../../modules/nixos/scripts.nix
     ../../modules/nixos/security.nix
     ../../modules/nixos/ai-services.nix
+    ../../modules/nixos/ai-services.nix
     ../../modules/nixos/virtualisation.nix
     ../../modules/nixos/backup.nix
+    ../../modules/nixos/services/dashboard.nix
+    ../../modules/nixos/services/github-runner.nix
   ];
 
   # ==========================================
@@ -96,6 +99,7 @@
     "z /images 0755 root root - -"
     "d /images/lmstudio 0750 martin users - -"
     "z /images/lmstudio 0750 martin users - -"
+    "d /var/lib/n8n 0755 martin users - -"
   ];
 
   # ==========================================
