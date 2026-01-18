@@ -81,3 +81,12 @@ clean:
 # System Logs
 logs:
     journalctl -f
+
+# --- Fixes ---
+
+# Fix Chrome/Smartcard issues (Restart Panel & PCSCD)
+fix-chrome:
+    pkill cosmic-panel || true
+    pkill -f google-chrome || true
+    sudo systemctl restart pcscd
+    google-chrome-stable > /dev/null 2>&1 &

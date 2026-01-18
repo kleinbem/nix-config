@@ -75,13 +75,19 @@ let
       name, # Binary name (e.g., google-chrome-vault)
       sourceUserDataDir ? null, # Host dir to bind to ~/.config/google-chrome (if null, uses standard ~/.config/google-chrome)
       exportDesktopFiles ? true,
+      extraBinNames ? [ ],
       ...
     }:
     utils.mkSandboxed {
       inherit exportDesktopFiles;
-      package = pkgs.google-chrome;
+      inherit extraBinNames;
+      package = pkgs.runCommand "google-chrome-renamed-${name}" { } ''
+        mkdir -p $out/bin
+        ln -s ${pkgs.google-chrome}/bin/google-chrome-stable $out/bin/${name}
+        ln -s ${pkgs.google-chrome}/share $out/share
+      '';
       inherit name;
-      binPath = "bin/google-chrome-stable";
+      binPath = "bin/${name}";
       # configDir = "google-chrome"; # REMOVED: Caused collision with default profile. Defaults to 'name' now.
       extraPackages = [
         sandboxedXdgUtils
@@ -190,9 +196,11 @@ in
     {
       name, # Binary name (e.g., google-chrome-vault)
       sourceUserDataDir ? null, # Host dir to bind to ~/.config/google-chrome (if null, uses standard ~/.config/google-chrome)
+      extraBinNames ? [ ],
       ...
     }:
     utils.mkSandboxed {
+      inherit extraBinNames;
       package = pkgs.google-chrome;
       inherit name;
       configDir = "google-chrome"; # Inside the sandbox, it always looks like standard Chrome
@@ -206,6 +214,7 @@ in
         "audio"
         "gpu"
         "usb"
+        "discovery"
       ];
       extraPerms =
         { sloth, ... }:
@@ -270,23 +279,30 @@ in
     };
 
   # 1. Standard Banking (Vault) - Isolated Storage
-  google-chrome-vault = mkChrome {
-    name = "google-chrome-vault";
+  google-chrome-stable-vault = mkChrome {
+    name = "google-chrome-stable-vault";
     sourceUserDataDir = "/home/martin/.config/google-chrome-vault";
-    exportDesktopFiles = false;
+    exportDesktopFiles = true;
+    displayName = "Google Chrome Vault (Secure)";
   };
 
   # 2. Social Media (Hazard) - Isolated Storage
-  google-chrome-hazard = mkChrome {
-    name = "google-chrome-hazard";
+  google-chrome-stable-hazard = mkChrome {
+    name = "google-chrome-stable-hazard";
     sourceUserDataDir = "/home/martin/.config/google-chrome-hazard";
-    exportDesktopFiles = false;
+    exportDesktopFiles = true;
+    displayName = "Google Chrome Hazard (Secure)";
   };
 
-  # 3. Standard Chrome (if needed)
-  google-chrome = mkChrome {
-    name = "google-chrome";
-    sourceUserDataDir = null; # Uses ~/.config/google-chrome
+  # 3. Standard Chrome (matches upstream name)
+  google-chrome-stable = mkChrome {
+    name = "google-chrome-stable";
+    # Force usage of ~/.config/google-chrome to preserve existing profile
+    # Since we renamed the binary to 'google-chrome-stable', default Chrome checking would likely look for ~/.config/google-chrome-stable
+    # We must explicitly bind the old directory to ensure continuity.
+    sourceUserDataDir = "/home/martin/.config/google-chrome";
+    extraBinNames = [ "google-chrome" ]; # Alias for convenience
+    displayName = "Google Chrome (Secure)";
   };
 
   # --- MPV (Media Player) ---

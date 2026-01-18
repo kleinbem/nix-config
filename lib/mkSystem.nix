@@ -2,6 +2,7 @@
   nixpkgs,
   inputs,
   nixpak,
+  self,
   ...
 }:
 
@@ -15,7 +16,7 @@
     }:
     nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit inputs; };
+      specialArgs = { inherit inputs self; };
       modules = [
         # Host Specific Configuration
         ../hosts/${hostname}/default.nix
@@ -37,6 +38,9 @@
             })
           ];
         })
+
+        # User Configuration
+        ../users/${user}/nixos.nix
 
         # Home Manager Configuration
         {

@@ -1,6 +1,8 @@
 {
   config,
   pkgs,
+  inputs,
+  lib,
   ...
 }:
 
@@ -9,6 +11,7 @@ let
   commonBuildInputs = with pkgs; [
     # Core Build Tools
     git
+    cachix
     gnumake
     gcc
     binutils
@@ -42,6 +45,9 @@ let
   ];
 in
 {
+  # Ensure nix-shell works by linking nixpkgs to the system input
+  nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
+
   # ---------------------------------------------------------
   # GitHub Runners Service
   # ---------------------------------------------------------
@@ -51,7 +57,7 @@ in
       enable = true;
       url = "https://github.com/kleinbem/openwrt-builder";
       # Token managed by sops
-      tokenFile = config.sops.secrets.github_runner_token_openwrt.path;
+      tokenFile = config.sops.secrets.local_github_actions_runner.path;
       replace = true;
       name = "nixos-bpi-builder";
 
@@ -63,13 +69,66 @@ in
       ];
 
       # Bind the packages into the runner's path
-      extraPackages = commonBuildInputs;
+      extraPackages =
+        commonBuildInputs
+        ++ (with pkgs; [
+          podman
+          shadow
+        ]);
 
       # Hardening
       serviceOverrides = {
         ProtectHome = "read-only"; # Prevent runner from reading /home/martin
         PrivateDevices = false; # OpenWrt build might need loopback devices
+        # CRITICAL: Allow runner to create User Namespaces (for bwrap/FHS)
+        RestrictNamespaces = false;
+        # Highly Recommended: prevent weird permission denails
+        NoNewPrivileges = false;
+
+        # Unlock Rootless Podman capabilities:
+        PrivateUsers = false;
+        ProtectKernelTunables = false;
+        RestrictAddressFamilies = [
+          "AF_UNIX"
+          "AF_INET"
+          "AF_INET6"
+          "AF_NETLINK"
+        ];
+
+        # Allow seeing processes (Required for Rootless Podman)
+        ProtectProc = "default";
+        ProcSubset = "all";
+
+        # CRITICAL: Allow newuidmap to transition to root
+        RestrictSUIDSGID = false;
+
+        # Allow all capabilities (fixes newuidmap permission denied)
+        CapabilityBoundingSet = lib.mkForce [ "~" ];
+        AmbientCapabilities = lib.mkForce [ ];
+
+        # NEW: Allow all system calls (needed for nested containers/bwrap)
+        SystemCallFilter = lib.mkForce [ ];
+
+        # Ensure we use the static 'github-runner' user for persistence
+        DynamicUser = false;
+        User = "github-runner";
+        Group = "github-runner";
       };
+    };
+  };
+
+  # ---------------------------------------------------------
+  # Cleanup Service
+  # ---------------------------------------------------------
+  systemd.services.github-runner-cleanup = {
+    description = "Cleanup GitHub Runner Workspace";
+    startAt = "daily";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "github-runner";
+      # Cleans the '_work' directory to preventing disk exhaustion.
+      # Path assumes default state directory configuration: /var/lib/github-runners/<attr-name>
+      ExecStart = "${pkgs.coreutils}/bin/rm -rf /var/lib/github-runners/openwrt-builder/_work";
     };
   };
 
@@ -77,15 +136,17 @@ in
   # User & Group Configuration
   # ---------------------------------------------------------
   users.users.github-runner = {
-    isSystemUser = true;
+    isNormalUser = true;
     group = "github-runner";
+    # REQUIRED for Rootless Podman/Docker:
+    autoSubUidGidRange = true;
   };
   users.groups.github-runner = { };
 
   # ---------------------------------------------------------
   # Secrets Configuration
   # ---------------------------------------------------------
-  sops.secrets.github_runner_token_openwrt = {
+  sops.secrets.local_github_actions_runner = {
     owner = "github-runner"; # Must be readable by the service user
     # restartUnits = [ "github-runner-openwrt-builder.service" ]; # Restart runner if token changes
   };

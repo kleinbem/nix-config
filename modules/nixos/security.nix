@@ -230,6 +230,7 @@ in
       # Security Hardening (Kernel)
       "kernel.dmesg_restrict" = "1";
       "kernel.kptr_restrict" = "2";
+      "kernel.unprivileged_userns_clone" = 1;
     };
   };
 }

@@ -6,6 +6,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
 
+    flake-parts.url = "github:hercules-ci/flake-parts";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -48,7 +50,7 @@
     };
 
     lanzaboote = {
-      url = "github:nix-community/lanzaboote"; # Use master to fix build issues
+      url = "github:nix-community/lanzaboote";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -59,113 +61,125 @@
   };
 
   outputs =
-    {
+    inputs@{
       self,
       nixpkgs,
       nixpak,
       treefmt-nix,
       pre-commit-hooks,
       nixos-generators,
+      flake-parts,
       ...
-    }@inputs:
-    let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+    }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" ];
 
-      # Treefmt Configuration
-      treefmtEval = treefmt-nix.lib.evalModule pkgs {
-        projectRootFile = "flake.nix";
-        programs.nixfmt.enable = true;
-        programs.nixfmt.package = pkgs.nixfmt;
-      };
+      perSystem =
+        {
 
-      # Import Custom Library
-      mylib = import ./lib/mkSystem.nix { inherit nixpkgs inputs nixpak; };
-    in
-    {
-      # ---------------------------------------------------------
-      # 1. The Agentic Development Shell
-      # ---------------------------------------------------------
-      formatter.${system} = treefmtEval.config.build.wrapper;
+          pkgs,
+          system,
+          ...
+        }:
+        let
+          # Treefmt Configuration
+          treefmtEval = treefmt-nix.lib.evalModule pkgs {
+            projectRootFile = "flake.nix";
+            programs.nixfmt.enable = true;
+            programs.nixfmt.package = pkgs.nixfmt;
+          };
+        in
+        {
+          # ---------------------------------------------------------
+          # 1. The Agentic Development Shell
+          # ---------------------------------------------------------
+          formatter = treefmtEval.config.build.wrapper;
 
-      devShells.${system}.default = pkgs.mkShell {
-        buildInputs = [
-          pkgs.aider-chat
-          # pkgs.gemini-cli ## temp disabled
+          devShells.default = pkgs.mkShell {
+            buildInputs = [
+              pkgs.aider-chat
+              pkgs.statix
+              pkgs.nixfmt
+              pkgs.deadnix
+              pkgs.nil
+              pkgs.sops
+              pkgs.age
+              pkgs.age-plugin-yubikey
+              nixos-generators.packages.${system}.nixos-generate
+            ];
 
-          pkgs.statix
-          pkgs.nixfmt
-          pkgs.deadnix
-          pkgs.nil # Nix Language Server (Required for VS Code)
-          pkgs.sops
+            shellHook = ''
+              ${self.checks.${system}.pre-commit-check.shellHook}
+              echo "🤖 Spec-Driven NixOS Environment Loaded"
+              echo "   - System: NixOS + COSMIC + Nixpak"
 
-          # --- Secret Management Tools ---
-          pkgs.age
-          pkgs.age-plugin-yubikey
+              if [ -z "$GEMINI_API_KEY" ] && [ -z "$OLLAMA_API_BASE" ]; then
+                  echo "ℹ️  Note: No API keys detected."
+              fi
+              unset SSH_ASKPASS_REQUIRE
+            '';
+          };
 
-          # Generative
-          nixos-generators.packages.${system}.nixos-generate
-        ];
+          # ---------------------------------------------------------
+          # 2. Checks (Pre-commit)
+          # ---------------------------------------------------------
+          checks.pre-commit-check = pre-commit-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              nixfmt.enable = true;
+              statix.enable = true;
+              deadnix.enable = true;
+            };
+          };
 
-        shellHook = ''
-          ${self.checks.${system}.pre-commit-check.shellHook}
-          echo "🤖 Spec-Driven NixOS Environment Loaded"
-          echo "   - System: NixOS + COSMIC + Nixpak"
+          # ---------------------------------------------------------
+          # 4. Image Generation (Moved to PerSystem)
+          # ---------------------------------------------------------
+          packages = {
+            n8n-image = nixos-generators.nixosGenerate {
+              inherit system;
+              modules = [
+                ./hosts/n8n/configuration.nix
+                { nixpkgs.config.allowUnfree = true; }
+              ];
+              format = "lxc";
+              specialArgs = { inherit inputs; };
+            };
 
-          if [ -z "$GEMINI_API_KEY" ] && [ -z "$OLLAMA_API_BASE" ]; then
-              echo "ℹ️  Note: No API keys detected."
-          fi
-
-          # Unset SSH_ASKPASS_REQUIRE to allow YubiKey interaction
-          unset SSH_ASKPASS_REQUIRE
-        '';
-      };
-
-      # ---------------------------------------------------------
-      # 2. Checks (Pre-commit)
-      # ---------------------------------------------------------
-      checks.${system}.pre-commit-check = pre-commit-hooks.lib.${system}.run {
-        src = ./.;
-        hooks = {
-          nixfmt.enable = true;
-          statix.enable = true;
-          deadnix.enable = true;
-        };
-      };
-
-      # ---------------------------------------------------------
-      # 3. System Configurations
-      # ---------------------------------------------------------
-      nixosConfigurations = {
-        nixos-nvme = mylib.mkSystem {
-          hostname = "nixos-nvme";
-          user = "martin";
-        };
-      };
-
-      # ---------------------------------------------------------
-      # 4. Image Generation
-      # ---------------------------------------------------------
-      packages.${system} = {
-        n8n-image = nixos-generators.nixosGenerate {
-          inherit system;
-          modules = [
-            ./hosts/n8n/configuration.nix
-            { nixpkgs.config.allowUnfree = true; }
-          ];
-          format = "lxc";
-          specialArgs = { inherit inputs; };
+            open-webui-image = nixos-generators.nixosGenerate {
+              inherit system;
+              modules = [
+                ./hosts/open-webui/configuration.nix
+                { nixpkgs.config.allowUnfree = true; }
+              ];
+              format = "lxc";
+              specialArgs = { inherit inputs; };
+            };
+          };
         };
 
-        open-webui-image = nixos-generators.nixosGenerate {
-          inherit system;
-          modules = [
-            ./hosts/open-webui/configuration.nix
-            { nixpkgs.config.allowUnfree = true; }
-          ];
-          format = "lxc";
-          specialArgs = { inherit inputs; };
+      flake =
+        let
+          # Import Custom Library
+          mylib = import ./lib/mkSystem.nix {
+            inherit
+              nixpkgs
+              inputs
+              nixpak
+              self
+              ;
+          };
+        in
+        {
+          # ---------------------------------------------------------
+          # 3. System Configurations
+          # ---------------------------------------------------------
+          nixosConfigurations = {
+            nixos-nvme = mylib.mkSystem {
+              hostname = "nixos-nvme";
+              user = "martin";
+            };
+          };
         };
-      };
     };
 }

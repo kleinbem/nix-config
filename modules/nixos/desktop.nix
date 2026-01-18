@@ -56,10 +56,10 @@
     sessionVariables.NIXOS_OZONE_WL = "1";
 
     etc."chromium/policies/managed/lab_policies.json".text = builtins.toJSON {
-      # 1. Ephemeral Session (Wipe on Close)
-      ClearSiteDataOnExit = true;
-      # 2. Privacy (Block 3rd party cookies)
-      BlockThirdPartyCookies = true;
+      # 1. Ephemeral Session (Wipe on Close) - DISABLED for IDE Compatibility
+      ClearSiteDataOnExit = false;
+      # 2. Privacy (Block 3rd party cookies) - DISABLED for IDE Compatibility
+      BlockThirdPartyCookies = false;
       # 3. No Sync (It is a throwaway browser)
       SignInAllowed = false;
       # 4. DevTools enabled by default

@@ -17,8 +17,14 @@ rec {
       extraPackages ? [ ],
       presets ? [ ],
       exportDesktopFiles ? true,
+      extraBinNames ? [ ],
+      displayName ? null,
     }:
     let
+      # Use provided displayName or fallback to package description/name + (Secure)
+      finalDisplayName =
+        if displayName != null then displayName else "${package.meta.description or name} (Secure)";
+
       # If extra packages are requested, create a combined environment
       envPackage =
         if extraPackages == [ ] then
@@ -68,6 +74,11 @@ rec {
             ];
           };
         };
+        discovery = {
+          bubblewrap.bind.ro = [
+            "/run/avahi-daemon/socket"
+          ];
+        };
       };
 
       # Select requested presets
@@ -115,18 +126,25 @@ rec {
       mkdir -p $out/bin
       ln -s ${script}/bin/${executableName} $out/bin/${name}
 
+      for extraBin in ${toString extraBinNames}; do
+        ln -s ${script}/bin/${executableName} $out/bin/$extraBin
+      done
+
       if ${pkgs.lib.boolToString exportDesktopFiles} && [ -d "${package}/share" ]; then
         mkdir -p $out/share
         if [ -d "${package}/share/icons" ]; then
           ln -s ${package}/share/icons $out/share/icons
         fi
         if [ -d "${package}/share/applications" ]; then
-          cp -r ${package}/share/applications $out/share/applications
-          chmod -R u+w $out/share/applications
-          sed -i "s|^Exec=.*|Exec=$out/bin/${name} %u|" $out/share/applications/*.desktop
-          sed -i "s|^Name=${
-            package.meta.description or name
-          }|Name=${name} (Secure)|" $out/share/applications/*.desktop
+          mkdir -p $out/share/applications
+          for f in ${package}/share/applications/*.desktop; do
+            # Rename the desktop file to match the sandbox name to avoid collisions
+            target="$out/share/applications/${name}.desktop"
+            cp -L "$f" "$target"
+            chmod u+w "$target"
+            sed -i "s|^Exec=.*|Exec=$out/bin/${name} %u|" "$target"
+            sed -i "s|^Name=.*|Name=${finalDisplayName}|" "$target"
+          done
         fi
       fi
     '';
