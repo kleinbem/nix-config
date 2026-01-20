@@ -1,26 +1,19 @@
 {
   pkgs,
   inputs,
-  self,
   ...
 }:
 
 {
   imports = [
     ./hardware-configuration.nix
-    "${self}/modules/nixos/core.nix"
-    "${self}/modules/nixos/desktop.nix"
-    "${self}/modules/nixos/hardware/intel-compute.nix"
-    "${self}/modules/nixos/printing.nix"
-    "${self}/modules/nixos/users.nix"
-    "${self}/modules/nixos/scripts.nix"
-    "${self}/modules/nixos/security.nix"
-    "${self}/modules/nixos/ai-services.nix"
-    "${self}/modules/nixos/virtualisation.nix"
-    "${self}/modules/nixos/backup.nix"
-    "${self}/modules/nixos/services/dashboard.nix"
-    "${self}/modules/nixos/services/github-runner.nix"
+    ../../modules/nixos/hardware/intel-compute.nix
+    ../../modules/nixos/default.nix
+    ../../modules/nixos/common.nix
+    ../../users/martin/nixos.nix
   ];
+
+  home-manager.users.martin = import ../../users/martin/home.nix;
 
   # ==========================================
   # 1. CORE SYSTEM & BOOT

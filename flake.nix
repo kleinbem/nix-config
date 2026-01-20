@@ -64,7 +64,6 @@
     inputs@{
       self,
       nixpkgs,
-      nixpak,
       treefmt-nix,
       pre-commit-hooks,
       nixos-generators,
@@ -158,28 +157,14 @@
           };
         };
 
-      flake =
-        let
-          # Import Custom Library
-          mylib = import ./lib/mkSystem.nix {
-            inherit
-              nixpkgs
-              inputs
-              nixpak
-              self
-              ;
-          };
-        in
-        {
-          # ---------------------------------------------------------
-          # 3. System Configurations
-          # ---------------------------------------------------------
-          nixosConfigurations = {
-            nixos-nvme = mylib.mkSystem {
-              hostname = "nixos-nvme";
-              user = "martin";
-            };
+      flake = {
+        nixosConfigurations = {
+          nixos-nvme = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = { inherit inputs self; };
+            modules = [ ./hosts/nixos-nvme/default.nix ];
           };
         };
+      };
     };
 }

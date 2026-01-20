@@ -1,0 +1,59 @@
+name: Maintain Flake
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'  # daily at 03:00 UTC
+
+jobs:
+  update:
+    runs-on: self-hosted
+    env:
+      DIRENV_CACHE: $HOME/.direnv/cache
+    steps:
+      - name: Checkout nix-config
+        uses: actions/checkout@v4
+        with:
+          path: nix-config
+
+      - name: Checkout nix-secrets (shallow)
+        uses: actions/checkout@v4
+        with:
+          repository: kleinbem/nix-secrets
+          path: nix-secrets
+          fetch-depth: 1
+
+      - name: Cache Nix store
+        uses: actions/cache@v4
+        with:
+          path: /nix/store
+          key: nix-store-${{ runner.os }}-${{ hashFiles('nix-config/**') }}
+
+      - name: Cache nix-secrets directory
+        uses: actions/cache@v4
+        with:
+          path: nix-secrets
+          key: nix-secrets-${{ runner.os }}-${{ hashFiles('nix-secrets/**') }}
+
+      - name: Set up Nix
+        uses: cachix/install-nix-action@v24
+
+      - name: Override and lock nix-secrets
+        run: |
+          cd nix-config
+          nix flake lock --override-input nix-secrets ../nix-secrets
+
+      - name: Update flake inputs
+        run: |
+          cd nix-config
+          nix flake update
+
+      - name: Commit lockfile changes
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flake.lock
+          # NOTE: CI runners cannot use YubiKey for GPG signing.
+          # This commit is unsigned; ensure your remote does not enforce signed commits for CI.
+          git -c commit.gpgsign=false commit -m "chore: update flake.lock (auto)"
+          git push

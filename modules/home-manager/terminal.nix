@@ -37,6 +37,18 @@
       enable = true;
     };
 
+    keychain = {
+      enable = true;
+      enableBashIntegration = true;
+      keys = [
+        "id_ed25519_sk"
+        "id_ed25519_sk_backup"
+        "id_ed25519_sk_no_touch"
+        "id_ecdsa_sk_auth"
+        "id_ecdsa_sk_auth_backup"
+      ];
+    };
+
     git = {
       enable = true;
       lfs.enable = true;
