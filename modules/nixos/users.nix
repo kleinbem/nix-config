@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
   # ==========================================
@@ -7,7 +7,7 @@
   users = {
     users = {
       root = {
-        initialPassword = "backup-root-password";
+        hashedPasswordFile = config.sops.secrets.root-password-hash.path;
       };
     };
 
@@ -15,6 +15,10 @@
       # ollama = { };
       # open-webui = { };
     };
+  };
+
+  sops.secrets.root-password-hash = {
+    neededForUsers = true;
   };
 
   security = {

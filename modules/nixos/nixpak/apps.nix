@@ -4,7 +4,8 @@ let
   utils = import ./utils.nix { inherit pkgs nixpak; };
 
   # Define the policy file directly via Nix
-  chromePolicy = pkgs.runCommand "chrome-policy" { } ''
+  # Define the policy file directly via Nix
+  chromePolicyBlocked = pkgs.runCommand "chrome-policy-blocked" { } ''
     mkdir -p $out/policies/managed
     cat > $out/policies/managed/blocklist.json <<EOF
     ${builtins.toJSON {
@@ -16,6 +17,16 @@ let
         "pjkljhegncpnkpknbcohdijeoejaedia" # Gmail
         "blpcfgokakmgnkcojhhkbfbldkacnbeo" # YouTube
       ];
+    }}
+    EOF
+  '';
+
+  # Define a permissive policy (empty blocklist)
+  chromePolicyAllowed = pkgs.runCommand "chrome-policy-allowed" { } ''
+    mkdir -p $out/policies/managed
+    cat > $out/policies/managed/blocklist.json <<EOF
+    ${builtins.toJSON {
+      ExtensionInstallBlocklist = [ ];
     }}
     EOF
   '';
@@ -76,6 +87,7 @@ let
       sourceUserDataDir ? null, # Host dir to bind to ~/.config/google-chrome (if null, uses standard ~/.config/google-chrome)
       exportDesktopFiles ? true,
       extraBinNames ? [ ],
+      policy ? chromePolicyBlocked,
       ...
     }:
     utils.mkSandboxed {
@@ -139,7 +151,7 @@ let
                 (sloth.concat' sloth.homeDir "/.local/share/fonts")
                 (sloth.concat' sloth.homeDir "/.config/gtk-3.0")
                 [
-                  "${chromePolicy}"
+                  "${policy}"
                   "/etc/opt/chrome"
                 ]
                 [
@@ -188,102 +200,13 @@ in
       };
   };
 
-  # --- GOOGLE CHROME (Helper & Profiles) ---
-  # Helper to generate sandboxed Chrome with custom user data directories
-  # This allows us to have isolated 'Vault', 'Hazard', and 'Standard' profiles
-  # that all run in the same restricted sandbox structure, but bind different storage.
-  mkChrome =
-    {
-      name, # Binary name (e.g., google-chrome-vault)
-      sourceUserDataDir ? null, # Host dir to bind to ~/.config/google-chrome (if null, uses standard ~/.config/google-chrome)
-      extraBinNames ? [ ],
-      ...
-    }:
-    utils.mkSandboxed {
-      inherit extraBinNames;
-      package = pkgs.google-chrome;
-      inherit name;
-      configDir = "google-chrome"; # Inside the sandbox, it always looks like standard Chrome
-      extraPackages = [
-        sandboxedXdgUtils
-        pkgs.cosmic-files
-      ];
-      presets = [
-        "network"
-        "wayland"
-        "audio"
-        "gpu"
-        "usb"
-        "discovery"
-      ];
-      extraPerms =
-        { sloth, ... }:
-        {
-          bubblewrap = {
-            bind = {
-              # 1. Device Access
-              dev = [
-                "/dev/bus/usb"
-                "/dev/video0"
-                "/dev/video1"
-              ]
-              ++ (map (i: "/dev/hidraw" + toString i) (pkgs.lib.lists.range 0 49));
-
-              # 2. File & Socket Access
-              rw = [
-                # YubiKey / Smart Card (FIDO2)
-                "/run/pcscd"
-
-                # Downloads
-                (sloth.concat' sloth.homeDir "/Downloads")
-
-                # PWA Integration (Shared)
-                (sloth.concat' sloth.homeDir "/.local/share/applications")
-                (sloth.concat' sloth.homeDir "/.local/share/icons")
-                (sloth.concat' sloth.homeDir "/.config/mimeapps.list")
-              ]
-              # Conditional Binding: Bind custom host dir to standard internal dir
-              ++ pkgs.lib.optionals (sourceUserDataDir != null) [
-                [
-                  sourceUserDataDir
-                  (sloth.concat' sloth.homeDir "/.config/google-chrome")
-                ]
-              ];
-
-              # 3. Read Only Access
-              ro = [
-                (sloth.concat' sloth.homeDir "/.local/share/fonts")
-                (sloth.concat' sloth.homeDir "/.config/gtk-3.0")
-                "/sys/class/hidraw"
-                "/sys/bus/hid"
-                "/sys/devices"
-                "/run/udev/data"
-                "/run/udev"
-              ];
-            };
-            env = {
-              # If we are binding a custom Config Dir, we DON'T need to set CHROME_USER_DATA_DIR
-              # because we are mounting it to the default location inside the sandbox!
-              # But if we were NOT rebinding (standard case), util.mkSandboxed handles configDir binding.
-              # Actually, util.mkSandboxed binds the host 'configDir' to ~/.config/name.
-              # Since we force 'configDir = "google-chrome"', it binds ~/.config/google-chrome <-> ~/.config/google-chrome
-              # WE NEED TO OVERRIDE THIS BEHAVIOR for custom source dirs.
-              # The simplest way with utils.mkSandboxed is to let it bind the default, and we OVERMOUNT it with our bind in 'rw'.
-              # Bubblewrap processes binds in order.
-
-              DBUS_SESSION_BUS_ADDRESS = sloth.env "DBUS_SESSION_BUS_ADDRESS";
-              NIXOS_OZONE_WL = "1";
-            };
-          };
-        };
-    };
-
   # 1. Standard Banking (Vault) - Isolated Storage
   google-chrome-stable-vault = mkChrome {
     name = "google-chrome-stable-vault";
     sourceUserDataDir = "/home/martin/.config/google-chrome-vault";
     exportDesktopFiles = true;
     displayName = "Google Chrome Vault (Secure)";
+    policy = chromePolicyBlocked;
   };
 
   # 2. Social Media (Hazard) - Isolated Storage
@@ -292,6 +215,7 @@ in
     sourceUserDataDir = "/home/martin/.config/google-chrome-hazard";
     exportDesktopFiles = true;
     displayName = "Google Chrome Hazard (Secure)";
+    policy = chromePolicyBlocked;
   };
 
   # 3. Standard Chrome (matches upstream name)
@@ -303,6 +227,7 @@ in
     sourceUserDataDir = "/home/martin/.config/google-chrome";
     extraBinNames = [ "google-chrome" ]; # Alias for convenience
     displayName = "Google Chrome (Secure)";
+    policy = chromePolicyAllowed;
   };
 
   # --- MPV (Media Player) ---

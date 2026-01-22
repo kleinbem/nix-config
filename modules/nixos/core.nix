@@ -66,6 +66,25 @@
 
     # Run unpatched binaries
     nix-ld.enable = true;
+    nix-ld.libraries = with pkgs; [
+      zlib
+      zstd
+      stdenv.cc.cc
+      curl
+      openssl
+      attr
+      libssh
+      bzip2
+      libxml2
+      acl
+      libsodium
+      util-linux
+      xz
+      systemd
+      glib
+      gtk3
+      libuuid
+    ];
   };
 
   environment.systemPackages = with pkgs; [

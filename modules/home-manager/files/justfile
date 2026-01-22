@@ -48,7 +48,7 @@ status service:
 
 # Rebuild system (Apply changes)
 rebuild:
-    nh os switch {{FLAKE_PATH}}
+    nh os switch --ask --diff always {{FLAKE_PATH}}
 
 # Rollback to previous generation
 rollback:
@@ -84,9 +84,15 @@ logs:
 
 # --- Fixes ---
 
-# Fix Chrome/Smartcard issues (Restart Panel & PCSCD)
+# Fix YubiKey/Smartcard issues (Restart PCSCD & Agents)
+fix-yubikey:
+    pkill lxqt-openssh-askpass || true
+    gpgconf --kill gpg-agent || true
+    sudo systemctl restart pcscd
+
+# Fix Chrome (Restart Panel & YubiKey & Chrome)
 fix-chrome:
     pkill cosmic-panel || true
     pkill -f google-chrome || true
-    sudo systemctl restart pcscd
+    just fix-yubikey
     google-chrome-stable > /dev/null 2>&1 &

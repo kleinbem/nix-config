@@ -21,7 +21,7 @@
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
-      systemd-boot.enable = pkgs.lib.mkForce false; # Disabled for Lanzaboote
+      systemd-boot.enable = false; # Disabled for Lanzaboote
       systemd-boot.configurationLimit = 10; # Keep boot menu clean
       efi.canTouchEfiVariables = true;
     };
