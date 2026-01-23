@@ -24,6 +24,15 @@
       substituters = [ "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
       download-buffer-size = 1073741824;
+
+      # Binary Cache Optimization
+      builders-use-substitutes = true;
+      connect-timeout = 5; # Fallback quickly if cache is down, BUT:
+      # we actually want to wait longer if the issue is just slow connection
+      # to avoid building from source.
+
+      log-lines = 25;
+      min-free = 1073741824; # 1GB
       max-jobs = "auto";
       cores = 0;
       trusted-users = [

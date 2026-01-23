@@ -71,6 +71,9 @@
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [
+        ./modules/flake/images.nix
+      ];
       systems = [ "x86_64-linux" ];
 
       perSystem =
@@ -134,27 +137,6 @@
           # ---------------------------------------------------------
           # 4. Image Generation (Moved to PerSystem)
           # ---------------------------------------------------------
-          packages = {
-            n8n-image = nixos-generators.nixosGenerate {
-              inherit system;
-              modules = [
-                ./hosts/n8n/configuration.nix
-                { nixpkgs.config.allowUnfree = true; }
-              ];
-              format = "lxc";
-              specialArgs = { inherit inputs; };
-            };
-
-            open-webui-image = nixos-generators.nixosGenerate {
-              inherit system;
-              modules = [
-                ./hosts/open-webui/configuration.nix
-                { nixpkgs.config.allowUnfree = true; }
-              ];
-              format = "lxc";
-              specialArgs = { inherit inputs; };
-            };
-          };
         };
 
       flake = {

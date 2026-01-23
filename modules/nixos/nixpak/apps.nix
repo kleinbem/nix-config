@@ -104,6 +104,7 @@ let
       extraPackages = [
         sandboxedXdgUtils
         pkgs.cosmic-files
+        pkgs.brotab
       ];
       presets = [
         "network"
@@ -279,7 +280,7 @@ in
 
   # --- DISCORD ---
   discord = utils.mkSandboxed {
-    package = pkgs.discord;
+    package = pkgs.stable.discord;
     name = "discord";
     configDir = "discord";
     extraPackages = [ sandboxedXdgUtils ];
@@ -311,7 +312,7 @@ in
 
   # --- SLACK ---
   slack = utils.mkSandboxed {
-    package = pkgs.slack;
+    package = pkgs.stable.slack;
     name = "slack";
     configDir = "Slack";
     extraPackages = [ sandboxedXdgUtils ];
@@ -342,7 +343,7 @@ in
 
   # --- SIGNAL ---
   signal-desktop = utils.mkSandboxed {
-    package = pkgs.signal-desktop;
+    package = pkgs.stable.signal-desktop;
     name = "signal-desktop";
     configDir = "Signal";
     extraPackages = [ sandboxedXdgUtils ];
@@ -373,7 +374,7 @@ in
 
   # --- BITWARDEN ---
   bitwarden = utils.mkSandboxed {
-    package = pkgs.bitwarden-desktop;
+    package = pkgs.stable.bitwarden-desktop;
     name = "bitwarden";
     configDir = "Bitwarden";
     presets = [

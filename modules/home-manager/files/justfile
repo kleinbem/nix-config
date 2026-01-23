@@ -50,6 +50,10 @@ status service:
 rebuild:
     nh os switch --ask --diff always {{FLAKE_PATH}}
 
+# Smart Rebuild (Checks build count first)
+rebuild-smart:
+    {{FLAKE_PATH}}/scripts/smart-switch.sh
+
 # Rollback to previous generation
 rollback:
     nh os switch --rollback {{FLAKE_PATH}}

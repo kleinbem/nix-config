@@ -12,6 +12,10 @@ let
 
 in
 {
+  imports = [
+    ./mcp.nix
+  ];
+
   home.packages = with pkgs; [
     # -- GUI Apps --
     # vscode-fhs (Moved to declarative module)
@@ -46,6 +50,8 @@ in
     # sandboxedApps.github-desktop # Nixpak (Safe) - Code
     github-desktop # Standard (Unsafe) - Temporarily disabled sandbox for auth debugging
     chromium # Fallback (Unsafe) - Local Dev
+    pkgs.brotab # Browser Automation (asked by user)
+    pkgs.brave # Secure Browser (asked by user)
 
     # Math and Matrix stuff. Using 'octaveFull' to get the standard packages included.
     octaveFull
