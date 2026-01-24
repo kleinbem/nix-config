@@ -13,6 +13,7 @@ tmp/
 .agent/temp/
 .agent/browser/
 
+
 # Aider junk and unrelevant files
 .agent/aider/.aider.input.history
 .agent/aider/.aider.tags.cache*

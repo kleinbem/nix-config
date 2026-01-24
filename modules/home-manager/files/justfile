@@ -1,7 +1,7 @@
 # System Control Center
 
 # Path to the configuration flake
-FLAKE_PATH := "~/Develop/github.com/kleinbem/nix-config"
+FLAKE_PATH := "~/Develop/github.com/kleinbem/nix/nix-config"
 
 default:
     @just --list --justfile ~/.justfile
@@ -52,7 +52,7 @@ rebuild:
 
 # Smart Rebuild (Checks build count first)
 rebuild-smart:
-    {{FLAKE_PATH}}/scripts/smart-switch.sh
+    {{FLAKE_PATH}}/scripts/smart-switch.sh {{FLAKE_PATH}}
 
 # Rollback to previous generation
 rollback:

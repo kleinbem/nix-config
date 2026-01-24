@@ -2,7 +2,7 @@
 
 {
   # Ensure Node.js is available for npx
-  home.packages = [ pkgs.nodejs ];
+  home.packages = [ pkgs.nodejs_22 ];
 
   xdg.configFile."Claude/claude_desktop_config.json".text = builtins.toJSON {
     mcpServers = {

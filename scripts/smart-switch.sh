@@ -15,8 +15,8 @@ echo -e "${COLOR_YELLOW}🤖 Smart Switch: Checking build requirements...${COLOR
 # nh doesn't have a pure 'check only' flag that outputs readable counts easily in one go, 
 # so we rely on 'nix build --dry-run' of the system toplevel.
 
-# Get the flake path (assume current dir if not set)
-FLAKE_PATH="${FLAKE:-.}"
+# Get the flake path (argument 1, or FLAKE env, or current dir)
+FLAKE_PATH="${1:-${FLAKE:-.}}"
 
 # "will be built" detection
 DRY_OUTPUT=$(nixos-rebuild dry-build --flake "$FLAKE_PATH" 2>&1 || true)

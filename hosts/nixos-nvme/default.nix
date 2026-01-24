@@ -8,10 +8,20 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/nixos/hardware/intel-compute.nix
-    ../../modules/nixos/default.nix
+    ../../modules/nixos/bundle.nix
     ../../modules/nixos/common.nix
     ../../users/martin/nixos.nix
   ];
+
+  # Enable Switchboard Modules
+  my = {
+    desktop.enable = true;
+    services = {
+      ai.enable = true;
+      printing.enable = true;
+    };
+    virtualisation.enable = true;
+  };
 
   home-manager.users.martin = import ../../users/martin/home.nix;
 
