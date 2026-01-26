@@ -1,14 +1,46 @@
 {
   pkgs,
+  lib,
+
   nixpak,
   ...
 }:
 
 let
   # Import modular apps catalog
-  # Import modular apps catalog
-  # We are in modules/home-manager/desktop.nix, so we go up to modules, then to nixos/nixpak
   sandboxedApps = import ../nixos/nixpak/apps.nix { inherit pkgs nixpak; };
+
+  commonData = import ./code-common/settings.nix;
+  commonExtensionsList = import ./code-common/extensions.nix { inherit pkgs; };
+  commonExtensions = pkgs.symlinkJoin {
+    name = "vscode-extensions-bundle";
+    paths = commonExtensionsList;
+  };
+
+  # The Unified "Code Family"
+  codeFamily = [
+    {
+      name = "Antigravity";
+      configDir = "antigravity/User";
+      extDir = ".antigravity/extensions";
+    }
+    {
+      name = "Cursor";
+      configDir = "Cursor/User";
+      extDir = ".cursor/extensions";
+    }
+    {
+      name = "Windsurf";
+      configDir = ".codeium/windsurf/User";
+      extDir = ".codeium/windsurf/extensions";
+    }
+  ];
+
+  # Helper to write JSON config
+  mkConfigs = app: {
+    "${app.configDir}/settings.json".text = builtins.toJSON commonData.settings;
+    "${app.configDir}/keybindings.json".text = builtins.toJSON commonData.keybindings;
+  };
 
 in
 {
@@ -16,51 +48,82 @@ in
     ./mcp.nix
   ];
 
-  home.packages = with pkgs; [
-    # -- GUI Apps --
-    # vscode-fhs (Moved to declarative module)
-    code-cursor-fhs # AI Code Editor (FHS Version)
-    antigravity-fhs
-    warp-terminal # Rust-based AI Terminal
-    pavucontrol
-    nwg-look
-    mission-center # System Monitor (Task Manager)
-    firewalld-gui # GUI for Firewalld
-    zathura # PDF Viewer
-    imv # Image Viewer
-    p7zip # Archives
-    rclone-browser # GUI for Rclone
-    restic-browser # GUI for Restic Backups
-    restic # CLI Tool (Required for Restic Browser)
-    obs-studio # Streaming/Recording Software
+  home = {
+    packages = with pkgs; [
+      antigravity-fhs
+      code-cursor-fhs
+      windsurf
 
-    # --- Communication ---
-    sandboxedApps.discord
-    sandboxedApps.slack
-    sandboxedApps.signal-desktop
+      # -- GUI Apps --
+      # Unified Code Platform Editors
+      antigravity-fhs
+      code-cursor-fhs
+      windsurf
 
-    # -- Sandboxed Apps --
-    sandboxedApps.obsidian
-    sandboxedApps.mpv # Nixpak (Safe)
-    sandboxedApps.google-chrome-stable # Standard Profile (Renamed from google-chrome)
-    sandboxedApps.google-chrome-stable-vault
-    sandboxedApps.google-chrome-stable-hazard
-    sandboxedApps.lmstudio # Nixpak (Safe)
-    sandboxedApps.bitwarden # Nixpak (Safe) - Password Manager
-    # sandboxedApps.github-desktop # Nixpak (Safe) - Code
-    github-desktop # Standard (Unsafe) - Temporarily disabled sandbox for auth debugging
-    chromium # Fallback (Unsafe) - Local Dev
-    pkgs.brotab # Browser Automation (asked by user)
-    pkgs.brave # Secure Browser (asked by user)
+      # vscode-fhs (Moved to declarative module)
+      warp-terminal # Rust-based AI Terminal
+      pavucontrol
+      nwg-look
+      mission-center # System Monitor (Task Manager)
+      firewalld-gui # GUI for Firewalld
+      zathura # PDF Viewer
+      imv # Image Viewer
+      p7zip # Archives
+      rclone-browser # GUI for Rclone
+      restic-browser # GUI for Restic Backups
+      restic # CLI Tool (Required for Restic Browser)
+      obs-studio # Streaming/Recording Software
 
-    # Math and Matrix stuff. Using 'octaveFull' to get the standard packages included.
-    octaveFull
+      # --- Communication ---
+      sandboxedApps.discord
+      sandboxedApps.slack
+      sandboxedApps.signal-desktop
 
-    # Modern LaTeX alternative. Much faster for writing docs.
-    typst
-    tinymist # autocompletion in VS Code/Neovim (formerly typst-lsp)
-    nixd # Nix Language Server
-  ];
+      # -- Sandboxed Apps --
+      sandboxedApps.obsidian
+      sandboxedApps.mpv # Nixpak (Safe)
+      sandboxedApps.google-chrome-stable # Standard Profile (Renamed from google-chrome)
+      sandboxedApps.google-chrome-stable-vault
+      sandboxedApps.google-chrome-stable-hazard
+      sandboxedApps.lmstudio # Nixpak (Safe)
+      sandboxedApps.bitwarden # Nixpak (Safe) - Password Manager
+      # sandboxedApps.github-desktop # Nixpak (Safe) - Code
+      github-desktop # Standard (Unsafe) - Temporarily disabled sandbox for auth debugging
+      chromium # Fallback (Unsafe) - Local Dev
+      pkgs.brotab # Browser Automation (asked by user)
+      pkgs.brave # Secure Browser (asked by user)
+
+      # Math and Matrix stuff. Using 'octaveFull' to get the standard packages included.
+      octaveFull
+
+      # Modern LaTeX alternative. Much faster for writing docs.
+      typst
+      tinymist # autocompletion in VS Code/Neovim (formerly typst-lsp)
+      nixd # Nix Language Server
+    ];
+
+    # Generate declarative config files for all agents
+    file = lib.mkMerge (map mkConfigs codeFamily);
+
+    # Sync Extensions Script (Runs on switch)
+    # This creates symlinks from the generated extensions.nix profile to each editor's extension dir.
+    activation.syncCodeFamily = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      ${lib.concatMapStrings (app: ''
+        echo "⚡ Syncing ${app.name} extensions..."
+        mkdir -p $HOME/${app.extDir}
+
+        # Link each extension from the Nix profile (commonExtensions)
+        # We iterate over the store path to find the extensions
+        for ext in ${commonExtensions}/share/vscode/extensions/*; do
+          target="$HOME/${app.extDir}/$(basename $ext)"
+          if [ ! -e "$target" ]; then
+            ln -sf "$ext" "$target"
+          fi
+        done
+
+      '') codeFamily}
+    '';
+  };
 
   # Force Qt apps to use GTK theme (fixes rclone-browser dark mode)
   gtk = {
@@ -148,4 +211,5 @@ in
       WantedBy = [ "default.target" ];
     };
   };
+
 }

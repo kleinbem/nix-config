@@ -119,6 +119,7 @@
                   echo "ℹ️  Note: No API keys detected."
               fi
               unset SSH_ASKPASS_REQUIRE
+              unset SSH_ASKPASS
             '';
           };
 

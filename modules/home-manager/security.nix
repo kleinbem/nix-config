@@ -14,8 +14,4 @@
     ssh-to-age
   ];
 
-  systemd.user.sessionVariables = {
-    SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
-    SSH_ASKPASS = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
-  };
 }

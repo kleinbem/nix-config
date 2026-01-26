@@ -16,7 +16,10 @@ echo -e "${COLOR_YELLOW}🤖 Smart Switch: Checking build requirements...${COLOR
 # so we rely on 'nix build --dry-run' of the system toplevel.
 
 # Get the flake path (argument 1, or FLAKE env, or current dir)
-FLAKE_PATH="${1:-${FLAKE:-.}}"
+# Get the flake path (argument 1, or current directory)
+# We default to $(pwd) instead of relying on $FLAKE to avoid bad env vars
+TARGET="${1:-.}"
+FLAKE_PATH=$(readlink -f "$TARGET")
 
 # "will be built" detection
 DRY_OUTPUT=$(nixos-rebuild dry-build --flake "$FLAKE_PATH" 2>&1 || true)
@@ -58,5 +61,7 @@ else
 fi
 
 # Proceed with actual switch
-echo -e "${COLOR_GREEN}🚀 Proceeding with switch...${COLOR_RESET}"
+echo -e "${COLOR_GREEN}🚀 Proceeding with switch to ${FLAKE_PATH}...${COLOR_RESET}"
+# Unset FLAKE to force nh to use the argument we pass
+unset FLAKE
 nh os switch "$FLAKE_PATH"

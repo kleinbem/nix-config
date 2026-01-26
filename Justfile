@@ -52,9 +52,17 @@ check:
 deploy: lint check test switch verify
     @echo "✅ System successfully deployed and verified!"
 
+# --- Code Platform ---
+
+update-extensions:
+    @nix-shell -p python311 python311Packages.toml python311Packages.requests --run "python3 scripts/update_extensions.py"
+
 # --- AI Workflow ---
 
-# Check for linting errors (Statix)
+# Smart Rebuild (Checks build count first)
+
+rebuild-smart:
+    ./scripts/smart-switch.sh .
 
 lint:
     nix develop --command statix check
