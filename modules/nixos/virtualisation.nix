@@ -37,7 +37,8 @@ in
       podman = {
         enable = true;
         dockerCompat = false;
-        dockerSocket.enable = false; # Do NOT hijack /run/docker.sock
+        # Docker socket handled by actual Docker daemon (docker.enable = true)
+        dockerSocket.enable = false;
         defaultNetwork.settings.dns_enabled = true;
       };
 

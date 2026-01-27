@@ -93,6 +93,9 @@
       glib
       gtk3
       libuuid
+      icu
+      libuv
+      stdenv.cc.cc.lib
     ];
   };
 

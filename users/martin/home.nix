@@ -10,7 +10,10 @@ _:
     ../../modules/home-manager/vscode.nix
     ../../modules/home-manager/nixvim.nix
     ../../modules/home-manager/secrets.nix
+    ../../modules/home-manager/opencode.nix
   ];
+
+  modules.opencode.enable = true;
 
   # User Details
   home = {

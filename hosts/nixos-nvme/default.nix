@@ -11,6 +11,7 @@
     ../../modules/nixos/bundle.nix
     ../../modules/nixos/common.nix
     ../../users/martin/nixos.nix
+
   ];
 
   # Enable Switchboard Modules
@@ -19,6 +20,8 @@
     services = {
       ai.enable = true;
       printing.enable = true;
+      code-server.enable = true;
+      silverbullet.enable = true;
     };
     virtualisation.enable = true;
   };
@@ -30,6 +33,11 @@
   # ==========================================
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
+    initrd.kernelModules = [
+      "usbhid"
+      "hid_generic"
+    ];
+
     loader = {
       systemd-boot.enable = false; # Disabled for Lanzaboote
       systemd-boot.configurationLimit = 10; # Keep boot menu clean
@@ -111,25 +119,17 @@
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/martin/.config/sops/age/host.txt";
+    # Force systemd service generation (fixes missing sops-nix.service)
+    useSystemdActivation = true;
+    # Native plugin support (replaces manual wrapper)
+    age.plugins = [
+      pkgs.age-plugin-yubikey
+      pkgs.age-plugin-tpm
+    ];
 
     secrets.rclone_config = {
       owner = "martin";
     };
-
-    package =
-      pkgs.runCommand "sops-with-plugins"
-        {
-          nativeBuildInputs = [ pkgs.makeWrapper ];
-        }
-        ''
-          mkdir -p $out/bin
-          makeWrapper ${pkgs.sops}/bin/sops $out/bin/sops \
-            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin:${pkgs.age-plugin-tpm}/bin"
-          makeWrapper ${
-            inputs.sops-nix.packages.${pkgs.system}.sops-install-secrets
-          }/bin/sops-install-secrets $out/bin/sops-install-secrets \
-            --prefix PATH : "${pkgs.age-plugin-yubikey}/bin:${pkgs.age-plugin-tpm}/bin"
-        '';
   };
 
   # ==========================================
