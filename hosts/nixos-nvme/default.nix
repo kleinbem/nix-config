@@ -8,7 +8,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/nixos/hardware/intel-compute.nix
-    ../../modules/nixos/bundle.nix
+    ../../modules/nixos/default.nix
     ../../modules/nixos/common.nix
     ../../users/martin/nixos.nix
 

@@ -21,8 +21,16 @@
         "flakes"
       ];
       auto-optimise-store = true;
-      substituters = [ "https://cache.nixos.org" ];
-      trusted-public-keys = [ "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg=" ];
+      substituters = [
+        "https://cache.nixos.org"
+        "https://nix-community.cachix.org"
+        "https://cosmic.cachix.org"
+      ];
+      trusted-public-keys = [
+        "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+      ];
       download-buffer-size = 1073741824;
 
       # Binary Cache Optimization
@@ -97,6 +105,9 @@
       libuv
       stdenv.cc.cc.lib
     ];
+
+    # Command Discovery (command-not-found alternative)
+    nix-index.enable = true;
   };
 
   environment.systemPackages = with pkgs; [

@@ -2,15 +2,7 @@ _:
 
 {
   imports = [
-    ../../modules/home-manager/terminal.nix
-    ../../modules/home-manager/dev.nix
-    ../../modules/home-manager/desktop.nix
-    ../../modules/home-manager/security.nix
-    ../../modules/home-manager/pentesting.nix
-    ../../modules/home-manager/vscode.nix
-    ../../modules/home-manager/nixvim.nix
-    ../../modules/home-manager/secrets.nix
-    ../../modules/home-manager/opencode.nix
+    ../../modules/home-manager/default.nix
   ];
 
   modules.opencode.enable = true;

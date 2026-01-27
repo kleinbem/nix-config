@@ -1,4 +1,3 @@
-{ ... }:
 {
   imports = [
     ./core.nix
@@ -14,5 +13,7 @@
     ./scripts.nix
     ./services/dashboard.nix
     ./services/github-runner.nix
+    ./services/code-server.nix
+    ./services/silverbullet.nix
   ];
 }

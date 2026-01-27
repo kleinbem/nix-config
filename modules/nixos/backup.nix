@@ -17,7 +17,7 @@
 
     # Credentials
     passwordFile = config.sops.secrets.restic_password.path;
-    rcloneConfigFile = "/home/martin/.config/rclone/rclone.conf";
+    rcloneConfigFile = config.sops.secrets.rclone_config.path;
 
     # What to backup
     paths = [
