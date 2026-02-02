@@ -30,7 +30,8 @@ switch-local:
       --override-input nix-hardware "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-hardware" \
       --override-input nix-devshells "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells" \
       --override-input nix-presets "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets" \
-      --override-input nix-packages "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages"
+      --override-input nix-packages "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages" \
+      --override-input nix-templates "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-templates"
 
 # Switch with Debug Output
 

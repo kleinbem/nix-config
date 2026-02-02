@@ -33,6 +33,7 @@
     nix-devshells.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
     nix-presets.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets";
     nix-packages.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages";
+    nix-templates.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-templates";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
