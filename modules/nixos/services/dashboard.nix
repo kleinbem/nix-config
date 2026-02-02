@@ -63,16 +63,18 @@ _:
         };
       }
       {
-        docker = {
-          socket = "/var/run/docker.sock";
-          containers = [
-            "homepage"
-            "n8n"
-            "ollama" # If containerized
-            "open-webui" # If containerized
+        glances = {
+          url = "http://localhost:61208";
+          label = "System";
+          version = 4;
+          metric = [
+            "cpu"
+            "memory"
+            "disk"
           ];
         };
       }
+
       {
         datetime = {
           format = {

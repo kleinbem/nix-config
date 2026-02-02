@@ -11,28 +11,41 @@ let
   sandboxedApps = import ../nixos/nixpak/apps.nix { inherit pkgs nixpak; };
 
   commonData = import ./code-common/settings.nix;
-  commonExtensionsList = import ./code-common/extensions.nix { inherit pkgs; };
-  commonExtensions = pkgs.symlinkJoin {
-    name = "vscode-extensions-bundle";
-    paths = commonExtensionsList;
-  };
+  extensionsCommon = import ./code-common/extensions/common.nix { inherit pkgs; };
+  extensionsVSCode = import ./code-common/extensions/vscode.nix { inherit pkgs; };
+  extensionsCursor = import ./code-common/extensions/cursor.nix { inherit pkgs; };
+
+  # Helper to bundle extensions
+  mkBundle =
+    name: exts:
+    pkgs.symlinkJoin {
+      name = "${name}-extensions-bundle";
+      paths = exts;
+    };
+
+  bundleAntigravity = mkBundle "antigravity" (extensionsCommon ++ extensionsVSCode); # Antigravity needs the pin too
+  bundleCursor = mkBundle "cursor" (extensionsCommon ++ extensionsCursor);
+  bundleWindsurf = mkBundle "windsurf" extensionsCommon;
 
   # The Unified "Code Family"
   codeFamily = [
     {
       name = "Antigravity";
-      configDir = "antigravity/User";
-      extDir = ".antigravity/extensions";
+      configDir = ".config/antigravity";
+      extDir = ".config/antigravity/extensions";
+      bundle = bundleAntigravity;
     }
     {
       name = "Cursor";
-      configDir = "Cursor/User";
-      extDir = ".cursor/extensions";
+      configDir = ".config/cursor";
+      extDir = ".config/cursor/extensions";
+      bundle = bundleCursor;
     }
     {
       name = "Windsurf";
-      configDir = ".codeium/windsurf/User";
-      extDir = ".codeium/windsurf/extensions";
+      configDir = ".config/windsurf";
+      extDir = ".config/windsurf/extensions";
+      bundle = bundleWindsurf;
     }
   ];
 
@@ -42,6 +55,32 @@ let
     "${app.configDir}/keybindings.json".text = builtins.toJSON commonData.keybindings;
   };
 
+  # Wrapper generator for strict isolation
+  mkIsolatedEditor =
+    app:
+    pkgs.writeShellScriptBin (lib.toLower app.name) ''
+      exec ${
+        pkgs."${
+          if app.name == "Windsurf" then
+            "windsurf"
+          else if app.name == "Cursor" then
+            "code-cursor-fhs"
+          else
+            "antigravity-fhs"
+        }"
+      }/bin/${
+        if app.name == "Windsurf" then
+          "windsurf"
+        else if app.name == "Cursor" then
+          "cursor"
+        else
+          "antigravity"
+      } \
+        --user-data-dir "$HOME/${app.configDir}/data" \
+        --extensions-dir "$HOME/${app.extDir}" \
+        "$@"
+    '';
+
 in
 {
   imports = [
@@ -50,15 +89,14 @@ in
 
   home = {
     packages = with pkgs; [
-      antigravity-fhs
-      code-cursor-fhs
-      windsurf
+      # Unified Code Platform Editors
+      # (Replaced by Isolated Wrappers below)
 
       # -- GUI Apps --
-      # Unified Code Platform Editors
-      antigravity-fhs
-      code-cursor-fhs
-      windsurf
+      # Unified Code Platform Editors (Isolated Wrappers)
+      (mkIsolatedEditor (builtins.elemAt codeFamily 0)) # Antigravity
+      (mkIsolatedEditor (builtins.elemAt codeFamily 1)) # Cursor
+      (mkIsolatedEditor (builtins.elemAt codeFamily 2)) # Windsurf
 
       # vscode-fhs (Moved to declarative module)
       warp-terminal # Rust-based AI Terminal
@@ -109,16 +147,16 @@ in
     # This creates symlinks from the generated extensions.nix profile to each editor's extension dir.
     activation.syncCodeFamily = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ${lib.concatMapStrings (app: ''
-        echo "⚡ Syncing ${app.name} extensions..."
+        echo "⚡ Syncing ${app.name} extensions to isolated storage..."
         mkdir -p $HOME/${app.extDir}
+        mkdir -p $HOME/${app.configDir}/data
 
-        # Link each extension from the Nix profile (commonExtensions)
+        # Link each extension from the Nix profile (app.bundle)
         # We iterate over the store path to find the extensions
-        for ext in ${commonExtensions}/share/vscode/extensions/*; do
+        for ext in ${app.bundle}/share/vscode/extensions/*; do
           target="$HOME/${app.extDir}/$(basename $ext)"
-          if [ ! -e "$target" ]; then
-            ln -sf "$ext" "$target"
-          fi
+          # Force update the link (ln -sf) to ensure we point to the new store path
+          ln -sf "$ext" "$target"
         done
 
       '') codeFamily}

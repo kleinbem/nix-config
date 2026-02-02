@@ -22,6 +22,7 @@
       printing.enable = true;
       code-server.enable = true;
       silverbullet.enable = true;
+      glances.enable = true;
     };
     virtualisation.enable = true;
   };

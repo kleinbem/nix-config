@@ -15,5 +15,6 @@
     ./services/github-runner.nix
     ./services/code-server.nix
     ./services/silverbullet.nix
+    ./services/glances.nix
   ];
 }

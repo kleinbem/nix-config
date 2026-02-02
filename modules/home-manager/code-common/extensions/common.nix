@@ -1,7 +1,7 @@
 { pkgs }:
 
 # ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
-# Edit extensions.toml and run 'just update-extensions' instead.
+# Generated from common.toml by scripts/update_extensions.py
 
 pkgs.vscode-utils.extensionsFromVscodeMarketplace [
   {
@@ -25,8 +25,8 @@ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
   {
     name = "gitlens";
     publisher = "eamodio";
-    version = "2026.1.2604";
-    sha256 = "0c3njb2z4b5acm6ly9mmy334s4p723615hlfi0lldkvrassqqrrq";
+    version = "2026.1.2704";
+    sha256 = "0xb7a4l950g3g7zjf4yngrpbfw0inr9x2xvyp0s2jg1lf3cc3h42";
   }
   {
     name = "gitblame";
@@ -49,8 +49,8 @@ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
   {
     name = "roo-cline";
     publisher = "rooveterinaryinc";
-    version = "3.43.0";
-    sha256 = "12p5nzp9wblw63q0i8gmvidgh0j9z88chfz4zgxgdlssp8rplcdf";
+    version = "3.44.2";
+    sha256 = "0hwrz9gv672g681hf6n3n2m1dwf1aic5is17bc8mn9ra7h2pl33c";
   }
   {
     name = "supermaven";
@@ -61,19 +61,13 @@ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
   {
     name = "errorlens";
     publisher = "usernamehw";
-    version = "3.26.0";
-    sha256 = "0rmvzr5qsbq8zni9vwg4y6bh8l6s5hci974x676m57hi0pfj82d4";
+    version = "3.27.0";
+    sha256 = "113i434f7nspbz09ajy50pnvc1f0zc7cqcrddqh8l1w0ks1cvqb2";
   }
   {
     name = "terraform";
     publisher = "hashicorp";
     version = "2.37.2025092217";
-    sha256 = "1s648ma6yfxnbzjfm7sj0vxqh8p924hmydqf1jpsv1nvmd58v6mc";
-  }
-  {
-    name = "copilot-chat";
-    publisher = "github";
-    version = "0.37.2026012601";
-    sha256 = "1bbi1vpwk9a0m7niwx3qqc6k60i1dfy6wf2gr2v66x5rznkjdhdp";
+    sha256 = "01qpl161xi15xfpjvdmslq6v233nv43lac00644wn5gjn55vl39f";
   }
 ]

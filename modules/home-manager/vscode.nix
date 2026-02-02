@@ -2,15 +2,22 @@
 
 let
   commonData = import ./code-common/settings.nix;
-  # Import the AUTO-GENERATED extensions file
-  commonExtensions = import ./code-common/extensions.nix { inherit pkgs; };
+
+  # Import Modular Extensions
+  extensionsCommon = import ./code-common/extensions/common.nix { inherit pkgs; };
+  extensionsVSCode = import ./code-common/extensions/vscode.nix { inherit pkgs; };
+
 in
 {
   programs.vscode = {
     enable = true;
     package = pkgs.vscode-fhs;
+    mutableExtensionsDir = false;
     profiles.default = {
-      userSettings = commonData.settings;
+      userSettings = commonData.settings // {
+        "extensions.autoUpdate" = false;
+        "extensions.autoCheckUpdates" = false;
+      };
       inherit (commonData) keybindings;
       extensions =
         with pkgs.vscode-extensions;
@@ -18,7 +25,8 @@ in
           # ⚠️ KEEP REMOTE-SSH HERE (VS Code Exclusive)
           ms-vscode-remote.remote-ssh
         ]
-        ++ commonExtensions;
+        ++ extensionsCommon
+        ++ extensionsVSCode;
     };
   };
 }

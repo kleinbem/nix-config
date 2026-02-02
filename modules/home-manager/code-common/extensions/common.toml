@@ -52,8 +52,3 @@ name = "errorlens"
 [[extensions]]
 publisher = "hashicorp"
 name = "terraform"
-
-# 3. Copilot Chat (Companion to Copilot)
-[[extensions]]
-publisher = "github"
-name = "copilot-chat"
