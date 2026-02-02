@@ -7,7 +7,7 @@
 {
   imports = [
     inputs.nix-hardware.nixosModules.nixos-nvme
-    ../../modules/nixos/hardware/intel-compute.nix
+    inputs.nix-hardware.nixosModules.intel-compute
     ../../modules/nixos/default.nix
     ../../modules/nixos/common.nix
     ../../users/martin/nixos.nix

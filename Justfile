@@ -25,7 +25,12 @@ switch:
 # Switch with local overrides (Useful for secrets testing)
 
 switch-local:
-    nh os switch . -- --override-input nix-secrets "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-secrets"
+    nh os switch . -- \
+      --override-input nix-secrets "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-secrets" \
+      --override-input nix-hardware "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-hardware" \
+      --override-input nix-devshells "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells" \
+      --override-input nix-presets "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets" \
+      --override-input nix-packages "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages"
 
 # Switch with Debug Output
 

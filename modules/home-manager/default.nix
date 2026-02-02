@@ -1,13 +1,14 @@
+{ inputs, ... }:
 {
   imports = [
-    ./terminal.nix
+    inputs.nix-presets.homeManagerModules.terminal
     ./dev.nix
-    ./desktop.nix
+    inputs.nix-presets.homeManagerModules.desktop
     ./security.nix
     ./pentesting.nix
     ./vscode.nix
     ./nixvim.nix
     ./secrets.nix
-    ./opencode.nix
+    inputs.nix-presets.homeManagerModules.opencode
   ];
 }

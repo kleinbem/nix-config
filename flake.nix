@@ -28,11 +28,11 @@
       flake = false;
     };
 
-    # Local Workspace
-    nix-hardware.url = "path:../nix-hardware";
-    nix-devshells.url = "path:../nix-devshells";
-    nix-presets.url = "path:../nix-presets";
-    nix-packages.url = "path:../nix-packages";
+    # Local Workspace (Absolute paths for local dev without pushing)
+    nix-hardware.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
+    nix-devshells.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
+    nix-presets.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets";
+    nix-packages.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
