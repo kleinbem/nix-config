@@ -28,6 +28,12 @@
       flake = false;
     };
 
+    # Local Workspace
+    nix-hardware.url = "path:../nix-hardware";
+    nix-devshells.url = "path:../nix-devshells";
+    nix-presets.url = "path:../nix-presets";
+    nix-packages.url = "path:../nix-packages";
+
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -71,7 +77,6 @@
       nixpkgs,
       treefmt-nix,
       pre-commit-hooks,
-      nixos-generators,
       flake-parts,
       ...
     }:
@@ -83,7 +88,6 @@
 
       perSystem =
         {
-
           pkgs,
           system,
           ...
@@ -102,31 +106,7 @@
           # ---------------------------------------------------------
           formatter = treefmtEval.config.build.wrapper;
 
-          devShells.default = pkgs.mkShell {
-            buildInputs = [
-              pkgs.aider-chat
-              pkgs.statix
-              pkgs.nixfmt
-              pkgs.deadnix
-              pkgs.nil
-              pkgs.sops
-              pkgs.age
-              pkgs.age-plugin-yubikey
-              nixos-generators.packages.${system}.nixos-generate
-            ];
-
-            shellHook = ''
-              ${self.checks.${system}.pre-commit-check.shellHook}
-              echo "🤖 Spec-Driven NixOS Environment Loaded"
-              echo "   - System: NixOS + COSMIC + Nixpak"
-
-              if [ -z "$GEMINI_API_KEY" ] && [ -z "$OLLAMA_API_BASE" ]; then
-                  echo "ℹ️  Note: No API keys detected."
-              fi
-              unset SSH_ASKPASS_REQUIRE
-              unset SSH_ASKPASS
-            '';
-          };
+          devShells.default = inputs.nix-devshells.devShells.${system}.default;
 
           # ---------------------------------------------------------
           # 2. Checks (Pre-commit)

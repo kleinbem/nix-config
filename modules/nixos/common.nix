@@ -3,6 +3,7 @@
   # Overlays
   nixpkgs.overlays = [
     inputs.nur.overlays.default
+    inputs.nix-packages.overlays.default
     (_self: super: {
       stable = import inputs.nixpkgs-stable {
         inherit (super) system;

@@ -155,7 +155,13 @@ in
         # We iterate over the store path to find the extensions
         for ext in ${app.bundle}/share/vscode/extensions/*; do
           target="$HOME/${app.extDir}/$(basename $ext)"
-          # Force update the link (ln -sf) to ensure we point to the new store path
+          
+          # Force remove existing target (link or dir) to prevent dereferencing
+          if [ -e "$target" ] || [ -L "$target" ]; then
+            rm -rf "$target"
+          fi
+          
+          # Create fresh symlink
           ln -sf "$ext" "$target"
         done
 
@@ -249,5 +255,4 @@ in
       WantedBy = [ "default.target" ];
     };
   };
-
 }
