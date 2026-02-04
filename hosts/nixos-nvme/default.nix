@@ -161,6 +161,7 @@
     "d /var/lib/images/lmstudio 0750 martin users - -"
     "z /var/lib/images/lmstudio 0750 martin users - -"
     "d /var/lib/n8n 0755 martin users - -"
+    "d /var/lib/images/ollama 0755 root root - -"
   ];
 
   # ==========================================
