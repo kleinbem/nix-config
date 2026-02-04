@@ -16,6 +16,7 @@
     inputs.nix-presets.nixosModules.code-server
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.dashboard
+    inputs.nix-presets.nixosModules.ollama
 
   ];
 
@@ -49,7 +50,7 @@
         ip = "10.85.46.102/24";
         hostBridge = "incusbr0";
         hostDataDir = "/home/martin/ai-data/open-webui";
-        ollamaUrl = "http://10.85.46.1:11434";
+        ollamaUrl = "http://10.85.46.104:11434";
       };
 
       dashboard = {
@@ -58,11 +59,18 @@
         hostBridge = "incusbr0";
         hostBridgeIp = "10.85.46.1";
       };
+
+      ollama = {
+        enable = true;
+        ip = "10.85.46.104/24";
+        hostBridge = "incusbr0";
+        hostDataDir = "/var/lib/images/ollama";
+      };
     };
 
     desktop.enable = true;
     services = {
-      ai.enable = true;
+      # ai.enable = true; # Replaced by container
       printing.enable = true;
       glances.enable = true;
     };
