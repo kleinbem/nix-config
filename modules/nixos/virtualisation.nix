@@ -48,6 +48,13 @@ in
         package = pkgs.incus;
         ui.enable = true;
       };
+
+      # Raw LXC (Daemonless)
+      lxc = {
+        enable = true;
+        lxcfs.enable = true;
+        defaultConfig = "lxc.include = ${pkgs.lxc}/share/lxc/config/common.conf.d/00-lxcfs.conf";
+      };
     };
 
     # ==========================================

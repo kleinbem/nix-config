@@ -29,11 +29,12 @@
     };
 
     # Local Workspace (Absolute paths for local dev without pushing)
-    nix-hardware.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
-    nix-devshells.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
-    nix-presets.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets";
-    nix-packages.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages";
-    nix-templates.url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-templates";
+    # Local Workspace (Absolute paths for local dev without pushing)
+    nix-hardware.url = "github:kleinbem/nix-hardware";
+    nix-devshells.url = "github:kleinbem/nix-devshells";
+    nix-presets.url = "github:kleinbem/nix-presets";
+    nix-packages.url = "github:kleinbem/nix-packages";
+    nix-templates.url = "github:kleinbem/nix-templates";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -84,6 +85,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         ./modules/flake/images.nix
+        inputs.treefmt-nix.flakeModule
       ];
       systems = [ "x86_64-linux" ];
 

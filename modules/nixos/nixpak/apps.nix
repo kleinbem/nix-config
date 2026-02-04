@@ -112,6 +112,8 @@ let
         "audio"
         "gpu"
         "usb"
+        "discovery"
+        "printing"
       ];
       extraPerms =
         { sloth, ... }:

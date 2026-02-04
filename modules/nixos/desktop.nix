@@ -39,14 +39,6 @@ in
       };
 
       dbus.enable = true;
-      avahi = {
-        enable = true;
-        nssmdns4 = true;
-        publish = {
-          enable = false;
-          userServices = true;
-        };
-      };
     };
 
     # Enable graphics acceleration (Required for COSMIC)

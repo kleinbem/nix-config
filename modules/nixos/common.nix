@@ -18,6 +18,18 @@
     inputs.lanzaboote.nixosModules.lanzaboote
   ];
 
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+      workstation = true;
+      userServices = true;
+    };
+    openFirewall = true;
+  };
+
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;

@@ -79,6 +79,11 @@ rec {
             "/run/avahi-daemon/socket"
           ];
         };
+        printing = {
+          bubblewrap.bind.ro = [
+            "/run/cups/cups.sock"
+          ];
+        };
       };
 
       # Select requested presets
@@ -98,6 +103,7 @@ rec {
 
                   # Base binds that everyone needs
                   bubblewrap.bind.ro = [
+                    "/etc/hosts"
                     "/etc/fonts"
                     "/etc/ssl/certs"
                     "/etc/profiles/per-user"

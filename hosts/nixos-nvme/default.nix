@@ -11,17 +11,59 @@
     ../../modules/nixos/default.nix
     ../../modules/nixos/common.nix
     ../../users/martin/nixos.nix
+    inputs.nix-presets.nixosModules.n8n
+    inputs.nix-presets.nixosModules.silverbullet
+    inputs.nix-presets.nixosModules.code-server
+    inputs.nix-presets.nixosModules.open-webui
+    inputs.nix-presets.nixosModules.dashboard
 
   ];
 
-  # Enable Switchboard Modules
+  # --- Container Configuration ---
+  # --- Container & Switchboard Configuration ---
   my = {
+    containers = {
+      n8n = {
+        enable = true;
+        ip = "10.85.46.99/24";
+        hostBridge = "incusbr0";
+        hostDataDir = "/home/martin/n8n-data";
+      };
+
+      silverbullet = {
+        enable = true;
+        ip = "10.85.46.100/24";
+        hostBridge = "incusbr0";
+        hostDataDir = "/home/martin/Develop/Notes";
+      };
+
+      code-server = {
+        enable = true;
+        ip = "10.85.46.101/24";
+        hostBridge = "incusbr0";
+        hostDataDir = "/home/martin/Develop";
+      };
+
+      open-webui = {
+        enable = true;
+        ip = "10.85.46.102/24";
+        hostBridge = "incusbr0";
+        hostDataDir = "/home/martin/ai-data/open-webui";
+        ollamaUrl = "http://10.85.46.1:11434";
+      };
+
+      dashboard = {
+        enable = true;
+        ip = "10.85.46.103/24";
+        hostBridge = "incusbr0";
+        hostBridgeIp = "10.85.46.1";
+      };
+    };
+
     desktop.enable = true;
     services = {
       ai.enable = true;
       printing.enable = true;
-      code-server.enable = true;
-      silverbullet.enable = true;
       glances.enable = true;
     };
     virtualisation.enable = true;
