@@ -160,8 +160,8 @@
   # ==========================================
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
-    defaultSopsFormat = "yaml";
-    age.keyFile = "/home/martin/.config/sops/age/host.txt";
+    defaultSopsSopsFormat = "yaml";
+    age.keyFile = "/var/lib/sops/age/host.txt";
     # Force systemd service generation (fixes missing sops-nix.service)
     useSystemdActivation = true;
     # Native plugin support (replaces manual wrapper)
