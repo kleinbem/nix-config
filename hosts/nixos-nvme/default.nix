@@ -168,7 +168,7 @@
   # ==========================================
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
-    defaultSopsSopsFormat = "yaml";
+    defaultSopsFormat = "yaml";
     age.keyFile = "/var/lib/sops/age/host.txt";
     # Force systemd service generation (fixes missing sops-nix.service)
     useSystemdActivation = true;
