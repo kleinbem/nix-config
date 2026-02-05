@@ -29,12 +29,11 @@
     };
 
     # Local Workspace (Absolute paths for local dev without pushing)
-    # Local Workspace (Absolute paths for local dev without pushing)
-    nix-hardware.url = "github:kleinbem/nix-hardware";
-    nix-devshells.url = "github:kleinbem/nix-devshells";
-    nix-presets.url = "github:kleinbem/nix-presets";
-    nix-packages.url = "github:kleinbem/nix-packages";
-    nix-templates.url = "github:kleinbem/nix-templates";
+    nix-hardware.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
+    nix-devshells.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
+    nix-presets.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets";
+    nix-packages.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages";
+    nix-templates.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";

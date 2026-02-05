@@ -35,9 +35,9 @@
     ];
 
     # Automatically install pre-commit hooks when entering the shell
-    file.".zshrc".text = ''
-      pre-commit install > /dev/null 2>&1
-    '';
+    # file.".zshrc".text = ''
+    #   pre-commit install > /dev/null 2>&1
+    # '';
 
     # Helper to bootstrap LazyVim
     # shellAliases.lazy-install = "git clone https://github.com/LazyVim/starter ~/.config/nvim && nvim";
