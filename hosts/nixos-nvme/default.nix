@@ -17,6 +17,7 @@
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ollama
+    inputs.nix-presets.nixosModules.waydroid
 
   ];
 
@@ -120,9 +121,7 @@
       plugins = [ pkgs.networkmanager-openvpn ];
     };
 
-    # Switch to Firewalld for dynamic port management (Reverse Shells / Listeners)
-    # networking.firewall.enable = false; # Disabled static firewall to use firewalld instead
-    firewall.enable = false;
+    firewall.enable = true;
     nftables.enable = true;
   };
 
@@ -138,7 +137,6 @@
     ];
 
     fwupd.enable = true;
-    firewalld.enable = true;
 
     btrfs.autoScrub = {
       enable = true;
