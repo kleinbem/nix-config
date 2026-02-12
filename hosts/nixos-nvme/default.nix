@@ -70,12 +70,17 @@
     };
 
     desktop.enable = true;
+    virtualisation.enable = true;
     services = {
       # ai.enable = true; # Replaced by container
       printing.enable = true;
       glances.enable = true;
     };
-    virtualisation.enable = true;
+  };
+
+  services.android-desktop-emulator = {
+    enable = true;
+    user = "martin";
   };
 
   home-manager.users.martin = import ../../users/martin/home.nix;

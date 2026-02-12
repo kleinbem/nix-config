@@ -108,6 +108,9 @@
 
     # Command Discovery (command-not-found alternative)
     nix-index.enable = true;
+
+    # Android Debug Bridge
+    adb.enable = true;
   };
 
   environment.systemPackages = with pkgs; [

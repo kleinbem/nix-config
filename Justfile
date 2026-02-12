@@ -26,12 +26,13 @@ switch:
 
 switch-local:
     nh os switch . -- \
-      --override-input nix-secrets "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-secrets" \
-      --override-input nix-hardware "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-hardware" \
-      --override-input nix-devshells "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells" \
-      --override-input nix-presets "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets" \
-      --override-input nix-packages "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages" \
-      --override-input nix-templates "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-templates"
+      --override-input nix-secrets "path:/home/martin/Develop/github.com/kleinbem/nix/nix-secrets" \
+      --override-input nix-hardware "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware" \
+      --override-input nix-devshells "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells" \
+      --override-input nix-presets "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets" \
+      --override-input nix-packages "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages" \
+      --override-input nix-templates "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates" \
+      --override-input nix-android-emulator-setup "path:/home/martin/Develop/github.com/kleinbem/nix/nix-android-emulator-setup"
 
 # Switch with Debug Output
 

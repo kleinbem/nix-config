@@ -13,6 +13,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixpak = {
       url = "github:nixpak/nixpak";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -30,10 +35,14 @@
 
     # Local Workspace (Absolute paths for local dev without pushing)
     nix-hardware.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
-    nix-devshells.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
+    nix-devshells = {
+      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
+      inputs.devenv.follows = "devenv";
+    };
     nix-presets.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets";
     nix-packages.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages";
     nix-templates.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates";
+    nix-android-emulator-setup.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-android-emulator-setup";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";

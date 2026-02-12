@@ -82,6 +82,7 @@ in
       podman-tui
       podman-compose
       docker-compose
+      crosvm
     ];
   };
 }
