@@ -108,9 +108,6 @@
 
     # Command Discovery (command-not-found alternative)
     nix-index.enable = true;
-
-    # Android Debug Bridge
-    adb.enable = true;
   };
 
   environment.systemPackages = with pkgs; [
@@ -148,6 +145,7 @@
     # pkgs.nur.repos.nikpkgs.cockpit-machines # Verify if present
     kexec-tools # Kernel Crash Dumps
     sosreport # System Analysis
+    android-tools # ADB & Fastboot
   ];
 
   # Enable Kernel Crash Dumps (satisfies Cockpit Kdump check)
