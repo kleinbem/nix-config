@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ ... }:
 {
   imports = [
     ./core.nix
@@ -9,7 +9,6 @@
     ./virtualisation.nix
 
     # Restored Services
-    inputs.nix-android-emulator-setup.nixosModules.default
     ./ai-services.nix
     ./backup.nix
     ./scripts.nix

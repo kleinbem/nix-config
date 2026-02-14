@@ -14,6 +14,7 @@
     groups = {
       # ollama = { };
       # open-webui = { };
+      plugdev = { };
     };
   };
 

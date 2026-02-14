@@ -22,6 +22,9 @@
       "cacheUrl" = "https://vscode.blob.core.windows.net/gallery/index";
       "itemUrl" = "https://marketplace.visualstudio.com/items";
     };
+
+    # --- AI Tools ---
+    "github.copilot.editor.enableInlineSuggest" = false;
   };
 
   keybindings = [

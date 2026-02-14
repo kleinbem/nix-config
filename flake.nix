@@ -37,12 +37,10 @@
     nix-hardware.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
     nix-devshells = {
       url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
-      inputs.devenv.follows = "devenv";
     };
     nix-presets.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets";
     nix-packages.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages";
     nix-templates.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates";
-    nix-android-emulator-setup.url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-android-emulator-setup";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -117,7 +115,7 @@
           # ---------------------------------------------------------
           formatter = treefmtEval.config.build.wrapper;
 
-          devShells.default = inputs.nix-devshells.devShells.${system}.default;
+          # devShells.default = inputs.nix-devshells.devShells.${system}.default;
 
           # ---------------------------------------------------------
           # 2. Checks (Pre-commit)

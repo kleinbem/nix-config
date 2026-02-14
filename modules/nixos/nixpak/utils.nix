@@ -109,6 +109,9 @@ rec {
                     "/etc/profiles/per-user"
                     "/run/dbus"
                     (sloth.concat' sloth.homeDir "/.icons")
+                    "/run/current-system/sw/share/X11/fonts"
+                    "/nix/var/nix/profiles/default/share/fonts"
+                    "/nix/var/nix/profiles/per-user/${sloth.env "USER"}/profile/share/fonts"
                   ];
 
                   bubblewrap.bind.rw = [

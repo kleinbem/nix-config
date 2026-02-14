@@ -15,6 +15,7 @@
       "kvm"
       "incus-admin"
       "tss"
+      "plugdev"
     ];
     hashedPasswordFile = config.sops.secrets.martin_password.path;
   };

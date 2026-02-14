@@ -18,7 +18,7 @@
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.waydroid
-
+    inputs.nix-presets.nixosModules.android-emulator
   ];
 
   # --- Container Configuration ---
@@ -78,10 +78,7 @@
     };
   };
 
-  services.android-desktop-emulator = {
-    enable = true;
-    user = "martin";
-  };
+  programs.waydroid-setup.enable = true;
 
   home-manager.users.martin = import ../../users/martin/home.nix;
 
@@ -105,6 +102,10 @@
       pkiBundle = "/var/lib/sbctl";
     };
     initrd.systemd.enable = true;
+    kernelParams = [
+      "i915.enable_guc=3"
+      "i915.enable_fbc=1"
+    ];
 
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "75%";
@@ -127,6 +128,7 @@
     };
 
     firewall.enable = true;
+    firewall.trustedInterfaces = [ "tailscale0" ];
     nftables.enable = true;
   };
 
@@ -134,6 +136,13 @@
   # 8. HARDWARE TOKENS & MAINTENANCE
   # ==========================================
   services = {
+    android-desktop-emulator = {
+      enable = true;
+      user = "martin";
+    };
+
+    tailscale.enable = true;
+
     pcscd.enable = true;
     fprintd.enable = true;
     udev.packages = [

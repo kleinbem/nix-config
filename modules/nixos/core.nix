@@ -41,12 +41,14 @@
 
       log-lines = 25;
       min-free = 1073741824; # 1GB
-      max-jobs = "auto";
-      cores = 0;
+      max-jobs = 4;
+      cores = 2;
       trusted-users = [
         "@wheel"
       ];
     };
+    daemonCPUSchedPolicy = "idle";
+    daemonIOSchedClass = "idle";
     gc = {
       automatic = true;
       dates = "weekly";
