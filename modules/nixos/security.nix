@@ -61,10 +61,6 @@ in
     export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
   '';
 
-  # Explicitly disable Gnome Keyring in PAM for the greeter
-  # so it doesn't try to start its own agent or set the variable.
-  security.pam.services.cosmic-greeter.enableGnomeKeyring = false;
-
   # ==========================================
   # SSH & YUBIKEY SECURITY
   # ==========================================
@@ -82,6 +78,8 @@ in
     settings = {
       PermitRootLogin = "no";
       PasswordAuthentication = false;
+      KbdInteractiveAuthentication = true; # Required for MFA
+      AuthenticationMethods = "publickey,keyboard-interactive"; # Require BOTH key AND code
     };
   };
 
@@ -131,6 +129,12 @@ in
   # HARDENING & AUDITING
   # ==========================================
   security = {
+    # Explicitly disable Gnome Keyring in PAM for the greeter
+    pam.services.cosmic-greeter.enableGnomeKeyring = false;
+
+    # Enable Google Authenticator for SSH
+    pam.services.sshd.googleAuthenticator.enable = true;
+
     apparmor = {
       enable = true;
       killUnconfinedConfinables = false;
