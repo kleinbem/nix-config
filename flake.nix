@@ -23,6 +23,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    impermanence.url = "github:nix-community/impermanence";
+
     # Secret Management
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
@@ -75,6 +77,11 @@
 
     nix-vscode-extensions = {
       url = "github:nix-community/nix-vscode-extensions";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    disko = {
+      url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -140,6 +147,12 @@
             system = "x86_64-linux";
             specialArgs = { inherit inputs self; };
             modules = [ ./hosts/nixos-nvme/default.nix ];
+          };
+        };
+
+        diskoConfigurations = {
+          nixos-nvme = {
+            inherit (self.nixosConfigurations.nixos-nvme.config) disko;
           };
         };
       };

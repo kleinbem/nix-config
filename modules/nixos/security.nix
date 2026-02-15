@@ -130,10 +130,19 @@ in
   # ==========================================
   security = {
     # Explicitly disable Gnome Keyring in PAM for the greeter
-    pam.services.cosmic-greeter.enableGnomeKeyring = false;
+    pam = {
+      services = {
+        cosmic-greeter.enableGnomeKeyring = false;
 
-    # Enable Google Authenticator for SSH
-    pam.services.sshd.googleAuthenticator.enable = true;
+        # Enable Google Authenticator for SSH
+        sshd.googleAuthenticator.enable = true;
+        sshd.rules.auth.google-authenticator = {
+          order = 11500; # After fprintd
+          control = "sufficient";
+          modulePath = "${pkgs.google-authenticator}/lib/security/pam_google_authenticator.so";
+        };
+      };
+    };
 
     apparmor = {
       enable = true;

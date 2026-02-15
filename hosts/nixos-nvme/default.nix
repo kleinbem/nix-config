@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   inputs,
   ...
 }:
@@ -17,9 +18,43 @@
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ollama
+    inputs.nix-presets.nixosModules.qdrant
     inputs.nix-presets.nixosModules.waydroid
     inputs.nix-presets.nixosModules.android-emulator
+    ../../modules/nixos/persistence.nix
+    ../../modules/nixos/apps.nix
+    ../../modules/nixos/snapper.nix
+    ../../modules/nixos/disko.nix
+    inputs.disko.nixosModules.disko
   ];
+
+  # --- Stateless Root / Var ---
+  fileSystems = {
+    "/" = lib.mkForce {
+      device = "none";
+      fsType = "tmpfs";
+      options = [
+        "defaults"
+        "size=4G"
+        "mode=755"
+      ];
+      neededForBoot = true;
+    };
+
+    "/var" = lib.mkForce {
+      device = "none";
+      fsType = "tmpfs";
+      options = [
+        "defaults"
+        "size=8G"
+        "mode=755"
+      ];
+      neededForBoot = true;
+    };
+
+    # Persistence Anchor and Images are now managed by disko.nix
+    "/nix/persist".neededForBoot = true;
+  };
 
   # --- Container Configuration ---
   # --- Container & Switchboard Configuration ---
@@ -30,6 +65,11 @@
         ip = "10.85.46.99/24";
         hostBridge = "incusbr0";
         hostDataDir = "/home/martin/n8n-data";
+        noteDirs = {
+          silverbullet = "/home/martin/Develop/Notes";
+          obsidian = "/home/martin/GoogleDrive/Obsidian";
+          repos = "/home/martin/Develop/github.com/kleinbem";
+        };
       };
 
       silverbullet = {
@@ -67,6 +107,13 @@
         hostBridge = "incusbr0";
         hostDataDir = "/var/lib/images/ollama";
       };
+
+      qdrant = {
+        enable = true;
+        ip = "10.85.46.105/24";
+        hostBridge = "incusbr0";
+        hostDataDir = "/var/lib/images/qdrant";
+      };
     };
 
     desktop.enable = true;
@@ -77,6 +124,13 @@
       glances.enable = true;
     };
   };
+
+  # --- Advanced Stateless Tuning ---
+  services.journald.extraConfig = ''
+    SystemMaxUse=500M
+    SystemMaxFileSize=50M
+    MaxRetentionSec=1month
+  '';
 
   programs.waydroid-setup.enable = true;
 
@@ -108,7 +162,7 @@
     ];
 
     tmp.useTmpfs = true;
-    tmp.tmpfsSize = "75%";
+    tmp.tmpfsSize = "8G"; # Plenty of space for large builds in your 64GB RAM
   };
 
   # ==========================================
@@ -175,6 +229,7 @@
     "d /var/lib/n8n 0755 martin users - -"
     "d /var/lib/images/ollama 0755 root root - -"
     "d /var/lib/images/ollama/models 0755 root root - -"
+    "d /var/lib/images/qdrant 0755 root root - -"
   ];
 
   # ==========================================
@@ -183,7 +238,7 @@
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
     defaultSopsFormat = "yaml";
-    age.keyFile = "/var/lib/sops/age/host.txt";
+    age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
     # Force systemd service generation (fixes missing sops-nix.service)
     useSystemdActivation = true;
     # Native plugin support (replaces manual wrapper)
