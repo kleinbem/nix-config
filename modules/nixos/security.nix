@@ -1,5 +1,6 @@
 {
   pkgs,
+  config,
   ...
 }:
 
@@ -50,7 +51,8 @@ in
     clamav
     clamtk # GUI
     libnotify # For notifications
-    lxqt.lxqt-openssh-askpass # <--- ENSURE THIS IS ADDED
+    lxqt.lxqt-openssh-askpass
+    lynis # Security auditing
   ];
 
   # Force the correct SSH_AUTH_SOCK for all sessions.
@@ -123,6 +125,74 @@ in
 
       clamonacc.enable = true;
     };
+
+    # ==========================================
+    # FAIL2BAN — Brute-Force Protection
+    # ==========================================
+    fail2ban = {
+      enable = true;
+      maxretry = 5;
+      bantime = "1h";
+      bantime-increment = {
+        enable = true;
+        maxtime = "168h"; # 1 week max for repeat offenders
+      };
+      jails.sshd = {
+        settings = {
+          enabled = true;
+          port = "ssh";
+          filter = "sshd";
+          maxretry = 3;
+        };
+      };
+    };
+
+    # ==========================================
+    # USBGUARD — USB Device Whitelisting
+    # ==========================================
+    usbguard = {
+      enable = true;
+      rules = ''
+        # --- Host Controllers & Hubs (always needed) ---
+        allow with-interface equals { 09:00:00 }
+
+        # --- Input Devices ---
+        # Dell KB216 Wired Keyboard
+        allow id 413c:2113
+        # Logitech USB Receiver (wireless mouse/keyboard)
+        allow id 046d:c548
+
+        # --- Security Keys ---
+        # YubiKey 5 (OTP+FIDO+CCID)
+        allow id 1050:0407
+        # VeriMark DT Fingerprint Key
+        allow id 047d:00f2
+
+        # --- Peripherals ---
+        # Intel Bluetooth Adapter
+        allow id 8087:0026
+        # Generic USB2.0 Card Reader
+        allow id 0bda:0153
+        # ESS Technology USB DAC (Audio)
+        allow id 0495:3048
+        # USB 2.0 Hub
+        allow id 05e3:0610
+        # Generic USB 2.0 Hub (Webcam Hub)
+        allow id 1a40:0101
+        # HD Camera
+        allow id 0408:7090
+        # Webcam USB Audio
+        allow id 0408:7a10
+
+        # --- Mobile Devices ---
+        # Samsung Electronics Co., Ltd (MTP, ADB, PTP)
+        allow id 04e8:*
+
+        # Block everything else
+        reject
+      '';
+      IPCAllowedUsers = [ "root" ];
+    };
   };
 
   # ==========================================
@@ -141,6 +211,17 @@ in
           control = "sufficient";
           modulePath = "${pkgs.google-authenticator}/lib/security/pam_google_authenticator.so";
         };
+
+        sudo.u2fAuth = true;
+      };
+    };
+
+    # U2F / YubiKey Configuration (PAM level)
+    pam.u2f = {
+      enable = true;
+      settings = {
+        cue = true; # Prompt the user to touch the key
+        authfile = config.sops.secrets.u2f_keys.path;
       };
     };
 
@@ -149,10 +230,24 @@ in
       killUnconfinedConfinables = false;
     };
     audit = {
-      enable = false;
-      # rules = [ "-a exit,always -F arch=b64 -S execve" ]; # Log all command executions
+      enable = true;
+      rules = [
+        # Log all command executions (forensic trail)
+        "-a exit,always -F arch=b64 -S execve"
+        # Log changes to critical identity files
+        "-w /etc/passwd -p wa -k identity"
+        "-w /etc/shadow -p wa -k identity"
+        "-w /etc/sudoers -p wa -k sudo_changes"
+        # Log mount operations
+        "-a always,exit -F arch=b64 -S mount -k mounts"
+        # Zero Trust: Log firewall rule modifications
+        "-a always,exit -F arch=b64 -S setsockopt -F a0=0 -k nftables_changes"
+        # Zero Trust: Log container namespace creation
+        "-a always,exit -F arch=b64 -S clone -F a0&0x7C020000 -k container_ns"
+        "-a always,exit -F arch=b64 -S unshare -k namespace_creation"
+      ];
     };
-    auditd.enable = false;
+    auditd.enable = true;
     protectKernelImage = true;
   };
 
@@ -172,7 +267,7 @@ in
           -mtime -1 -type f \
           -not -path "*/.cache/*" -not -path "*/.git/*" -not -path "*/node_modules/*" \
           -print0 \
-        | ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan -c ${scanConfig} --multiscan --fdpass
+        | ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan -c ${scanConfig} --multiscan --fdpass || true
       '';
     };
 
@@ -180,6 +275,24 @@ in
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnCalendar = "daily";
+        Persistent = true;
+      };
+    };
+
+    # ---------------------------
+    # Lynis Security Audit (Weekly)
+    # ---------------------------
+    services.lynis-audit = {
+      description = "Lynis Security Audit";
+      serviceConfig.Type = "oneshot";
+      script = ''
+        ${pkgs.lynis}/bin/lynis audit system --no-colors --quiet > /var/log/lynis-report.txt 2>&1
+      '';
+    };
+    timers.lynis-audit = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "weekly";
         Persistent = true;
       };
     };
@@ -207,6 +320,11 @@ in
     IOSchedulingClass = "idle";
   };
 
+  # Prevent audit rule loading failures from blocking activation
+  # (the kernel audit subsystem may be locked/busy during live switch;
+  #  rules load correctly on next boot)
+  systemd.services.audit-rules-nixos.serviceConfig.SuccessExitStatus = [ 1 ];
+
   # ==========================================
   # KERNEL HARDENING & PERFORMANCE
   # ==========================================
@@ -225,7 +343,7 @@ in
       "i915.enable_psr=0"
       "snd_hda_intel.power_save=0"
       "snd_hda_intel.power_save_controller=N"
-      "audit=0"
+      "audit=1"
     ];
 
     # Sysctl Hardening

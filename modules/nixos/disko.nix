@@ -76,7 +76,7 @@
             content = {
               type = "btrfs";
               subvolumes = {
-                "/nix" = {
+                "/" = {
                   mountpoint = "/nix";
                   mountOptions = [ "noatime" ];
                 };

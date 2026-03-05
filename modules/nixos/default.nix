@@ -7,9 +7,10 @@
     ./security.nix
     ./printing.nix
     ./virtualisation.nix
+    ./zero-trust.nix
+    ./pki.nix
 
-    # Restored Services
-    ./ai-services.nix
+    # Services
     ./backup.nix
     ./scripts.nix
     ./services/github-runner.nix

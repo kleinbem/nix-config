@@ -31,23 +31,23 @@ boot:
 
 switch-local:
     nh os switch . -- \
-      --override-input nix-secrets "path:/home/martin/Develop/github.com/kleinbem/nix/nix-secrets" \
-      --override-input nix-hardware "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware" \
-      --override-input nix-devshells "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells" \
-      --override-input nix-presets "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets" \
-      --override-input nix-packages "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages" \
-      --override-input nix-templates "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates"
+      --override-input nix-secrets "path:${HOME}/Develop/github.com/kleinbem/nix/nix-secrets" \
+      --override-input nix-hardware "path:${HOME}/Develop/github.com/kleinbem/nix/nix-hardware" \
+      --override-input nix-devshells "path:${HOME}/Develop/github.com/kleinbem/nix/nix-devshells" \
+      --override-input nix-presets "path:${HOME}/Develop/github.com/kleinbem/nix/nix-presets" \
+      --override-input nix-packages "path:${HOME}/Develop/github.com/kleinbem/nix/nix-packages" \
+      --override-input nix-templates "path:${HOME}/Develop/github.com/kleinbem/nix/nix-templates"
 
 # Boot with local overrides
 
 boot-local:
     nh os boot . -- \
-      --override-input nix-secrets "path:/home/martin/Develop/github.com/kleinbem/nix/nix-secrets" \
-      --override-input nix-hardware "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware" \
-      --override-input nix-devshells "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells" \
-      --override-input nix-presets "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets" \
-      --override-input nix-packages "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages" \
-      --override-input nix-templates "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates"
+      --override-input nix-secrets "path:${HOME}/Develop/github.com/kleinbem/nix/nix-secrets" \
+      --override-input nix-hardware "path:${HOME}/Develop/github.com/kleinbem/nix/nix-hardware" \
+      --override-input nix-devshells "path:${HOME}/Develop/github.com/kleinbem/nix/nix-devshells" \
+      --override-input nix-presets "path:${HOME}/Develop/github.com/kleinbem/nix/nix-presets" \
+      --override-input nix-packages "path:${HOME}/Develop/github.com/kleinbem/nix/nix-packages" \
+      --override-input nix-templates "path:${HOME}/Develop/github.com/kleinbem/nix/nix-templates"
 
 # Switch with Debug Output
 
@@ -73,6 +73,32 @@ check:
 
 deploy: lint check test switch verify
     @echo "✅ System successfully deployed and verified!"
+
+# --- Colmena (Multi-Host Deployment) ---
+
+# Deploy to ALL managed hosts
+deploy-all:
+    colmena apply
+
+# Deploy to a specific host by name
+deploy-to host:
+    colmena apply --on {{host}}
+
+# Deploy to hosts matching a tag (e.g., "router", "raspberry-pi")
+deploy-tag tag:
+    colmena apply --on @{{tag}}
+
+# Deploy locally only (same machine, like `switch`)
+deploy-local:
+    colmena apply-local --sudo
+
+# Dry-run: show what would change without applying
+deploy-dry:
+    colmena apply --evaluator streaming --verbose --dry-activate
+
+# Build all host configs without deploying
+build-all:
+    colmena build
 
 # --- Code Platform ---
 
@@ -134,39 +160,3 @@ localDeep:
     @OLLAMA_API_BASE=<http://127.0.0.1:11434> nix develop --command aider \
       --model ollama/deepseek-r1:8b \
       --editor-model ollama/qwen2.5-coder:7b
-
-# --- Terranix Fleet Orchestration ---
-
-# Build & Import n8n Image (Required before deploy)
-
-import-n8n:
-    @echo "📦 Building n8n image..."
-    nix build .#n8n-image
-    incus image delete n8n-image || true
-    ./scripts/patch-incus-image.sh result/tarball/*.tar.xz "n8n-image" "NixOS n8n Container"
-
-# Build & Import Open WebUI Image
-
-import-open-webui:
-    @echo "📦 Building Open WebUI image..."
-    nix build .#open-webui-image
-    incus image delete open-webui-image || true
-    ./scripts/patch-incus-image.sh result/tarball/*.tar.xz "open-webui-image" "NixOS Open WebUI Container"
-
-# Generate & Plan Infrastructure Changes
-
-infra-plan:
-    cd infra && nix run .
-    cd infra && nix develop --command bash -c "tofu init && tofu plan"
-
-# Generate & Apply Infrastructure Changes
-
-infra-apply:
-    cd infra && nix run .
-    cd infra && nix develop --command bash -c "tofu init && tofu apply"
-
-# Deploy Fleet (Non-Interactive)
-
-infra-deploy:
-    cd infra && nix run .
-    cd infra && nix develop --command bash -c "tofu init && tofu apply -auto-approve"

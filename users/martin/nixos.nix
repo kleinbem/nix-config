@@ -13,18 +13,14 @@
       "render"
       "libvirtd"
       "kvm"
-      "incus-admin"
       "tss"
       "plugdev"
+      "adbusers"
     ];
     hashedPasswordFile = config.sops.secrets.martin_password.path;
   };
 
-  sops.secrets = {
-    martin_password = {
-      neededForUsers = true;
-    };
-    "n8n.env" = { };
-    "open-webui.env" = { };
+  sops.secrets.martin_password = {
+    neededForUsers = true;
   };
 }

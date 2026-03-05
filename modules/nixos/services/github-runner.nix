@@ -78,7 +78,7 @@ in
 
       # Hardening
       serviceOverrides = {
-        ProtectHome = "read-only"; # Prevent runner from reading /home/martin
+        ProtectHome = "read-only"; # Prevent runner from reading ${config.my.home}
         PrivateDevices = false; # OpenWrt build might need loopback devices
         # CRITICAL: Allow runner to create User Namespaces (for bwrap/FHS)
         RestrictNamespaces = false;
@@ -115,6 +115,12 @@ in
         Group = "github-runner";
       };
     };
+  };
+
+  # Ensure the runner waits for the network to be online
+  systemd.services."github-runner-openwrt-builder" = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 
   # ---------------------------------------------------------

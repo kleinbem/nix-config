@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ config, ... }:
 
 {
   # ==========================================
@@ -7,16 +7,18 @@
   users = {
     users = {
       root = {
+        # Restoring sops-based password now that system is stable
         hashedPasswordFile = config.sops.secrets.root-password-hash.path;
       };
     };
 
     groups = {
-      # ollama = { };
-      # open-webui = { };
       plugdev = { };
     };
   };
+
+  # Security: Disable unauthenticated stage-1 shell now that system boots correctly
+  boot.initrd.systemd.emergencyAccess = false;
 
   sops.secrets.root-password-hash = {
     neededForUsers = true;
@@ -30,22 +32,11 @@
       enable = true;
       settings.cue = true;
     };
+    # Zero Trust: sudo requires YubiKey touch (hardware MFA)
+    pam.services.sudo.u2fAuth = true;
     tpm2.enable = true;
   };
 
   programs.fuse.userAllowOther = true;
 
-  systemd.user.services.polkit-gnome-authentication-agent-1 = {
-    description = "polkit-gnome-authentication-agent-1";
-    wantedBy = [ "graphical-session.target" ];
-    wants = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
-      Restart = "on-failure";
-      RestartSec = 1;
-      TimeoutStopSec = 10;
-    };
-  };
 }

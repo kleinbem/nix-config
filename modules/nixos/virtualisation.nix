@@ -10,7 +10,7 @@ let
 in
 {
   options.my.virtualisation = {
-    enable = lib.mkEnableOption "Virtualisation (Incus, Docker, Podman, Libvirt)";
+    enable = lib.mkEnableOption "Virtualisation (Docker, Podman, Libvirt)";
   };
 
   config = lib.mkIf cfg.enable {
@@ -42,13 +42,6 @@ in
         defaultNetwork.settings.dns_enabled = true;
       };
 
-      # Incus (System Containers)
-      incus = {
-        enable = true;
-        package = pkgs.incus;
-        ui.enable = true;
-      };
-
       # Raw LXC (Daemonless)
       lxc = {
         enable = true;
@@ -57,9 +50,48 @@ in
       };
     };
 
-    # ==========================================
-    # PODMAN SOCKETS (Rootful & Rootless)
-    # ==========================================
+    # Native Bridge for NixOS Containers (Replaces Incusd's bridge)
+    networking = {
+      networkmanager.unmanaged = [ config.my.network.bridge ];
+      # We still keep the NAT and basic interface config for firewall/routing
+      interfaces."${config.my.network.bridge}".ipv4.addresses = [
+        {
+          address = config.my.network.hostAddress;
+          prefixLength = 24;
+        }
+      ];
+      nat = {
+        enable = true;
+        internalInterfaces = [ config.my.network.bridge ];
+        externalInterface = "wlo1";
+      };
+    };
+
+    # Force bridge creation via systemd (more reliable with NetworkManager)
+    systemd.services."create-${config.my.network.bridge}-bridge" = {
+      description = "Create ${config.my.network.bridge} bridge for containers";
+      after = [ "network-pre.target" ];
+      before = [
+        "network.target"
+        "container@n8n.service"
+        "container@ollama.service"
+        "container@code-server.service"
+        "container@silverbullet.service"
+        "container@open-webui.service"
+        "container@dashboard.service"
+        "container@qdrant.service"
+      ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        ${pkgs.iproute2}/bin/ip link add name ${config.my.network.bridge} type bridge || true
+        ${pkgs.iproute2}/bin/ip link set ${config.my.network.bridge} up || true
+        # IP address is handled by networking.interfaces
+      '';
+    };
 
     # ==========================================
     # PODMAN SOCKETS (Rootful & Rootless)
@@ -68,7 +100,7 @@ in
     systemd = {
       # Ensure /images is owned by the user and libvirtd group
       tmpfiles.rules = [
-        "z /images 0775 martin libvirtd - -"
+        "z /images 0775 ${config.my.username} libvirtd - -"
       ];
     };
 
@@ -78,7 +110,6 @@ in
     environment.systemPackages = with pkgs; [
       virt-manager
 
-      podman
       podman-tui
       podman-compose
       docker-compose

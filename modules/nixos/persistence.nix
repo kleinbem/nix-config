@@ -18,15 +18,16 @@
       "/var/lib/NetworkManager"
       "/var/lib/fprint"
       "/var/lib/waydroid"
-      "/var/lib/incus"
       "/var/lib/docker"
       "/var/lib/flatpak"
       "/var/lib/libvirt"
       "/var/lib/cups"
       "/var/lib/fwupd"
+      "/var/lib/fail2ban"
+      "/var/lib/usbguard"
       "/var/db/sudo"
       "/etc/NetworkManager/system-connections"
-      "/etc/cups"
+      # "/etc/cups"
       "/etc/waydroid-extra"
       "/var/lib/sbctl"
     ];
@@ -39,7 +40,4 @@
     ];
   };
 
-  # Security: Machine ID is used for system integrity
-  # Machine-id must be exactly 32 chars.
-  # Note: You can generate one with `dbus-uuidgen --ensure` if missing
 }

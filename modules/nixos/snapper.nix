@@ -25,4 +25,7 @@ _:
   # Ensure the subvolume is ready for snapper
   # Snapper requires the subvolume to have a .snapshots directory or be a subvolume itself.
   # Since /nix/persist is a subvolume, snapper will create .snapshots inside it.
+  systemd.tmpfiles.rules = [
+    "d /nix/persist/.snapshots 0750 root root - -"
+  ];
 }

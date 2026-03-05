@@ -1,24 +1,33 @@
-.envrc
-.agent/aider/aider*
+# Nix / Direnv
 result
+result-*
 .direnv/
-.pre-commit-config.yaml
-tmp/
-*.qcow2
-*.iso
+.cache/
+.devenv/
 
-# Google Antigravity Runtime.
+# Development Tools
+.pre-commit-config.yaml
+.agent/
+_
+*.swp
+*~
+.DS_Store
+.envrc
+
+# Preserve VSCode settings
+!.vscode/
+
+# Legacy Agent Paths
+.agent/aider/aider*
 .agent/workspaces/
 .agent/logs/
 .agent/temp/
 .agent/browser/
 
-
-# Aider junk and unrelevant files
-.agent/aider/.aider.input.history
-.agent/aider/.aider.tags.cache*
-.agent/aider/.aider.chat.history.md
-.agent/aider/.env
+# Filesystem / Images
+tmp/
+*.qcow2
+*.iso
 
 # Workspace
 !nixos.code-workspace
