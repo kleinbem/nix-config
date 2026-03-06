@@ -1,7 +1,7 @@
-{ lib, ... }:
+{ ... }:
 
 {
-  disko.devices = lib.mkForce {
+  disko.devices = {
     disk = {
       main = {
         type = "disk";

@@ -27,7 +27,18 @@
   security = {
     sudo.wheelNeedsPassword = true;
     rtkit.enable = true;
-    polkit.enable = true;
+    polkit = {
+      enable = true;
+      extraConfig = ''
+        polkit.addRule(function(action, subject) {
+          if ((action.id == "org.freedesktop.udisks2.encrypted-unlock-system" ||
+               action.id == "org.freedesktop.udisks2.encrypted-unlock") &&
+              subject.user == "martin") {
+            return polkit.Result.YES;
+          }
+        });
+      '';
+    };
     pam.u2f = {
       enable = true;
       settings.cue = true;

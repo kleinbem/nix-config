@@ -1,4 +1,4 @@
-_:
+{ lib, ... }:
 
 {
   disko.devices = {
@@ -31,6 +31,7 @@ _:
                       mountOptions = [
                         "compress=zstd"
                         "noatime"
+                        "nofail"
                       ];
                     };
                   };
@@ -42,4 +43,11 @@ _:
       };
     };
   };
+
+  # Workaround: Disko does not generate crypttab for non-boot disks when
+  # boot.initrd.systemd.enable = true. We manually generate the crypttab entry
+  # so that the main system's systemd-cryptsetup-generator unlocks the drive.
+  environment.etc."crypttab".text = lib.mkDefault ''
+    cryptdata /dev/disk/by-partlabel/disk-data-luks_data - fido2-device=auto,discard
+  '';
 }

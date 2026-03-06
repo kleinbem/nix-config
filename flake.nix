@@ -31,29 +31,29 @@
 
     # Private Secrets (GitHub Repo)
     nix-secrets = {
-      url = "git+ssh://git@github.com/kleinbem/nix-secrets.git?ref=main";
+      url = "path:../nix-secrets";
       flake = false;
     };
 
-    # Modules & Configurations (Pulled from GitHub for maximum portability)
+    # Modules & Configurations (Pulled from local submodules for speed)
     nix-hardware = {
-      url = "github:kleinbem/nix-hardware";
+      url = "path:../nix-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-devshells = {
-      url = "github:kleinbem/nix-devshells";
+      url = "path:../nix-devshells";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "github:kleinbem/nix-presets";
+      url = "path:../nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
-      url = "github:kleinbem/nix-packages";
+      url = "path:../nix-packages";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-templates = {
-      url = "github:kleinbem/nix-templates";
+      url = "path:../nix-templates";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -121,7 +121,6 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         ./modules/flake/images.nix
-        inputs.treefmt-nix.flakeModule
       ];
       systems = [
         "x86_64-linux"
@@ -131,23 +130,16 @@
       perSystem =
         {
           config,
-          pkgs,
           system,
           ...
         }:
         let
-          # Treefmt Configuration
-          treefmtEval = treefmt-nix.lib.evalModule pkgs {
-            projectRootFile = "flake.nix";
-            programs.nixfmt.enable = true;
-            programs.nixfmt.package = pkgs.nixfmt;
-          };
         in
         {
           # ---------------------------------------------------------
           # 1. The Agentic Development Shell
           # ---------------------------------------------------------
-          formatter = treefmtEval.config.build.wrapper;
+          formatter = inputs.nix-devshells.formatter.${system};
 
           devShells.default = inputs.nix-devshells.devShells.${system}.default.overrideAttrs (old: {
             shellHook = ''
@@ -168,6 +160,10 @@
             };
           };
 
+          checks.code-server-test = import ./tests/code-server.nix {
+            pkgs = inputs.nixpkgs.legacyPackages.${system};
+            inherit inputs;
+          };
         };
 
       flake =

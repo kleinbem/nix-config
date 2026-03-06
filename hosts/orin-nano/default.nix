@@ -1,10 +1,12 @@
 # orin-nano — NVIDIA Jetson Orin Nano (aarch64)
-{ lib, ... }:
+{ lib, inputs, ... }:
 
 {
   imports = [
     ../../modules/nixos/headless.nix
     ../../modules/nixos/hosts.nix
+    # Hardware support from our local hardware flake
+    inputs.nix-hardware.nixosModules.orin-nano
   ];
 
   networking.hostName = "orin-nano";

@@ -21,9 +21,6 @@ in
       libvirtd = {
         enable = true;
         onBoot = "ignore";
-        # Disable auto-starting the service itself if possible, though 'enable = true' usually implies wantedBy multi-user.
-        # NixOS libvirtd module doesn't perfectly support "installed but disabled",
-        # but onBoot="ignore" stops VMs.
       };
 
       # Docker (Primary for DevContainers/Compatibility)
@@ -32,8 +29,6 @@ in
       };
 
       # Podman (Side-by-side)
-      # Note: We do NOT alias docker to podman (dockerCompat=false) to allow them to co-exist.
-      # Docker handles DevContainers/NVIDIA, while Podman handles System Containers/RHEL workflows.
       podman = {
         enable = true;
         dockerCompat = false;
@@ -49,6 +44,19 @@ in
         defaultConfig = "lxc.include = ${pkgs.lxc}/share/lxc/config/common.conf.d/00-lxcfs.conf";
       };
     };
+
+    # HOTFIX: The virt-secret-init-encryption service uses /usr/bin/sh
+    # We must clear the existing ExecStart list (using [""]) then add our fix.
+    systemd.services.virt-secret-init-encryption = {
+      serviceConfig.ExecStart = [
+        ""
+        "${pkgs.bash}/bin/sh -c 'umask 0077 && (${pkgs.coreutils}/bin/dd if=/dev/random status=none bs=32 count=1 | ${config.systemd.package}/bin/systemd-creds encrypt --name=secrets-encryption-key - /var/lib/libvirt/secrets/secrets-encryption-key)'"
+      ];
+    };
+
+    # Delay GPU-enabled containers to ensure /dev/dri is ready at boot
+    systemd.services."container@ollama".serviceConfig.ExecStartPre =
+      [ "${pkgs.coreutils}/bin/sleep 5" ];
 
     # Native Bridge for NixOS Containers (Replaces Incusd's bridge)
     networking = {
