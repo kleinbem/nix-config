@@ -29,3 +29,4 @@
   - [ ] **Migrate to `systemd-homed`**: Encrypt user home directory with YubiKey/FIDO2. (Solves "Keyring Login" issue).
   - [ ] **Facial Authentication (`howdy`)**: Evaluate when officially packaged. (Wait for Nixpkgs support).
 dummy change
+dummy change 2
