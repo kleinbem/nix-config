@@ -10,6 +10,9 @@
     # --- Nix Integration ---
     "nix.enableLanguageServer" = true;
     "nix.serverPath" = "nil";
+    "[nix]" = {
+      "editor.defaultFormatter" = "jnoortheen.nix-ide";
+    };
 
     # --- Marketplace Fix (CRITICAL) ---
     # Forces Windsurf, Cursor, and Antigravity to use the official VS Code Marketplace
