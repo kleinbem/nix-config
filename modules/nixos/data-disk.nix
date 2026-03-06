@@ -49,7 +49,7 @@ _:
   environment.etc.crypttab = {
     mode = "0600";
     text = ''
-      cryptdata /dev/disk/by-partlabel/disk-data-luks_data none fido2-device=auto,discard
+      cryptdata /dev/disk/by-partlabel/disk-data-luks_data none fido2-device=auto,discard,x-systemd.device-timeout=0
     '';
   };
 }
