@@ -1,4 +1,4 @@
-{ lib, ... }:
+_:
 
 {
   disko.devices = {
@@ -19,6 +19,7 @@
                   allowDiscards = true;
                   crypttabExtraOpts = [ "fido2-device=auto" ];
                 };
+                initrdUnlock = false;
                 content = {
                   type = "btrfs";
                   extraArgs = [
@@ -44,10 +45,11 @@
     };
   };
 
-  # Workaround: Disko does not generate crypttab for non-boot disks when
-  # boot.initrd.systemd.enable = true. We manually generate the crypttab entry
-  # so that the main system's systemd-cryptsetup-generator unlocks the drive.
-  environment.etc."crypttab".text = lib.mkDefault ''
-    cryptdata /dev/disk/by-partlabel/disk-data-luks_data - fido2-device=auto,discard
-  '';
+  # Let systemd's cryptsetup-generator automatically create the service from crypttab
+  environment.etc.crypttab = {
+    mode = "0600";
+    text = ''
+      cryptdata /dev/disk/by-partlabel/disk-data-luks_data none fido2-device=auto,discard
+    '';
+  };
 }

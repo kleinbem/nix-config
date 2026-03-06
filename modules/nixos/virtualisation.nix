@@ -45,19 +45,6 @@ in
       };
     };
 
-    # HOTFIX: The virt-secret-init-encryption service uses /usr/bin/sh
-    # We must clear the existing ExecStart list (using [""]) then add our fix.
-    systemd.services.virt-secret-init-encryption = {
-      serviceConfig.ExecStart = [
-        ""
-        "${pkgs.bash}/bin/sh -c 'umask 0077 && (${pkgs.coreutils}/bin/dd if=/dev/random status=none bs=32 count=1 | ${config.systemd.package}/bin/systemd-creds encrypt --name=secrets-encryption-key - /var/lib/libvirt/secrets/secrets-encryption-key)'"
-      ];
-    };
-
-    # Delay GPU-enabled containers to ensure /dev/dri is ready at boot
-    systemd.services."container@ollama".serviceConfig.ExecStartPre =
-      [ "${pkgs.coreutils}/bin/sleep 5" ];
-
     # Native Bridge for NixOS Containers (Replaces Incusd's bridge)
     networking = {
       networkmanager.unmanaged = [ config.my.network.bridge ];
@@ -75,32 +62,6 @@ in
       };
     };
 
-    # Force bridge creation via systemd (more reliable with NetworkManager)
-    systemd.services."create-${config.my.network.bridge}-bridge" = {
-      description = "Create ${config.my.network.bridge} bridge for containers";
-      after = [ "network-pre.target" ];
-      before = [
-        "network.target"
-        "container@n8n.service"
-        "container@ollama.service"
-        "container@code-server.service"
-        "container@silverbullet.service"
-        "container@open-webui.service"
-        "container@dashboard.service"
-        "container@qdrant.service"
-      ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        ${pkgs.iproute2}/bin/ip link add name ${config.my.network.bridge} type bridge || true
-        ${pkgs.iproute2}/bin/ip link set ${config.my.network.bridge} up || true
-        # IP address is handled by networking.interfaces
-      '';
-    };
-
     # ==========================================
     # PODMAN SOCKETS (Rootful & Rootless)
     # ==========================================
@@ -110,6 +71,47 @@ in
       tmpfiles.rules = [
         "z /images 0775 ${config.my.username} libvirtd - -"
       ];
+
+      # Consolidated services to pass statix checks
+      services = {
+        # HOTFIX: The virt-secret-init-encryption service uses /usr/bin/sh
+        # We must clear the existing ExecStart list (using [""]) then add our fix.
+        virt-secret-init-encryption = {
+          serviceConfig.ExecStart = [
+            ""
+            "${pkgs.bash}/bin/sh -c 'umask 0077 && (${pkgs.coreutils}/bin/dd if=/dev/random status=none bs=32 count=1 | ${config.systemd.package}/bin/systemd-creds encrypt --name=secrets-encryption-key - /var/lib/libvirt/secrets/secrets-encryption-key)'"
+          ];
+        };
+
+        # Delay GPU-enabled containers to ensure /dev/dri is ready at boot
+        "container@ollama".serviceConfig.ExecStartPre = [ "${pkgs.coreutils}/bin/sleep 5" ];
+
+        # Force bridge creation via systemd (more reliable with NetworkManager)
+        "create-${config.my.network.bridge}-bridge" = {
+          description = "Create ${config.my.network.bridge} bridge for containers";
+          after = [ "network-pre.target" ];
+          before = [
+            "network.target"
+            "container@n8n.service"
+            "container@ollama.service"
+            "container@code-server.service"
+            "container@silverbullet.service"
+            "container@open-webui.service"
+            "container@dashboard.service"
+            "container@qdrant.service"
+          ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
+          script = ''
+            ${pkgs.iproute2}/bin/ip link add name ${config.my.network.bridge} type bridge || true
+            ${pkgs.iproute2}/bin/ip link set ${config.my.network.bridge} up || true
+            # IP address is handled by networking.interfaces
+          '';
+        };
+      };
     };
 
     programs.virt-manager.enable = true;

@@ -113,7 +113,6 @@
   outputs =
     inputs@{
       self,
-      treefmt-nix,
       pre-commit-hooks,
       flake-parts,
       ...
@@ -133,8 +132,6 @@
           system,
           ...
         }:
-        let
-        in
         {
           # ---------------------------------------------------------
           # 1. The Agentic Development Shell
