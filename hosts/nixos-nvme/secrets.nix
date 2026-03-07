@@ -22,11 +22,11 @@
     secrets.rclone_config = {
       owner = "martin";
     };
-    # secrets.github_read_all_token = {
-    #   mode = "0440";
-    #   # The nix-daemon needs to be able to read this file
-    #   group = "wheel";
-    # };
+    secrets.github_read_all_token = {
+      mode = "0440";
+      # The nix-daemon needs to be able to read this file
+      group = "wheel";
+    };
     secrets.u2f_keys = { };
     # secrets.homepage_n8n_key = { };
     # secrets.homepage_openwebui_key = { };
