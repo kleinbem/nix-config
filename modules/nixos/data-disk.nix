@@ -24,7 +24,7 @@ _:
                     "nofail"
                   ];
                 };
-                initrdUnlock = false;
+                initrdUnlock = true;
                 content = {
                   type = "btrfs";
                   extraArgs = [
