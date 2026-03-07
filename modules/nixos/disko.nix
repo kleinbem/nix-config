@@ -32,7 +32,7 @@ _:
             };
             # Partition 4: Windows (C:)
             Windows = {
-              size = "99.3G";
+              size = "100G";
               priority = 4;
             };
             # Partition 5: Windows Recovery
