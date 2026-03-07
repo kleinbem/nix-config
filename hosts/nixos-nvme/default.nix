@@ -258,10 +258,14 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
-    initrd.kernelModules = [
-      "usbhid"
-      "hid_generic"
-    ];
+    initrd = {
+      availableKernelModules = [ "ahci" ];
+      kernelModules = [
+        "usbhid"
+        "hid_generic"
+      ];
+      systemd.enable = true;
+    };
     loader = {
       systemd-boot.enable = false;
       systemd-boot.configurationLimit = 30;
@@ -271,7 +275,6 @@
       enable = true;
       pkiBundle = "/nix/persist/var/lib/sbctl";
     };
-    initrd.systemd.enable = true;
     kernelParams = [
       "i915.enable_guc=2"
       "i915.enable_fbc=1"

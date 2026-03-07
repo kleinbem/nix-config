@@ -5,7 +5,7 @@ _:
     disk = {
       data = {
         type = "disk";
-        device = "/dev/sda";
+        device = "/dev/disk/by-id/ata-WD_Red_SA500_2.5_2TB_2548TKD00121";
         content = {
           type = "gpt";
           partitions = {
