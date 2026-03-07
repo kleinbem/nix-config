@@ -265,6 +265,7 @@
         "hid_generic"
       ];
       systemd.enable = true;
+      luks.fido2Support = true;
     };
     loader = {
       systemd-boot.enable = false;
