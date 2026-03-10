@@ -14,6 +14,7 @@
     ../../modules/nixos/common.nix
     ../../modules/nixos/hosts.nix
     ../../modules/nixos/default.nix
+    ../../modules/nixos/options.nix
     ../../users/martin/nixos.nix
     inputs.nix-presets.nixosModules.n8n
     inputs.nix-presets.nixosModules.silverbullet
@@ -76,7 +77,7 @@
       n8n = {
         enable = true;
         ip = "${myInventory.network.nodes.n8n.ip}/24";
-        hostDataDir = "${config.my.home}/n8n-data";
+        hostDataDir = "/var/lib/images/n8n";
         memoryLimit = "6G";
         secretsFile = config.sops.templates."n8n.env".path;
         noteDirs = {
@@ -147,6 +148,7 @@
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.85.46.1";
         memoryLimit = "1G";
+        hostDataDir = "/var/lib/images/dashboard";
         secretsFile = config.sops.templates."homepage.env".path;
       };
 
@@ -221,14 +223,14 @@
       playground = {
         enable = true;
         ip = "${myInventory.network.nodes.playground.ip}/24";
-        hostDataDir = "${config.my.developDir}/playground-data";
+        hostDataDir = "/var/lib/images/playground";
         user = config.my.username;
         memoryLimit = "8G";
       };
       caddy = {
         enable = true;
         ip = "${myInventory.network.nodes.caddy.ip}/24";
-        hostDataDir = "/nix/persist/var/lib/caddy-proxy";
+        hostDataDir = "/var/lib/images/caddy";
         memoryLimit = "512M";
         tls = {
           enable = true;
@@ -265,7 +267,6 @@
         "hid_generic"
       ];
       systemd.enable = true;
-      luks.fido2Support = true;
     };
     loader = {
       systemd-boot.enable = false;
@@ -289,8 +290,13 @@
 
   # IMAGE STATE STORAGE
   systemd.tmpfiles.rules = [
-    "d /var/lib/images 0755 root root - -"
-    "z /var/lib/images 0755 root root - -"
+    "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
+    "d /var/lib/images/n8n 0755 root root - -"
+    "z /var/lib/images/n8n 0755 root root - -" # Recursively fix ONLY n8n
+    "d /var/lib/images/dashboard 0755 root root - -"
+    "d /var/lib/images/playground 0755 martin users - -"
+    "z /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
+    "d /var/lib/images/caddy 0755 root root - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
     "z /var/lib/images/lmstudio 0750 martin users - -"
   ];

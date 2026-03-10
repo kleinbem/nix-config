@@ -193,9 +193,9 @@
             router-2 = mkHost "router-2" {
               modules = [ ./hosts/router-2/default.nix ];
             };
-            orin-nano = mkHost "orin-nano" {
-              modules = [ ./hosts/orin-nano/default.nix ];
-            };
+            # orin-nano = mkHost "orin-nano" {
+            #   modules = [ ./hosts/orin-nano/default.nix ];
+            # };
             rpi5-1 = mkHost "rpi5-1" {
               modules = [ ./hosts/rpi5-1/default.nix ];
             };

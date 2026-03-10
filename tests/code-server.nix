@@ -16,6 +16,13 @@ pkgs.testers.runNixOSTest {
         default = "testuser";
       };
 
+      options.my.network = {
+        bridge = pkgs.lib.mkOption {
+          type = pkgs.lib.types.str;
+          default = "cbr0";
+        };
+      };
+
       config = {
         users.users.testuser = {
           isNormalUser = true;
