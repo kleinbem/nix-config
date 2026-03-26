@@ -13,10 +13,13 @@ in
     enable = lib.mkEnableOption "Desktop Environment (Cosmic)";
   };
 
+  imports = [ ];
+
   config = lib.mkIf cfg.enable {
     # ==========================================
     # DESKTOP (COSMIC)
     # ==========================================
+
     boot.plymouth = {
       enable = true;
       theme = "bgrt";

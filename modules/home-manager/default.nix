@@ -9,6 +9,7 @@
     ./vscode.nix
     ./nixvim.nix
     ./secrets.nix
+    inputs.nix-presets.homeManagerModules.zen-browser
     inputs.nix-presets.homeManagerModules.opencode
   ];
 }

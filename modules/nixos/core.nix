@@ -5,7 +5,9 @@
   config,
   ...
 }:
-
+let
+  keys = import ./keys.nix;
+in
 {
   # ==========================================
   # NIX SETTINGS & CORE
@@ -27,11 +29,13 @@
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
         "https://cosmic.cachix.org"
+        "https://kleinbem.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
+        keys.cachix.nix-community
+        keys.cachix.cosmic
+        # keys.cachix.kleinbem
       ];
       download-buffer-size = 1073741824;
 
@@ -43,8 +47,8 @@
 
       log-lines = 25;
       min-free = 1073741824; # 1GB
-      max-jobs = 4;
-      cores = 2;
+      max-jobs = 8;
+      cores = 1; # Let nix-command handle job/core balance
       trusted-users = [
         "@wheel"
       ];
@@ -62,20 +66,25 @@
     };
   };
 
-  # Prevent /var/log/journal from growing indefinitely
-  services.journald.extraConfig = "SystemMaxUse=1G";
+  services = {
+    # Prevent /var/log/journal from growing indefinitely
+    journald.extraConfig = "SystemMaxUse=1G";
 
-  # Web-based System Administration
-  services.cockpit = {
-    enable = true;
-    port = 9091;
-    openFirewall = true;
-    settings = {
-      WebService = {
-        Origins = lib.mkForce "https://10.85.46.107:9090";
-        ProtocolHeader = "X-Forwarded-Proto";
+    # Web-based System Administration
+    cockpit = {
+      enable = true;
+      port = 9091;
+      openFirewall = true;
+      settings = {
+        WebService = {
+          Origins = lib.mkForce "https://10.85.46.107:9090";
+          ProtocolHeader = "X-Forwarded-Proto";
+        };
       };
     };
+
+    # = hardware monitoring =
+    smartd.enable = true;
   };
 
   # Ensure /etc/cockpit is a writable directory (not a symlink to read-only store)
@@ -183,7 +192,7 @@
   boot.crashDump.enable = true;
 
   environment.sessionVariables = {
-    FLAKE = "${config.my.developDir}/nix-config";
+    FLAKE = "${config.my.developDir}/nix/nix-config";
     NH_FLAKE = "${config.my.developDir}/nix-config"; # nh 4.2+ support
   };
 
@@ -201,4 +210,5 @@
     allowReboot = false; # Stage only — user controls reboots
     randomizedDelaySec = "30min";
   };
+
 }

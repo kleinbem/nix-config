@@ -17,11 +17,9 @@
     ../../modules/nixos/options.nix
     ../../users/martin/nixos.nix
     inputs.nix-presets.nixosModules.n8n
-    inputs.nix-presets.nixosModules.silverbullet
     inputs.nix-presets.nixosModules.code-server
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.dashboard
-    inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.qdrant
     inputs.nix-presets.nixosModules.playground
     inputs.nix-presets.nixosModules.caddy
@@ -29,6 +27,10 @@
     inputs.nix-presets.nixosModules.langfuse
     inputs.nix-presets.nixosModules.langflow
     inputs.nix-presets.nixosModules.vllm
+    inputs.nix-presets.nixosModules.monitoring
+    inputs.nix-presets.nixosModules.monitoring-node
+    inputs.nix-presets.nixosModules.litellm
+    inputs.nix-presets.nixosModules.loki
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.waydroid
@@ -40,6 +42,7 @@
     ../../modules/nixos/disko.nix
     ../../modules/nixos/data-disk.nix
     inputs.disko.nixosModules.disko
+    ./ai.nix
   ];
 
   # --- Stateless Root / Var ---
@@ -81,7 +84,7 @@
         memoryLimit = "6G";
         secretsFile = config.sops.templates."n8n.env".path;
         noteDirs = {
-          silverbullet = "${config.my.developDir}/Notes";
+          # silverbullet = "${config.my.developDir}/Notes";
           repos = config.my.developDir;
         };
         tls = {
@@ -89,22 +92,17 @@
           serverPort = 5678;
           upstreams = [
             {
-              target = myInventory.network.nodes.ollama.ip;
-              port = 11434;
+              name = "vllm";
+              target = myInventory.network.nodes.vllm.ip;
+              port = 8000;
             }
             {
+              name = "qdrant";
               target = myInventory.network.nodes.qdrant.ip;
               port = 6333;
             }
           ];
         };
-      };
-
-      silverbullet = {
-        enable = true;
-        ip = "${myInventory.network.nodes.silverbullet.ip}/24";
-        hostDataDir = "${config.my.developDir}/Notes";
-        memoryLimit = "512M";
       };
 
       code-server = {
@@ -119,7 +117,6 @@
         enable = true;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/images/open-webui";
-        ollamaUrl = "http://localhost:11434"; # Via mTLS sidecar → Ollama
         vllmUrl = "http://localhost:8000/v1"; # Via mTLS sidecar → vLLM
         memoryLimit = "4G";
         secretsFile = config.sops.templates."openwebui.env".path;
@@ -128,14 +125,12 @@
           serverPort = 8080;
           upstreams = [
             {
-              target = myInventory.network.nodes.ollama.ip;
-              port = 11434;
-            }
-            {
+              name = "vllm";
               target = myInventory.network.nodes.vllm.ip;
               port = 8000;
             }
             {
+              name = "langfuse";
               target = myInventory.network.nodes.langfuse.ip;
               port = 3000;
             }
@@ -148,20 +143,7 @@
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.85.46.1";
         memoryLimit = "1G";
-        hostDataDir = "/var/lib/images/dashboard";
         secretsFile = config.sops.templates."homepage.env".path;
-      };
-
-      ollama = {
-        enable = true;
-        ip = "${myInventory.network.nodes.ollama.ip}/24";
-        hostDataDir = "/var/lib/images/ollama";
-        memoryLimit = "16G";
-        tls = {
-          enable = true;
-          serverPort = 11434;
-          upstreams = [ ]; # Ollama doesn't connect to other containers
-        };
       };
 
       qdrant = {
@@ -176,69 +158,16 @@
         };
       };
 
-      # --- Advanced AI Suite (Disabled by default, Safely Persistent) ---
-      comfyui = {
-        enable = false;
-        ip = "${myInventory.network.nodes.comfyui.ip}/24";
-        hostDataDir = "/var/lib/images/comfyui";
-      };
-      langflow = {
-        enable = false;
-        ip = "${myInventory.network.nodes.langflow.ip}/24";
-        hostDataDir = "/var/lib/images/langflow";
-      };
-      langfuse = {
-        enable = false;
-        ip = "${myInventory.network.nodes.langfuse.ip}/24";
-        hostDataDir = "/var/lib/images/langfuse";
-      };
-      vllm = {
-        enable = false;
-        ip = "${myInventory.network.nodes.vllm.ip}/24";
-        hostDataDir = "/var/lib/images/vllm";
-      };
-      openclaw = {
-        enable = false;
-        ip = "${myInventory.network.nodes.openclaw.ip}/24";
-        hostDataDir = "/var/lib/images/openclaw";
-      };
-      agent-zero = {
-        enable = false;
-        ip = "${myInventory.network.nodes.agent-zero.ip}/24";
-        hostDataDir = "/var/lib/images/agent-zero";
-        ollamaUrl = "http://localhost:11434"; # Via mTLS sidecar → Ollama
-        tls = {
-          enable = true;
-          serverPort = 50001;
-          upstreams = [
-            {
-              target = myInventory.network.nodes.ollama.ip;
-              port = 11434;
-            }
-          ];
-        };
-      };
-      # ------------------------------------------------------------------
+      # --- Advanced AI Suite (Managed via ai.nix) ---
 
-      playground = {
+      loki = {
         enable = true;
-        ip = "${myInventory.network.nodes.playground.ip}/24";
-        hostDataDir = "/var/lib/images/playground";
-        user = config.my.username;
-        memoryLimit = "8G";
-      };
-      caddy = {
-        enable = true;
-        ip = "${myInventory.network.nodes.caddy.ip}/24";
-        hostDataDir = "/var/lib/images/caddy";
-        memoryLimit = "512M";
-        tls = {
-          enable = true;
-          serverPort = 0; # Caddy manages its own TLS, sidecar inbound not needed
-          upstreams = [ ]; # Caddy connects to mTLS containers via helpers
-        };
+        ip = "${myInventory.network.nodes.loki.ip}/24";
+        hostDataDir = "/var/lib/images/loki";
       };
     };
+
+    monitoring.node.enable = true;
 
     desktop.enable = true;
     virtualisation.enable = true;
@@ -246,6 +175,7 @@
       printing.enable = true;
       glances.enable = true;
     };
+    security.ai-hardening.enable = true;
   };
 
   # --- Persistence & System Services ---
@@ -269,7 +199,7 @@
       systemd.enable = true;
     };
     loader = {
-      systemd-boot.enable = false;
+      systemd-boot.enable = lib.mkForce false;
       systemd-boot.configurationLimit = 30;
       efi.canTouchEfiVariables = true;
     };
@@ -286,19 +216,18 @@
 
     # Cross-compilation: build aarch64-linux on this x86_64 host
     binfmt.emulatedSystems = [ "aarch64-linux" ];
+    binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
   };
 
   # IMAGE STATE STORAGE
   systemd.tmpfiles.rules = [
     "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
     "d /var/lib/images/n8n 0755 root root - -"
-    "z /var/lib/images/n8n 0755 root root - -" # Recursively fix ONLY n8n
-    "d /var/lib/images/dashboard 0755 root root - -"
-    "d /var/lib/images/playground 0755 martin users - -"
-    "z /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
+    "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
     "d /var/lib/images/caddy 0755 root root - -"
+    "d /var/lib/images/litellm 0755 root root - -"
+    "d /var/lib/images/loki 0755 root root - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
-    "z /var/lib/images/lmstudio 0750 martin users - -"
   ];
 
   hardware = {
@@ -321,9 +250,14 @@
     };
     firewall = {
       enable = true;
-      # Zero Trust: Tailscale is NOT blanket-trusted.
+      # Open all ports that Caddy is proxying to allow external access
+      allowedTCPPorts = lib.mapAttrsToList (_: node: node.externalPort) (
+        lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
+      );
+
+      # Zero Trust: NetBird is NOT blanket-trusted.
       # Only specific ports are open over the tunnel.
-      interfaces."tailscale0".allowedTCPPorts = [
+      interfaces."wt0".allowedTCPPorts = [
         22 # SSH
         443 # Caddy HTTPS (access all services via reverse proxy)
         9091 # Cockpit
@@ -349,7 +283,11 @@
       enable = true;
       user = config.my.username;
     };
-    tailscale.enable = true;
+    netbird = {
+      enable = true;
+      ui.enable = true; # Adds the NetBird GUI/Tray Icon
+    };
+    tailscale.enable = false;
     pcscd.enable = true;
     fprintd.enable = true;
     udev.packages = [

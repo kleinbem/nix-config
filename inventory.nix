@@ -91,17 +91,6 @@
           description = "Homelab Landing Page.";
         };
       };
-      silverbullet = {
-        ip = "10.85.46.100";
-        port = 3030;
-        externalPort = 3000;
-        meta = {
-          name = "SilverBullet";
-          category = "Apps";
-          icon = "📝";
-          description = "Secure knowledge management.";
-        };
-      };
       n8n = {
         ip = "10.85.46.99";
         port = 5678;
@@ -187,10 +176,20 @@
         port = 8000;
         externalPort = 8000;
         meta = {
-          name = "vLLM";
+          name = "vLLM Workstation";
           category = "AI Engineering";
           icon = "⚡";
-          description = "High-throughput model serving.";
+          description = "High-throughput model serving (Intel XPU).";
+        };
+      };
+      vllm-rpi = {
+        ip = "10.85.46.117";
+        port = 8000;
+        meta = {
+          name = "vLLM RPi 5";
+          category = "AI Engineering";
+          icon = "🍓";
+          description = "Lightweight model serving (ARM64 CPU).";
         };
       };
       openclaw = {
@@ -212,6 +211,40 @@
           category = "AI";
           icon = "🕵️";
           description = "Autonomous AI agent framework.";
+        };
+      };
+      monitoring = {
+        enabled = true;
+        ip = "10.85.46.114";
+        port = 3000;
+        externalPort = 3001;
+        meta = {
+          name = "Monitoring";
+          category = "Infrastructure";
+          icon = "📊";
+          description = "VictoriaMetrics + Grafana Stack.";
+        };
+      };
+      litellm = {
+        ip = "10.85.46.115";
+        port = 4000;
+        externalPort = 4000;
+        mtls = true;
+        meta = {
+          name = "LiteLLM Gateway";
+          category = "AI";
+          icon = "🔌";
+          description = "Unified AI API Gateway & Proxy.";
+        };
+      };
+      loki = {
+        ip = "10.85.46.116";
+        port = 3100;
+        meta = {
+          name = "Loki Logging";
+          category = "Infrastructure";
+          icon = "📜";
+          description = "Centralized Log Aggregator.";
         };
       };
 
@@ -253,17 +286,6 @@
       };
 
       # Services not currently proxied by Caddy but present
-      ollama = {
-        ip = "10.85.46.104";
-        port = 11434;
-        mtls = true;
-        meta = {
-          name = "Ollama";
-          category = "AI";
-          icon = "🦙";
-          description = "Local LLM Backend.";
-        };
-      };
       playground = {
         ip = "10.85.46.106";
         meta = {

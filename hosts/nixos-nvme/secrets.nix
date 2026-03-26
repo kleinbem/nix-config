@@ -34,6 +34,9 @@
       # Service Internal Secrets
       n8n_encryption_key = { };
       n8n_basic_auth_password = { };
+      n8n_jwt_secret = { };
+      n8n_user_management_main_user_email = { };
+      n8n_user_management_main_user_password = { };
       webui_secret_key = { };
       langfuse_nextauth_secret = { };
       langfuse_salt = { };
@@ -67,6 +70,9 @@
       "n8n.env".content = ''
         N8N_ENCRYPTION_KEY=${config.sops.placeholder.n8n_encryption_key}
         N8N_BASIC_AUTH_PASSWORD=${config.sops.placeholder.n8n_basic_auth_password}
+        N8N_USER_MANAGEMENT_JWT_SECRET=${config.sops.placeholder.n8n_jwt_secret}
+        N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
+        N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
       '';
     };
   };

@@ -5,11 +5,13 @@
     inputs.nur.overlays.default
     inputs.nix-packages.overlays.default
     inputs.antigravity-nix.overlays.default
-    (_self: super: {
+    (final: prev: {
       stable = import inputs.nixpkgs-stable {
-        inherit (super.stdenv.hostPlatform) system;
+        inherit (prev.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
+      # Fix netbird build failure by using stable version (Go 1.23 is removed from unstable)
+      inherit (final.stable) netbird netbird-ui;
     })
   ];
 

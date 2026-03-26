@@ -60,11 +60,39 @@ fi
 # 2. Check Services
 # We check valid services. If they are not running, systemctl returns non-zero.
 
-echo -n "Checking Ollama Service... "
-if systemctl is-active --quiet ollama.service; then
+echo -n "Checking vLLM Service... "
+if systemctl is-active --quiet podman-vllm.service; then
     echo "✅ Active"
 else
-    echo "⚠️  INACTIVE (Manual Start)"
+    echo "⚠️  INACTIVE"
+fi
+
+echo -n "Checking LiteLLM Service... "
+if systemctl is-active --quiet podman-litellm.service; then
+    echo "✅ Active"
+else
+    echo "⚠️  INACTIVE"
+fi
+
+echo -n "Checking ComfyUI Service... "
+if systemctl is-active --quiet podman-comfyui.service; then
+    echo "✅ Active"
+else
+    echo "⚠️  INACTIVE"
+fi
+
+echo -n "Checking Langflow Service... "
+if systemctl is-active --quiet podman-langflow.service; then
+    echo "✅ Active"
+else
+    echo "⚠️  INACTIVE"
+fi
+
+echo -n "Checking Langfuse Service... "
+if systemctl is-active --quiet podman-langfuse.service; then
+    echo "✅ Active"
+else
+    echo "⚠️  INACTIVE"
 fi
 
 echo -n "Checking Open WebUI Service... "

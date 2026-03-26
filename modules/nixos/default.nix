@@ -9,6 +9,8 @@
     ./virtualisation.nix
     ./zero-trust.nix
     ./pki.nix
+    ./ai-hardening.nix
+    ./networking.nix
 
     # Services
     ./backup.nix

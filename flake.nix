@@ -39,6 +39,7 @@
     nix-hardware = {
       url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.jetpack-nixos.follows = "jetpack-nixos";
     };
     nix-devshells = {
       url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
@@ -103,9 +104,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    jetpack-nixos = {
+      url = "github:anduril/jetpack-nixos";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # cosmic flake removed — using nixpkgs COSMIC instead (more reliable, pre-built by Hydra)
+
     # Multi-host Deployment
-    colmena = {
-      url = "github:zhaofengli/colmena";
+    # colmena flake removed — using nixpkgs instead
+
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -175,11 +185,13 @@
               modules,
             }:
             inputs.nixpkgs.lib.nixosSystem {
-              inherit system;
               specialArgs = {
                 inherit inputs self myInventory;
               };
-              inherit modules;
+              modules = [
+                { nixpkgs.hostPlatform = system; }
+              ]
+              ++ (if builtins.isList modules then modules else [ modules ]);
             };
         in
         {
@@ -193,9 +205,9 @@
             router-2 = mkHost "router-2" {
               modules = [ ./hosts/router-2/default.nix ];
             };
-            # orin-nano = mkHost "orin-nano" {
-            #   modules = [ ./hosts/orin-nano/default.nix ];
-            # };
+            orin-nano = mkHost "orin-nano" {
+              modules = [ ./hosts/orin-nano/default.nix ];
+            };
             rpi5-1 = mkHost "rpi5-1" {
               modules = [ ./hosts/rpi5-1/default.nix ];
             };
@@ -215,7 +227,7 @@
             in
             {
               meta = {
-                nixpkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
+                nixpkgs = import inputs.nixpkgs { hostPlatform = "x86_64-linux"; };
                 specialArgs = {
                   inherit inputs self myInventory;
                 };
@@ -228,7 +240,7 @@
                   targetHost = null; # Local deployment
                 };
                 imports = [ ./hosts/nixos-nvme/default.nix ];
-                nixpkgs.system = hostMeta.nixos-nvme.system;
+                nixpkgs.hostPlatform = hostMeta.nixos-nvme.system;
               };
 
               # OpenWrt routers (NixOS in LXC)
@@ -239,7 +251,7 @@
                   inherit (hostMeta.router-1) tags;
                 };
                 imports = [ ./hosts/router-1/default.nix ];
-                nixpkgs.system = hostMeta.router-1.system;
+                nixpkgs.hostPlatform = hostMeta.router-1.system;
               };
               router-2 = {
                 deployment = {
@@ -248,7 +260,7 @@
                   inherit (hostMeta.router-2) tags;
                 };
                 imports = [ ./hosts/router-2/default.nix ];
-                nixpkgs.system = hostMeta.router-2.system;
+                nixpkgs.hostPlatform = hostMeta.router-2.system;
               };
 
               # NVIDIA Jetson Orin Nano
@@ -259,7 +271,7 @@
                   inherit (hostMeta.orin-nano) tags;
                 };
                 imports = [ ./hosts/orin-nano/default.nix ];
-                nixpkgs.system = hostMeta.orin-nano.system;
+                nixpkgs.hostPlatform = hostMeta.orin-nano.system;
               };
 
               # Raspberry Pi 5 nodes
@@ -270,7 +282,7 @@
                   inherit (hostMeta.rpi5-1) tags;
                 };
                 imports = [ ./hosts/rpi5-1/default.nix ];
-                nixpkgs.system = hostMeta.rpi5-1.system;
+                nixpkgs.hostPlatform = hostMeta.rpi5-1.system;
               };
               rpi5-2 = {
                 deployment = {
@@ -279,7 +291,7 @@
                   inherit (hostMeta.rpi5-2) tags;
                 };
                 imports = [ ./hosts/rpi5-2/default.nix ];
-                nixpkgs.system = hostMeta.rpi5-2.system;
+                nixpkgs.hostPlatform = hostMeta.rpi5-2.system;
               };
             };
         };

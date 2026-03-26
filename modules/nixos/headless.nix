@@ -8,7 +8,9 @@
   lib,
   ...
 }:
-
+let
+  keys = import ./keys.nix;
+in
 {
   imports = [
     ./options.nix
@@ -39,10 +41,12 @@
       substituters = [
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
+        "https://kleinbem.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        keys.cachix.nix-community
+        # keys.cachix.kleinbem
       ];
       builders-use-substitutes = true;
       trusted-users = [
@@ -60,13 +64,32 @@
   time.timeZone = "Europe/Dublin";
   i18n.defaultLocale = "en_IE.UTF-8";
 
-  # ─── SSH (headless nodes need solid SSH) ────────────────────
-  services.openssh = {
-    enable = true;
-    settings = {
-      PermitRootLogin = lib.mkDefault "prohibit-password";
-      PasswordAuthentication = false;
+  services = {
+    # ─── mDNS (mDNS is essential for .local resolution) ────────
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      publish = {
+        enable = true;
+        addresses = true;
+        workstation = true;
+      };
     };
+
+    # ─── SSH (headless nodes need solid SSH) ────────────────────
+    openssh = {
+      enable = true;
+      settings = {
+        PermitRootLogin = lib.mkDefault "prohibit-password";
+        PasswordAuthentication = false;
+      };
+    };
+
+    # ─── Journal ────────────────────────────────────────────────
+    journald.extraConfig = ''
+      SystemMaxUse=256M
+      MaxRetentionSec=1month
+    '';
   };
 
   # ─── Minimal Packages ──────────────────────────────────────
@@ -78,12 +101,6 @@
     ripgrep
     fd
   ];
-
-  # ─── Journal ────────────────────────────────────────────────
-  services.journald.extraConfig = ''
-    SystemMaxUse=256M
-    MaxRetentionSec=1month
-  '';
 
   # ─── Swap ───────────────────────────────────────────────────
   zramSwap = {

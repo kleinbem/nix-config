@@ -2,8 +2,9 @@
 architect: true
 
 # Models: Local-First Strategy
-model: ollama/deepseek-r1:8b
-editor-model: ollama/qwen2.5-coder:7b
+model: openai/qwen
+editor-model: openai/qwen
+api-base: http://localhost:4000/v1
 
 # Mental Sandbox: Context Files
 read:

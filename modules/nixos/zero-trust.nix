@@ -25,12 +25,6 @@ let
     }
     {
       src = inv.nodes.caddy.ip;
-      dst = inv.nodes.silverbullet.ip;
-      dport = 3030;
-      comment = "Caddy -> SilverBullet";
-    }
-    {
-      src = inv.nodes.caddy.ip;
       dst = inv.nodes.n8n.ip;
       dport = 443;
       comment = "Caddy -> n8n (mTLS)";
@@ -79,23 +73,45 @@ let
     }
     {
       src = inv.nodes.caddy.ip;
-      dst = inv.nodes.agent-zero.ip;
+      dst = inv.nodes.litellm.ip;
       dport = 443;
-      comment = "Caddy -> Agent Zero (mTLS)";
+      comment = "Caddy -> LiteLLM (mTLS)";
+    }
+
+    # ─── AI Apps → LiteLLM Gateway (mTLS proxy or direct) ──────
+    {
+      src = inv.nodes.open-webui.ip;
+      dst = inv.nodes.litellm.ip;
+      dport = 443;
+      comment = "Open WebUI -> LiteLLM (mTLS)";
+    }
+    {
+      src = inv.nodes.agent-zero.ip;
+      dst = inv.nodes.litellm.ip;
+      dport = 443;
+      comment = "Agent Zero -> LiteLLM (mTLS)";
+    }
+    {
+      src = inv.nodes.n8n.ip;
+      dst = inv.nodes.litellm.ip;
+      dport = 443;
+      comment = "n8n -> LiteLLM (mTLS)";
+    }
+
+    # ─── Gateway → vLLM Backend (internal) ────────────────────
+    {
+      src = inv.nodes.litellm.ip;
+      dst = inv.nodes.vllm.ip;
+      dport = 443;
+      comment = "LiteLLM -> vLLM (mTLS)";
     }
 
     # ─── East-West mTLS Flows (all via port 443) ──────────────
     {
       src = inv.nodes.open-webui.ip;
-      dst = inv.nodes.ollama.ip;
-      dport = 443;
-      comment = "Open WebUI -> Ollama (mTLS)";
-    }
-    {
-      src = inv.nodes.open-webui.ip;
       dst = inv.nodes.vllm.ip;
       dport = 443;
-      comment = "Open WebUI -> vLLM (mTLS)";
+      comment = "Open WebUI -> vLLM (Direct Failover)";
     }
     {
       src = inv.nodes.open-webui.ip;
@@ -105,21 +121,40 @@ let
     }
     {
       src = inv.nodes.agent-zero.ip;
-      dst = inv.nodes.ollama.ip;
+      dst = inv.nodes.vllm.ip;
       dport = 443;
-      comment = "Agent Zero -> Ollama (mTLS)";
+      comment = "Agent Zero -> vLLM (Direct Failover)";
     }
     {
       src = inv.nodes.n8n.ip;
-      dst = inv.nodes.ollama.ip;
+      dst = inv.nodes.vllm.ip;
       dport = 443;
-      comment = "n8n -> Ollama (mTLS)";
+      comment = "n8n -> vLLM (Direct Failover)";
     }
     {
       src = inv.nodes.n8n.ip;
       dst = inv.nodes.qdrant.ip;
       dport = 443;
       comment = "n8n -> Qdrant (mTLS)";
+    }
+    # ─── Monitoring & Logging ───────────────────────────────
+    {
+      src = inv.nodes.monitoring.ip;
+      dst = inv.nodes.vllm.ip;
+      dport = 8000;
+      comment = "Monitoring -> vLLM Metrics";
+    }
+    {
+      src = inv.nodes.monitoring.ip;
+      dst = "10.85.46.0/24";
+      dport = 9100;
+      comment = "Monitoring -> All Node Exporters";
+    }
+    {
+      src = "10.85.46.0/24";
+      dst = inv.nodes.loki.ip;
+      dport = 3100;
+      comment = "All Containers -> Loki Logging";
     }
   ];
 

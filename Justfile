@@ -52,7 +52,7 @@ boot-local:
 # Switch with Debug Output
 
 switch-debug:
-    nh os switch . -- --show-trace --verbose || (echo "❌ Activation failed! Tailing logs..." && journalctl -n 20 --no-pager -u ollama.service -u open-webui.service && exit 1)
+    nh os switch . -- --show-trace --verbose || (echo "❌ Activation failed! Tailing logs..." && journalctl -n 20 --no-pager -u container@vllm.service -u container@open-webui.service && exit 1)
 
 # Update Flake Lockfile
 
@@ -145,18 +145,28 @@ plan:
 # Fast Local Mode (No Reasoning Wait)
 
 local:
-    @ollama pull qwen2.5-coder:7b
-    @OLLAMA_API_BASE=<http://127.0.0.1:11434> nix develop --command aider \
-      --model ollama/qwen2.5-coder:7b \
-      --editor-model ollama/qwen2.5-coder:7b
+    @OLLAMA_API_BASE=http://localhost:4000/v1 nix develop --command aider \
+      --model openai/qwen \
+      --editor-model openai/qwen
 
 # Run Aider LOCALLY (Free, Private, Uses Ollama)
 
 localDeep:
-    # Ensure BOTH models are present
-    @ollama pull deepseek-r1:8b
-    @ollama pull qwen2.5-coder:7b
-    # Run Aider with DeepSeek (Architect) and Qwen (Editor)
-    @OLLAMA_API_BASE=<http://127.0.0.1:11434> nix develop --command aider \
-      --model ollama/deepseek-r1:8b \
-      --editor-model ollama/qwen2.5-coder:7b
+    # Run Aider with local LiteLLM proxy (using Qwen/DeepSeek via vLLM)
+    @OLLAMA_API_BASE=http://localhost:4000/v1 nix develop --command aider \
+      --model openai/qwen \
+      --editor-model openai/qwen
+
+# --- AI Stack Management ---
+
+# Check status of the local AI containers
+ai-status:
+    sudo systemctl status podman-vllm podman-litellm podman-comfyui podman-langflow podman-langfuse podman-langfuse-db
+
+# Tail logs for the AI stack
+ai-logs:
+    sudo journalctl -f -u podman-vllm -u podman-litellm -u podman-comfyui -u podman-langflow -u podman-langfuse -u podman-langfuse-db
+
+# Monitor GPU usage
+gpu-top:
+    intel_gpu_top

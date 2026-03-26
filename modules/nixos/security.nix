@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   config,
   ...
 }:
@@ -171,14 +172,23 @@ in
         # --- Peripherals ---
         # Intel Bluetooth Adapter
         allow id 8087:0026
+        # USB to SATA/PCIe Bridge (External Harddisk Reader)
+        allow id 152d:0581
         # Generic USB2.0 Card Reader
         allow id 0bda:0153
         # ESS Technology USB DAC (Audio)
         allow id 0495:3048
         # USB 2.0 Hub
         allow id 05e3:0610
-        # Generic USB 2.0 Hub (Webcam Hub)
+        # Terminus Technology Hubs (Nested in VIA units)
         allow id 1a40:0101
+        allow id 1a40:0801
+        # VIA Labs USB Hub (3.0 and 2.0 components)
+        allow id 2109:0817
+        allow id 2109:2817
+        # Hub Internal Components (SD Reader & Ethernet)
+        allow id 2537:1081
+        allow id 0bda:8151
         # HD Camera
         allow id 0408:7090
         # Webcam USB Audio
@@ -359,9 +369,9 @@ in
       "net.ipv4.conf.all.accept_redirects" = "0";
 
       # Security Hardening (Kernel)
-      "kernel.dmesg_restrict" = "1";
-      "kernel.kptr_restrict" = "2";
-      "kernel.unprivileged_userns_clone" = 1;
+      "kernel.dmesg_restrict" = lib.mkForce "1";
+      "kernel.kptr_restrict" = lib.mkForce "2";
+      "kernel.unprivileged_userns_clone" = lib.mkDefault 1;
     };
   };
 }
