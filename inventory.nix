@@ -84,6 +84,7 @@
         port = 80;
         externalPort = 443; # Default HTTPS
         maintenance = false;
+        auth = true; # Protected by Authelia
         meta = {
           name = "Dashboard";
           category = "Infrastructure";
@@ -96,6 +97,7 @@
         port = 5678;
         externalPort = 5678;
         mtls = true;
+        auth = true; # Protected by Authelia
         meta = {
           name = "n8n Automation";
           category = "Apps";
@@ -218,6 +220,7 @@
         ip = "10.85.46.114";
         port = 3000;
         externalPort = 3001;
+        auth = true; # Protected by Authelia
         meta = {
           name = "Monitoring";
           category = "Infrastructure";
@@ -245,6 +248,45 @@
           category = "Infrastructure";
           icon = "📜";
           description = "Centralized Log Aggregator.";
+        };
+      };
+      falco = {
+        ip = "10.85.46.120";
+        meta = {
+          name = "Falco IDS";
+          category = "Security";
+          icon = "🛡️";
+          description = "Runtime threat detection.";
+        };
+      };
+      falcosidekick = {
+        ip = "10.85.46.121";
+        port = 2801;
+        meta = {
+          name = "Falco Sidekick";
+          category = "Security";
+          icon = "📣";
+          description = "Alert routing (Loki/ntfy).";
+        };
+      };
+      netdata = {
+        ip = "10.85.46.122";
+        port = 19999;
+        meta = {
+          name = "Netdata";
+          category = "Infrastructure";
+          icon = "📊";
+          description = "Real-time per-second telemetry.";
+        };
+      };
+      authelia = {
+        ip = "10.85.46.123";
+        port = 9091;
+        meta = {
+          name = "Authelia SSO";
+          category = "Identity";
+          icon = "🔐";
+          description = "Single Sign-On & 2FA.";
         };
       };
 

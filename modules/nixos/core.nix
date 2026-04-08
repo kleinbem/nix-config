@@ -17,6 +17,10 @@ in
   console.keyMap = "us";
 
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+    "vscode-extension-anthropic-claude-code"
+    "claude-code"
+  ];
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
@@ -35,7 +39,7 @@ in
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
         keys.cachix.nix-community
         keys.cachix.cosmic
-        # keys.cachix.kleinbem
+        keys.cachix.kleinbem
       ];
       download-buffer-size = 1073741824;
 
@@ -187,9 +191,6 @@ in
     sosreport # System Analysis
     android-tools # ADB & Fastboot
   ];
-
-  # Enable Kernel Crash Dumps (satisfies Cockpit Kdump check)
-  boot.crashDump.enable = true;
 
   environment.sessionVariables = {
     FLAKE = "${config.my.developDir}/nix/nix-config";

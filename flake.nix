@@ -5,6 +5,7 @@
     # --- Core ---
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs-master.url = "github:NixOS/nixpkgs/master";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -118,6 +119,15 @@
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-topology = {
+      url = "github:oddlama/nix-topology";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-mineral = {
+      url = "github:cynicsketch/nix-mineral";
+    };
   };
 
   outputs =
@@ -130,6 +140,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         ./modules/flake/images.nix
+        inputs.nix-topology.flakeModule
       ];
       systems = [
         "x86_64-linux"
@@ -171,6 +182,14 @@
             pkgs = inputs.nixpkgs.legacyPackages.${system};
             inherit inputs;
           };
+
+          # ---------------------------------------------------------
+          # 3. Topology (Auto-generated network diagrams)
+          # ---------------------------------------------------------
+          topology.modules = [
+            ./topology.nix
+            { inherit (self) nixosConfigurations; }
+          ];
         };
 
       flake =
@@ -190,6 +209,7 @@
               };
               modules = [
                 { nixpkgs.hostPlatform = system; }
+                inputs.nix-topology.nixosModules.default
               ]
               ++ (if builtins.isList modules then modules else [ modules ]);
             };

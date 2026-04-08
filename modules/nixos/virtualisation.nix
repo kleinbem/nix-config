@@ -77,65 +77,7 @@ in
         externalInterface = "wlo1";
       };
 
-      # Zero Trust: Replicate mkContainer firewall on the host for Podman IPs
-      nftables.tables.zt-podman = {
-        family = "inet";
-        content = ''
-          chain forward {
-            type filter hook forward priority 0; policy accept;
-            
-            # 1. Allow established/related
-            ct state { established, related } accept
-            
-            # 2. Allow AI Stack to talk to host bridge (for DNS/Services)
-            ip saddr { 
-              ${inv.network.nodes.vllm.ip}, 
-              ${inv.network.nodes.litellm.ip}, 
-              ${inv.network.nodes.comfyui.ip}, 
-              ${inv.network.nodes.langflow.ip}, 
-              ${inv.network.nodes.langfuse.ip} 
-            } ip daddr ${config.my.network.hostAddress} accept
-            
-            # 3. Allow internal flows
-            # LiteLLM -> vLLM (Main Backend)
-            ip saddr ${inv.network.nodes.litellm.ip} ip daddr ${inv.network.nodes.vllm.ip} tcp dport 8000 accept
-            
-            # Allow East-West within the bridge for these specific AI IPs
-            ip saddr {
-              ${inv.network.nodes.vllm.ip},
-              ${inv.network.nodes.litellm.ip},
-              ${inv.network.nodes.comfyui.ip},
-              ${inv.network.nodes.langflow.ip},
-              ${inv.network.nodes.langfuse.ip}
-            } ip daddr ${inv.network.subnet} accept
-
-            # 4. Mandatory Egress Airlock (Allow DNS & HTTPS for Model Pulls)
-            ip saddr {
-              ${inv.network.nodes.vllm.ip},
-              ${inv.network.nodes.litellm.ip},
-              ${inv.network.nodes.comfyui.ip},
-              ${inv.network.nodes.langflow.ip},
-              ${inv.network.nodes.langfuse.ip}
-            } udp dport 53 accept
-            ip saddr {
-              ${inv.network.nodes.vllm.ip},
-              ${inv.network.nodes.litellm.ip},
-              ${inv.network.nodes.comfyui.ip},
-              ${inv.network.nodes.langflow.ip},
-              ${inv.network.nodes.langfuse.ip}
-            } tcp dport { 53, 443 } accept
-
-            # 5. Final Zero-Trust Egress Deny
-            ip saddr {
-              ${inv.network.nodes.vllm.ip},
-              ${inv.network.nodes.litellm.ip},
-              ${inv.network.nodes.comfyui.ip},
-              ${inv.network.nodes.langflow.ip},
-              ${inv.network.nodes.langfuse.ip}
-            } log prefix "ZT-PODMAN-EGRESS-DENY: " drop
-          }
-        '';
-      };
+      # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
     };
 
     # ==========================================
@@ -185,6 +127,7 @@ in
             ${pkgs.podman}/bin/podman network rm -f cbr0 || true
 
             # 2. Re-create the network with the EXISTING physical bridge.
+            # We use mode=unmanaged to tell Podman we already handle the bridge.
             # We explicitly DISABLE DNS to avoid port 53 conflicts on the host gateway IP.
             ${pkgs.podman}/bin/podman network create \
               --driver bridge \
@@ -192,6 +135,7 @@ in
               --subnet ${inv.network.subnet} \
               --gateway ${config.my.network.hostAddress} \
               --disable-dns \
+              --opt mode=unmanaged \
               --opt "com.docker.network.bridge.name=${config.my.network.bridge}" \
               cbr0
 

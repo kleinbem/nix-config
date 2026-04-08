@@ -50,11 +50,20 @@ in
             "lo"
             config.my.network.bridge
           ];
-          bind-interfaces = true;
+          bind-dynamic = true;
 
           # Populate nftables set 'ai_whitelisted_ips' in table 'inet ai-airlock'
           # Format: nftset=/<domain>/[<domain>/...]<family>#<table>#<set>
           nftset = map (domain: "/${domain}/4#ai-airlock#ai_whitelisted_ips") allDomains;
+
+          # Hardened DNS Resolution: Don't read /etc/resolv.conf (avoid loops)
+          # Use explicit privacy-focused upstreams
+          no-resolv = true;
+          server = [
+            "1.1.1.1" # Cloudflare
+            "8.8.8.8" # Google
+            "9.9.9.9" # Quad9
+          ];
         };
       };
 
@@ -62,9 +71,10 @@ in
     systemd.services.dnsmasq = lib.mkIf config.services.dnsmasq.enable {
       after = [
         "network.target"
-        "bridge-${config.my.network.bridge}.service"
+        "network-addresses-${config.my.network.bridge}.service"
+        "cbr0-netdev.service"
       ];
-      requires = [ "bridge-${config.my.network.bridge}.service" ];
+      requires = [ "cbr0-netdev.service" ];
     };
 
     networking.nftables.tables.ai-airlock = lib.mkIf cfg.strictEgress {
@@ -95,27 +105,10 @@ in
     # (assuming they are on the 10.85.46.0/24 bridge)
     # The host is usually .1
 
-    # ─── Pillar 3: Behavioral Auditing ──────────────────────────
-    security.audit.rules = [
-      # Monitor the AI Model/Data Store
-      "-w /var/lib/images -p wa -k ai_storage_mod"
-
-      # Monitor for common "Escape" or exfiltration techniques
-      "-a always,exit -F arch=b64 -S ptrace -k process_spying"
-      "-a always,exit -F arch=b64 -S process_vm_readv -k process_spying"
-      "-a always,exit -F arch=b64 -S process_vm_writev -k process_spying"
-
-      # Monitor sensitive secrets being accessed by unexpected users
-      "-w /var/lib/sops -p r -k sops_read"
-    ];
-
     # ─── Kernel Parameter Tightening ────────────────────────────
     boot.kernel.sysctl = {
       # Disable unprivileged user namespaces unless needed (AI often needs them for sandboxing)
       # "kernel.unprivileged_userns_clone" = 0; # Keeping at 1 as AI tools often use them.
-
-      # Restrict kernel pointer access further
-      "kernel.perf_event_paranoid" = lib.mkForce 3;
     };
   };
 }

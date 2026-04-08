@@ -6,11 +6,11 @@
       # -- Dev & AI Tools --
       gh # GitHub CLI
       fabric-ai # AI Augmentation Framework
-      github-copilot-cli
-      # gemini-cli ## temp disabled
+      github-copilot-cli      
+      gemini-cli
 
-      claude-code
-
+      # Pulled directly from master branch to bypass 404 block on unstable
+      pkgs.master.claude-code-bin
       (pkgs.python3Packages.llm.overridePythonAttrs (_: {
         doCheck = false;
         doInstallCheck = false;

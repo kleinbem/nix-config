@@ -31,6 +31,9 @@
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.litellm
     inputs.nix-presets.nixosModules.loki
+    inputs.nix-presets.nixosModules.falco
+    inputs.nix-presets.nixosModules.netdata
+    inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.waydroid
@@ -74,6 +77,13 @@
     "/nix/persist".neededForBoot = true;
   };
 
+  # --- Persistent Identity (Declarative Symlinks) ---
+  environment.etc = {
+    "machine-id".source = lib.mkForce "/nix/persist/etc/machine-id";
+  };
+
+
+
   # --- Container Configuration ---
   my = {
     containers = {
@@ -84,7 +94,6 @@
         memoryLimit = "6G";
         secretsFile = config.sops.templates."n8n.env".path;
         noteDirs = {
-          # silverbullet = "${config.my.developDir}/Notes";
           repos = config.my.developDir;
         };
         tls = {
@@ -165,6 +174,33 @@
         ip = "${myInventory.network.nodes.loki.ip}/24";
         hostDataDir = "/var/lib/images/loki";
       };
+
+      monitoring = {
+        enable = true;
+        ip = "${myInventory.network.nodes.monitoring.ip}/24";
+        hostDataDir = "/var/lib/images/monitoring";
+        # Automatically scrape the host and important AI nodes
+        nodeTargets = [ "10.85.46.1" ];
+        vllmTargets = [ "10.85.46.111" ];
+      };
+
+      falco = {
+        enable = true;
+        ip = "${myInventory.network.nodes.falco.ip}/24";
+        sidekickIp = "${myInventory.network.nodes.falcosidekick.ip}/24";
+      };
+
+      netdata = {
+        enable = true;
+        ip = "${myInventory.network.nodes.netdata.ip}/24";
+      };
+
+      authelia = {
+        enable = true;
+        ip = "${myInventory.network.nodes.authelia.ip}/24";
+        hostDataDir = "/var/lib/images/authelia";
+        domain = "local";
+      };
     };
 
     monitoring.node.enable = true;
@@ -186,17 +222,20 @@
   '';
 
   programs.waydroid-setup.enable = false;
+
+
   home-manager.users.${config.my.username} = import ../../users/martin/home.nix;
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
     initrd = {
-      availableKernelModules = [ "ahci" ];
+      availableKernelModules = [ "nvme" "xhci_pci" "thunderbolt" "usb_storage" "sd_mod" "ahci" ];
       kernelModules = [
         "usbhid"
         "hid_generic"
       ];
       systemd.enable = true;
+      systemd.tpm2.enable = true;
     };
     loader = {
       systemd-boot.enable = lib.mkForce false;
@@ -207,10 +246,8 @@
       enable = true;
       pkiBundle = "/nix/persist/var/lib/sbctl";
     };
-    kernelParams = [
-      "i915.enable_guc=2"
-      "i915.enable_fbc=1"
-    ];
+    # Kernel parameters now handled by kernel.nix and audit.nix
+    # i915 enhancements moved to kernel.nix
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "8G";
 
@@ -227,6 +264,11 @@
     "d /var/lib/images/caddy 0755 root root - -"
     "d /var/lib/images/litellm 0755 root root - -"
     "d /var/lib/images/loki 0755 root root - -"
+    "d /var/lib/images/monitoring 0755 root root - -"
+    "d /var/lib/images/monitoring/db 0755 root root - -"
+    "d /var/lib/images/monitoring/grafana 0755 root root - -"
+    "d /var/lib/images/qdrant 0755 root root - -"
+    "d /var/lib/images/open-webui 0755 root root - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
   ];
 
@@ -287,7 +329,6 @@
       enable = true;
       ui.enable = true; # Adds the NetBird GUI/Tray Icon
     };
-    tailscale.enable = false;
     pcscd.enable = true;
     fprintd.enable = true;
     udev.packages = [
@@ -321,6 +362,7 @@
     android-tools
     scrcpy
     valent
+    openssl
   ];
 
   system.stateVersion = "25.11";

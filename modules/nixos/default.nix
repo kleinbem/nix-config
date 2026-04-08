@@ -1,6 +1,8 @@
 { ... }:
 {
   imports = [
+    ./kernel.nix
+    ./audit.nix
     ./core.nix
     ./desktop.nix
     ./users.nix

@@ -13,7 +13,6 @@
       "/var/log"
       "/var/lib/bluetooth"
       "/var/lib/nixos"
-      "/var/lib/tailscale"
       "/var/lib/sops"
       "/var/lib/NetworkManager"
       "/var/lib/fprint"
@@ -27,16 +26,11 @@
       "/var/lib/usbguard"
       "/var/db/sudo"
       "/etc/NetworkManager/system-connections"
-      # "/etc/cups"
       "/etc/waydroid-extra"
       "/var/lib/sbctl"
+      "/etc/ssh"
     ];
     files = [
-      "/etc/machine-id"
-      "/etc/ssh/ssh_host_ed25519_key"
-      "/etc/ssh/ssh_host_ed25519_key.pub"
-      "/etc/ssh/ssh_host_rsa_key"
-      "/etc/ssh/ssh_host_rsa_key.pub"
     ];
   };
 

@@ -3,7 +3,7 @@
   cachix = {
     nix-community = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=";
     cosmic = "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE=";
-    # kleinbem = "kleinbem.cachix.org-1:ADD_YOUR_PUBLIC_KEY_HERE";
+    kleinbem = "kleinbem.cachix.org-1:/0lyoaF/Rq095fMmndnbvBpuoqXsqydTKmG1mUfMlN4=";
   };
 
   # SSH Public Keys

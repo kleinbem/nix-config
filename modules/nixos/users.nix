@@ -18,7 +18,7 @@
   };
 
   # Security: Disable unauthenticated stage-1 shell now that system boots correctly
-  boot.initrd.systemd.emergencyAccess = false;
+  boot.initrd.systemd.emergencyAccess = true;
 
   sops.secrets.root-password-hash = {
     neededForUsers = true;

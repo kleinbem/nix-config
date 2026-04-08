@@ -17,10 +17,12 @@
 
   programs = {
     zen-browser.enable = true;
+    firefox-browser.enable = true;
     home-manager.enable = true;
     git.signing.format = lib.mkDefault "ssh";
   };
 
   # Silencing evaluation warnings from newer Home Manager
-  gtk.gtk4.theme = lib.mkDefault "Adwaita"; # Fallback or specific theme
+  # (Using null adopts the new default behavior)
+  gtk.gtk4.theme = null;
 }

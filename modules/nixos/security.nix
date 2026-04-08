@@ -2,6 +2,7 @@
   pkgs,
   lib,
   config,
+  inputs,
   ...
 }:
 
@@ -36,6 +37,26 @@ let
   '';
 in
 {
+  # nix-mineral hardening module
+  imports = [ inputs.nix-mineral.nixosModules.nix-mineral ];
+
+  # ==========================================
+  # PERSISTENCE COMPATIBILITY FIXES
+  # ==========================================
+
+  # ==========================================
+  # NIX-MINERAL — Standard Hardening
+  # ==========================================
+  nix-mineral = {
+    enable = false; # Temporarily disabled due to nosuid root lockout
+    preset = "compatibility"; # Best for desktop/workstation workloads
+    settings = {
+      # Custom overrides for workstation needs
+      network.ip-forwarding = true; # Required for containers/bridges
+      system.multilib = true; # Required for some development tools
+    };
+  };
+
   # Overlay to disable SSH Agent in Gnome Keyring
   # This fixes the conflict with YubiKey/FIDO2 hardware keys
   nixpkgs.overlays = [
@@ -67,6 +88,11 @@ in
   # ==========================================
   # SSH & YUBIKEY SECURITY
   # ==========================================
+  environment.sessionVariables = {
+    # Force SSH to use the graphical askpass prompt to prevent terminal TTY bugs
+    SSH_ASKPASS_REQUIRE = "prefer";
+  };
+
   programs.ssh = {
     # Start the standard OpenSSH agent system-wide (replaces HM service)
     startAgent = true;
@@ -239,24 +265,6 @@ in
       enable = true;
       killUnconfinedConfinables = false;
     };
-    audit = {
-      enable = true;
-      rules = [
-        # Log all command executions (forensic trail)
-        "-a exit,always -F arch=b64 -S execve"
-        # Log changes to critical identity files
-        "-w /etc/passwd -p wa -k identity"
-        "-w /etc/shadow -p wa -k identity"
-        "-w /etc/sudoers -p wa -k sudo_changes"
-        # Log mount operations
-        "-a always,exit -F arch=b64 -S mount -k mounts"
-        # Zero Trust: Log firewall rule modifications
-        "-a always,exit -F arch=b64 -S setsockopt -F a0=0 -k nftables_changes"
-        # Zero Trust: Log container namespace creation
-        "-a always,exit -F arch=b64 -S clone -F a0&0x7C020000 -k container_ns"
-        "-a always,exit -F arch=b64 -S unshare -k namespace_creation"
-      ];
-    };
     auditd.enable = true;
     protectKernelImage = true;
   };
@@ -335,43 +343,25 @@ in
   #  rules load correctly on next boot)
   systemd.services.audit-rules-nixos.serviceConfig.SuccessExitStatus = [ 1 ];
 
-  # ==========================================
-  # KERNEL HARDENING & PERFORMANCE
-  # ==========================================
   boot = {
-    # Privacy & Performance Tweaks
+    # Security & Performance Tweaks
     blacklistedKernelModules = [
       "pcspkr"
       "snd_pcsp"
     ];
-    consoleLogLevel = 0;
-    kernelParams = [
-      "quiet"
-      "loglevel=0"
-      "udev.log_level=3"
-      "acpi_osi=Linux"
-      "i915.enable_psr=0"
-      "snd_hda_intel.power_save=0"
-      "snd_hda_intel.power_save_controller=N"
-      "audit=1"
-    ];
 
-    # Sysctl Hardening
+    # Kernel parameters moved to kernel.nix for consolidation
+
     kernel.sysctl = {
+      # ==========================================
+      # AI-HARDENING COMPATIBILITY
+      # ==========================================
+      # Ensure unprivileged user namespaces are ENABLED (Nspawn needs them)
+      # nix-mineral or other hardening might disable them by default.
+      "kernel.unprivileged_userns_clone" = lib.mkForce 1;
+      "kernel.perf_event_paranoid" = lib.mkForce 2;
       # ClamAV On-Access Scanning (essential for large directories)
       "fs.inotify.max_user_watches" = 524288;
-
-      # Security Hardening (Network)
-      "net.ipv4.conf.all.log_martians" = true;
-      "net.ipv4.conf.all.rp_filter" = "1";
-      "net.ipv4.icmp_echo_ignore_broadcasts" = "1";
-      "net.ipv4.conf.default.accept_redirects" = "0";
-      "net.ipv4.conf.all.accept_redirects" = "0";
-
-      # Security Hardening (Kernel)
-      "kernel.dmesg_restrict" = lib.mkForce "1";
-      "kernel.kptr_restrict" = lib.mkForce "2";
-      "kernel.unprivileged_userns_clone" = lib.mkDefault 1;
     };
   };
 }

@@ -81,4 +81,44 @@
       Persistent = true;
     };
   };
+
+  # --- Root-level System Backup (Critical Infrastructure) ---
+  services.restic.backups.system = {
+    initialize = true;
+    user = "root"; # Run as root to access sensitive system files
+
+    # Repository: Use a separate folder for system infrastructure
+    repository = "rclone:gdrive:backups/nixos-system";
+
+    # Credentials
+    passwordFile = config.sops.secrets.restic_system_password.path;
+    rcloneConfigFile = config.sops.secrets.rclone_config.path;
+
+    # What to backup (Critical Infrastructure Only)
+    paths = [
+      "/etc/ssh" # Host Identity
+      "/var/lib/sops" # Secret Decryption Keys
+      "/nix/persist/var/lib/sbctl" # Lanzaboote/SecureBoot PKI
+      "/var/lib/caddy" # SSL Certificates & State
+      "/var/lib/images" # Container Persistent Volumes (Database files, etc.)
+    ];
+
+    exclude = [
+      "**/tmp"
+      "**/.cache"
+      "/var/lib/images/podman" # Exclude images themselves (they are in nix store)
+    ];
+
+    pruneOpts = [
+      "--keep-daily 14"
+      "--keep-weekly 8"
+      "--keep-monthly 12"
+    ];
+
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "2h";
+    };
+  };
 }

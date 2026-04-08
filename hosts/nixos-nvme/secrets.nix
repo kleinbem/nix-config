@@ -12,7 +12,9 @@
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
     defaultSopsFormat = "yaml";
-    age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
+    # Use host SSH keys for automated decryption (avoids YubiKey prompts for background tasks)
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    gnupg.sshKeyPaths = [ ]; # No GPG keys used
     useSystemdActivation = true;
     age.plugins = [
       pkgs.age-plugin-yubikey
@@ -45,6 +47,15 @@
       github_pat = { };
       brave_api_key = { };
       vllm_huggingface_token = { };
+
+      # Backup Secrets
+      restic_password = { owner = "martin"; }; # User backup
+      restic_system_password = { }; # Root backup
+
+      # Identity (Authelia)
+      authelia_session_secret = { };
+      authelia_jwt_secret = { };
+      authelia_storage_encryption_key = { };
 
       # Dashboard Keys
       homepage_n8n_key = { };

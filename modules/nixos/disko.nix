@@ -5,7 +5,7 @@ _:
     disk = {
       main = {
         type = "disk";
-        device = "/dev/nvme0n1";
+        device = "/dev/disk/by-id/nvme-WD_PC_SN740_SDDPTQE-2T00_23362K803042_1";
         content = {
           type = "gpt";
           partitions = {
@@ -49,7 +49,10 @@ _:
                 name = "cryptroot";
                 settings = {
                   allowDiscards = true;
-                  crypttabExtraOpts = [ "fido2-device=auto" ];
+                  crypttabExtraOpts = [
+                    "tpm2-device=auto"
+                    "password-echo=true"
+                  ];
                 };
                 content = {
                   type = "lvm_pv";
@@ -93,6 +96,10 @@ _:
               type = "filesystem";
               format = "ext4";
               mountpoint = "/var/lib/images";
+              mountOptions = [
+                "nofail"
+                "x-systemd.device-timeout=30s"
+              ];
             };
           };
           swap = {

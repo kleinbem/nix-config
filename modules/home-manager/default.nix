@@ -10,6 +10,7 @@
     ./nixvim.nix
     ./secrets.nix
     inputs.nix-presets.homeManagerModules.zen-browser
+    inputs.nix-presets.homeManagerModules.firefox-browser
     inputs.nix-presets.homeManagerModules.opencode
   ];
 }

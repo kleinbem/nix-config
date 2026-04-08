@@ -3,9 +3,10 @@
 let
   commonData = import ./code-common/settings.nix;
 
-  # Import Modular Extensions
-  extensionsCommon = import ./code-common/extensions/common.nix { inherit pkgs; };
-  extensionsVSCode = import ./code-common/extensions/vscode.nix { inherit pkgs; };
+  # Use the nix-vscode-extensions overlay for consistent extension management.
+  # The overlay is configured in modules/nixos/common.nix.
+  vsx = pkgs.open-vsx;
+  mkt = pkgs.vscode-marketplace;
 
 in
 {
@@ -22,11 +23,30 @@ in
       extensions =
         with pkgs.vscode-extensions;
         [
-          # ⚠️ KEEP REMOTE-SSH HERE (VS Code Exclusive)
+          # ⚠️ VS Code Exclusive (not supported by Cursor/Windsurf/Antigravity)
           ms-vscode-remote.remote-ssh
         ]
-        ++ extensionsCommon
-        ++ extensionsVSCode;
+        # --- Common (shared with all editors via nix-vscode-extensions overlay) ---
+        ++ [
+          vsx.mkhl.direnv
+          vsx.jnoortheen.nix-ide
+          vsx.tamasfe.even-better-toml
+          vsx.eamodio.gitlens
+          vsx.waderyan.gitblame
+          vsx.ms-python.python
+          vsx.usernamehw.errorlens
+          vsx.gruntfuggly.todo-tree
+          vsx.hashicorp.terraform
+        ]
+        # --- AI ---
+        ++ [
+          mkt.github.copilot
+          mkt.rooveterinaryinc.roo-cline
+          mkt.supermaven.supermaven
+          mkt.github.copilot-chat
+          # Pulled from master to bypass the 2.1.88 NPM 404
+          pkgs.master.vscode-extensions.anthropic.claude-code
+        ];
     };
   };
 }

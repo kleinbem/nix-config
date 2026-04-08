@@ -21,11 +21,13 @@ test:
 
 switch:
     nh os switch .
+    ./scripts/tag-generation.sh
 
 # System Boot (Build & Bootloader only, No Switch)
 
 boot:
     nh os boot .
+    ./scripts/tag-generation.sh
 
 # Switch with local overrides (Useful for secrets testing)
 
@@ -63,6 +65,16 @@ update:
 
 verify:
     verify-system
+
+# --- Security Audit ---
+
+# Check for CVE vulnerabilities in the CURRENT running system
+audit:
+    vulnix -S
+
+# Check for CVE vulnerabilities in the locally built flake derivation
+vuln-check:
+    nix build .#nixosConfigurations.$(hostname).config.system.build.toplevel --no-link -o /tmp/nixos-toplevel && vulnix /tmp/nixos-toplevel
 
 # Run Flake Checks (CI Tests)
 

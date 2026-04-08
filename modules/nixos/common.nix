@@ -5,8 +5,14 @@
     inputs.nur.overlays.default
     inputs.nix-packages.overlays.default
     inputs.antigravity-nix.overlays.default
+    inputs.nix-vscode-extensions.overlays.default
+    inputs.nix-topology.overlays.default
     (final: prev: {
       stable = import inputs.nixpkgs-stable {
+        inherit (prev.stdenv.hostPlatform) system;
+        config.allowUnfree = true;
+      };
+      master = import inputs.nixpkgs-master {
         inherit (prev.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
