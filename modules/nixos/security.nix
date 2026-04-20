@@ -100,7 +100,7 @@ in
   programs.ssh = {
     # Start the standard OpenSSH agent system-wide (replaces HM service)
     startAgent = true;
-    agentPKCS11Whitelist = "${pkgs.opensc}/lib/opensc-pkcs11.so";
+    agentPKCS11Whitelist = "/nix/store/*-opensc-*/lib/opensc-pkcs11.so";
   };
 
   # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
