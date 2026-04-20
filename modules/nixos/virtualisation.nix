@@ -27,6 +27,10 @@ in
       # Docker (Primary for DevContainers/Compatibility)
       docker = {
         enable = true;
+        autoPrune = {
+          enable = true;
+          dates = "daily";
+        };
       };
 
       # Podman (Side-by-side)
@@ -36,6 +40,11 @@ in
         # Docker socket handled by actual Docker daemon (docker.enable = true)
         dockerSocket.enable = false;
         defaultNetwork.settings.dns_enabled = true;
+        autoPrune = {
+          enable = true;
+          dates = "daily";
+          flags = [ "--all" ];
+        };
       };
 
       # Redirect Podman storage to disk (Prevent /var tmpfs exhaustion)
@@ -156,11 +165,9 @@ in
           (_name: {
             after = [
               "podman-network-cbr0.service"
-              "bridge-${config.my.network.bridge}.service"
             ];
             requires = [
               "podman-network-cbr0.service"
-              "bridge-${config.my.network.bridge}.service"
             ];
           });
     };

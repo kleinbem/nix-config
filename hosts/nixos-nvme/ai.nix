@@ -2,33 +2,6 @@
 
 {
   my.containers = {
-    vllm = {
-      enable = false;
-      image = "docker.io/vllm/vllm-openai-cpu:latest-x86_64"; # Official bit-accurate CPU image
-      ip = "${myInventory.network.nodes.vllm.ip}/24";
-      hostDataDir = "/var/lib/images/vllm";
-      device = "cpu"; # Switched back to CPU to trigger memory cap and stabilize hang
-      model = "Qwen/Qwen2.5-Coder-32B-Instruct-GPTQ-Int4";
-      quantization = "gptq"; # Reverted from Marlin due to missing ops crash
-      enforceEager = true; # Bypass buggy graph warmup phase
-      maxModelLen = 16384;
-      memoryLimit = "48G"; # Plenty for 4-bit model
-      memorySwapMax = "0"; # Prevent leaking into zram
-      autoStart = true; # Restore autostart now that RAM is clear
-
-      openvinoDevice = "GPU"; # Use Intel iGPU
-      openvinoKvCacheSpace = 12;
-      gpuMemoryUtilization = 0.5; # Reduced to prevent misallocation in CPU mode
-      extraArgs = [
-        "--tensor-parallel-size"
-        "1"
-      ];
-      tls.whitelistDomains = [
-        "huggingface.co"
-        "cdn-lfs.huggingface.co"
-      ];
-    };
-
     litellm = {
       enable = true;
       ip = "${myInventory.network.nodes.litellm.ip}/24";
@@ -90,7 +63,7 @@
         myInventory.hosts.router-2.ip
       ];
       vllmTargets = [
-        myInventory.network.nodes.vllm.ip
+        # myInventory.network.nodes.vllm.ip # Workstation instance removed
         "10.85.46.104" # Orin Nano vLLM Instance
         "10.85.46.117" # RPi 5 vLLM Instance
       ];
@@ -106,8 +79,8 @@
         serverPort = 50001;
         upstreams = [
           {
-            name = "vllm";
-            target = myInventory.network.nodes.vllm.ip;
+            name = "vllm-orin";
+            target = "10.85.46.104"; # Pointing to Orin Nano since workstation vLLM is gone
             port = 8000;
           }
         ];
@@ -138,7 +111,7 @@
 
   # Ensure the data directories exist with correct permissions
   systemd.tmpfiles.rules = [
-    "d /var/lib/images/vllm 0777 root root - -"
+    # "d /var/lib/images/vllm 0777 root root - -" # Removed workstation vLLM directory
     "d /var/lib/images/litellm 0777 root root - -"
     "d /var/lib/images/playground 0777 martin users - -"
     "d /var/lib/images/caddy 0777 root root - -"
@@ -148,7 +121,9 @@
     "d /var/lib/images/langflow 0777 root root - -"
     "d /var/lib/images/langfuse 0777 root root - -"
     "d /var/lib/images/langfuse/db 0777 root root - -"
+    "d /var/lib/images/ollama 0777 ollama ollama - -"
     "Z /var/lib/images/ollama 0777 ollama ollama - -"
+    "d /var/lib/images/podman/tmp 1777 root root - -"
   ];
 
   # -----------------------------------------------------
@@ -181,6 +156,10 @@
       DynamicUser = lib.mkForce false;
       User = "ollama";
       Group = "ollama";
+
+      # Resource Management (Protection against system freezes)
+      MemoryHigh = "32G";
+      MemoryMax = "40G";
     };
   };
 

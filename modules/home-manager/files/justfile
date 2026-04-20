@@ -8,21 +8,21 @@ default:
 
 # --- AI Services ---
 
-# Start AI stack (vLLM, LiteLLM, ComfyUI, Langflow, Langfuse, WebUI, n8n)
+# Start AI stack (Ollama, LiteLLM, ComfyUI, Langflow, Langfuse, WebUI, n8n)
 ai-up:
-    sudo systemctl start ollama.service podman-litellm.service podman-comfyui.service podman-langflow.service podman-langfuse.service podman-langfuse-db.service container@open-webui.service container@n8n.service
+    sudo systemctl start ollama.service container@litellm.service podman-comfyui.service podman-langflow.service container@langfuse.service container@langfuse-db.service container@open-webui.service container@n8n.service
 
 # Stop AI stack
 ai-down:
-    sudo systemctl stop ollama.service podman-litellm.service podman-comfyui.service podman-langflow.service podman-langfuse.service podman-langfuse-db.service container@open-webui.service container@n8n.service
+    sudo systemctl stop ollama.service container@litellm.service podman-comfyui.service podman-langflow.service container@langfuse.service container@langfuse-db.service container@open-webui.service container@n8n.service
 
 # Check AI status
 ai-status:
-    systemctl status ollama.service podman-litellm.service podman-comfyui.service podman-langflow.service podman-langfuse.service podman-langfuse-db.service container@open-webui.service container@n8n.service
+    systemctl status ollama.service container@litellm.service podman-comfyui.service podman-langflow.service container@langfuse.service container@langfuse-db.service container@open-webui.service container@n8n.service
 
 # Follow AI logs
 ai-logs:
-    journalctl -u ollama.service -u podman-litellm.service -u podman-comfyui.service -u podman-langflow.service -u podman-langfuse.service -u podman-langfuse-db.service -u container@open-webui.service -u container@n8n.service -f
+    journalctl -u ollama.service -u container@litellm.service -u podman-comfyui.service -u podman-langflow.service -u container@langfuse.service -u container@langfuse-db.service -u container@open-webui.service -u container@n8n.service -f
 
 # --- System ---
 

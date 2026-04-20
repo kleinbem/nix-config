@@ -44,8 +44,8 @@ in
           mkt.rooveterinaryinc.roo-cline
           mkt.supermaven.supermaven
           mkt.github.copilot-chat
-          # Pulled from master to bypass the 2.1.88 NPM 404
-          pkgs.master.vscode-extensions.anthropic.claude-code
+          # Restored marketplace tracker for claude-code since the 2.1.88 upstream issue is resolved
+          mkt.anthropic.claude-code
         ];
     };
   };

@@ -6,7 +6,7 @@
       # -- Dev & AI Tools --
       gh # GitHub CLI
       fabric-ai # AI Augmentation Framework
-      github-copilot-cli      
+      github-copilot-cli
       gemini-cli
 
       # Pulled directly from master branch to bypass 404 block on unstable
@@ -18,7 +18,7 @@
       nil
       nixfmt
       dbeaver-bin # SQL Client for n8n databases
-      jujutsu # jj - Git-compatible VCS
+
       bruno # API Client (Postman alternative)
 
       # -- LazyVim Prerequisites --

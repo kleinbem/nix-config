@@ -8,7 +8,7 @@
 
   # SSH Public Keys
   ssh = {
-    yubikey = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPbkLwSKFiip5e/0j9aHzIDr+4srK7s9C/aLbNOl7xJQAAAABHNzaDo= yubikey-resident";
+    yubikey = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFLSRkt7uoF1c2iWpwt7mJi2krEtmpdUD4wLUm0XTn5JbGIBce+avhSqY02YRe3dpRVqo7KGE8upe11xI8IcEjk= PIV AUTH pubkey";
   };
 
   # Age/SOPS Public Keys (Recipients)

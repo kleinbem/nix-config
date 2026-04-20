@@ -6,6 +6,7 @@
 
 let
   cfg = config.my.security.ai-hardening;
+  net = config.my.network;
 in
 {
   options.my.security.ai-hardening = {
@@ -42,13 +43,13 @@ in
         );
         allDomains = lib.unique (cfg.whitelistDomains ++ containerDomains);
       in
-      lib.mkIf (cfg.strictEgress && allDomains != [ ]) {
+      lib.mkIf cfg.strictEgress {
         enable = true;
         settings = {
           # Listen on localhost and the bridge interface for container DNS
           interface = [
             "lo"
-            config.my.network.bridge
+            net.bridge
           ];
           bind-dynamic = true;
 
@@ -71,10 +72,10 @@ in
     systemd.services.dnsmasq = lib.mkIf config.services.dnsmasq.enable {
       after = [
         "network.target"
-        "network-addresses-${config.my.network.bridge}.service"
+        "network-addresses-${net.bridge}.service"
         "cbr0-netdev.service"
       ];
-      requires = [ "cbr0-netdev.service" ];
+      requires = [ "${net.bridge}-netdev.service" ];
     };
 
     networking.nftables.tables.ai-airlock = lib.mkIf cfg.strictEgress {
@@ -86,6 +87,12 @@ in
           timeout 1h
         }
 
+        chain prerouting {
+          type nat hook prerouting priority dstnat; policy accept;
+          iifname "${net.bridge}" udp dport 53 counter redirect to :53 comment "Airlock 2.0: Force DNS to Host"
+          iifname "${net.bridge}" tcp dport 53 counter redirect to :53 comment "Airlock 2.0: Force DNS to Host"
+        }
+
         chain forward {
           type filter hook forward priority filter; policy accept;
           
@@ -93,17 +100,13 @@ in
           ip daddr @ai_whitelisted_ips accept comment "Airlock 2.0: Dynamic Whitelist"
 
           # Block egress from AI subnet to internet (anything not local)
-          ip saddr 10.85.46.0/24 oifname "eth0" log prefix "AI-AIRLOCK-EXT-DENY: " drop
+          ip saddr ${net.subnet} oifname "eth0" log prefix "AI-AIRLOCK-EXT-DENY: " drop
           
           # Allow local container-to-container if already established
           ct state { established, related } accept
         }
       '';
     };
-
-    # Ensure containers use the Host as their primary DNS server
-    # (assuming they are on the 10.85.46.0/24 bridge)
-    # The host is usually .1
 
     # ─── Kernel Parameter Tightening ────────────────────────────
     boot.kernel.sysctl = {

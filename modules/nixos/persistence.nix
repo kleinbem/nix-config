@@ -29,6 +29,18 @@
       "/etc/waydroid-extra"
       "/var/lib/sbctl"
       "/etc/ssh"
+
+      # --- Added Missing Service & System State ---
+      "/var/lib/netbird" # Identity and registration
+      "/var/lib/github-runners" # GitHub Actions runner state
+      "/var/account" # Process accounting logs (Lynis/Security Audit)
+      "/var/lib/systemd/backlight" # Screen brightness
+      "/var/lib/systemd/rfkill" # Airplane mode state
+      "/var/lib/systemd/timesync" # NTP drift for faster syncing
+      "/var/lib/udisks2" # Storage daemon state
+      "/var/lib/upower" # Power management history
+      "/var/lib/logrotate" # Log rotation state
+      "/var/lib/images" # Container state (Caddy, n8n, databases, etc)
     ];
     files = [
     ];

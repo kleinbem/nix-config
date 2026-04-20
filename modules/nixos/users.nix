@@ -39,12 +39,6 @@
         });
       '';
     };
-    pam.u2f = {
-      enable = true;
-      settings.cue = true;
-    };
-    # Zero Trust: sudo requires YubiKey touch (hardware MFA)
-    pam.services.sudo.u2fAuth = true;
     tpm2.enable = true;
   };
 

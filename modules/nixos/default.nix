@@ -7,6 +7,7 @@
     ./desktop.nix
     ./users.nix
     ./security.nix
+    ./snapper.nix
     ./printing.nix
     ./virtualisation.nix
     ./zero-trust.nix
@@ -18,7 +19,6 @@
     ./backup.nix
     ./scripts.nix
     ./services/github-runner.nix
-    ./services/glances.nix
     ./services/redroid.nix
   ];
 }

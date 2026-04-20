@@ -1,10 +1,15 @@
 {
+  pkgs,
   my,
-  lib,
   ...
 }:
+let
+  keys = import ../../modules/nixos/keys.nix;
+in
 {
-  imports = [ ../../modules/home-manager/default.nix ];
+  imports = [
+    ../../modules/home-manager/default.nix
+  ];
 
   modules.opencode.enable = true;
 
@@ -13,13 +18,30 @@
     inherit (my) username;
     homeDirectory = my.home;
     stateVersion = "25.11";
+    sessionVariables = {
+      DEFAULT_BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
+      BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
+    };
+  };
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "text/html" = [ "firefox-standard.desktop" ];
+      "x-scheme-handler/http" = [ "firefox-standard.desktop" ];
+      "x-scheme-handler/https" = [ "firefox-standard.desktop" ];
+      "x-scheme-handler/about" = [ "firefox-standard.desktop" ];
+      "x-scheme-handler/unknown" = [ "firefox-standard.desktop" ];
+    };
   };
 
   programs = {
-    zen-browser.enable = true;
     firefox-browser.enable = true;
     home-manager.enable = true;
-    git.signing.format = lib.mkDefault "ssh";
+
+    # Inject hardware-protected signing keys from centralized proxy
+    git.settings.user.signingKey = "key::${keys.ssh.yubikey}";
+    jujutsu.settings.signing.key = "key::${keys.ssh.yubikey}";
   };
 
   # Silencing evaluation warnings from newer Home Manager

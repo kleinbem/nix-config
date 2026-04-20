@@ -1,6 +1,7 @@
 { inputs, ... }:
 {
   imports = [
+    inputs.nix-presets.homeManagerModules.git
     inputs.nix-presets.homeManagerModules.terminal
     ./dev.nix
     inputs.nix-presets.homeManagerModules.desktop
@@ -9,7 +10,6 @@
     ./vscode.nix
     ./nixvim.nix
     ./secrets.nix
-    inputs.nix-presets.homeManagerModules.zen-browser
     inputs.nix-presets.homeManagerModules.firefox-browser
     inputs.nix-presets.homeManagerModules.opencode
   ];

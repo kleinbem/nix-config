@@ -146,15 +146,34 @@ let
     }
     {
       src = inv.nodes.monitoring.ip;
-      dst = "10.85.46.0/24";
+      dst = inv.subnet;
       dport = 9100;
       comment = "Monitoring -> All Node Exporters";
     }
     {
-      src = "10.85.46.0/24";
+      src = inv.subnet;
       dst = inv.nodes.loki.ip;
       dport = 3100;
       comment = "All Containers -> Loki Logging";
+    }
+    # ─── Security & Identity ────────────────────────────────
+    {
+      src = inv.nodes.caddy.ip;
+      dst = inv.nodes.authelia.ip;
+      dport = 9091;
+      comment = "Caddy -> Authelia (SSO Subrequests)";
+    }
+    {
+      src = inv.nodes.falco.ip;
+      dst = inv.nodes.falcosidekick.ip;
+      dport = 2801;
+      comment = "Falco -> Falcosidekick";
+    }
+    {
+      src = inv.nodes.falcosidekick.ip;
+      dst = inv.nodes.loki.ip;
+      dport = 3100;
+      comment = "Falcosidekick -> Loki";
     }
   ];
 
@@ -178,8 +197,8 @@ in
           type filter hook forward priority filter; policy accept;
 
           # Only apply to bridge traffic (container subnet)
-          ip saddr != 10.85.46.0/24 accept
-          ip daddr != 10.85.46.0/24 accept
+          ip saddr != ${inv.subnet} accept
+          ip daddr != ${inv.subnet} accept
 
           # --- Always allow: established/related connections ---
           ct state established,related accept
@@ -194,33 +213,7 @@ in
       ${allowRules}
 
           # --- Default deny: container-to-container ---
-          ip saddr 10.85.46.0/24 ip daddr 10.85.46.0/24 log prefix "ZT-DENY: " drop comment "Zero Trust: deny unlisted flows"
-
-          # --- Airlock: Secure Egress (Allow DNS & HTTPS only) ---
-          # This protects the AI stack from exfiltrating data to unknown IPs
-          ip saddr {
-            ${inv.nodes.vllm.ip}, 
-            ${inv.nodes.litellm.ip}, 
-            ${inv.nodes.comfyui.ip}, 
-            ${inv.nodes.langflow.ip}, 
-            ${inv.nodes.langfuse.ip} 
-          } udp dport 53 accept comment "Airlock: DNS"
-          ip saddr {
-            ${inv.nodes.vllm.ip}, 
-            ${inv.nodes.litellm.ip}, 
-            ${inv.nodes.comfyui.ip}, 
-            ${inv.nodes.langflow.ip}, 
-            ${inv.nodes.langfuse.ip} 
-          } tcp dport { 53, 443 } accept comment "Airlock: Model Pulls (HTTPS)"
-
-          # Final Zero-Trust Egress Deny for the AI stack
-          ip saddr {
-            ${inv.nodes.vllm.ip}, 
-            ${inv.nodes.litellm.ip}, 
-            ${inv.nodes.comfyui.ip}, 
-            ${inv.nodes.langflow.ip}, 
-            ${inv.nodes.langfuse.ip} 
-          } log prefix "ZT-AIRLOCK-DENY: " drop
+          ip saddr ${inv.subnet} ip daddr ${inv.subnet} log prefix "ZT-DENY: " drop comment "Zero Trust: deny unlisted flows"
         }
     '';
   };

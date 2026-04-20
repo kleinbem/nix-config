@@ -148,7 +148,7 @@
           name = "ComfyUI";
           category = "AI Engineering";
           icon = "🎨";
-          description = "Advanced Visual Generation.";
+          description = "Advanced Visual Generation. [AIRLOCK: Restricted Egress]";
         };
       };
       langflow = {
@@ -159,7 +159,7 @@
           name = "Langflow";
           category = "AI Engineering";
           icon = "🌊";
-          description = "Visual AI Agent Designer.";
+          description = "Visual AI Agent Designer. [AIRLOCK: Restricted Egress]";
         };
       };
       langfuse = {
@@ -170,7 +170,7 @@
           name = "Langfuse";
           category = "AI Engineering";
           icon = "👁️";
-          description = "LLM telemetry and tracing.";
+          description = "LLM telemetry and tracing. [AIRLOCK: Restricted Egress]";
         };
       };
       vllm = {
@@ -181,7 +181,7 @@
           name = "vLLM Workstation";
           category = "AI Engineering";
           icon = "⚡";
-          description = "High-throughput model serving (Intel XPU).";
+          description = "High-throughput model serving (Intel XPU). [AIRLOCK: Restricted Egress]";
         };
       };
       vllm-rpi = {
@@ -212,7 +212,7 @@
           name = "Agent Zero";
           category = "AI";
           icon = "🕵️";
-          description = "Autonomous AI agent framework.";
+          description = "Autonomous AI agent framework. [AIRLOCK: Restricted Egress]";
         };
       };
       monitoring = {
@@ -237,7 +237,7 @@
           name = "LiteLLM Gateway";
           category = "AI";
           icon = "🔌";
-          description = "Unified AI API Gateway & Proxy.";
+          description = "Unified AI API Gateway & Proxy. [AIRLOCK: Restricted Egress]";
         };
       };
       loki = {
@@ -313,17 +313,6 @@
           category = "Infrastructure";
           icon = "🖨️";
           description = "Print server management.";
-        };
-      };
-      glances = {
-        ip = "10.85.46.1";
-        port = 61208;
-        externalPort = 61208;
-        meta = {
-          name = "Glances";
-          category = "Infrastructure";
-          icon = "📊";
-          description = "System metrics and telemetry.";
         };
       };
 

@@ -1,10 +1,7 @@
 { config, ... }:
 
 {
-  # Define the secret for the Restic password
-  sops.secrets.restic_password = {
-    owner = config.my.username;
-  };
+  # Secrets are defined in host-specific secrets.nix to ensure correct ownership
 
   services.restic.backups.daily = {
     initialize = true;
@@ -19,13 +16,15 @@
     passwordFile = config.sops.secrets.restic_password.path;
     rcloneConfigFile = config.sops.secrets.rclone_config.path;
 
+    # Rate Limiting & Optimization
+    extraOptions = [
+      "rclone.args=\"--tpslimit 5 --fast-list --drive-chunk-size 64M\""
+    ];
+
     # What to backup
     paths = [
       config.my.home
-      "/var/lib/n8n" # n8n Container Data
-      # System paths like /etc/ssh or /var/lib/sops are not readable by 'martin'.
-      # To backup those, we would need a separate root-level backup job
-      # or ACL modifications. For now, we focus on user data.
+      "/var/lib/images/n8n" # n8n Container Data
     ];
 
     exclude = [
@@ -37,35 +36,22 @@
       # Cloud Drives (Mount Points) - IMPORTANT: Prevents infinite recursion!
       "${config.my.home}/GoogleDrive"
       "${config.my.home}/OneDrive"
-      "${config.my.home}/Cloud" # Future location for cloud drives
-
-      # Browsers & AI Caches
-      "${config.my.home}/**/OptGuideOnDeviceModel"
-      "${config.my.home}/**/SingletonLock"
-
-      # Security - Skip Private Keys (User manages via YubiKey/Bitwarden)
-      "${config.my.home}/.ssh/id_*" # Excludes private AND public keys (re-generatable)
-      # Note: We keep .ssh/config and known_hosts as they are not sensitive
+      "${config.my.home}/Cloud"
 
       # Development - Build Artifacts
       "${config.my.home}/**/node_modules"
-      "${config.my.home}/**/target" # Rust
-      "${config.my.home}/**/result" # Nix
+      "${config.my.home}/**/target"
+      "${config.my.home}/**/result"
       "${config.my.home}/**/__pycache__"
-      "${config.my.home}/**/.venv" # Python venvs are reproducible
-      "${config.my.home}/**/.gradle" # Java
-      "${config.my.home}/**/.m2" # Maven
+      "${config.my.home}/**/.venv"
 
-      # Application State (Reproducible/Large/Restricted)
-      "${config.my.home}/.local/share/flatpak" # Re-downloadable apps
-      "${config.my.home}/.local/share/containers" # Podman images
-      "${config.my.home}/.local/share/Docker" # Docker images
-      "${config.my.home}/.local/share/waydroid" # Waydroid (Permission issues)
-      "${config.my.home}/ai-data" # AI Data (Permission issues)
-      "${config.my.home}/n8n-data" # n8n Data (Permission issues)
-      "/**/*.qcow2" # VM Images
-      "/**/*.iso" # ISOs
-      "/**/*.lock" # Optional: Lock files usually small, keep them.
+      # Large Repositories / AI Models (Already handled by Airlock pulls)
+      "/**/*.qcow2"
+      "/**/*.iso"
+      "${config.my.home}/.local/share/containers"
+      "${config.my.home}/ai-data"
+      "/var/lib/images/vllm"
+      "/var/lib/images/ollama"
     ];
 
     # Pruning (Retention Policy)
@@ -84,7 +70,7 @@
 
   # --- Root-level System Backup (Critical Infrastructure) ---
   services.restic.backups.system = {
-    initialize = true;
+    initialize = false;
     user = "root"; # Run as root to access sensitive system files
 
     # Repository: Use a separate folder for system infrastructure
@@ -94,19 +80,26 @@
     passwordFile = config.sops.secrets.restic_system_password.path;
     rcloneConfigFile = config.sops.secrets.rclone_config.path;
 
+    # Rate Limiting & Optimization (Aggressive pacing for GDrive)
+    extraOptions = [
+      "rclone.args=\"--tpslimit 3 --fast-list --drive-chunk-size 128M\""
+    ];
+
     # What to backup (Critical Infrastructure Only)
     paths = [
       "/etc/ssh" # Host Identity
       "/var/lib/sops" # Secret Decryption Keys
       "/nix/persist/var/lib/sbctl" # Lanzaboote/SecureBoot PKI
       "/var/lib/caddy" # SSL Certificates & State
-      "/var/lib/images" # Container Persistent Volumes (Database files, etc.)
+      "/var/lib/images" # Container Persistent Volumes
     ];
 
     exclude = [
       "**/tmp"
       "**/.cache"
-      "/var/lib/images/podman" # Exclude images themselves (they are in nix store)
+      "/var/lib/images/podman"
+      "/var/lib/images/vllm"
+      "/var/lib/images/ollama"
     ];
 
     pruneOpts = [

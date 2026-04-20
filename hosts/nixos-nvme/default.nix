@@ -82,8 +82,6 @@
     "machine-id".source = lib.mkForce "/nix/persist/etc/machine-id";
   };
 
-
-
   # --- Container Configuration ---
   my = {
     containers = {
@@ -209,9 +207,7 @@
     virtualisation.enable = true;
     services = {
       printing.enable = true;
-      glances.enable = true;
     };
-    security.ai-hardening.enable = true;
   };
 
   # --- Persistence & System Services ---
@@ -223,13 +219,19 @@
 
   programs.waydroid-setup.enable = false;
 
-
   home-manager.users.${config.my.username} = import ../../users/martin/home.nix;
 
   boot = {
     kernelPackages = pkgs.linuxPackages_latest;
     initrd = {
-      availableKernelModules = [ "nvme" "xhci_pci" "thunderbolt" "usb_storage" "sd_mod" "ahci" ];
+      availableKernelModules = [
+        "nvme"
+        "xhci_pci"
+        "thunderbolt"
+        "usb_storage"
+        "sd_mod"
+        "ahci"
+      ];
       kernelModules = [
         "usbhid"
         "hid_generic"
@@ -270,6 +272,11 @@
     "d /var/lib/images/qdrant 0755 root root - -"
     "d /var/lib/images/open-webui 0755 root root - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
+    "d /var/lib/images/netdata 0755 root root - -"
+    "d /var/lib/images/netdata/cache 0755 root root - -"
+    "d /var/lib/images/netdata/lib 0755 root root - -"
+    "d /var/lib/images/langfuse 0755 root root - -"
+    "d /var/lib/images/langfuse/db 0755 root root - -"
   ];
 
   hardware = {
@@ -366,4 +373,5 @@
   ];
 
   system.stateVersion = "25.11";
+  my.security.ai-hardening.enable = true;
 }

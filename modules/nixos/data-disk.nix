@@ -20,7 +20,7 @@ _:
                   crypttabExtraOpts = [
                     "fido2-device=auto"
                     "discard"
-                    "x-systemd.device-timeout=30s"
+                    "x-systemd.device-timeout=60s"
                     "nofail"
                   ];
                 };

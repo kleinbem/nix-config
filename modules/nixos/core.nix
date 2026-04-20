@@ -17,10 +17,12 @@ in
   console.keyMap = "us";
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-    "vscode-extension-anthropic-claude-code"
-    "claude-code"
-  ];
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (lib.getName pkg) [
+      "vscode-extension-anthropic-claude-code"
+      "claude-code"
+    ];
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
@@ -51,7 +53,7 @@ in
 
       log-lines = 25;
       min-free = 1073741824; # 1GB
-      max-jobs = 8;
+      max-jobs = 4; # Reduced from 8 to leave 50% headroom on i3-1315U
       cores = 1; # Let nix-command handle job/core balance
       trusted-users = [
         "@wheel"
@@ -89,6 +91,10 @@ in
 
     # = hardware monitoring =
     smartd.enable = true;
+    fwupd.enable = true;
+
+    # Mobile Device Support
+    gvfs.enable = true; # MTP/PTP support for file transfer
   };
 
   # Ensure /etc/cockpit is a writable directory (not a symlink to read-only store)
@@ -119,6 +125,20 @@ in
     enable = true;
     algorithm = "zstd";
     memoryPercent = 50;
+  };
+
+  # Mitigate kernel panics under extreme memory pressure (AI workloads)
+  services.earlyoom = {
+    enable = true;
+    # m=5: kill at 5% free memory, s=10: kill at 10% free swap
+    # --prefer: browser sub-processes (safe to restart)
+    # --ignore: GUI and shell (keep system interactive)
+    extraArgs = [
+      "-m 5"
+      "-s 10"
+      "--prefer ^(firefox|chrome|chromium)$"
+      "--ignore ^(cosmic|Xwayland|bash|zsh)$"
+    ];
   };
 
   # ==========================================
@@ -190,6 +210,7 @@ in
     kexec-tools # Kernel Crash Dumps
     sosreport # System Analysis
     android-tools # ADB & Fastboot
+    lm_sensors # Hardware heat sensors
   ];
 
   environment.sessionVariables = {
@@ -204,7 +225,7 @@ in
     enable = true;
     flake = "${config.my.developDir}/nix/nix-config";
     flags = [
-      "--update-input"
+      # Replaced deprecated --update-input with modern positional syntax
       "nixpkgs"
     ];
     dates = "04:00";

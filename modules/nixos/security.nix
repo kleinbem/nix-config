@@ -41,6 +41,10 @@ in
   imports = [ inputs.nix-mineral.nixosModules.nix-mineral ];
 
   # ==========================================
+  # SMARTCARD (PKCS#11) CONFIGURATION
+  # ==========================================
+
+  # ==========================================
   # PERSISTENCE COMPATIBILITY FIXES
   # ==========================================
 
@@ -69,51 +73,58 @@ in
     })
   ];
 
-  environment.systemPackages = with pkgs; [
-    clamav
-    clamtk # GUI
-    libnotify # For notifications
-    lxqt.lxqt-openssh-askpass
-    lynis # Security auditing
-  ];
+  environment = {
+    systemPackages = with pkgs; [
+      clamav
+      clamtk # GUI
+      libnotify # For notifications
+      lxqt.lxqt-openssh-askpass
+      lynis # Security auditing
 
-  # Force the correct SSH_AUTH_SOCK for all sessions.
-  # environment.sessionVariables is not enough because PAM/Gnome Keyring
-  # overwrites it during X session initialization.
-  # extraInit runs after that, allowing us to enforce our agent.
-  environment.extraInit = ''
-    export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
-  '';
+      # Smartcard (PKCS#11 PIV)
+      opensc
+      yubico-piv-tool
+      yubikey-manager
+    ];
 
-  # ==========================================
-  # SSH & YUBIKEY SECURITY
-  # ==========================================
-  environment.sessionVariables = {
-    # Force SSH to use the graphical askpass prompt to prevent terminal TTY bugs
-    SSH_ASKPASS_REQUIRE = "prefer";
+    # Force the correct SSH_AUTH_SOCK for all sessions.
+    # extraInit runs after PAM/Gnome Keyring, allowing us to enforce our agent.
+    extraInit = ''
+      export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
+    '';
+
+    sessionVariables = {
+    };
   };
 
   programs.ssh = {
     # Start the standard OpenSSH agent system-wide (replaces HM service)
     startAgent = true;
-
-    # Enable the graphical PIN prompt (essential for Git signing)
-    enableAskPassword = true;
-    askPassword = "${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass";
-  };
-
-  services.openssh = {
-    enable = true;
-    settings = {
-      PermitRootLogin = "no";
-      PasswordAuthentication = false;
-      KbdInteractiveAuthentication = true; # Required for MFA
-      AuthenticationMethods = "publickey,keyboard-interactive"; # Require BOTH key AND code
-    };
+    agentPKCS11Whitelist = "${pkgs.opensc}/lib/opensc-pkcs11.so";
   };
 
   # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
   services = {
+    pcscd.enable = true;
+
+    openssh = {
+      enable = true;
+      settings = {
+        PermitRootLogin = "no";
+        PasswordAuthentication = false;
+        KbdInteractiveAuthentication = true; # Required for MFA
+        AuthenticationMethods = "publickey,keyboard-interactive"; # Require BOTH key AND code
+
+        # Hardening per Lynis suggestions
+        AllowTcpForwarding = "yes"; # Kept 'yes' for developer productivity/container setup
+        AllowAgentForwarding = "no";
+        ClientAliveCountMax = 2;
+        MaxAuthTries = 3;
+        MaxSessions = 2;
+        TCPKeepAlive = "no";
+      };
+    };
+
     gnome = {
       # Disable GNOME's GCR SSH Agent to prevent conflict with programs.ssh
       gcr-ssh-agent.enable = false;
@@ -222,6 +233,7 @@ in
 
         # --- Mobile Devices ---
         # Samsung Electronics Co., Ltd (MTP, ADB, PTP)
+        allow id 04e8:6860 # Samsung Galaxy series (Explicit)
         allow id 04e8:*
 
         # Block everything else
@@ -239,6 +251,8 @@ in
     pam = {
       services = {
         cosmic-greeter.enableGnomeKeyring = false;
+        cosmic-greeter.u2fAuth = true;
+        login.u2fAuth = true;
 
         # Enable Google Authenticator for SSH
         sshd.googleAuthenticator.enable = true;
@@ -266,7 +280,27 @@ in
       killUnconfinedConfinables = false;
     };
     auditd.enable = true;
+    audit = {
+      enable = true;
+      rules = [
+        "-w /etc/passwd -p wa -k identity"
+        "-w /etc/group -p wa -k identity"
+        "-w /etc/shadow -p wa -k identity"
+        "-w /etc/sudoers -p wa -k identity"
+        "-w /etc/sudoers.d -p wa -k identity"
+        "-w /etc/ssh/sshd_config -p wa -k config"
+      ];
+    };
     protectKernelImage = true;
+
+    # ==========================================
+    # AUTHENTICATION HARDENING
+    # ==========================================
+    # Increase password hashing rounds (Lynis Suggestion AUTH-9230)
+    loginDefs.settings = {
+      SHA_CRYPT_MIN_ROUNDS = 100000;
+      SHA_CRYPT_MAX_ROUNDS = 100000;
+    };
   };
 
   # ---------------------------

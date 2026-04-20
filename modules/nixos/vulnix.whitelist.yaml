@@ -1,0 +1,56 @@
+# Vulnix Whitelist - Accepted Infrastructure Risks
+# Format: Top-level YAML list of objects
+# pname corresponds to the package/derivation name.
+
+# --- Build Tools & Helpers ---
+- name: ninja
+- name: yasm
+- name: binutils
+- name: gcc
+- name: jam
+- name: perl
+- name: python-2.7.18.12 # Used by legacy build scripts
+
+# --- Documentation & Text Processing ---
+- name: commonmark
+- name: gutenberg
+- name: typst
+- name: libarchive
+
+# --- Low-Risk Infrastructure ---
+- name: libtpms
+- name: jbig2dec
+- name: capstone
+- name: ada
+
+# --- Known upstream delays (Nixpkgs-Unstable) ---
+- name: shellcheck
+- name: zlib
+- name: curl
+- name: openssh
+- name: vim
+
+# --- Haskell Ecosystem Noise (Nix-Devshells) ---
+- name: Diff
+- name: diff
+- name: Minimatch
+- name: minimatch
+- name: ShellCheck
+- name: shellcheck
+- name: async
+- name: hedgehog
+- name: network
+- name: safe
+- name: tar
+- name: websockets
+- name: yaml
+- name: crossbeam
+- name: bytes
+- name: filelock
+- name: system-configuration
+- name: word-wrap
+- name: xunit
+- name: h3
+- name: thrift
+- name: jose
+- name: jose-jwt

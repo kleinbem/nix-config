@@ -25,6 +25,8 @@
     secrets = {
       rclone_config = {
         owner = "martin";
+        group = "wheel";
+        mode = "0440";
       };
       github_read_all_token = {
         mode = "0440";
@@ -49,7 +51,9 @@
       vllm_huggingface_token = { };
 
       # Backup Secrets
-      restic_password = { owner = "martin"; }; # User backup
+      restic_password = {
+        owner = "martin";
+      }; # User backup
       restic_system_password = { }; # Root backup
 
       # Identity (Authelia)

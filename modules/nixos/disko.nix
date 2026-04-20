@@ -50,7 +50,8 @@ _:
                 settings = {
                   allowDiscards = true;
                   crypttabExtraOpts = [
-                    "tpm2-device=auto"
+                    "fido2-device=auto"
+                    "x-systemd.device-timeout=60s"
                     "password-echo=true"
                   ];
                 };

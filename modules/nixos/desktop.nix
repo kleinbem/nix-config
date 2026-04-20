@@ -86,12 +86,6 @@ in
             update_url = "https://clients2.google.com/service/update2/crx";
           };
         };
-
-        # 7. Debloat Brave (Crypto/VPN)
-        BraveWalletDisabled = true;
-        BraveRewardsDisabled = true;
-        BraveVPNDisabled = true;
-        # Leo AI is kept enabled per user request
       };
 
       systemPackages = with pkgs; [
@@ -109,7 +103,6 @@ in
 
         # Browsers
         nyxt
-        ladybird
 
         # GUI Tools
         zoom-us
