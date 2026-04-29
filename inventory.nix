@@ -215,6 +215,18 @@
           description = "Autonomous AI agent framework. [AIRLOCK: Restricted Egress]";
         };
       };
+      agent-team = {
+        ip = "10.85.46.118";
+        port = 8000;
+        externalPort = 8000;
+        mtls = true;
+        meta = {
+          name = "AI Agent Team";
+          category = "AI";
+          icon = "👥";
+          description = "Enterprise Role-Based Agent Team (CrewAI). [AIRLOCK: Restricted Egress]";
+        };
+      };
       monitoring = {
         enabled = true;
         ip = "10.85.46.114";
@@ -304,15 +316,33 @@
         };
       };
       cups = {
-        ip = "10.85.46.1";
+        ip = "10.85.46.124";
         port = 631;
-        externalPort = 631;
         secure = true; # Uses https upstream
         meta = {
           name = "CUPS Printing";
           category = "Infrastructure";
           icon = "🖨️";
-          description = "Print server management.";
+          description = "Print server management (Containerized).";
+        };
+      };
+      ollama = {
+        ip = "10.85.46.125";
+        port = 11434;
+        meta = {
+          name = "Ollama";
+          category = "AI";
+          icon = "🦙";
+          description = "Native Ollama Inference Engine.";
+        };
+      };
+      github-runner = {
+        ip = "10.85.46.126";
+        meta = {
+          name = "GitHub Runner";
+          category = "Dev";
+          icon = "🏃";
+          description = "Isolated CI/CD Runner.";
         };
       };
 

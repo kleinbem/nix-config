@@ -12,6 +12,7 @@ in
   ];
 
   modules.opencode.enable = true;
+  modules.syncthing.enable = true;
 
   # User Details
   home = {

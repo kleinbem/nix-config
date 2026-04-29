@@ -16,7 +16,7 @@
       "/var/lib/sops"
       "/var/lib/NetworkManager"
       "/var/lib/fprint"
-      "/var/lib/waydroid"
+      # "/var/lib/waydroid"
       "/var/lib/docker"
       "/var/lib/flatpak"
       "/var/lib/libvirt"
@@ -26,10 +26,8 @@
       "/var/lib/usbguard"
       "/var/db/sudo"
       "/etc/NetworkManager/system-connections"
-      "/etc/waydroid-extra"
+      # "/etc/waydroid-extra"
       "/var/lib/sbctl"
-      "/etc/ssh"
-
       # --- Added Missing Service & System State ---
       "/var/lib/netbird" # Identity and registration
       "/var/lib/github-runners" # GitHub Actions runner state
@@ -43,6 +41,10 @@
       "/var/lib/images" # Container state (Caddy, n8n, databases, etc)
     ];
     files = [
+      "/etc/ssh/ssh_host_rsa_key"
+      "/etc/ssh/ssh_host_rsa_key.pub"
+      "/etc/ssh/ssh_host_ed25519_key"
+      "/etc/ssh/ssh_host_ed25519_key.pub"
     ];
   };
 

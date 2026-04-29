@@ -72,10 +72,9 @@ in
     systemd.services.dnsmasq = lib.mkIf config.services.dnsmasq.enable {
       after = [
         "network.target"
-        "network-addresses-${net.bridge}.service"
-        "cbr0-netdev.service"
+        "network-online.target"
       ];
-      requires = [ "${net.bridge}-netdev.service" ];
+      wants = [ "network-online.target" ];
     };
 
     networking.nftables.tables.ai-airlock = lib.mkIf cfg.strictEgress {

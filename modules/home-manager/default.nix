@@ -10,6 +10,7 @@
     ./vscode.nix
     ./nixvim.nix
     ./secrets.nix
+    ./syncthing.nix
     inputs.nix-presets.homeManagerModules.firefox-browser
     inputs.nix-presets.homeManagerModules.opencode
   ];

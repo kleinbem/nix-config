@@ -9,11 +9,11 @@
     inputs.nix-topology.overlays.default
     (final: prev: {
       stable = import inputs.nixpkgs-stable {
-        hostPlatform = prev.stdenv.hostPlatform.system;
+        inherit (prev.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
       master = import inputs.nixpkgs-master {
-        hostPlatform = prev.stdenv.hostPlatform.system;
+        inherit (prev.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
       # Fix netbird build failure by using stable version (Go 1.23 is removed from unstable)
@@ -59,7 +59,6 @@
     useUserPackages = true;
     extraSpecialArgs = {
       inherit inputs;
-      inherit (inputs) nixpak;
       inherit (config) my;
     };
     backupFileExtension = "backup";

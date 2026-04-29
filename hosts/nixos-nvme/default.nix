@@ -36,7 +36,11 @@
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.agent-zero
-    inputs.nix-presets.nixosModules.waydroid
+    inputs.nix-presets.nixosModules.agent-team
+    inputs.nix-presets.nixosModules.cups
+    inputs.nix-presets.nixosModules.github-runner
+    inputs.nix-presets.nixosModules.ollama
+    # inputs.nix-presets.nixosModules.waydroid
     inputs.nix-presets.nixosModules.android-emulator
     ../../modules/nixos/persistence.nix
     ./secrets.nix
@@ -46,6 +50,7 @@
     ../../modules/nixos/data-disk.nix
     inputs.disko.nixosModules.disko
     ./ai.nix
+    ./specialisations.nix
   ];
 
   # --- Stateless Root / Var ---
@@ -72,7 +77,6 @@
       neededForBoot = true;
     };
 
-    # Persistence Anchor and Images are now managed by disko.nix
     "/nix".neededForBoot = true;
     "/nix/persist".neededForBoot = true;
   };
@@ -86,7 +90,7 @@
   my = {
     containers = {
       n8n = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.n8n.ip}/24";
         hostDataDir = "/var/lib/images/n8n";
         memoryLimit = "6G";
@@ -113,7 +117,7 @@
       };
 
       code-server = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.code-server.ip}/24";
         hostDataDir = config.my.developDir;
         user = config.my.username;
@@ -121,7 +125,7 @@
       };
 
       open-webui = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/images/open-webui";
         vllmUrl = "http://localhost:8000/v1"; # Via mTLS sidecar → vLLM
@@ -146,7 +150,7 @@
       };
 
       dashboard = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.85.46.1";
         memoryLimit = "1G";
@@ -154,7 +158,7 @@
       };
 
       qdrant = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.qdrant.ip}/24";
         hostDataDir = "/var/lib/images/qdrant";
         memoryLimit = "2G";
@@ -168,13 +172,13 @@
       # --- Advanced AI Suite (Managed via ai.nix) ---
 
       loki = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.loki.ip}/24";
         hostDataDir = "/var/lib/images/loki";
       };
 
       monitoring = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.monitoring.ip}/24";
         hostDataDir = "/var/lib/images/monitoring";
         # Automatically scrape the host and important AI nodes
@@ -183,22 +187,42 @@
       };
 
       falco = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.falco.ip}/24";
         sidekickIp = "${myInventory.network.nodes.falcosidekick.ip}/24";
       };
 
       netdata = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.netdata.ip}/24";
       };
 
       authelia = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.authelia.ip}/24";
         hostDataDir = "/var/lib/images/authelia";
         domain = "local";
       };
+
+      cups = {
+        enable = true;
+        ip = "${myInventory.network.nodes.cups.ip}/24";
+        hostDataDir = "/var/lib/images/cups";
+      };
+
+      github-runner = {
+        enable = true;
+        ip = "${myInventory.network.nodes.github-runner.ip}/24";
+        hostDataDir = "/var/lib/images/github-runner";
+        secretsFile = config.sops.secrets.local_github_actions_runner.path;
+      };
+
+      ollama = {
+        enable = true; # Enabled here instead of ai.nix
+        ip = "${myInventory.network.nodes.ollama.ip}/24";
+        hostDataDir = "/var/lib/images/ollama";
+      };
+
     };
 
     monitoring.node.enable = true;
@@ -206,7 +230,7 @@
     desktop.enable = true;
     virtualisation.enable = true;
     services = {
-      printing.enable = true;
+      printing.enable = false; # Handled by the cups container
     };
   };
 
@@ -217,7 +241,7 @@
     MaxRetentionSec=1month
   '';
 
-  programs.waydroid-setup.enable = false;
+  # programs.waydroid-setup.enable = false;
 
   home-manager.users.${config.my.username} = import ../../users/martin/home.nix;
 
@@ -241,7 +265,7 @@
     };
     loader = {
       systemd-boot.enable = lib.mkForce false;
-      systemd-boot.configurationLimit = 30;
+      systemd-boot.configurationLimit = 10;
       efi.canTouchEfiVariables = true;
     };
     lanzaboote = {
@@ -277,11 +301,13 @@
     "d /var/lib/images/netdata/lib 0755 root root - -"
     "d /var/lib/images/langfuse 0755 root root - -"
     "d /var/lib/images/langfuse/db 0755 root root - -"
+    "d /var/lib/images/cups 0755 root root - -"
+    "d /var/lib/images/github-runner 0755 1000 100 - -"
   ];
 
   hardware = {
     cpu.intel.updateMicrocode = true;
-    enableAllFirmware = true;
+    enableRedistributableFirmware = true;
     graphics = {
       enable = true;
       extraPackages = with pkgs; [
@@ -329,7 +355,7 @@
 
   services = {
     android-desktop-emulator = {
-      enable = true;
+      enable = false;
       user = config.my.username;
     };
     netbird = {

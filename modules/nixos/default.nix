@@ -11,14 +11,15 @@
     ./printing.nix
     ./virtualisation.nix
     ./zero-trust.nix
+    ./firejail.nix
     ./pki.nix
     ./ai-hardening.nix
     ./networking.nix
+    ./ananicy.nix
 
     # Services
     ./backup.nix
     ./scripts.nix
-    ./services/github-runner.nix
     ./services/redroid.nix
   ];
 }

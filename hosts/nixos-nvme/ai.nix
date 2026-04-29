@@ -1,9 +1,9 @@
-{ myInventory, lib, ... }:
+{ myInventory, ... }:
 
 {
   my.containers = {
     litellm = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.litellm.ip}/24";
       hostDataDir = "/var/lib/images/litellm";
       autoStart = false; # Manual start for safety
@@ -31,7 +31,7 @@
     };
 
     playground = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.playground.ip}/24";
       hostDataDir = "/var/lib/images/playground";
       # user = config.my.username; # Restored if needed, but 'martin' is hardcoded in some places anyway
@@ -39,7 +39,7 @@
     };
 
     caddy = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.caddy.ip}/24";
       hostDataDir = "/var/lib/images/caddy";
       memoryLimit = "512M";
@@ -51,7 +51,7 @@
     };
 
     monitoring = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.monitoring.ip}/24";
       hostDataDir = "/var/lib/images/monitoring";
       nodeTargets = [
@@ -88,24 +88,67 @@
     };
 
     comfyui = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.comfyui.ip}/24";
       hostDataDir = "/var/lib/images/comfyui";
       autoStart = false; # Manual start to prevent thermal overload during pull
     };
 
     langflow = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.langflow.ip}/24";
       hostDataDir = "/var/lib/images/langflow";
       autoStart = false; # Manual start to prevent thermal overload during pull
     };
 
     langfuse = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.langfuse.ip}/24";
       hostDataDir = "/var/lib/images/langfuse";
       autoStart = false; # Manual start for safety
+    };
+
+    agent-team = {
+      enable = false;
+      ip = "${myInventory.network.nodes.agent-team.ip}/24";
+      hostDataDir = "/var/lib/images/agent-team";
+      manager.humanInTheLoop = true; # Enabled per user request
+
+      # Team Definition based on industry best practices
+      agents = {
+        architect = {
+          role = "Lead Solutions Architect";
+          goal = "Design modular and scalable NixOS configurations.";
+          backstory = "Expert in declarative systems and multi-agent orchestration.";
+        };
+        developer = {
+          role = "Nix/Python Developer";
+          goal = "Implement clean code based on the Architect's design.";
+          backstory = "Specialized in automation and idempotent system configurations.";
+        };
+        auditor = {
+          role = "Security Compliance Auditor";
+          goal = "Ensure all changes follow the 'Sanctuary' security policy.";
+          backstory = "Zero-trust advocate focused on Least Privilege and Airlocking.";
+        };
+      };
+
+      tls = {
+        enable = true;
+        serverPort = 8000;
+        upstreams = [
+          {
+            name = "litellm";
+            target = myInventory.network.nodes.litellm.ip;
+            port = 4000;
+          }
+          {
+            name = "langfuse";
+            target = myInventory.network.nodes.langfuse.ip;
+            port = 3000;
+          }
+        ];
+      };
     };
   };
 
@@ -121,48 +164,12 @@
     "d /var/lib/images/langflow 0777 root root - -"
     "d /var/lib/images/langfuse 0777 root root - -"
     "d /var/lib/images/langfuse/db 0777 root root - -"
+    "d /var/lib/images/agent-team 0755 1000 100 - -"
+    "d /var/lib/images/agent-team/workspace 0775 1000 100 - -"
+    "d /var/lib/images/agent-team/state 0700 1000 100 - -"
     "d /var/lib/images/ollama 0777 ollama ollama - -"
     "Z /var/lib/images/ollama 0777 ollama ollama - -"
     "d /var/lib/images/podman/tmp 1777 root root - -"
   ];
 
-  # -----------------------------------------------------
-  # 100% NATIVE, DECLARATIVE OLLAMA CONFIGURATION
-  # -----------------------------------------------------
-
-  # 1. Statically declare the user so 'tmpfiles' can resolve it
-  users.users.ollama = {
-    isSystemUser = true;
-    group = "ollama";
-    description = "Ollama Service User";
-  };
-  users.groups.ollama = { };
-
-  # 2. Enable Native Ollama for CPU-Optimized Inference
-  services.ollama = {
-    enable = true;
-    host = "0.0.0.0"; # Allow containers like litellm to access it
-    home = "/var/lib/images/ollama";
-    models = "/var/lib/images/ollama/models";
-    environmentVariables = {
-      OLLAMA_KEEP_ALIVE = "-1"; # Keep models in memory indefinitely
-    };
-  };
-
-  # 3. Disable DynamicUser and explicitly set the user so Systemd maps it correctly
-  systemd.services.ollama = {
-    wantedBy = lib.mkForce [ ]; # Disable auto-start on boot
-    serviceConfig = {
-      DynamicUser = lib.mkForce false;
-      User = "ollama";
-      Group = "ollama";
-
-      # Resource Management (Protection against system freezes)
-      MemoryHigh = "32G";
-      MemoryMax = "40G";
-    };
-  };
-
-  # 4. Allow Podman containers on the cbr0 network to reach Ollama
-  networking.firewall.interfaces."cbr0".allowedTCPPorts = [ 11434 ];
 }

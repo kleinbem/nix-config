@@ -22,7 +22,7 @@ in
     inputs.nix-packages.overlays.default
     (_self: super: {
       stable = import inputs.nixpkgs-stable {
-        hostPlatform = super.stdenv.hostPlatform.system;
+        inherit (super.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
     })

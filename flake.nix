@@ -1,5 +1,5 @@
 {
-  description = "AI-Augmented NixOS with COSMIC and Nixpak";
+  description = "AI-Augmented NixOS with COSMIC and Firejail";
 
   inputs = {
     # --- Core ---
@@ -19,11 +19,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixpak = {
-      url = "github:nixpak/nixpak";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     impermanence.url = "github:nix-community/impermanence";
 
     # Secret Management
@@ -32,30 +27,30 @@
 
     # Private Secrets (GitHub Repo)
     nix-secrets = {
-      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-secrets";
+      url = "github:kleinbem/nix-secrets";
       flake = false;
     };
 
     # Modules & Configurations (Pulled from local submodules for speed)
     nix-hardware = {
-      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-hardware";
+      url = "github:kleinbem/nix-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.jetpack-nixos.follows = "jetpack-nixos";
     };
     nix-devshells = {
-      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-devshells";
+      url = "github:kleinbem/nix-devshells";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-presets";
+      url = "github:kleinbem/nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
-      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-packages";
+      url = "github:kleinbem/nix-packages";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-templates = {
-      url = "path:/home/martin/Develop/github.com/kleinbem/nix/nix-templates";
+      url = "github:kleinbem/nix-templates";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

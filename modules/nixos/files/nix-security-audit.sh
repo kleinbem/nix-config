@@ -22,12 +22,11 @@ log_error() { echo -e "${RED}error${RESET} [audit] $*"; }
 log_step() { echo -e "${CYAN}==>${RESET} ${YELLOW}$*${RESET}"; }
 
 # --- Configuration ---
-if [ "$(id -u)" -eq 0 ] || [ -w "/var/log" ]; then
-    REPORT_DIR="/var/log"
-else
+REPORT_DIR="/var/log/security-audit"
+if ! mkdir -p "$REPORT_DIR" 2>/dev/null || ! [ -w "$REPORT_DIR" ]; then
     REPORT_DIR="/tmp/security-audit"
     mkdir -p "$REPORT_DIR"
-    log_warn "Insufficient permissions for /var/log, writing reports to $REPORT_DIR"
+    log_warn "Insufficient permissions for /var/log/security-audit, using $REPORT_DIR"
 fi
 
 REPORT_HOST="$REPORT_DIR/security-report-host.txt"

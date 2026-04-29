@@ -125,8 +125,15 @@ in
             "podman-langflow.service"
             "podman-langfuse.service"
             "podman-langfuse-db.service"
+            "container@n8n.service"
+            "container@code-server.service"
+            "container@open-webui.service"
+            "container@dashboard.service"
+            "container@qdrant.service"
           ];
-          wantedBy = [ "multi-user.target" ];
+          wantedBy = [
+            "multi-user.target"
+          ];
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
@@ -152,24 +159,8 @@ in
             ${pkgs.iproute2}/bin/ip link set ${config.my.network.bridge} up || true
           '';
         };
-      }
-      //
-        lib.genAttrs
-          [
-            "container@n8n"
-            "container@code-server"
-            "container@open-webui"
-            "container@dashboard"
-            "container@qdrant"
-          ]
-          (_name: {
-            after = [
-              "podman-network-cbr0.service"
-            ];
-            requires = [
-              "podman-network-cbr0.service"
-            ];
-          });
+      };
+
     };
 
     programs.virt-manager.enable = true;

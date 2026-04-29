@@ -13,7 +13,7 @@ let
 
   # Notification script that bridges systemd (root/clamav) -> user session (dbus)
   notifyScript = pkgs.writeShellScript "clamav-notify" ''
-    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
     export DISPLAY=":0"
 
     VIRUS="$CLAM_VIRUSEVENT_VIRUSNAME"
@@ -61,36 +61,28 @@ in
     };
   };
 
-  # Overlay to disable SSH Agent in Gnome Keyring
-  # This fixes the conflict with YubiKey/FIDO2 hardware keys
-  nixpkgs.overlays = [
-    (_: prev: {
-      gnome-keyring = prev.gnome-keyring.overrideAttrs (old: {
-        configureFlags = old.configureFlags or [ ] ++ [
-          "--disable-ssh-agent"
-        ];
-      });
-    })
-  ];
+  # ==========================================
+  # HARDENING & SECURITY
+  # ==========================================
 
   environment = {
     systemPackages = with pkgs; [
       clamav
       clamtk # GUI
       libnotify # For notifications
-      lxqt.lxqt-openssh-askpass
       lynis # Security auditing
 
       # Smartcard (PKCS#11 PIV)
       opensc
       yubico-piv-tool
       yubikey-manager
+      apparmor-profiles # Pre-built profiles for ClamAV, Dnsmasq, etc.
     ];
 
     # Force the correct SSH_AUTH_SOCK for all sessions.
     # extraInit runs after PAM/Gnome Keyring, allowing us to enforce our agent.
     extraInit = ''
-      export SSH_AUTH_SOCK="/run/user/1000/ssh-agent"
+      export SSH_AUTH_SOCK="/run/user/$(id -u)/ssh-agent"
     '';
 
     sessionVariables = {
@@ -233,14 +225,44 @@ in
 
         # --- Mobile Devices ---
         # Samsung Electronics Co., Ltd (MTP, ADB, PTP)
-        allow id 04e8:6860 # Samsung Galaxy series (Explicit)
-        allow id 04e8:*
+        # Samsung Galaxy Tab S5e (MTP mode)
+        allow id 04e8:6860 serial "R52R70HSE9T" name "SAMSUNG_Android"
+        # Samsung Galaxy series (ADB/Debugging mode)
+        allow id 04e8:6866
+
 
         # Block everything else
         reject
       '';
-      IPCAllowedUsers = [ "root" ];
+      IPCAllowedUsers = [
+        "root"
+        "martin"
+      ];
     };
+  };
+
+  # ==========================================
+  # ENTERPRISE AI TEAM AIRLOCK (RBAC)
+  # ==========================================
+  # These rules enforce 'Least Privilege' at the network level on the host,
+  # ensuring that agents can only communicate with approved upstream targets.
+  networking.nftables.tables.ai-airlock = {
+    family = "inet";
+    content = ''
+      chain forward {
+        type filter hook forward priority filter; policy accept;
+
+        # AI Agent Team (10.85.46.118) -> LiteLLM (10.85.46.115) & Langfuse (10.85.46.110)
+        ip saddr 10.85.46.118 ip daddr { 10.85.46.115, 10.85.46.110 } tcp dport { 4000, 3000 } accept
+        
+        # Bootstrap/Maintenance: Allow DNS and HTTPS temporarily for uv dependency sync
+        ip saddr 10.85.46.118 udp dport 53 accept
+        ip saddr 10.85.46.118 tcp dport { 53, 443 } accept
+
+        # Block Agent Team from reaching the broader Internet or local network
+        ip saddr 10.85.46.118 reject with icmpx type admin-prohibited
+      }
+    '';
   };
 
   # ==========================================
@@ -278,6 +300,15 @@ in
     apparmor = {
       enable = true;
       killUnconfinedConfinables = false;
+      # Load profiles for critical system services
+      policies = {
+        "bin.clamd" = {
+          profile = "${pkgs.apparmor-profiles}/etc/apparmor.d/usr.sbin.clamd";
+        };
+        "bin.dnsmasq" = {
+          profile = "${pkgs.apparmor-profiles}/etc/apparmor.d/usr.sbin.dnsmasq";
+        };
+      };
     };
     auditd.enable = true;
     audit = {
@@ -288,7 +319,6 @@ in
         "-w /etc/shadow -p wa -k identity"
         "-w /etc/sudoers -p wa -k identity"
         "-w /etc/sudoers.d -p wa -k identity"
-        "-w /etc/ssh/sshd_config -p wa -k config"
       ];
     };
     protectKernelImage = true;
@@ -356,6 +386,7 @@ in
     tmpfiles.rules = [
       "d ${clamDir} 0755 clamav clamav - -"
       "d /var/log/clamav 0755 clamav clamav - -"
+      "d /var/log/security-audit 0775 root wheel - -"
     ];
   };
 

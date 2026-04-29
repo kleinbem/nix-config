@@ -20,6 +20,7 @@ in
   config = lib.mkIf cfg.enable {
     services.printing = {
       enable = true;
+      startWhenNeeded = false; # Fix socket clash on port 631
       logLevel = "debug";
       listenAddresses = [ "*:631" ];
       allowFrom = [ "all" ];

@@ -10,7 +10,7 @@
       gemini-cli
 
       # Pulled directly from master branch to bypass 404 block on unstable
-      pkgs.master.claude-code-bin
+      pkgs.master.claude-code
       (pkgs.python3Packages.llm.overridePythonAttrs (_: {
         doCheck = false;
         doInstallCheck = false;

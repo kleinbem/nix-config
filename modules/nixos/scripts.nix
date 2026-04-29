@@ -100,6 +100,33 @@
           ${builtins.readFile ./files/nix-security-audit.sh}
         '';
       };
+
+      firefox-safe-quit = final.writeShellApplication {
+        name = "firefox-safe-quit";
+        runtimeInputs = with final; [
+          procps
+          coreutils
+        ];
+        text = ''
+          #!/usr/bin/env bash
+          # Mimics system shutdown behavior for Firefox to ensure session state is saved.
+
+          echo "Gracefully stopping Firefox..."
+          pkill -15 firefox || exit 0
+
+          # Wait up to 5 seconds for it to exit
+          for _ in {1..50}; do
+              if ! pgrep -x firefox > /dev/null; then
+                  echo "Firefox closed successfully."
+                  exit 0
+              fi
+              sleep 0.1
+          done
+
+          echo "Firefox is hanging. Forcing exit (SIGKILL)..."
+          pkill -9 firefox
+        '';
+      };
     })
   ];
 
@@ -107,5 +134,6 @@
     verify-system
     smart-switch
     nix-security-audit
+    firefox-safe-quit
   ];
 }

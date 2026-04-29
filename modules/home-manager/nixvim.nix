@@ -58,8 +58,10 @@
       # Syntax Highlighting
       treesitter = {
         enable = true;
-        settings.indent.enable = true;
-        settings.highlight.enable = true;
+        settings = {
+          indent.enable = true;
+          highlight.enable = true;
+        };
       };
 
       # Git Integration

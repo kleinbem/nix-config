@@ -12,6 +12,7 @@ in
   # ==========================================
   # NIX SETTINGS & CORE
   # ==========================================
+
   time.timeZone = "Europe/Dublin";
   i18n.defaultLocale = "en_IE.UTF-8";
   console.keyMap = "us";
@@ -36,24 +37,28 @@ in
         "https://nix-community.cachix.org"
         "https://cosmic.cachix.org"
         "https://kleinbem.cachix.org"
+        "https://devenv.cachix.org"
+        "https://cuda-maintainers.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
         keys.cachix.nix-community
         keys.cachix.cosmic
         keys.cachix.kleinbem
+        keys.cachix.devenv
+        keys.cachix.cuda-maintainers
       ];
       download-buffer-size = 1073741824;
 
       # Binary Cache Optimization
       builders-use-substitutes = true;
-      connect-timeout = 5; # Fallback quickly if cache is down, BUT:
+      connect-timeout = 20; # Increased to avoid falling back to source on slow connections
       # we actually want to wait longer if the issue is just slow connection
       # to avoid building from source.
 
       log-lines = 25;
       min-free = 1073741824; # 1GB
-      max-jobs = 4; # Reduced from 8 to leave 50% headroom on i3-1315U
+      max-jobs = 2; # Reduced from 4 to leave 75% headroom on i3-1315U (8 threads)
       cores = 1; # Let nix-command handle job/core balance
       trusted-users = [
         "@wheel"
@@ -134,10 +139,14 @@ in
     # --prefer: browser sub-processes (safe to restart)
     # --ignore: GUI and shell (keep system interactive)
     extraArgs = [
-      "-m 5"
-      "-s 10"
-      "--prefer ^(firefox|chrome|chromium)$"
-      "--ignore ^(cosmic|Xwayland|bash|zsh)$"
+      "-m"
+      "5"
+      "-s"
+      "10"
+      "--prefer"
+      "^(firefox|chrome|chromium)$"
+      "--ignore"
+      "^(cosmic|Xwayland|bash|zsh)$"
     ];
   };
 

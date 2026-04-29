@@ -19,9 +19,6 @@ in
     enable = true;
     # Multi-container workstation: Increase backlog to prevent dropped events
     rules = [
-      "-b 8192"
-      "-f 1"
-      "-r 0"
 
       # --- Critical Identity & Access ---
       "-w /etc/passwd -p wa -k identity"
@@ -38,7 +35,7 @@ in
 
       # --- Sensitive File Access (Immutable Identity & Config) ---
       "-w /var/lib/sops -p r -k sops_read"
-      "-w /etc/ssh/sshd_config -p wa -k sshd_config"
+      "-w /etc/ssh -p wa -k sshd_config"
     ];
   };
 
@@ -91,9 +88,9 @@ in
       };
 
       # NixOS Host Scan (Unified Trivy)
-      # NixOS Host Scan (Hybrid approach)
+      # NixOS Host Scan (Host + Data Volumes + Secrets + Lynis)
       # Unified Security Scan (Host + Data Volumes + Secrets + Lynis)
-      vul-scan = {
+      vuln-scan = {
         description = "Daily Security Audit (Unified)";
         serviceConfig = {
           Type = "oneshot";

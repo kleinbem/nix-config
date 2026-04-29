@@ -59,6 +59,15 @@ in
     # Persistence for GSettings/Cosmic
     programs.dconf.enable = true;
 
+    # System-wide Default Browser
+    xdg.mime.defaultApplications = {
+      "text/html" = "firefox-standard.desktop";
+      "x-scheme-handler/http" = "firefox-standard.desktop";
+      "x-scheme-handler/https" = "firefox-standard.desktop";
+      "x-scheme-handler/about" = "firefox-standard.desktop";
+      "x-scheme-handler/unknown" = "firefox-standard.desktop";
+    };
+
     # Electron apps use Wayland natively
     environment = {
       sessionVariables.NIXOS_OZONE_WL = "1";
@@ -86,6 +95,11 @@ in
             update_url = "https://clients2.google.com/service/update2/crx";
           };
         };
+
+        # 7. Disable Built-in Password Management (Use Bitwarden)
+        PasswordManagerEnabled = false;
+        AutofillAddressEnabled = false;
+        AutofillCreditCardEnabled = false;
       };
 
       systemPackages = with pkgs; [
