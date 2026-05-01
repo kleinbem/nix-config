@@ -33,6 +33,10 @@
         # The nix-daemon needs to be able to read this file
         group = "wheel";
       };
+      local_github_actions_runner = {
+        mode = "0440";
+        group = "wheel";
+      };
       u2f_keys = { };
 
       # Service Internal Secrets

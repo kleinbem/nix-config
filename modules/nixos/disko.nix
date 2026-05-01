@@ -82,11 +82,17 @@ _:
               subvolumes = {
                 "/" = {
                   mountpoint = "/nix";
-                  mountOptions = [ "noatime" ];
+                  mountOptions = [
+                    "noatime"
+                    "compress=zstd:1"
+                  ];
                 };
                 "/persist" = {
                   mountpoint = "/nix/persist";
-                  mountOptions = [ "noatime" ];
+                  mountOptions = [
+                    "noatime"
+                    "compress=zstd:1"
+                  ];
                 };
               };
             };
@@ -114,6 +120,10 @@ _:
             content = {
               type = "btrfs";
               mountpoint = "/home";
+              mountOptions = [
+                "noatime"
+                "compress=zstd:1"
+              ];
             };
           };
         };

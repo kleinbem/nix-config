@@ -58,8 +58,8 @@ in
 
       log-lines = 25;
       min-free = 1073741824; # 1GB
-      max-jobs = 2; # Reduced from 4 to leave 75% headroom on i3-1315U (8 threads)
-      cores = 1; # Let nix-command handle job/core balance
+      max-jobs = 4; # Increased from 2 to use 50% of available threads (8 total)
+      cores = 0; # Use all cores for each job
       trusted-users = [
         "@wheel"
       ];

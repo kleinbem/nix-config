@@ -7,11 +7,26 @@
       firefox = {
         executable = "${pkgs.firefox-beta}/bin/firefox";
         profile = "${pkgs.firejail}/etc/firejail/firefox.profile";
-        extraArgs = [ "--dns=1.1.1.1" ];
+        extraArgs = [
+          "--dns=1.1.1.1"
+          "--noblacklist=/etc/cups"
+          "--ignore=private-dev" # Required for YubiKey/FIDO2 access
+          "--ignore=nogroups" # Required for some USB hardware access
+        ];
+      };
+      firefox-devedition = {
+        executable = "${pkgs.firefox-devedition}/bin/firefox-devedition";
+        profile = "${pkgs.firejail}/etc/firejail/firefox.profile";
+        extraArgs = [
+          "--noblacklist=/etc/cups"
+          "--ignore=private-dev"
+          "--ignore=nogroups"
+        ];
       };
       google-chrome-stable = {
         executable = "${pkgs.google-chrome}/bin/google-chrome-stable";
         profile = "${pkgs.firejail}/etc/firejail/google-chrome.profile";
+        extraArgs = [ "--noblacklist=/etc/cups" ];
       };
       discord = {
         executable = "${pkgs.discord}/bin/discord";
@@ -45,10 +60,24 @@
         executable = "${pkgs.logseq}/bin/logseq";
         profile = "${pkgs.firejail}/etc/firejail/logseq.profile";
       };
+      obs-studio = {
+        executable = "${pkgs.obs-studio}/bin/obs";
+        profile = "${pkgs.firejail}/etc/firejail/obs.profile";
+      };
+      chromium = {
+        executable = "${pkgs.chromium}/bin/chromium";
+        profile = "${pkgs.firejail}/etc/firejail/chromium.profile";
+        extraArgs = [ "--noblacklist=/etc/cups" ];
+      };
+      github-desktop = {
+        executable = "${pkgs.github-desktop}/bin/github-desktop";
+        profile = "${pkgs.firejail}/etc/firejail/github-desktop.profile";
+      };
+      zathura = {
+        executable = "${pkgs.zathura}/bin/zathura";
+        profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
+      };
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    firetools # The graphical UI for Firejail
-  ];
 }

@@ -26,8 +26,10 @@
       "vm.transparent_hugepage.enabled" = "madvise"; # Avoid bloat, allow high-perf opt-in
 
       # Memory: Optimize for ZRAM and High-Load AI Caching
-      "vm.swappiness" = lib.mkDefault 100;
+      "vm.swappiness" = lib.mkDefault 150;
       "vm.vfs_cache_pressure" = lib.mkDefault 50;
+      "kernel.mm.lru_gen.enabled" = 7; # Ensure all MGLRU features are active
+      "vm.watermark_boost_factor" = 0; # Reduce latency spikes under memory pressure
       "vm.dirty_ratio" = 5; # Reduced from 10 to flush I/O sooner (better for i3-1315U)
       "vm.dirty_background_ratio" = 2; # Reduced from 5
 
@@ -53,6 +55,9 @@
       "net.ipv4.conf.default.log_martians" = 1;
       "net.ipv4.conf.all.send_redirects" = 0;
       "net.ipv4.conf.default.send_redirects" = 0;
+
+      # Networking: TCP Fast Open
+      "net.ipv4.tcp_fastopen" = 3;
     };
 
     kernelParams = [

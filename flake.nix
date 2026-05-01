@@ -118,6 +118,8 @@
     nix-mineral = {
       url = "github:cynicsketch/nix-mineral";
     };
+
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
   };
 
   outputs =

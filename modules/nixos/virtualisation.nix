@@ -15,6 +15,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
     # ==========================================
     # VIRTUALIZATION
     # ==========================================
@@ -24,21 +25,15 @@ in
         onBoot = "ignore";
       };
 
-      # Docker (Primary for DevContainers/Compatibility)
-      docker = {
-        enable = true;
-        autoPrune = {
-          enable = true;
-          dates = "daily";
-        };
-      };
+      # Docker (Disabled in favor of Podman)
+      docker.enable = false;
 
       # Podman (Side-by-side)
       podman = {
         enable = true;
-        dockerCompat = false;
-        # Docker socket handled by actual Docker daemon (docker.enable = true)
-        dockerSocket.enable = false;
+        # Provide Docker-compatible socket via Podman
+        dockerSocket.enable = true;
+        dockerCompat = true;
         defaultNetwork.settings.dns_enabled = true;
         autoPrune = {
           enable = true;
@@ -87,6 +82,10 @@ in
       };
 
       # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
+      firewall.extraForwardRules = ''
+        iifname "${config.my.network.bridge}" oifname "wlo1" accept
+        iifname "wlo1" oifname "${config.my.network.bridge}" ct state { established, related } accept
+      '';
     };
 
     # ==========================================

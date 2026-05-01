@@ -82,8 +82,36 @@
   };
 
   # --- Persistent Identity (Declarative Symlinks) ---
-  environment.etc = {
-    "machine-id".source = lib.mkForce "/nix/persist/etc/machine-id";
+  environment = {
+    etc = {
+      "machine-id".source = lib.mkForce "/nix/persist/etc/machine-id";
+      "cups/client.conf".text = "ServerName 10.85.46.124";
+    };
+
+    # Global environment variables
+    variables = {
+      CUPS_SERVER = "10.85.46.124";
+    };
+
+    systemPackages = with pkgs; [
+      sops
+      age
+      age-plugin-yubikey
+      age-plugin-tpm
+      libfido2
+      pam_u2f
+      sbctl
+      niv
+      cups # Client tools (lpstat, etc.)
+      yubikey-personalization
+      android-tools
+      heimdall
+      scrcpy
+      valent
+      openssl
+      parted
+      dosfstools
+    ];
   };
 
   # --- Container Configuration ---
@@ -150,7 +178,7 @@
       };
 
       dashboard = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.85.46.1";
         memoryLimit = "1G";
@@ -186,6 +214,13 @@
         vllmTargets = [ "10.85.46.111" ];
       };
 
+      caddy = {
+        enable = lib.mkForce true;
+        ip = "${myInventory.network.nodes.caddy.ip}/24";
+        hostDataDir = "/var/lib/images/caddy";
+        memoryLimit = "512M";
+      };
+
       falco = {
         enable = false;
         ip = "${myInventory.network.nodes.falco.ip}/24";
@@ -207,18 +242,17 @@
       cups = {
         enable = true;
         ip = "${myInventory.network.nodes.cups.ip}/24";
-        hostDataDir = "/var/lib/images/cups";
       };
 
       github-runner = {
-        enable = true;
+        enable = false; # Moved to workload profiles
         ip = "${myInventory.network.nodes.github-runner.ip}/24";
         hostDataDir = "/var/lib/images/github-runner";
         secretsFile = config.sops.secrets.local_github_actions_runner.path;
       };
 
       ollama = {
-        enable = true; # Enabled here instead of ai.nix
+        enable = false; # Disabled by default; enabled in playground specialisation
         ip = "${myInventory.network.nodes.ollama.ip}/24";
         hostDataDir = "/var/lib/images/ollama";
       };
@@ -234,19 +268,12 @@
     };
   };
 
-  # --- Persistence & System Services ---
-  services.journald.extraConfig = ''
-    SystemMaxUse=500M
-    SystemMaxFileSize=50M
-    MaxRetentionSec=1month
-  '';
-
   # programs.waydroid-setup.enable = false;
 
   home-manager.users.${config.my.username} = import ../../users/martin/home.nix;
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_zen;
     initrd = {
       availableKernelModules = [
         "nvme"
@@ -301,7 +328,6 @@
     "d /var/lib/images/netdata/lib 0755 root root - -"
     "d /var/lib/images/langfuse 0755 root root - -"
     "d /var/lib/images/langfuse/db 0755 root root - -"
-    "d /var/lib/images/cups 0755 root root - -"
     "d /var/lib/images/github-runner 0755 1000 100 - -"
   ];
 
@@ -312,6 +338,7 @@
       enable = true;
       extraPackages = with pkgs; [
         intel-media-driver
+        intel-compute-runtime
         libvdpau-va-gl
       ];
     };
@@ -323,6 +350,13 @@
       enable = true;
       plugins = [ pkgs.networkmanager-openvpn ];
     };
+    # Fix Routing for the Ricoh Printer subnet (10.0.x.x)
+    interfaces.wlo1.ipv4.routes = [
+      {
+        address = "10.0.0.0";
+        prefixLength = 16;
+      }
+    ];
     firewall = {
       enable = true;
       # Open all ports that Caddy is proxying to allow external access
@@ -354,6 +388,12 @@
   };
 
   services = {
+    journald.extraConfig = ''
+      SystemMaxUse=500M
+      SystemMaxFileSize=50M
+      MaxRetentionSec=1month
+    '';
+
     android-desktop-emulator = {
       enable = false;
       user = config.my.username;
@@ -368,7 +408,12 @@
       pkgs.yubikey-personalization
       pkgs.libfido2
     ];
+    udev.extraRules = ''
+      # Use kyber scheduler for NVMe to improve latency
+      ACTION=="add|change", KERNEL=="nvme*", ATTR{queue/scheduler}="kyber"
+    '';
     fwupd.enable = true;
+    irqbalance.enable = true;
     btrfs.autoScrub = {
       enable = true;
       interval = "weekly";
@@ -378,26 +423,17 @@
       ];
     };
     fstrim.enable = true;
+
+    # --- High-Performance Scheduling (Official Nixpkgs) ---
+    scx = {
+      enable = true;
+      scheduler = "scx_rusty"; # High-performance rust-based scheduler (successor to BORE)
+    };
   };
 
   security.pki.certificateFiles = [ ./../../pki/caddy-root.crt ];
 
-  environment.systemPackages = with pkgs; [
-    sops
-    age
-    age-plugin-yubikey
-    age-plugin-tpm
-    libfido2
-    pam_u2f
-    sbctl
-    niv
-    yubikey-personalization
-    android-tools
-    scrcpy
-    valent
-    openssl
-  ];
-
   system.stateVersion = "25.11";
   my.security.ai-hardening.enable = true;
+
 }

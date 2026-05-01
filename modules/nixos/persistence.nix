@@ -39,6 +39,8 @@
       "/var/lib/upower" # Power management history
       "/var/lib/logrotate" # Log rotation state
       "/var/lib/images" # Container state (Caddy, n8n, databases, etc)
+      "/var/lib/containers" # NixOS Containers (systemd-nspawn)
+      "/var/lib/lxc" # LXC state
     ];
     files = [
       "/etc/ssh/ssh_host_rsa_key"
@@ -47,5 +49,4 @@
       "/etc/ssh/ssh_host_ed25519_key.pub"
     ];
   };
-
 }

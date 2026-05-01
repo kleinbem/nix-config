@@ -12,6 +12,7 @@ let
       n8n.enable = lib.mkForce true;
       authelia.enable = lib.mkForce true;
       caddy.enable = lib.mkForce true;
+      github-runner.enable = lib.mkForce true;
     };
   };
 
@@ -34,8 +35,9 @@ let
       langflow.enable = lib.mkForce true;
       langfuse.enable = lib.mkForce true;
       agent-team.enable = lib.mkForce true;
+      ollama.enable = lib.mkForce true;
+      github-runner.enable = lib.mkForce true;
     };
-    services.ollama.enable = lib.mkForce true;
     services.android-desktop-emulator.enable = lib.mkForce true;
   };
 

@@ -45,6 +45,7 @@
   services.avahi = {
     enable = true;
     nssmdns4 = true;
+    reflector = true; # Allow mDNS discovery across the container bridge
     publish = {
       enable = true;
       addresses = true;

@@ -199,6 +199,8 @@ in
         allow id 047d:00f2
 
         # --- Peripherals ---
+        # Trust all SanDisk Corp. devices (Flash drives, SD readers)
+        allow id 0781:*
         # Intel Bluetooth Adapter
         allow id 8087:0026
         # USB to SATA/PCIe Bridge (External Harddisk Reader)
@@ -224,11 +226,8 @@ in
         allow id 0408:7a10
 
         # --- Mobile Devices ---
-        # Samsung Electronics Co., Ltd (MTP, ADB, PTP)
-        # Samsung Galaxy Tab S5e (MTP mode)
-        allow id 04e8:6860 serial "R52R70HSE9T" name "SAMSUNG_Android"
-        # Samsung Galaxy series (ADB/Debugging mode)
-        allow id 04e8:6866
+        # Trust all Samsung Electronics Co., Ltd devices (MTP, ADB, Download Mode, etc.)
+        allow id 04e8:*
 
 
         # Block everything else
@@ -300,15 +299,6 @@ in
     apparmor = {
       enable = true;
       killUnconfinedConfinables = false;
-      # Load profiles for critical system services
-      policies = {
-        "bin.clamd" = {
-          profile = "${pkgs.apparmor-profiles}/etc/apparmor.d/usr.sbin.clamd";
-        };
-        "bin.dnsmasq" = {
-          profile = "${pkgs.apparmor-profiles}/etc/apparmor.d/usr.sbin.dnsmasq";
-        };
-      };
     };
     auditd.enable = true;
     audit = {

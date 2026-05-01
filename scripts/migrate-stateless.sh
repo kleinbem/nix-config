@@ -13,8 +13,8 @@ echo -e "${YELLOW}🛡️ Starting Identity Migration for Stateless Vault...${NC
 
 # Check for sudo
 if [[ $EUID -ne 0 ]]; then
-   echo -e "${RED}Error: This script must be run as root (sudo).${NC}"
-   exit 1
+  echo -e "${RED}Error: This script must be run as root (sudo).${NC}"
+  exit 1
 fi
 
 PERSIST_DIR="/nix/persist"
@@ -22,13 +22,13 @@ PERSIST_DIR="/nix/persist"
 # 1. Create the persistence subvolume if it's btrfs
 echo -e "📂 Preparing persistence layer..."
 if [ ! -d "/nix/persist" ]; then
-    if [[ $(stat -f -c %T /nix) == "btrfs" ]]; then
-        echo -e "✨ Creating Btrfs subvolume ${GREEN}/nix/persist${NC}..."
-        btrfs subvolume create /nix/persist
-    else
-        echo -e "📁 Creating directory ${GREEN}/nix/persist${NC}..."
-        mkdir -p /nix/persist
-    fi
+  if [[ $(stat -f -c %T /nix) == "btrfs" ]]; then
+    echo -e "✨ Creating Btrfs subvolume ${GREEN}/nix/persist${NC}..."
+    btrfs subvolume create /nix/persist
+  else
+    echo -e "📁 Creating directory ${GREEN}/nix/persist${NC}..."
+    mkdir -p /nix/persist
+  fi
 fi
 
 echo -e "📂 Creating persistence structure in ${PERSIST_DIR}..."
@@ -38,15 +38,15 @@ mkdir -p "${PERSIST_DIR}/etc/NetworkManager"
 
 # 2. Migration Function
 migrate() {
-    src=$1
-    dest_parent="${PERSIST_DIR}$(dirname "$src")"
-    if [ -e "$src" ]; then
-        echo -e "🚚 Migrating ${GREEN}${src}${NC} -> ${PERSIST_DIR}${src}"
-        # -a: archive (preserve perms/links), -u: update (only newer), -v: verbose
-        cp -au "$src" "$dest_parent"
-    else
-        echo -e "⚠️  ${YELLOW}${src} not found, skipping.${NC}"
-    fi
+  src=$1
+  dest_parent="${PERSIST_DIR}$(dirname "$src")"
+  if [ -e "$src" ]; then
+    echo -e "🚚 Migrating ${GREEN}${src}${NC} -> ${PERSIST_DIR}${src}"
+    # -a: archive (preserve perms/links), -u: update (only newer), -v: verbose
+    cp -au "$src" "$dest_parent"
+  else
+    echo -e "⚠️  ${YELLOW}${src} not found, skipping.${NC}"
+  fi
 }
 
 # 3. Perform Migration
