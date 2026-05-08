@@ -163,18 +163,6 @@ let
       dport = 9091;
       comment = "Caddy -> Authelia (SSO Subrequests)";
     }
-    {
-      src = inv.nodes.falco.ip;
-      dst = inv.nodes.falcosidekick.ip;
-      dport = 2801;
-      comment = "Falco -> Falcosidekick";
-    }
-    {
-      src = inv.nodes.falcosidekick.ip;
-      dst = inv.nodes.loki.ip;
-      dport = 3100;
-      comment = "Falcosidekick -> Loki";
-    }
   ];
 
   # Generate nftables rules from the flow list

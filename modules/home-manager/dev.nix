@@ -3,23 +3,11 @@
 {
   home = {
     packages = with pkgs; [
-      # -- Dev & AI Tools --
+      # -- Stable Dev Tools --
       gh # GitHub CLI
-      fabric-ai # AI Augmentation Framework
-      github-copilot-cli
-      gemini-cli
-
-      # Pulled directly from master branch to bypass 404 block on unstable
-      pkgs.master.claude-code
-      (pkgs.python3Packages.llm.overridePythonAttrs (_: {
-        doCheck = false;
-        doInstallCheck = false;
-      }))
-      nil
-      nixfmt
-      dbeaver-bin # SQL Client for n8n databases
-
-      bruno # API Client (Postman alternative)
+      nil # Nix LSP
+      nixfmt # Nix Formatter
+      pre-commit
 
       # -- LazyVim Prerequisites --
       ripgrep
@@ -31,7 +19,10 @@
       tree-sitter
       xclip # System clipboard support
       wl-clipboard
-      pre-commit
+
+      # -- Volatile AI & Pentesting tools moved to DevShells --
+      # Run: just pentest   (Wireshark, Metasploit, Burp, etc.)
+      # Run: just ai-dev    (claude-code, copilot-cli, gemini-cli, fabric-ai, llm)
     ];
 
     # Automatically install pre-commit hooks when entering the shell

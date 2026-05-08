@@ -49,7 +49,7 @@ in
       };
       hostAddress = mkOption {
         type = types.str;
-        default = "10.85.46.1"; # Often derived from subnet but fixed here for simplicity
+        default = myInventory.hosts.nixos-nvme.ip;
         description = "The host address on the container bridge.";
       };
     };

@@ -11,124 +11,196 @@ in
 {
   options.my.desktop = {
     enable = lib.mkEnableOption "Desktop Environment (Cosmic)";
+    gnome.enable = lib.mkEnableOption "Desktop Environment (GNOME 50)";
   };
 
   imports = [ ];
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkMerge [
     # ==========================================
     # DESKTOP (COSMIC)
     # ==========================================
-
-    boot.plymouth = {
-      enable = true;
-      theme = "bgrt";
-    };
-
-    services = {
-      displayManager.cosmic-greeter.enable = true;
-      desktopManager.cosmic.enable = true;
-      system76-scheduler.enable = true;
-      power-profiles-daemon.enable = true; # Standard for power management
-      flatpak.enable = true;
-
-      pulseaudio.enable = false;
-      pipewire = {
-        enable = true;
-        alsa.enable = true;
-        alsa.support32Bit = true;
-        pulse.enable = true;
-        jack.enable = true;
+    (lib.mkIf cfg.enable {
+      services = {
+        displayManager.cosmic-greeter.enable = lib.mkDefault true;
+        desktopManager.cosmic.enable = true;
+        system76-scheduler.enable = true;
       };
 
-      dbus.enable = true;
-    };
-
-    # Enable graphics acceleration (Required for COSMIC)
-    hardware.graphics.enable = true;
-
-    xdg.portal = {
-      enable = true;
-      extraPortals = [
-        pkgs.xdg-desktop-portal-cosmic
-        pkgs.xdg-desktop-portal-gtk
-      ];
-      config.common.default = "cosmic";
-    };
-
-    # Persistence for GSettings/Cosmic
-    programs.dconf.enable = true;
-
-    # System-wide Default Browser
-    xdg.mime.defaultApplications = {
-      "text/html" = "firefox-standard.desktop";
-      "x-scheme-handler/http" = "firefox-standard.desktop";
-      "x-scheme-handler/https" = "firefox-standard.desktop";
-      "x-scheme-handler/about" = "firefox-standard.desktop";
-      "x-scheme-handler/unknown" = "firefox-standard.desktop";
-    };
-
-    # Electron apps use Wayland natively
-    environment = {
-      sessionVariables.NIXOS_OZONE_WL = "1";
-
-      etc."chromium/policies/managed/lab_policies.json".text = builtins.toJSON {
-        # 1. Ephemeral Session (Wipe on Close) - DISABLED for IDE Compatibility
-        ClearSiteDataOnExit = false;
-        # 2. Privacy (Block 3rd party cookies) - DISABLED for IDE Compatibility
-        BlockThirdPartyCookies = false;
-        # 3. No Sync (It is a throwaway browser)
-        SignInAllowed = false;
-        # 4. DevTools enabled by default
-        DeveloperToolsAvailability = 1;
-
-        # 5. Disable Telemetry
-        MetricsReportingEnabled = false;
-        SpellCheckServiceEnabled = false;
-
-        # 6. Add uBlock Origin Automatically
-        # This installs uBlock Origin (lite or full) by default for all users
-        ExtensionSettings = {
-          "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
-            # uBlock Origin ID
-            installation_mode = "force_installed";
-            update_url = "https://clients2.google.com/service/update2/crx";
-          };
-        };
-
-        # 7. Disable Built-in Password Management (Use Bitwarden)
-        PasswordManagerEnabled = false;
-        AutofillAddressEnabled = false;
-        AutofillCreditCardEnabled = false;
+      xdg.portal = {
+        extraPortals = [ pkgs.xdg-desktop-portal-cosmic ];
+        config.common.default = "cosmic";
       };
 
-      systemPackages = with pkgs; [
-        # Desktop Utilities
-        libsForQt5.qt5.qtwayland
-        qt6.qtwayland
-
-        # Cosmic Apps (Core components like comp/shell are installed by the desktopManager module)
+      environment.systemPackages = with pkgs; [
         cosmic-files
         cosmic-term
         cosmic-edit
-        # cosmic-store # Broken on NixOS (Use Nix!)
         cosmic-screenshot
         cosmic-randr
-
-        # Browsers
-        nyxt
-
-        # GUI Tools
-        zoom-us
-        bleachbit
-
-        # CLI Tools
-        just
       ];
-    };
+    })
 
-    fonts.fontconfig.enable = true;
+    # ==========================================
+    # DESKTOP (GNOME 50)
+    # ==========================================
+    (lib.mkIf cfg.gnome.enable {
+      services = {
+        displayManager.gdm = {
+          enable = true;
+          wayland = true;
+        };
+        desktopManager.gnome.enable = true;
 
-    programs.xwayland.enable = true;
-  };
+        # If GNOME is enabled, GDM takes precedence over cosmic-greeter
+        displayManager.cosmic-greeter.enable = lib.mkForce false;
+      };
+
+      # GNOME specific optimizations
+      services.gnome = {
+        core-apps.enable = true;
+        gnome-keyring.enable = true;
+      };
+
+      # Enable host printing service for GNOME Printer Settings UI.
+      # It will discover the CUPS container via Avahi/mDNS.
+      services.printing.enable = true;
+
+      xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
+
+      # Exclude legacy or redundant default apps
+      environment.gnome.excludePackages = with pkgs; [
+        gnome-tour
+        epiphany # Gnome Web
+        geary # Email
+        gnome-characters # Replaced by smile
+        totem # Replaced by showtime
+        gnome-music # Replaced by amberol
+      ];
+
+      environment.systemPackages = with pkgs; [
+        # GNOME Tweaks & Tools
+        gnome-tweaks
+        dconf-editor
+        gnome-extension-manager
+
+        # Premium Extensions for GNOME 50
+        gnomeExtensions.blur-my-shell
+        gnomeExtensions.dash-to-dock
+        gnomeExtensions.appindicator
+        gnomeExtensions.just-perfection
+        gnomeExtensions.vitals
+        gnomeExtensions.caffeine
+        gnomeExtensions.clipboard-indicator
+        gnomeExtensions.gsconnect
+        gnomeExtensions.space-bar
+        gnomeExtensions.search-light
+        gnomeExtensions.removable-drive-menu
+        gnomeExtensions.tiling-assistant
+        gnomeExtensions.logo-menu
+
+        # Modern GNOME Apps & Utilities (Premium Suite)
+        ptyxis # Container-aware terminal
+        gnome-text-editor
+        loupe # Image Viewer
+        showtime # Modern Video Player (Successor to Totem)
+        amberol # Beautiful, minimal Music Player
+        papers # Modern Document/PDF Viewer (Successor to Evince)
+        mission-center # Advanced System Monitoring (Pro Task Manager)
+        fragments # Elegant BitTorrent client
+        snapshot # Camera
+        baobab # Disk Usage
+        gnome-disk-utility
+        gnome-system-monitor
+        gnome-calculator
+        gnome-calendar
+        gnome-weather
+        gnome-clocks
+        gnome-font-viewer
+        gnome-logs
+        smile # Modern Emoji Picker
+      ];
+
+      fonts.packages = with pkgs; [
+        inter
+        nerd-fonts.jetbrains-mono
+      ];
+    })
+
+    # ==========================================
+    # COMMON DESKTOP CONFIGURATION
+    # ==========================================
+    (lib.mkIf (cfg.enable || cfg.gnome.enable) {
+      boot.plymouth = {
+        enable = true;
+        theme = "bgrt";
+      };
+
+      services = {
+        power-profiles-daemon.enable = true;
+        flatpak.enable = true;
+        pulseaudio.enable = false;
+        pipewire = {
+          enable = true;
+          alsa.enable = true;
+          alsa.support32Bit = true;
+          pulse.enable = true;
+          jack.enable = true;
+        };
+        dbus.enable = true;
+      };
+
+      hardware.graphics.enable = true;
+
+      xdg.portal = {
+        enable = true;
+        extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+      };
+
+      programs.dconf.enable = true;
+
+      # System-wide Default Browser
+      xdg.mime.defaultApplications = {
+        "text/html" = "firefox-standard.desktop";
+        "x-scheme-handler/http" = "firefox-standard.desktop";
+        "x-scheme-handler/https" = "firefox-standard.desktop";
+        "x-scheme-handler/about" = "firefox-standard.desktop";
+        "x-scheme-handler/unknown" = "firefox-standard.desktop";
+      };
+
+      environment = {
+        sessionVariables.NIXOS_OZONE_WL = "1";
+
+        etc."chromium/policies/managed/lab_policies.json".text = builtins.toJSON {
+          ClearSiteDataOnExit = false;
+          BlockThirdPartyCookies = false;
+          SignInAllowed = false;
+          DeveloperToolsAvailability = 1;
+          MetricsReportingEnabled = false;
+          SpellCheckServiceEnabled = false;
+          ExtensionSettings = {
+            "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
+              installation_mode = "force_installed";
+              update_url = "https://clients2.google.com/service/update2/crx";
+            };
+          };
+          PasswordManagerEnabled = false;
+          AutofillAddressEnabled = false;
+          AutofillCreditCardEnabled = false;
+        };
+
+        systemPackages = with pkgs; [
+          libsForQt5.qt5.qtwayland
+          qt6.qtwayland
+          nyxt
+          zoom-us
+          bleachbit
+          just
+        ];
+      };
+
+      fonts.fontconfig.enable = true;
+      programs.xwayland.enable = true;
+    })
+  ];
 }

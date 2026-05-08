@@ -22,7 +22,7 @@ in
     virtualisation = {
       libvirtd = {
         enable = true;
-        onBoot = "ignore";
+        onBoot = "start";
       };
 
       # Docker (Disabled in favor of Podman)
@@ -77,15 +77,26 @@ in
       ];
       nat = {
         enable = true;
-        internalInterfaces = [ config.my.network.bridge ];
+        internalInterfaces = [
+          config.my.network.bridge
+          "virbr0"
+        ];
         externalInterface = "wlo1";
       };
 
       # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
-      firewall.extraForwardRules = ''
-        iifname "${config.my.network.bridge}" oifname "wlo1" accept
-        iifname "wlo1" oifname "${config.my.network.bridge}" ct state { established, related } accept
-      '';
+      firewall = {
+        trustedInterfaces = [ "virbr0" ];
+        extraForwardRules = ''
+          # Podman Bridge
+          iifname "${config.my.network.bridge}" oifname "wlo1" accept
+          iifname "wlo1" oifname "${config.my.network.bridge}" ct state { established, related } accept
+
+          # Libvirt Bridge (Bluefin)
+          iifname "virbr0" oifname "wlo1" accept
+          iifname "wlo1" oifname "virbr0" ct state { established, related } accept
+        '';
+      };
     };
 
     # ==========================================
@@ -158,6 +169,13 @@ in
             ${pkgs.iproute2}/bin/ip link set ${config.my.network.bridge} up || true
           '';
         };
+
+        # Ensure libvirt 'default' network is active
+        libvirtd = {
+          postStart = ''
+            ${pkgs.libvirt}/bin/virsh net-start default || true
+          '';
+        };
       };
 
     };
@@ -166,6 +184,7 @@ in
 
     environment.systemPackages = with pkgs; [
       virt-manager
+      libvirt
       podman-tui
       podman-compose
       docker-compose

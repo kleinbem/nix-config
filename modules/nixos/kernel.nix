@@ -64,10 +64,7 @@
       "intel_pstate=active" # Explicitly use Intel's active power management
       "transparent_hugepage=madvise"
       "nvme_load_type=1" # Faster NVMe initialization
-      "nvme_core.default_ps_max_latency_us=5500" # WD SN740 Stability Fix (Middle Ground)
-
       # Graphics & Power
-      "i915.enable_psr=0"
       "i915.enable_guc=3" # Enable GuC/HuC for 12th/13th Gen Intel (Stability)
       "snd_hda_intel.power_save=0"
       "snd_hda_intel.power_save_controller=N"
@@ -79,8 +76,8 @@
       "systemd.show_status=auto" # Only show failures during boot
       "rd.udev.log_level=3" # Standard udev logging
       "acpi_osi=Linux"
-      "pci=noaer" # Suppress PCIe Advanced Error Reporting noise
       "audit=1" # Enabled to support auditd events
+
     ];
 
     # Early KMS: Professional flicker-free boot for Intel i915

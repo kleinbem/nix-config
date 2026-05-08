@@ -16,7 +16,7 @@ in
     # Hardware support from our local hardware flake
     inputs.nix-hardware.nixosModules.orin-nano
     # Presets
-    inputs.nix-presets.nixosModules.vllm
+    inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.monitoring-node
     # Disko configuration
     inputs.disko.nixosModules.disko
@@ -143,27 +143,16 @@ in
   disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1"; # Default for internal use
 
   # ─── Virtualization ─────────────────────────────────────────
-  virtualisation = {
-    libvirtd.enable = true;
-    podman = {
-      enable = true;
-      defaultNetwork.settings.dns_enabled = true;
-    };
-  };
+  virtualisation.libvirtd.enable = true;
 
   # ─── AI Edge Services ──────────────────────────────────────
   my = {
-    containers.vllm = {
+    containers.ollama = {
       enable = true;
-      ip = "10.85.46.104/24";
-      hostDataDir = "/mnt/data/vllm";
-      image = "dustynv/vllm:r36.2.0"; # Jetson-optimized vLLM
-      gpuMemoryUtilization = 0.65; # Leave 35% for OS and other tasks
-      model = "google/gemma-2b";
+      ip = "${myInventory.network.nodes.ollama-orin.ip}/24";
+      hostDataDir = "/mnt/data/ollama";
+      acceleration = "cuda"; # Jetson GPU via JetPack CUDA
       memoryLimit = "6G";
-      enableGPU = true;
-      device = "cuda";
-      maxModelLen = 8192;
     };
     monitoring.node.enable = true;
   };

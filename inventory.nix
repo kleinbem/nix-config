@@ -184,14 +184,24 @@
           description = "High-throughput model serving (Intel XPU). [AIRLOCK: Restricted Egress]";
         };
       };
-      vllm-rpi = {
+      ollama-rpi = {
         ip = "10.85.46.117";
-        port = 8000;
+        port = 11434;
         meta = {
-          name = "vLLM RPi 5";
-          category = "AI Engineering";
-          icon = "🍓";
-          description = "Lightweight model serving (ARM64 CPU).";
+          name = "Ollama RPi 5";
+          category = "AI";
+          icon = "🦙";
+          description = "CPU-only Ollama inference (ARM64).";
+        };
+      };
+      ollama-orin = {
+        ip = "10.85.46.104";
+        port = 11434;
+        meta = {
+          name = "Ollama Orin Nano";
+          category = "AI";
+          icon = "🦙";
+          description = "NVIDIA CUDA-accelerated Ollama inference.";
         };
       };
       openclaw = {
@@ -218,7 +228,7 @@
       agent-team = {
         ip = "10.85.46.118";
         port = 8000;
-        externalPort = 8000;
+        externalPort = 8008;
         mtls = true;
         meta = {
           name = "AI Agent Team";
@@ -262,25 +272,6 @@
           description = "Centralized Log Aggregator.";
         };
       };
-      falco = {
-        ip = "10.85.46.120";
-        meta = {
-          name = "Falco IDS";
-          category = "Security";
-          icon = "🛡️";
-          description = "Runtime threat detection.";
-        };
-      };
-      falcosidekick = {
-        ip = "10.85.46.121";
-        port = 2801;
-        meta = {
-          name = "Falco Sidekick";
-          category = "Security";
-          icon = "📣";
-          description = "Alert routing (Loki/ntfy).";
-        };
-      };
       netdata = {
         ip = "10.85.46.122";
         port = 19999;
@@ -294,11 +285,22 @@
       authelia = {
         ip = "10.85.46.123";
         port = 9091;
+        externalPort = 9091;
         meta = {
           name = "Authelia SSO";
           category = "Identity";
           icon = "🔐";
           description = "Single Sign-On & 2FA.";
+        };
+      };
+      home-assistant = {
+        ip = "10.85.46.10";
+        port = 8123;
+        meta = {
+          name = "Home Assistant";
+          category = "Apps";
+          icon = "🏠";
+          description = "Smart Home Automation.";
         };
       };
 
@@ -343,6 +345,27 @@
           category = "Dev";
           icon = "🏃";
           description = "Isolated CI/CD Runner.";
+        };
+      };
+      syncthing = {
+        ip = "10.85.46.127";
+        port = 8384;
+        externalPort = 8384;
+        auth = true; # Protected by Authelia SSO
+        meta = {
+          name = "Syncthing";
+          category = "Infrastructure";
+          icon = "🔄";
+          description = "File synchronization service.";
+        };
+      };
+      backup = {
+        ip = "10.85.46.128";
+        meta = {
+          name = "Restic Backup";
+          category = "Infrastructure";
+          icon = "💾";
+          description = "Daily system backup container.";
         };
       };
 

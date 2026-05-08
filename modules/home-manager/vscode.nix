@@ -44,8 +44,7 @@ in
           mkt.rooveterinaryinc.roo-cline
           mkt.supermaven.supermaven
           mkt.github.copilot-chat
-          # Restored marketplace tracker for claude-code since the 2.1.88 upstream issue is resolved
-          mkt.anthropic.claude-code
+          # Claude-Code removed because it depends on the broken Wireshark package.
         ];
     };
   };

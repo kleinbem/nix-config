@@ -12,6 +12,7 @@
           "--noblacklist=/etc/cups"
           "--ignore=private-dev" # Required for YubiKey/FIDO2 access
           "--ignore=nogroups" # Required for some USB hardware access
+          "--dbus-user.talk=org.freedesktop.secrets" # Allow access to GNOME Keyring
         ];
       };
       firefox-devedition = {
@@ -21,6 +22,7 @@
           "--noblacklist=/etc/cups"
           "--ignore=private-dev"
           "--ignore=nogroups"
+          "--dbus-user.talk=org.freedesktop.secrets"
         ];
       };
       google-chrome-stable = {
@@ -76,6 +78,10 @@
       zathura = {
         executable = "${pkgs.zathura}/bin/zathura";
         profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
+      };
+      zotero = {
+        executable = "${pkgs.zotero}/bin/zotero";
+        profile = "${pkgs.firejail}/etc/firejail/zotero.profile";
       };
     };
   };

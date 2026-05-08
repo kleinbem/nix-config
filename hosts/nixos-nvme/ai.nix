@@ -19,12 +19,12 @@
         }
         {
           name = "gemma-2b-orin";
-          url = "http://10.85.46.104:8000/v1";
+          url = "http://${myInventory.network.nodes.ollama-orin.ip}:8000/v1";
           model = "google/gemma-2b";
         }
         {
           name = "qwen-7b-rpi";
-          url = "http://10.85.46.117:8000/v1";
+          url = "http://${myInventory.network.nodes.ollama-rpi.ip}:8000/v1";
           model = "Qwen/Qwen2.5-Coder-7B-Instruct";
         }
       ];
@@ -41,7 +41,7 @@
     caddy = {
       enable = false;
       ip = "${myInventory.network.nodes.caddy.ip}/24";
-      hostDataDir = "/var/lib/images/caddy";
+      hostDataDir = "/var/lib/caddy";
       memoryLimit = "512M";
       tls = {
         enable = false; # Handled internally by caddy/default.nix to avoid sidecar conflict
@@ -63,9 +63,11 @@
         myInventory.hosts.router-2.ip
       ];
       vllmTargets = [
-        # myInventory.network.nodes.vllm.ip # Workstation instance removed
-        "10.85.46.104" # Orin Nano vLLM Instance
-        "10.85.46.117" # RPi 5 vLLM Instance
+        # All edge nodes migrated to Ollama
+      ];
+      ollamaTargets = [
+        myInventory.network.nodes.ollama-orin.ip
+        myInventory.network.nodes.ollama-rpi.ip
       ];
     };
 
@@ -73,15 +75,15 @@
       enable = false;
       ip = "${myInventory.network.nodes.agent-zero.ip}/24";
       hostDataDir = "/var/lib/images/agent-zero";
-      vllmUrl = "http://localhost:8000/v1"; # Via mTLS sidecar → vLLM
+      ollamaUrl = "http://localhost:11434"; # Via mTLS sidecar → Ollama on Orin Nano
       tls = {
         enable = true;
         serverPort = 50001;
         upstreams = [
           {
-            name = "vllm-orin";
-            target = "10.85.46.104"; # Pointing to Orin Nano since workstation vLLM is gone
-            port = 8000;
+            name = "ollama-orin";
+            target = myInventory.network.nodes.ollama-orin.ip;
+            port = 11434;
           }
         ];
       };
@@ -157,7 +159,7 @@
     # "d /var/lib/images/vllm 0777 root root - -" # Removed workstation vLLM directory
     "d /var/lib/images/litellm 0777 root root - -"
     "d /var/lib/images/playground 0777 martin users - -"
-    "d /var/lib/images/caddy 0777 root root - -"
+    "d /var/lib/caddy 0777 root root - -"
     "d /var/lib/images/monitoring 0777 root root - -"
     "d /var/lib/images/monitoring/grafana 0777 root root - -"
     "d /var/lib/images/comfyui 0777 root root - -"

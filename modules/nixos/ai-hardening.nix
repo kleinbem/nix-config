@@ -99,7 +99,7 @@ in
           ip daddr @ai_whitelisted_ips accept comment "Airlock 2.0: Dynamic Whitelist"
 
           # Block egress from AI subnet to internet (anything not local)
-          ip saddr ${net.subnet} oifname "eth0" log prefix "AI-AIRLOCK-EXT-DENY: " drop
+          ip saddr ${net.subnet} oifname "wlo1" log prefix "AI-AIRLOCK-EXT-DENY: " drop
           
           # Allow local container-to-container if already established
           ct state { established, related } accept

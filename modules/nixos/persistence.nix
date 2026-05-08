@@ -20,6 +20,7 @@
       "/var/lib/docker"
       "/var/lib/flatpak"
       "/var/lib/libvirt"
+      "/var/lib/caddy"
       "/var/lib/cups"
       "/var/lib/fwupd"
       "/var/lib/fail2ban"
@@ -40,9 +41,11 @@
       "/var/lib/logrotate" # Log rotation state
       "/var/lib/images" # Container state (Caddy, n8n, databases, etc)
       "/var/lib/containers" # NixOS Containers (systemd-nspawn)
+      "/var/lib/syncthing" # Syncthing device identity and config
       "/var/lib/lxc" # LXC state
     ];
     files = [
+      "/etc/machine-id"
       "/etc/ssh/ssh_host_rsa_key"
       "/etc/ssh/ssh_host_rsa_key.pub"
       "/etc/ssh/ssh_host_ed25519_key"

@@ -13,23 +13,17 @@ in
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.openclaw
-    inputs.nix-presets.nixosModules.vllm
+    inputs.nix-presets.nixosModules.ollama
   ];
 
   networking.hostName = "rpi5-1";
-
-  # ─── Virtualization ─────────────────────────────────────────
-  virtualisation.podman = {
-    enable = true;
-    defaultNetwork.settings.dns_enabled = true;
-  };
 
   my = {
     # ─── Frontend Services ──────────────────────────────────────
     containers = {
       open-webui = {
         enable = true;
-        ip = "10.85.46.102/24";
+        ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/open-webui";
         vllmUrl = "https://litellm.internal";
         memoryLimit = "2G";
@@ -38,7 +32,7 @@ in
       # Smart Home Management
       home-assistant = {
         enable = true;
-        ip = "10.85.46.10/24";
+        ip = "${myInventory.network.nodes.home-assistant.ip}/24";
         hostDataDir = "/var/lib/home-assistant";
       };
 
@@ -52,21 +46,18 @@ in
 
       agent-zero = {
         enable = false; # Set to true to enable
-        ip = "10.85.46.113/24";
+        ip = "${myInventory.network.nodes.agent-zero.ip}/24";
         hostDataDir = "/var/lib/agent-zero";
         vllmUrl = "https://litellm.internal";
       };
 
-      # ─── vLLM (CPU-only optimized for RPi 5) ────────────────────
-      vllm = {
+      # ─── Ollama (CPU-only for RPi 5) ────────────────────────────
+      ollama = {
         enable = true;
-        ip = "10.85.46.117/24";
-        hostDataDir = "/var/lib/vllm";
-        image = "vllm/vllm-openai-cpu:latest-arm64";
-        device = "cpu";
-        maxModelLen = 4096;
+        ip = "${myInventory.network.nodes.ollama-rpi.ip}/24";
+        hostDataDir = "/var/lib/ollama";
         memoryLimit = "6G";
-        enforceEager = true;
+        # No acceleration = CPU-only (default)
       };
     };
     monitoring.node.enable = true;

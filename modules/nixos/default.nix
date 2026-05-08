@@ -16,10 +16,9 @@
     ./ai-hardening.nix
     ./networking.nix
     ./ananicy.nix
+    ./android.nix
 
     # Services
-    ./backup.nix
     ./scripts.nix
-    ./services/redroid.nix
   ];
 }

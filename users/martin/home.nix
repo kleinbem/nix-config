@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   my,
   ...
@@ -9,10 +10,17 @@ in
 {
   imports = [
     ../../modules/home-manager/default.nix
+    ../../modules/home-manager/gnome.nix
+    inputs.nix-devshells.homeManagerModules.desktopLaunchers
   ];
 
-  modules.opencode.enable = true;
-  modules.syncthing.enable = true;
+  modules = {
+    devshell-launchers.enable = true;
+    service-launchers.enable = true;
+    opencode.enable = true;
+    gnome.enable = true;
+    syncthing.enable = false; # Migrated to system container fleet
+  };
 
   # User Details
   home = {
@@ -43,6 +51,18 @@ in
     # Inject hardware-protected signing keys from centralized proxy
     git.settings.user.signingKey = "key::${keys.ssh.yubikey}";
     jujutsu.settings.signing.key = "key::${keys.ssh.yubikey}";
+  };
+
+  # Desktop Launchers
+  xdg.desktopEntries = {
+    "launch-nested-dhirujaan" = {
+      name = "Nested Session (Dhirujaan)";
+      genericName = "Lightweight Wayland Session";
+      exec = "sudo /home/martin/Develop/github.com/kleinbem/nix/nix-config/scripts/launch-nested.sh";
+      icon = "system-users";
+      terminal = true;
+      categories = [ "System" ];
+    };
   };
 
   # Silencing evaluation warnings from newer Home Manager

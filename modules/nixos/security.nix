@@ -3,6 +3,7 @@
   lib,
   config,
   inputs,
+  myInventory,
   ...
 }:
 
@@ -251,15 +252,15 @@ in
       chain forward {
         type filter hook forward priority filter; policy accept;
 
-        # AI Agent Team (10.85.46.118) -> LiteLLM (10.85.46.115) & Langfuse (10.85.46.110)
-        ip saddr 10.85.46.118 ip daddr { 10.85.46.115, 10.85.46.110 } tcp dport { 4000, 3000 } accept
+        # AI Agent Team -> LiteLLM & Langfuse
+        ip saddr ${myInventory.network.nodes.agent-team.ip} ip daddr { ${myInventory.network.nodes.litellm.ip}, ${myInventory.network.nodes.langfuse.ip} } tcp dport { 4000, 3000 } accept
         
         # Bootstrap/Maintenance: Allow DNS and HTTPS temporarily for uv dependency sync
-        ip saddr 10.85.46.118 udp dport 53 accept
-        ip saddr 10.85.46.118 tcp dport { 53, 443 } accept
+        ip saddr ${myInventory.network.nodes.agent-team.ip} udp dport 53 accept
+        ip saddr ${myInventory.network.nodes.agent-team.ip} tcp dport { 53, 443 } accept
 
         # Block Agent Team from reaching the broader Internet or local network
-        ip saddr 10.85.46.118 reject with icmpx type admin-prohibited
+        ip saddr ${myInventory.network.nodes.agent-team.ip} reject with icmpx type admin-prohibited
       }
     '';
   };
@@ -271,9 +272,14 @@ in
     # Explicitly disable Gnome Keyring in PAM for the greeter
     pam = {
       services = {
-        cosmic-greeter.enableGnomeKeyring = false;
-        cosmic-greeter.u2fAuth = true;
-        login.u2fAuth = true;
+        gdm = {
+          enableGnomeKeyring = true;
+          u2fAuth = true;
+        };
+        login = {
+          enableGnomeKeyring = true;
+          u2fAuth = true;
+        };
 
         # Enable Google Authenticator for SSH
         sshd.googleAuthenticator.enable = true;
@@ -299,17 +305,6 @@ in
     apparmor = {
       enable = true;
       killUnconfinedConfinables = false;
-    };
-    auditd.enable = true;
-    audit = {
-      enable = true;
-      rules = [
-        "-w /etc/passwd -p wa -k identity"
-        "-w /etc/group -p wa -k identity"
-        "-w /etc/shadow -p wa -k identity"
-        "-w /etc/sudoers -p wa -k identity"
-        "-w /etc/sudoers.d -p wa -k identity"
-      ];
     };
     protectKernelImage = true;
 

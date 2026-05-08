@@ -9,7 +9,7 @@
     enable = lib.mkEnableOption "Syncthing file synchronization";
     vaultPath = lib.mkOption {
       type = lib.types.str;
-      default = "${config.home.homeDirectory}/Notes";
+      default = "${config.home.homeDirectory}/Documents/Notes";
       description = "Path to the primary Obsidian vault";
     };
   };
@@ -18,6 +18,13 @@
     services.syncthing = {
       enable = true;
       tray.enable = true;
+      settings.folders = {
+        "Notes" = {
+          path = config.modules.syncthing.vaultPath;
+          id = "notes-vault";
+          devices = [ ]; # User will need to add their device IDs here later
+        };
+      };
     };
 
     # Ensure the vault directory exists

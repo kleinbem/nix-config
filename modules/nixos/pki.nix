@@ -116,6 +116,4 @@ in
     '';
   };
 
-  # Trust the internal CA system-wide on the host (handled via explicit path in apps)
-  # security.pki.certificateFiles = [ "${pkiDir}/ca.crt" ];
 }

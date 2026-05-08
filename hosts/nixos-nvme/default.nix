@@ -16,6 +16,7 @@
     ../../modules/nixos/default.nix
     ../../modules/nixos/options.nix
     ../../users/martin/nixos.nix
+    ../../users/dhirujaan/nixos.nix
     inputs.nix-presets.nixosModules.n8n
     inputs.nix-presets.nixosModules.code-server
     inputs.nix-presets.nixosModules.open-webui
@@ -31,7 +32,6 @@
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.litellm
     inputs.nix-presets.nixosModules.loki
-    inputs.nix-presets.nixosModules.falco
     inputs.nix-presets.nixosModules.netdata
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
@@ -40,7 +40,9 @@
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.ollama
-    # inputs.nix-presets.nixosModules.waydroid
+    inputs.nix-presets.nixosModules.syncthing
+    inputs.nix-presets.nixosModules.backup
+
     inputs.nix-presets.nixosModules.android-emulator
     ../../modules/nixos/persistence.nix
     ./secrets.nix
@@ -84,13 +86,11 @@
   # --- Persistent Identity (Declarative Symlinks) ---
   environment = {
     etc = {
-      "machine-id".source = lib.mkForce "/nix/persist/etc/machine-id";
-      "cups/client.conf".text = "ServerName 10.85.46.124";
     };
 
     # Global environment variables
     variables = {
-      CUPS_SERVER = "10.85.46.124";
+      CUPS_SERVER = myInventory.network.nodes.cups.ip;
     };
 
     systemPackages = with pkgs; [
@@ -104,10 +104,6 @@
       niv
       cups # Client tools (lpstat, etc.)
       yubikey-personalization
-      android-tools
-      heimdall
-      scrcpy
-      valent
       openssl
       parted
       dosfstools
@@ -180,7 +176,7 @@
       dashboard = {
         enable = true;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
-        hostBridgeIp = "10.85.46.1";
+        hostBridgeIp = myInventory.network.nodes.cockpit.ip;
         memoryLimit = "1G";
         secretsFile = config.sops.templates."homepage.env".path;
       };
@@ -210,21 +206,23 @@
         ip = "${myInventory.network.nodes.monitoring.ip}/24";
         hostDataDir = "/var/lib/images/monitoring";
         # Automatically scrape the host and important AI nodes
-        nodeTargets = [ "10.85.46.1" ];
-        vllmTargets = [ "10.85.46.111" ];
+        nodeTargets = [ myInventory.network.nodes.cockpit.ip ];
+        vllmTargets = [ myInventory.network.nodes.vllm.ip ];
       };
 
+      openclaw = {
+        enable = false;
+        ip = "${myInventory.network.nodes.openclaw.ip}/24";
+        hostDataDir = "/var/lib/images/openclaw";
+      };
+    };
+
+    containers = {
       caddy = {
         enable = lib.mkForce true;
         ip = "${myInventory.network.nodes.caddy.ip}/24";
-        hostDataDir = "/var/lib/images/caddy";
+        hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
-      };
-
-      falco = {
-        enable = false;
-        ip = "${myInventory.network.nodes.falco.ip}/24";
-        sidekickIp = "${myInventory.network.nodes.falcosidekick.ip}/24";
       };
 
       netdata = {
@@ -257,20 +255,64 @@
         hostDataDir = "/var/lib/images/ollama";
       };
 
+      syncthing = {
+        enable = true;
+        ip = "${myInventory.network.nodes.syncthing.ip}/24";
+        hostDataDir = "/var/lib/images/syncthing";
+        # secretsFile = config.sops.templates."syncthing.env".path;
+        vaults = {
+          "/home/${config.my.username}/Documents/Notes" = "/home/${config.my.username}/Documents/Notes";
+        };
+      };
+
+      backup = {
+        enable = true;
+        ip = "${myInventory.network.nodes.backup.ip}/24";
+        passwordFile = config.sops.secrets.restic_password.path;
+        systemPasswordFile = config.sops.secrets.restic_system_password.path;
+        rcloneConfigFile = config.sops.secrets.rclone_config.path;
+        targets = {
+          "/home" = config.my.home;
+          "/var/lib/images/n8n" = "/var/lib/images/n8n";
+        };
+        systemTargets = {
+          "/etc/ssh" = "/etc/ssh";
+          "/var/lib/sops" = "/var/lib/sops";
+          "/nix/persist/var/lib/sbctl" = "/nix/persist/var/lib/sbctl";
+          "/var/lib/caddy" = "/var/lib/caddy";
+          "/var/lib/images" = "/var/lib/images";
+        };
+      };
     };
 
     monitoring.node.enable = true;
 
-    desktop.enable = true;
+    desktop = {
+      enable = false;
+      gnome.enable = true;
+    };
     virtualisation.enable = true;
     services = {
       printing.enable = false; # Handled by the cups container
     };
+    android.enable = true;
   };
 
-  # programs.waydroid-setup.enable = false;
+  # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust
+  # This runs on the host and is fail-safe to prevent restart loops.
+  systemd.services."container@caddy".postStart = ''
+    if [ -f /var/lib/caddy/pki/authorities/local/root.crt ]; then
+      mkdir -p /home/${config.my.username}/.pki
+      cp -f /var/lib/caddy/pki/authorities/local/root.crt /home/${config.my.username}/.pki/caddy-root.crt
+      chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
+      echo "✅ Caddy Root CA copied to user profile."
+    else
+      echo "⚠️ Caddy Root CA not found yet. Skipping copy."
+    fi
+  '';
 
   home-manager.users.${config.my.username} = import ../../users/martin/home.nix;
+  home-manager.users.dhirujaan = import ../../users/dhirujaan/home.nix;
 
   boot = {
     kernelPackages = pkgs.linuxPackages_zen;
@@ -329,6 +371,7 @@
     "d /var/lib/images/langfuse 0755 root root - -"
     "d /var/lib/images/langfuse/db 0755 root root - -"
     "d /var/lib/images/github-runner 0755 1000 100 - -"
+    "d /var/lib/images/syncthing 0755 root root - -"
   ];
 
   hardware = {
@@ -375,13 +418,13 @@
         {
           from = 1714;
           to = 1764;
-        } # KDE Connect (Valent)
+        } # KDE Connect (GSConnect)
       ];
       allowedUDPPortRanges = [
         {
           from = 1714;
           to = 1764;
-        } # KDE Connect (Valent)
+        } # KDE Connect (GSConnect)
       ];
     };
     nftables.enable = true;
@@ -430,8 +473,6 @@
       scheduler = "scx_rusty"; # High-performance rust-based scheduler (successor to BORE)
     };
   };
-
-  security.pki.certificateFiles = [ ./../../pki/caddy-root.crt ];
 
   system.stateVersion = "25.11";
   my.security.ai-hardening.enable = true;

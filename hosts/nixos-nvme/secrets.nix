@@ -68,6 +68,9 @@
       # Dashboard Keys
       homepage_n8n_key = { };
       homepage_openwebui_key = { };
+
+      # Syncthing
+      # syncthing_gui_password = { };
     };
 
     # --- Templated Env Files ---
@@ -93,6 +96,9 @@
         N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
         N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
       '';
+      # "syncthing.env".content = ''
+      #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
+      # '';
     };
   };
 }

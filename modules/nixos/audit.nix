@@ -15,6 +15,7 @@ in
   # ==========================================
   # KERNEL AUDIT SUBSYSTEM
   # ==========================================
+  security.auditd.enable = true;
   security.audit = {
     enable = true;
     # Multi-container workstation: Increase backlog to prevent dropped events
@@ -22,16 +23,18 @@ in
 
       # --- Critical Identity & Access ---
       "-w /etc/passwd -p wa -k identity"
+      "-w /etc/group -p wa -k identity"
       "-w /etc/shadow -p wa -k identity"
-      "-w /etc/sudoers -p wa -k sudo_changes"
+      "-w /etc/sudoers -p wa -k identity"
+      "-w /etc/sudoers.d -p wa -k identity"
 
       # --- System Operations ---
       "-a always,exit -F arch=b64 -S mount -k mounts"
       "-a always,exit -F arch=b64 -S setsockopt -k nftables_changes" # Simplified for stability
 
-      # --- Zero-Trust & Behavioral Auditing (Now handled by Falco) ---
-      # Redundant rules (memfd_create, ptrace, namespaces) have been removed
-      # to prevent log duplication and CPU overhead.
+      # --- Runtime Behavioral Monitoring ---
+      # Handled by auditd (this file) + AppArmor (security.nix) + systemd hardening.
+      # Falco was removed — no nixpkgs package/module exists.
 
       # --- Sensitive File Access (Immutable Identity & Config) ---
       "-w /var/lib/sops -p r -k sops_read"
@@ -149,6 +152,11 @@ in
           MSG="$STATUS-Checked-Host-and-Containers"
           ${config.systemd.package}/bin/systemctl start "security-notify@$TITLE|$MSG|HEARTBEAT.service"
         '';
+      };
+
+      # Proactive Alerts: Notify on Home Manager failure
+      "home-manager-${config.my.username}" = {
+        unitConfig.OnFailure = "security-notify@HM-Failure|Home-Manager-Activation-Failed|CHECK-LOGS";
       };
     };
 

@@ -24,7 +24,6 @@ let
       open-webui.enable = lib.mkForce true;
       qdrant.enable = lib.mkForce true;
       monitoring.enable = lib.mkForce true;
-      falco.enable = lib.mkForce true;
       netdata.enable = lib.mkForce true;
       authelia.enable = lib.mkForce true;
       dashboard.enable = lib.mkForce true;
@@ -40,11 +39,6 @@ let
     };
     services.android-desktop-emulator.enable = lib.mkForce true;
   };
-
-  # Android Apps Environment
-  # waydroidProfile = {
-  #   programs.waydroid-setup.enable = lib.mkForce true;
-  # };
 
   # Security Hardening
   hardenedProfile = {
@@ -76,22 +70,12 @@ in
     # --- Standard Profiles ---
     playground.configuration = lib.recursiveUpdate commonFixes playgroundProfile;
     work.configuration = lib.recursiveUpdate commonFixes workProfile;
-    # waydroid.configuration = lib.recursiveUpdate commonFixes waydroidProfile;
+
     hardened.configuration = lib.recursiveUpdate commonFixes (
       lib.recursiveUpdate mineralFixes hardenedProfile
     );
 
     # --- Composite Profiles (Combined Modes) ---
-
-    # Combined Work & Waydroid
-    # work-waydroid.configuration = lib.recursiveUpdate commonFixes (
-    #   lib.recursiveUpdate workProfile waydroidProfile
-    # );
-
-    # Combined AI Playground & Waydroid
-    # playground-waydroid.configuration = lib.recursiveUpdate commonFixes (
-    #   lib.recursiveUpdate playgroundProfile waydroidProfile
-    # );
 
     # Combined Work & Hardening
     work-hardened.configuration = lib.recursiveUpdate commonFixes (

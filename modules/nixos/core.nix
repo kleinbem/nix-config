@@ -3,6 +3,7 @@
   inputs,
   lib,
   config,
+  myInventory,
   ...
 }:
 let
@@ -88,7 +89,7 @@ in
       openFirewall = true;
       settings = {
         WebService = {
-          Origins = lib.mkForce "https://10.85.46.107:9090";
+          Origins = lib.mkForce "https://${myInventory.network.nodes.caddy.ip}:${toString myInventory.network.nodes.cockpit.externalPort}";
           ProtocolHeader = "X-Forwarded-Proto";
         };
       };
@@ -146,7 +147,7 @@ in
       "--prefer"
       "^(firefox|chrome|chromium)$"
       "--ignore"
-      "^(cosmic|Xwayland|bash|zsh)$"
+      "^(gnome-shell|cosmic|Xwayland|bash|zsh)$"
     ];
   };
 
