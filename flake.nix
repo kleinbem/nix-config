@@ -155,6 +155,7 @@
       perSystem =
         {
           config,
+          lib,
           system,
           ...
         }:

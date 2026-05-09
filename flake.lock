@@ -3237,33 +3237,6 @@
         "type": "github"
       }
     },
-    "gapps-amd64": {
-      "flake": false,
-      "locked": {
-        "path": "./pkgs/redroid/placeholder.zip",
-        "type": "path"
-      },
-      "original": {
-        "path": "./pkgs/redroid/placeholder.zip",
-        "type": "path"
-      },
-      "parent": [
-        "nix-presets"
-      ]
-    },
-    "gapps-arm64": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1230768000,
-        "narHash": "sha256-Ux3UpMcqhNXjXLLkL9TYixWQLZvuS2qQPx9pBIwgPCI=",
-        "type": "tarball",
-        "url": "https://github.com/MindTheGapps/16.0.0-arm64/releases/download/MindTheGapps-16.0.0-arm64-20250812_214353/MindTheGapps-16.0.0-arm64-20250812_214353.zip"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://github.com/MindTheGapps/16.0.0-arm64/releases/download/MindTheGapps-16.0.0-arm64-20250812_214353/MindTheGapps-16.0.0-arm64-20250812_214353.zip"
-      }
-    },
     "ghostty": {
       "inputs": {
         "flake-compat": "flake-compat_4",
@@ -5928,8 +5901,6 @@
     "nix-presets": {
       "inputs": {
         "flake-parts": "flake-parts_20",
-        "gapps-amd64": "gapps-amd64",
-        "gapps-arm64": "gapps-arm64",
         "nix-devshells": "nix-devshells_4",
         "nix-packages": "nix-packages_2",
         "nixpkgs": [
