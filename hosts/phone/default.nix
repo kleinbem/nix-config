@@ -27,6 +27,7 @@
     curl
     wget
     tree
+    ncurses
 
     # Dev Tools from your meta-repo
     inputs.nix-devshells.packages.${pkgs.system}.default
