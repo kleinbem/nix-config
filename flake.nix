@@ -172,29 +172,57 @@
           });
 
           # ---------------------------------------------------------
-          # 2. Checks (Pre-commit)
-          # ---------------------------------------------------------
-          checks.pre-commit-check = pre-commit-hooks.lib.${system}.run {
-            src = ./.;
-            hooks = {
-              nixfmt.enable = true;
-              statix.enable = true;
-              deadnix.enable = true;
-            };
-          };
-
-          checks.code-server-test = import ./tests/code-server.nix {
-            pkgs = inputs.nixpkgs.legacyPackages.${system};
-            inherit inputs;
-          };
-
-          # ---------------------------------------------------------
           # 3. Topology (Auto-generated network diagrams)
           # ---------------------------------------------------------
           topology.modules = [
             ./topology.nix
             { inherit (self) nixosConfigurations; }
           ];
+
+          # ---------------------------------------------------------
+          # 4. Checks & Verifications
+          # ---------------------------------------------------------
+          checks =
+            let
+              # Filter hosts that match the current system
+              systemHosts = lib.filterAttrs (_: host: host.pkgs.system == system) self.nixosConfigurations;
+
+              # Create a check derivation for each matching host
+              hostChecks = lib.mapAttrs' (
+                name: host: lib.nameValuePair "host-${name}" host.config.system.build.toplevel
+              ) systemHosts;
+
+              # Add Nix-on-Droid check if it matches the current system
+              droidChecks = lib.optionalAttrs (system == "aarch64-linux") {
+                host-phone = self.nixOnDroidConfigurations.phone.activationPackage;
+              };
+
+              # Specialisation Checks (for complex hosts)
+              specChecks = lib.optionalAttrs (system == "x86_64-linux" && (systemHosts ? "nixos-nvme")) {
+                host-nixos-nvme-playground =
+                  self.nixosConfigurations.nixos-nvme.config.specialisation.playground.configuration.system.build.toplevel;
+                host-nixos-nvme-hardened =
+                  self.nixosConfigurations.nixos-nvme.config.specialisation.hardened.configuration.system.build.toplevel;
+              };
+            in
+            {
+              pre-commit-check = pre-commit-hooks.lib.${system}.run {
+                src = ./.;
+                hooks = {
+                  nixfmt.enable = true;
+                  statix.enable = true;
+                  deadnix.enable = true;
+                };
+              };
+
+              code-server-test = import ./tests/code-server.nix {
+                pkgs = inputs.nixpkgs.legacyPackages.${system};
+                inherit inputs;
+              };
+            }
+            // hostChecks
+            // droidChecks
+            // specChecks;
         };
 
       flake =
