@@ -1,5 +1,5 @@
 # rpi5-1 — Raspberry Pi 5
-{ inputs, ... }:
+{ inputs, myInventory, ... }:
 let
   keys = import ../../modules/nixos/keys.nix;
 in

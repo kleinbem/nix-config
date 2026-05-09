@@ -2,6 +2,7 @@
   pkgs,
   inputs,
   config,
+  myInventory,
   ...
 }:
 
@@ -49,10 +50,16 @@
       langfuse_nextauth_secret = { };
       langfuse_salt = { };
 
-      # API Keys (Placeholders currently)
+      # API Keys
       github_pat = { };
       brave_api_key = { };
       vllm_huggingface_token = { };
+      langfuse_public_key = {
+        mode = "0444";
+      };
+      langfuse_secret_key = {
+        mode = "0444";
+      };
 
       # Backup Secrets
       restic_password = {
@@ -75,27 +82,57 @@
 
     # --- Templated Env Files ---
     templates = {
-      "homepage.env".content = ''
-        HOMEPAGE_VAR_N8N_KEY=${config.sops.placeholder.homepage_n8n_key}
-        HOMEPAGE_VAR_OPENWEBUI_KEY=${config.sops.placeholder.homepage_openwebui_key}
-      '';
-      "openwebui.env".content = ''
-        WEBUI_SECRET_KEY=${config.sops.placeholder.webui_secret_key}
-      '';
-      "langfuse.env".content = ''
-        NEXTAUTH_SECRET=${config.sops.placeholder.langfuse_nextauth_secret}
-        SALT=${config.sops.placeholder.langfuse_salt}
-      '';
-      "vllm.env".content = ''
-        HUGGING_FACE_HUB_TOKEN=${config.sops.placeholder.vllm_huggingface_token}
-      '';
-      "n8n.env".content = ''
-        N8N_ENCRYPTION_KEY=${config.sops.placeholder.n8n_encryption_key}
-        N8N_BASIC_AUTH_PASSWORD=${config.sops.placeholder.n8n_basic_auth_password}
-        N8N_USER_MANAGEMENT_JWT_SECRET=${config.sops.placeholder.n8n_jwt_secret}
-        N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
-        N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
-      '';
+      "homepage.env" = {
+        mode = "0444";
+        content = ''
+          HOMEPAGE_VAR_N8N_KEY=${config.sops.placeholder.homepage_n8n_key}
+          HOMEPAGE_VAR_OPENWEBUI_KEY=${config.sops.placeholder.homepage_openwebui_key}
+        '';
+      };
+      "openwebui.env" = {
+        mode = "0444";
+        content = ''
+          WEBUI_SECRET_KEY=${config.sops.placeholder.webui_secret_key}
+        '';
+      };
+      "langfuse.env" = {
+        mode = "0444";
+        content = ''
+          DATABASE_URL=postgresql://postgres:postgres@10.85.46.124:5432/langfuse
+          NEXTAUTH_SECRET=${config.sops.placeholder.langfuse_nextauth_secret}
+          SALT=${config.sops.placeholder.langfuse_salt}
+          NEXTAUTH_URL=http://${myInventory.network.nodes.langfuse.ip}:3000
+        '';
+      };
+      "litellm.env" = {
+        mode = "0444";
+        content = ''
+          # Optional: OpenAI/Anthropic keys for backends
+        '';
+      };
+      "agent-team.env" = {
+        mode = "0444";
+        content = ''
+          LANGFUSE_PUBLIC_KEY=${config.sops.placeholder.langfuse_public_key}
+          LANGFUSE_SECRET_KEY=${config.sops.placeholder.langfuse_secret_key}
+        '';
+      };
+      "vllm.env" = {
+        mode = "0444";
+        content = ''
+          HUGGING_FACE_HUB_TOKEN=${config.sops.placeholder.vllm_huggingface_token}
+        '';
+      };
+      "n8n.env" = {
+        mode = "0444";
+        content = ''
+          N8N_ENCRYPTION_KEY=${config.sops.placeholder.n8n_encryption_key}
+          N8N_BASIC_AUTH_PASSWORD=${config.sops.placeholder.n8n_basic_auth_password}
+          N8N_USER_MANAGEMENT_JWT_SECRET=${config.sops.placeholder.n8n_jwt_secret}
+          N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
+          N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
+        '';
+      };
       # "syncthing.env".content = ''
       #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
       # '';

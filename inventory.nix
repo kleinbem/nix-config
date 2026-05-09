@@ -52,6 +52,14 @@
       deployType = "ssh";
       tags = [ "raspberry-pi" ];
     };
+    phone = {
+      system = "aarch64-linux";
+      deployType = "local";
+      tags = [
+        "mobile"
+        "android"
+      ];
+    };
   };
 
   git = {

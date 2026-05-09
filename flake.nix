@@ -15,8 +15,14 @@
     };
 
     devenv = {
-      url = "github:cachix/devenv";
+      # FIXME: Temporary pin to bypass broken libghostty-vt requirement in devenv 2.1
+      url = "github:cachix/devenv/070577452d0c81d62168ef8b158ee4317ace7e21";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.ghostty.follows = "ghostty";
+    };
+
+    ghostty = {
+      url = "github:mitchellh/ghostty";
     };
 
     impermanence.url = "github:nix-community/impermanence";
@@ -120,6 +126,12 @@
     };
 
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+
+    nix-on-droid = {
+      url = "github:nix-community/nix-on-droid/release-24.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
 
   };
 
@@ -226,6 +238,14 @@
             };
             rpi5-2 = mkHost "rpi5-2" {
               modules = [ ./hosts/rpi5-2/default.nix ];
+            };
+          };
+
+          nixOnDroidConfigurations = {
+            phone = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+              pkgs = import inputs.nixpkgs { system = "aarch64-linux"; };
+              extraSpecialArgs = { inherit inputs self myInventory; };
+              modules = [ ./hosts/phone/default.nix ];
             };
           };
 

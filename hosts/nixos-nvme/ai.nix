@@ -1,16 +1,17 @@
-{ myInventory, ... }:
+{ config, myInventory, ... }:
 
 {
   my.containers = {
     litellm = {
-      enable = false;
+      enable = true;
       ip = "${myInventory.network.nodes.litellm.ip}/24";
       hostDataDir = "/var/lib/images/litellm";
-      autoStart = false; # Manual start for safety
+      autoStart = true;
       tls = {
         enable = true;
         serverPort = 4000;
       };
+      secretsFile = config.sops.templates."litellm.env".path;
       backends = [
         {
           name = "qwen-32b-ollama";
@@ -104,17 +105,20 @@
     };
 
     langfuse = {
-      enable = false;
+      enable = true;
       ip = "${myInventory.network.nodes.langfuse.ip}/24";
       hostDataDir = "/var/lib/images/langfuse";
-      autoStart = false; # Manual start for safety
+      autoStart = true;
+      secretsFile = config.sops.templates."langfuse.env".path;
     };
 
     agent-team = {
-      enable = false;
+      enable = true;
+      autoStart = true;
       ip = "${myInventory.network.nodes.agent-team.ip}/24";
       hostDataDir = "/var/lib/images/agent-team";
       manager.humanInTheLoop = true; # Enabled per user request
+      secretsFile = config.sops.templates."agent-team.env".path;
 
       # Team Definition based on industry best practices
       agents = {
