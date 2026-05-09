@@ -44,7 +44,7 @@
         imports = [
           # You might need to make home.nix slightly more generic if it has X11/Wayland stuff
           # but for now let's try importing your main user config
-          ../../../users/martin/home.nix
+          ../../users/martin/home.nix
         ];
 
         # Override home.stateVersion for Nix-on-Droid if needed
