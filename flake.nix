@@ -123,13 +123,16 @@
 
     nix-mineral = {
       url = "github:cynicsketch/nix-mineral";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
 
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid/release-24.05";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # NOTE: Do NOT follow nixpkgs here. nix-on-droid needs its own pinned
+      # nixpkgs with an older glibc to avoid the TCGETS2 proot-termux bug.
+      # See: https://github.com/nix-community/nix-on-droid/issues/495
       inputs.home-manager.follows = "home-manager";
     };
 
@@ -186,7 +189,9 @@
           checks =
             let
               # Filter hosts that match the current system
-              systemHosts = lib.filterAttrs (_: host: host.pkgs.system == system) self.nixosConfigurations;
+              systemHosts = lib.filterAttrs (
+                _: host: host.pkgs.stdenv.hostPlatform.system == system
+              ) self.nixosConfigurations;
 
               # Create a check derivation for each matching host
               hostChecks = lib.mapAttrs' (
@@ -220,6 +225,14 @@
                 pkgs = inputs.nixpkgs.legacyPackages.${system};
                 inherit inputs;
               };
+
+              caddy-test = import ./tests/caddy.nix {
+                pkgs = inputs.nixpkgs.legacyPackages.${system};
+                inherit inputs;
+              };
+
+              # Verify that the infrastructure topology can be rendered
+              # topology-check = config.topology.config.build.svg;
             }
             // hostChecks
             // droidChecks

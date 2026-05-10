@@ -62,4 +62,13 @@ in
       };
     };
   };
+
+  # Compatibility shim for nix-mineral vs newer nixpkgs
+  options.systemd.coredump.settings = mkOption {
+    type = types.submodule {
+      freeformType = types.attrsOf types.anything;
+    };
+    default = { };
+    description = "Shim for nix-mineral which expects this option to exist.";
+  };
 }

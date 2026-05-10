@@ -29,7 +29,7 @@
     ncurses
 
     # Dev Tools from your meta-repo (Temporarily disabled for bootstrapping)
-    # inputs.nix-devshells.packages.${pkgs.system}.default
+    # inputs.nix-devshells.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   # ─── Home Manager Integration ────────────────────────────────
@@ -54,9 +54,6 @@
   };
 
   # ─── Nix Configuration ───────────────────────────────────────
-  # Pin Nix to 2.24 to work around proot-termux TCGETS2 bug (nix-on-droid#495)
-  # Remove this once proot-termux PR#529 is merged into release-24.05
-  nix.package = pkgs.nixVersions.nix_2_24;
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
