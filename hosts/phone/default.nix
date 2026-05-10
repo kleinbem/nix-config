@@ -1,6 +1,5 @@
 {
   pkgs,
-  inputs,
   ...
 }:
 
@@ -29,8 +28,8 @@
     tree
     ncurses
 
-    # Dev Tools from your meta-repo
-    inputs.nix-devshells.packages.${pkgs.system}.default
+    # Dev Tools from your meta-repo (Temporarily disabled for bootstrapping)
+    # inputs.nix-devshells.packages.${pkgs.system}.default
   ];
 
   # ─── Home Manager Integration ────────────────────────────────
@@ -42,9 +41,8 @@
       { ... }:
       {
         imports = [
-          # You might need to make home.nix slightly more generic if it has X11/Wayland stuff
-          # but for now let's try importing your main user config
-          ../../users/martin/home.nix
+          # Use the slimmed-down phone config to avoid desktop circular dependencies
+          ../../users/martin/home-phone.nix
         ];
 
         # Override home.stateVersion for Nix-on-Droid if needed
@@ -56,6 +54,9 @@
   };
 
   # ─── Nix Configuration ───────────────────────────────────────
+  # Pin Nix to 2.24 to work around proot-termux TCGETS2 bug (nix-on-droid#495)
+  # Remove this once proot-termux PR#529 is merged into release-24.05
+  nix.package = pkgs.nixVersions.nix_2_24;
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
