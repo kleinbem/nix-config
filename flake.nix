@@ -33,30 +33,30 @@
 
     # Private Secrets (GitHub Repo)
     nix-secrets = {
-      url = "path:../nix-secrets";
+      url = "github:kleinbem/nix-secrets";
       flake = false;
     };
 
     # Modules & Configurations (Pulled from local submodules for speed)
     nix-hardware = {
-      url = "path:../nix-hardware";
+      url = "github:kleinbem/nix-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.jetpack-nixos.follows = "jetpack-nixos";
     };
     nix-devshells = {
-      url = "path:../nix-devshells";
+      url = "github:kleinbem/nix-devshells";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "path:../nix-presets";
+      url = "github:kleinbem/nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
-      url = "path:../nix-packages";
+      url = "github:kleinbem/nix-packages";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-templates = {
-      url = "path:../nix-templates";
+      url = "github:kleinbem/nix-templates";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
