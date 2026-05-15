@@ -30,6 +30,7 @@
     ./options.nix
     ./hardening.nix
     ./snapper.nix
+    ./network-routing.nix
     inputs.sops-nix.nixosModules.sops
     inputs.home-manager.nixosModules.home-manager
     inputs.lanzaboote.nixosModules.lanzaboote

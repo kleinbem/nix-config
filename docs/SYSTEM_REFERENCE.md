@@ -1,5 +1,5 @@
 # 🏗️ System Reference (Auto-generated)
-*Last Updated: 2026-05-03T21:15:21Z*
+*Last Updated: 2026-05-12T16:35:23Z*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure. 
@@ -8,27 +8,30 @@
 ## 📦 Core Revisions
 - **nixpkgs**: [`9f31d28882185d30c0e3082fbc52dab1cd4e879f`](https://github.com/NixOS/nixpkgs/commit/9f31d28882185d30c0e3082fbc52dab1cd4e879f)
 - **home-manager**: `aacb796ccd42be1555196c20013b9b674b71df75`
-- **sops-nix**: `b95b771f50bce42f47275a62013a74e23ec07315`
 
 ## 🖥️ Managed Hosts
+- **core-pi**
+- **hass-pi**
 - **nixos-nvme**
 - **orin-nano**
+- **phone**
 - **router-1**
 - **router-2**
-- **rpi5-1**
-- **rpi5-2**
 
 ## 📡 Network Services
 - **agent-team**
 - **agent-zero**
 - **authelia**
+- **backup**
 - **caddy**
 - **cockpit**
 - **code-server**
 - **comfyui**
 - **cups**
 - **dashboard**
+- **frigate**
 - **github-runner**
+- **home-assistant**
 - **langflow**
 - **langfuse**
 - **litellm**
@@ -37,6 +40,7 @@
 - **n8n**
 - **netdata**
 - **ollama**
+- **ollama-orin**
 - **ollama-rpi**
 - **open-webui**
 - **openclaw**
@@ -46,4 +50,36 @@
 - **vllm**
 
 ## 🛠️ Workspace Status
-- Devenv: Available
+- **Devenv**: Available
+- **Autonomous Guardian**: Active ✅
+
+## 🤖 AI Capabilities (MCP Tools)
+netbird_status- ****
+syncthing_status- ****
+firefox_search- ****
+get_tool_help- ****
+check_ai_stack_health- ****
+get_fleet_status- ****
+list_skills- ****
+is_task_running- ****
+get_inventory_summary- ****
+run_just_recipe- ****
+update_todo- ****
+distill_knowledge- ****
+analyze_logs- ****
+semantic_search- ****
+manage_ai_services- ****
+get_security_audit_summary- ****
+reindex_vault- ****
+get_system_telemetry- ****
+get_calendar_events- ****
+get_hardware_profile- ****
+search_drive_docs- ****
+read_drive_doc- ****
+troubleshoot_unit- ****
+analyze_nix_closure- ****
+checkpoint_workspace_state- ****
+get_workspace_state- ****
+check_binary_cache- ****
+manage_skill_progress- ****
+send_notification- ****

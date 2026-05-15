@@ -24,6 +24,7 @@
 
     # --- Secret Declarations ---
     secrets = {
+      netbird_setup_key = { };
       rclone_config = {
         owner = "martin";
         group = "wheel";
@@ -78,6 +79,11 @@
 
       # Syncthing
       # syncthing_gui_password = { };
+
+      # Paperless
+      paperless_password = {
+        neededForUsers = true;
+      };
     };
 
     # --- Templated Env Files ---

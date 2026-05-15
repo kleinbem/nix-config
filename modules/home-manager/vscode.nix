@@ -42,7 +42,6 @@ in
         ++ [
           mkt.github.copilot
           mkt.rooveterinaryinc.roo-cline
-          mkt.supermaven.supermaven
           mkt.github.copilot-chat
           # Claude-Code removed because it depends on the broken Wireshark package.
         ];

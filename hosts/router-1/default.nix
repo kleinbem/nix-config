@@ -1,11 +1,11 @@
 # router-1 — NixOS in LXC on OpenWrt router
-{ inputs, ... }:
+{ inputs, self, ... }:
 
 {
   imports = [
     inputs.nix-hardware.nixosModules.lxc-guest
-    ../../modules/nixos/headless.nix
-    ../../modules/nixos/hosts.nix
+    "${self}/modules/nixos/headless.nix"
+    "${self}/modules/nixos/hosts.nix"
     inputs.nix-presets.nixosModules.monitoring-node
   ];
 

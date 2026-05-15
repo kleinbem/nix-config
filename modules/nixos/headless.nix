@@ -18,18 +18,23 @@ in
   ];
 
   # Overlays (same as common.nix but without NUR/desktop-specific overlays)
-  nixpkgs.overlays = [
-    inputs.nix-packages.overlays.default
-    (_self: super: {
-      stable = import inputs.nixpkgs-stable {
-        inherit (super.stdenv.hostPlatform) system;
-        config.allowUnfree = true;
-      };
-    })
-  ];
+  nixpkgs = {
+    overlays = [
+      inputs.nix-packages.overlays.default
+      (_self: super: {
+        stable = import inputs.nixpkgs-stable {
+          inherit (super.stdenv.hostPlatform) system;
+          config.allowUnfree = true;
+        };
+      })
+    ];
 
-  # ─── Nix settings ───────────────────────────────────────────
-  nixpkgs.config.allowUnfree = true;
+    # ─── Nix settings ───────────────────────────────────────────
+    config = {
+      allowUnfree = true;
+      allowUnfreePredicate = _: true;
+    };
+  };
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {

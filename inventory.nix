@@ -12,8 +12,46 @@
         "desktop"
       ];
     };
+    net-brain = {
+      ip = "192.168.1.5"; # LXC Container on Router B
+      system = "aarch64-linux";
+      deployType = "ssh";
+      tags = [
+        "router"
+        "lxc"
+        "brain"
+      ];
+    };
+    core-gateway = {
+      ip = "192.168.1.1"; # Physical BPI-R4 (Main Gateway - Downstairs)
+      type = "openwrt";
+      tags = [
+        "physical"
+        "gateway"
+        "core"
+      ];
+    };
+    mesh-node = {
+      ip = "192.168.1.2"; # Physical BPI-R4 (Mesh Access Point - Upstairs)
+      type = "openwrt";
+      tags = [
+        "physical"
+        "mesh"
+        "ap"
+        "lxc-host"
+      ];
+    };
+    mesh-node-2 = {
+      ip = "192.168.1.6"; # TODO: Verify if a second one exists
+      system = "aarch64-linux";
+      deployType = "ssh";
+      tags = [
+        "router"
+        "lxc"
+      ];
+    };
     router-1 = {
-      ip = "192.168.1.2"; # TODO: Set actual router IP
+      ip = "192.168.1.3";
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -22,7 +60,7 @@
       ];
     };
     router-2 = {
-      ip = "192.168.1.3"; # TODO: Set actual router IP
+      ip = "192.168.1.4";
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -40,17 +78,23 @@
         "jetson"
       ];
     };
-    rpi5-1 = {
+    core-pi = {
       ip = "192.168.1.20"; # TODO: Set actual RPi IP
       system = "aarch64-linux";
       deployType = "ssh";
-      tags = [ "raspberry-pi" ];
+      tags = [
+        "raspberry-pi"
+        "central"
+      ];
     };
-    rpi5-2 = {
+    hass-pi = {
       ip = "192.168.1.21"; # TODO: Set actual RPi IP
       system = "aarch64-linux";
       deployType = "ssh";
-      tags = [ "raspberry-pi" ];
+      tags = [
+        "raspberry-pi"
+        "home-assistant"
+      ];
     };
     phone = {
       system = "aarch64-linux";
@@ -58,6 +102,16 @@
       tags = [
         "mobile"
         "android"
+      ];
+    };
+    nasbook = {
+      ip = "192.168.1.30";
+      system = "x86_64-linux";
+      deployType = "ssh";
+      tags = [
+        "nas"
+        "storage"
+        "hub"
       ];
     };
   };
@@ -125,7 +179,7 @@
         };
       };
       open-webui = {
-        ip = "10.85.46.102";
+        ip = "10.85.48.102"; # Core-Pi
         port = 8080;
         externalPort = 8080;
         mtls = true;
@@ -137,7 +191,7 @@
         };
       };
       qdrant = {
-        ip = "10.85.46.105";
+        ip = "10.85.47.105"; # NASbook
         port = 6333;
         externalPort = 6333;
         mtls = true;
@@ -213,7 +267,7 @@
         };
       };
       openclaw = {
-        ip = "10.85.46.112";
+        ip = "10.85.48.112"; # Core-Pi
         meta = {
           name = "OpenClaw";
           category = "AI Engineering";
@@ -222,7 +276,7 @@
         };
       };
       agent-zero = {
-        ip = "10.85.46.113";
+        ip = "10.85.48.113"; # Core-Pi
         port = 50001;
         externalPort = 50001;
         mtls = true;
@@ -234,7 +288,7 @@
         };
       };
       agent-team = {
-        ip = "10.85.46.118";
+        ip = "10.85.47.118"; # NASbook
         port = 8000;
         externalPort = 8008;
         mtls = true;
@@ -247,7 +301,7 @@
       };
       monitoring = {
         enabled = true;
-        ip = "10.85.46.114";
+        ip = "10.85.47.114"; # NASbook
         port = 3000;
         externalPort = 3001;
         auth = true; # Protected by Authelia
@@ -271,7 +325,7 @@
         };
       };
       loki = {
-        ip = "10.85.46.116";
+        ip = "10.85.47.116"; # NASbook
         port = 3100;
         meta = {
           name = "Loki Logging";
@@ -302,7 +356,7 @@
         };
       };
       home-assistant = {
-        ip = "10.85.46.10";
+        ip = "10.85.49.10"; # Hass-Pi
         port = 8123;
         meta = {
           name = "Home Assistant";
@@ -326,7 +380,7 @@
         };
       };
       cups = {
-        ip = "10.85.46.124";
+        ip = "10.85.48.124"; # Core-Pi
         port = 631;
         secure = true; # Uses https upstream
         meta = {
@@ -361,14 +415,24 @@
         externalPort = 8384;
         auth = true; # Protected by Authelia SSO
         meta = {
-          name = "Syncthing";
+          name = "Syncthing (Zotac)";
           category = "Infrastructure";
           icon = "🔄";
-          description = "File synchronization service.";
+          description = "File synchronization for the Main Workstation.";
+        };
+      };
+      syncthing-orin = {
+        ip = "10.85.46.129";
+        port = 8384;
+        meta = {
+          name = "Syncthing (Orin)";
+          category = "Infrastructure";
+          icon = "🔄";
+          description = "File synchronization for the AI Node.";
         };
       };
       backup = {
-        ip = "10.85.46.128";
+        ip = "10.85.47.128"; # Moved to NASbook subnet
         meta = {
           name = "Restic Backup";
           category = "Infrastructure";
@@ -378,6 +442,17 @@
       };
 
       # Services not currently proxied by Caddy but present
+      frigate = {
+        ip = "10.85.46.130";
+        port = 5000;
+        externalPort = 5000;
+        meta = {
+          name = "Frigate NVR";
+          category = "Security";
+          icon = "📹";
+          description = "NVR with AI object detection (NVIDIA TensorRT).";
+        };
+      };
       playground = {
         ip = "10.85.46.106";
         meta = {
@@ -385,6 +460,28 @@
           category = "Dev";
           icon = "🎡";
           description = "Dev sandbox (Shell/SSH Access Only).";
+        };
+      };
+      paperless = {
+        ip = "10.85.47.131"; # Moved to NASbook subnet
+        port = 28981;
+        externalPort = 28981;
+        auth = true;
+        meta = {
+          name = "Paperless-ngx";
+          category = "Documents";
+          icon = "📄";
+          description = "Document management system with OCR.";
+        };
+      };
+      anythingllm = {
+        ip = "10.85.48.132"; # Moved to Core-Pi subnet
+        port = 3001;
+        meta = {
+          name = "AnythingLLM";
+          category = "AI";
+          icon = "🧠";
+          description = "All-in-one AI workspace and document orchestrator.";
         };
       };
     };

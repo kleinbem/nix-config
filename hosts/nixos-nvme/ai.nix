@@ -58,8 +58,8 @@
       nodeTargets = [
         myInventory.hosts.nixos-nvme.ip
         myInventory.hosts.orin-nano.ip
-        myInventory.hosts.rpi5-1.ip
-        myInventory.hosts.rpi5-2.ip
+        myInventory.hosts.core-pi.ip
+        myInventory.hosts.hass-pi.ip
         myInventory.hosts.router-1.ip
         myInventory.hosts.router-2.ip
       ];

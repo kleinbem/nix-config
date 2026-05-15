@@ -48,7 +48,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "github:kleinbem/nix-presets";
+      url = "path:../nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
@@ -231,6 +231,16 @@
                 inherit inputs;
               };
 
+              mobile-link-test = import ./tests/mobile-link.nix {
+                pkgs = inputs.nixpkgs.legacyPackages.${system};
+                inherit inputs self;
+              };
+
+              recovery-test = import ./tests/recovery.nix {
+                pkgs = inputs.nixpkgs.legacyPackages.${system};
+                inherit inputs;
+              };
+
               # Verify that the infrastructure topology can be rendered
               # topology-check = config.topology.config.build.svg;
             }
@@ -255,7 +265,15 @@
                 inherit inputs self myInventory;
               };
               modules = [
-                { nixpkgs.hostPlatform = system; }
+                {
+                  nixpkgs = {
+                    hostPlatform = system;
+                    config = {
+                      allowUnfree = true;
+                      allowUnfreePredicate = _: true;
+                    };
+                  };
+                }
                 inputs.nix-topology.nixosModules.default
               ]
               ++ (if builtins.isList modules then modules else [ modules ]);
@@ -275,17 +293,29 @@
             orin-nano = mkHost "orin-nano" {
               modules = [ ./hosts/orin-nano/default.nix ];
             };
-            rpi5-1 = mkHost "rpi5-1" {
-              modules = [ ./hosts/rpi5-1/default.nix ];
+            core-pi = mkHost "core-pi" {
+              modules = [ ./hosts/core-pi/default.nix ];
             };
-            rpi5-2 = mkHost "rpi5-2" {
-              modules = [ ./hosts/rpi5-2/default.nix ];
+            hass-pi = mkHost "hass-pi" {
+              modules = [ ./hosts/hass-pi/default.nix ];
+            };
+            nasbook = mkHost "nasbook" {
+              modules = [ ./hosts/nasbook/default.nix ];
             };
           };
 
           nixOnDroidConfigurations = {
             phone = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
-              pkgs = import inputs.nixpkgs { system = "aarch64-linux"; };
+              pkgs = import inputs.nixpkgs {
+                system = "aarch64-linux";
+                config = {
+                  allowUnfree = true;
+                  permittedInsecurePackages = [
+                    "olivetin-2025.11.25"
+                  ];
+                };
+                overlays = [ inputs.nix-on-droid.overlays.default ];
+              };
               extraSpecialArgs = { inherit inputs self myInventory; };
               modules = [ ./hosts/phone/default.nix ];
             };
@@ -350,23 +380,32 @@
               };
 
               # Raspberry Pi 5 nodes
-              rpi5-1 = {
+              core-pi = {
                 deployment = {
-                  targetHost = hostMeta.rpi5-1.ip;
+                  targetHost = hostMeta.core-pi.ip;
                   targetUser = "root";
-                  inherit (hostMeta.rpi5-1) tags;
+                  inherit (hostMeta.core-pi) tags;
                 };
-                imports = [ ./hosts/rpi5-1/default.nix ];
-                nixpkgs.hostPlatform = hostMeta.rpi5-1.system;
+                imports = [ ./hosts/core-pi/default.nix ];
+                nixpkgs.hostPlatform = hostMeta.core-pi.system;
               };
-              rpi5-2 = {
+              hass-pi = {
                 deployment = {
-                  targetHost = hostMeta.rpi5-2.ip;
+                  targetHost = hostMeta.hass-pi.ip;
                   targetUser = "root";
-                  inherit (hostMeta.rpi5-2) tags;
+                  inherit (hostMeta.hass-pi) tags;
                 };
-                imports = [ ./hosts/rpi5-2/default.nix ];
-                nixpkgs.hostPlatform = hostMeta.rpi5-2.system;
+                imports = [ ./hosts/hass-pi/default.nix ];
+                nixpkgs.hostPlatform = hostMeta.hass-pi.system;
+              };
+              nasbook = {
+                deployment = {
+                  targetHost = hostMeta.nasbook.ip;
+                  targetUser = "root";
+                  inherit (hostMeta.nasbook) tags;
+                };
+                imports = [ ./hosts/nasbook/default.nix ];
+                nixpkgs.hostPlatform = hostMeta.nasbook.system;
               };
             };
         };

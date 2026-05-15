@@ -3,31 +3,44 @@
   lib,
   pkgs,
   inputs,
+  self,
   myInventory,
   ...
 }:
 let
-  keys = import ../../modules/nixos/keys.nix;
+  keys = import "${self}/modules/nixos/keys.nix";
 in
 {
   imports = [
-    ../../modules/nixos/headless.nix
-    ../../modules/nixos/hosts.nix
-    ../../users/martin/nixos.nix
+    "${self}/modules/nixos/common.nix"
+    "${self}/modules/nixos/default.nix"
+    "${self}/modules/nixos/hosts.nix"
+    "${self}/users/martin/nixos.nix"
     # Hardware support from our local hardware flake
     inputs.nix-hardware.nixosModules.orin-nano
     # Presets
     inputs.nix-presets.nixosModules.ollama
+    inputs.nix-presets.nixosModules.llama-cpp
+    inputs.nix-presets.nixosModules.frigate
+    inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.monitoring-node
     # Disko configuration
     inputs.disko.nixosModules.disko
     ./disko.nix
     ./secrets.nix
-    ../../modules/nixos/persistence.nix
+    "${self}/modules/nixos/persistence.nix"
+    "${self}/modules/nixos/desktop.nix"
   ];
 
   networking.hostName = "orin-nano";
-  nixpkgs.hostPlatform = "aarch64-linux";
+  nixpkgs = {
+    hostPlatform = "aarch64-linux";
+    config = {
+      allowUnfree = true;
+      allowUnfreePredicate = _: true;
+      allowUnsupportedSystem = true;
+    };
+  };
 
   # ─── Jetson-specific hardware ───────────────────────────────
   # The Orin Nano uses NVIDIA's JetPack BSP via jetpack-nixos.
@@ -56,10 +69,14 @@ in
     lvm.enable = lib.mkForce false;
 
     netbird.enable = true;
-    tailscale.enable = false;
 
     # SSD Health
     fstrim.enable = true;
+
+    openssh = {
+      enable = true;
+      settings.PasswordAuthentication = false;
+    };
   };
 
   boot = {
@@ -136,29 +153,131 @@ in
 
   security.tpm2.enable = true;
   environment.systemPackages = with pkgs; [
-    tpm2-tools
-    tpm2-tss
+    sops
+    age
+    libfido2
+    jetson-stats # Essential: provides the 'jtop' command
   ];
 
   # Disko handles all fileSystems (/, /boot, /mnt/data)
   disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1"; # Default for internal use
 
   # ─── Virtualization ─────────────────────────────────────────
-  virtualisation.libvirtd.enable = true;
+  containers.ollama.config = {
+    nixpkgs.config = {
+      allowUnfree = true;
+      allowUnfreePredicate = _: true;
+      allowUnsupportedSystem = true;
+    };
+  };
 
   # ─── AI Edge Services ──────────────────────────────────────
+  virtualisation.libvirtd.enable = true;
+
   my = {
-    containers.ollama = {
-      enable = true;
-      ip = "${myInventory.network.nodes.ollama-orin.ip}/24";
-      hostDataDir = "/mnt/data/ollama";
-      acceleration = "cuda"; # Jetson GPU via JetPack CUDA
-      memoryLimit = "6G";
+    containers = {
+      ollama = {
+        enable = false; # Switched to llama-cpp for better memory efficiency
+        ip = "${myInventory.network.nodes.ollama-orin.ip}/24";
+        hostDataDir = "/mnt/models/ollama";
+        acceleration = "cuda";
+        memoryLimit = "6G";
+      };
+      llama-cpp = {
+        enable = true; # Primary lean engine
+        ip = "10.85.46.126/24";
+        modelPath = "/mnt/models/gemma-2-9b-it-q4_k_m.gguf"; # Updated to Gemma as requested
+      };
+      frigate = {
+        enable = true;
+        ip = "${myInventory.network.nodes.frigate.ip}/24";
+        detector = "tensorrt";
+        mediaDir = "/mnt/data/frigate";
+        innerConfig.services.frigate.settings = {
+          # --- MQTT is required for Home Assistant integration ---
+          mqtt = {
+            host = "10.85.46.10"; # Pointing to hass-pi for now, assuming MQTT is there or integrated
+            enabled = true;
+          };
+
+          # --- Sample Camera Configuration ---
+          cameras = {
+            front_door = {
+              ffmpeg.inputs = [
+                {
+                  path = "rtsp://admin:password@192.168.1.100:554/stream1";
+                  roles = [
+                    "detect"
+                    "record"
+                  ];
+                }
+              ];
+              detect.enabled = true;
+              record.enabled = true;
+              # Hardware acceleration for stream decoding
+              ffmpeg.hwaccel_args = "preset-nvidia-h264";
+            };
+          };
+
+          # --- Detection settings ---
+          objects.track = [
+            "person"
+            "car"
+            "dog"
+          ];
+
+          # --- Birdseye (Combined View) ---
+          birdseye = {
+            enabled = true;
+            mode = "continuous"; # Always show cameras in the grid
+            width = 1280;
+            height = 720;
+          };
+
+          # --- Global Recording & Retention ---
+          record = {
+            enabled = true;
+            retain = {
+              days = 7; # Keep 7 days of continuous recording (if enabled per camera)
+              mode = "all";
+            };
+            events = {
+              retain = {
+                default = 14; # Keep 14 days of motion-detected events
+                mode = "active_objects"; # Prioritize storing actual objects
+              };
+            };
+          };
+
+          # --- Snapshots (High Res Events) ---
+          snapshots = {
+            enabled = true;
+            timestamp = true;
+            bounding_box = true;
+            retain.default = 14;
+          };
+        };
+      };
+      syncthing = {
+        enable = true;
+        ip = "${myInventory.network.nodes.syncthing-orin.ip}/24";
+        hostDataDir = "/var/lib/images/syncthing";
+        vaults = {
+          "/home/martin/Documents/Notes" = "/home/martin/Documents/Notes";
+          "/home/martin/Develop" = "/home/martin/Develop";
+        };
+      };
     };
     monitoring.node.enable = true;
   };
 
+  nix.settings.trusted-users = [
+    "root"
+    "martin"
+  ];
+
   networking.firewall = {
+
     enable = true;
     # SSH only over NetBird — not exposed on LAN
     interfaces."wt0".allowedTCPPorts = [ 22 ];
@@ -167,6 +286,18 @@ in
   users.users.martin.openssh.authorizedKeys.keys = [
     keys.ssh.yubikey
   ];
+
+  # --- Manual UI Specialisation ---
+  # Only active if selected at boot or via 'sudo /run/current-system/specialisation/desktop/bin/switch'
+  specialisation.desktop.configuration = {
+    my.desktop.lite.enable = true;
+
+    # We KEEP Frigate on because Sway is lite enough!
+    my.containers.frigate.enable = lib.mkForce true;
+
+    # Enable a graphical boot splash
+    boot.plymouth.enable = true;
+  };
 
   system.stateVersion = "25.11";
 }

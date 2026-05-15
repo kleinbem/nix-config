@@ -3,6 +3,7 @@
   lib,
   config,
   inputs,
+  self,
   myInventory,
   ...
 }:
@@ -11,12 +12,11 @@
   imports = [
     inputs.nix-hardware.nixosModules.nixos-nvme
     inputs.nix-hardware.nixosModules.intel-compute
-    ../../modules/nixos/common.nix
-    ../../modules/nixos/hosts.nix
-    ../../modules/nixos/default.nix
-    ../../modules/nixos/options.nix
-    ../../users/martin/nixos.nix
-    ../../users/dhirujaan/nixos.nix
+    "${self}/modules/nixos/common.nix"
+    "${self}/modules/nixos/hosts.nix"
+    "${self}/modules/nixos/default.nix"
+    "${self}/users/martin/nixos.nix"
+    "${self}/users/dhirujaan/nixos.nix"
     inputs.nix-presets.nixosModules.n8n
     inputs.nix-presets.nixosModules.code-server
     inputs.nix-presets.nixosModules.open-webui
@@ -42,14 +42,15 @@
     inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.backup
+    inputs.nix-presets.nixosModules.paperless
 
     inputs.nix-presets.nixosModules.android-emulator
-    ../../modules/nixos/persistence.nix
+    "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
-    ../../modules/nixos/apps.nix
-    ../../modules/nixos/snapper.nix
-    ../../modules/nixos/disko.nix
-    ../../modules/nixos/data-disk.nix
+    "${self}/modules/nixos/apps.nix"
+    "${self}/modules/nixos/snapper.nix"
+    "${self}/modules/nixos/disko.nix"
+    "${self}/modules/nixos/data-disk.nix"
     inputs.disko.nixosModules.disko
     ./ai.nix
     ./specialisations.nix
@@ -205,8 +206,12 @@
         enable = false;
         ip = "${myInventory.network.nodes.monitoring.ip}/24";
         hostDataDir = "/var/lib/images/monitoring";
-        # Automatically scrape the host and important AI nodes
-        nodeTargets = [ myInventory.network.nodes.cockpit.ip ];
+        # Automatically scrape the host and important infrastructure nodes
+        nodeTargets = [
+          myInventory.network.nodes.cockpit.ip
+          myInventory.hosts.router-1.ip
+          myInventory.hosts.router-2.ip
+        ];
         vllmTargets = [ myInventory.network.nodes.vllm.ip ];
       };
 
@@ -262,6 +267,7 @@
         # secretsFile = config.sops.templates."syncthing.env".path;
         vaults = {
           "/home/${config.my.username}/Documents/Notes" = "/home/${config.my.username}/Documents/Notes";
+          "/home/${config.my.username}/Develop" = "/home/${config.my.username}/Develop";
         };
       };
 
@@ -282,6 +288,14 @@
           "/var/lib/caddy" = "/var/lib/caddy";
           "/var/lib/images" = "/var/lib/images";
         };
+      };
+
+      paperless = {
+        enable = true;
+        ip = "${myInventory.network.nodes.paperless.ip}/24";
+        hostDataDir = "/mnt/data/Archive/Paperless";
+        hostConsumptionDir = "/mnt/data/Archive/Inbox";
+        passwordFile = config.sops.secrets.paperless_password.path;
       };
     };
 
@@ -311,8 +325,8 @@
     fi
   '';
 
-  home-manager.users.${config.my.username} = import ../../users/martin/home.nix;
-  home-manager.users.dhirujaan = import ../../users/dhirujaan/home.nix;
+  home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
+  home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
 
   boot = {
     kernelPackages = pkgs.linuxPackages_zen;
@@ -346,10 +360,30 @@
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "8G";
 
-    # Cross-compilation: build aarch64-linux on this x86_64 host
-    binfmt.emulatedSystems = [ "aarch64-linux" ];
-    binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
   };
+  nix = {
+    # Distributed Builds: Use Orin Nano for native aarch64 builds
+    distributedBuilds = true;
+    buildMachines = [
+      {
+        hostName = "10.85.46.104"; # Orin Nano via NetBird Mesh
+        sshUser = "martin";
+        systems = [ "aarch64-linux" ];
+        maxJobs = 4;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+    ];
+  };
+
+  # Cross-compilation: fallback to emulation if Orin is offline
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
 
   # IMAGE STATE STORAGE
   systemd.tmpfiles.rules = [

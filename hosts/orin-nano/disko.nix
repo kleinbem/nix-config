@@ -3,8 +3,8 @@
   ...
 }:
 let
-  # Set this to a device path (e.g., "/dev/nvme1n1") when your 2nd SSD arrives
-  frigateDevice = null;
+  # The 2nd NVMe SSD for Frigate storage
+  secondDiskDevice = "/dev/nvme1n1";
 in
 {
   disko.devices = {
@@ -31,7 +31,6 @@ in
                 name = "orin_crypt";
                 settings = {
                   allowDiscards = true;
-                  # Auto-unlock with TPM2 if available, fallback to FIDO2/YubiKey
                   crypttabExtraOpts = [
                     "tpm2-device=auto"
                     "fido2-device=auto"
@@ -48,10 +47,10 @@ in
       };
     }
     // (
-      if frigateDevice != null then
+      if secondDiskDevice != null then
         {
-          frigate = {
-            device = frigateDevice;
+          second = {
+            device = secondDiskDevice;
             type = "disk";
             content = {
               type = "gpt";
@@ -59,9 +58,17 @@ in
                 frigate = {
                   size = "100%";
                   content = {
-                    type = "filesystem";
-                    format = "xfs";
-                    mountpoint = "/mnt/frigate";
+                    type = "luks";
+                    name = "orin_frigate_crypt";
+                    settings = {
+                      allowDiscards = true;
+                      crypttabExtraOpts = [ "tpm2-device=auto" ];
+                    };
+                    content = {
+                      type = "filesystem";
+                      format = "xfs";
+                      mountpoint = "/mnt/data/frigate";
+                    };
                   };
                 };
               };
@@ -81,6 +88,14 @@ in
               type = "filesystem";
               format = "ext4";
               mountpoint = "/";
+            };
+          };
+          models = {
+            size = "256G";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/mnt/models";
             };
           };
           data = {

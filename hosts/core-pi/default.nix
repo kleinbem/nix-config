@@ -1,24 +1,33 @@
-# rpi5-1 — Raspberry Pi 5
-{ inputs, myInventory, ... }:
+# core-pi — Raspberry Pi 5
+{
+  inputs,
+  self,
+  myInventory,
+  ...
+}:
 let
-  keys = import ../../modules/nixos/keys.nix;
+  keys = import "${self}/modules/nixos/keys.nix";
 in
 {
   imports = [
     inputs.nix-hardware.nixosModules.rpi5
-    ../../modules/nixos/headless.nix
-    ../../modules/nixos/hosts.nix
+    "${self}/modules/nixos/headless.nix"
+    "${self}/modules/nixos/hosts.nix"
     inputs.nix-presets.nixosModules.open-webui
-    inputs.nix-presets.nixosModules.home-assistant
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.openclaw
+    inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.ollama
+    inputs.nix-presets.nixosModules.dashboard
+    inputs.nix-presets.nixosModules.cups
   ];
 
-  networking.hostName = "rpi5-1";
+  networking.hostName = "core-pi";
 
   my = {
+    services.rpi-eeprom.enable = true;
+
     # ─── Frontend Services ──────────────────────────────────────
     containers = {
       open-webui = {
@@ -26,14 +35,7 @@ in
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/open-webui";
         vllmUrl = "https://litellm.internal";
-        memoryLimit = "2G";
-      };
-
-      # Smart Home Management
-      home-assistant = {
-        enable = true;
-        ip = "${myInventory.network.nodes.home-assistant.ip}/24";
-        hostDataDir = "/var/lib/home-assistant";
+        memoryLimit = "1.5G";
       };
 
       # ─── AI Agents (Ready for deployment) ───────────────────────
@@ -51,13 +53,28 @@ in
         vllmUrl = "https://litellm.internal";
       };
 
-      # ─── Ollama (CPU-only for RPi 5) ────────────────────────────
-      ollama = {
+      # ─── Ollama (Offloaded to Orin Nano) ────────────────────────
+      ollama.enable = false;
+
+      anythingllm = {
         enable = true;
-        ip = "${myInventory.network.nodes.ollama-rpi.ip}/24";
-        hostDataDir = "/var/lib/ollama";
-        memoryLimit = "6G";
-        # No acceleration = CPU-only (default)
+        ip = "${myInventory.network.nodes.anythingllm.ip}/24";
+        hostDataDir = "/var/lib/anythingllm";
+        llmUrl = "https://litellm.internal";
+        modelName = "google/gemma-2b"; # Aligned with Orin Nano backend in ai.nix
+        memoryLimit = "2G";
+      };
+
+      dashboard = {
+        enable = true;
+        ip = "${myInventory.network.nodes.dashboard.ip}/24";
+        hostBridgeIp = "192.168.1.20"; # core-pi IP
+        memoryLimit = "512M";
+      };
+
+      cups = {
+        enable = true;
+        ip = "${myInventory.network.nodes.cups.ip}/24";
       };
     };
     monitoring.node.enable = true;
@@ -66,10 +83,28 @@ in
   # ─── Networking & Security ──────────────────────────────────
   services = {
     netbird.enable = true;
-    tailscale.enable = false;
 
     # SSD Health
     fstrim.enable = true;
+  };
+
+  nix = {
+    distributedBuilds = true;
+    buildMachines = [
+      {
+        hostName = "10.85.46.104"; # Orin Nano via NetBird Mesh
+        sshUser = "martin";
+        systems = [ "aarch64-linux" ];
+        maxJobs = 4;
+        speedFactor = 2;
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+    ];
   };
 
   networking.firewall = {

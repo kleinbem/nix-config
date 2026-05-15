@@ -27,7 +27,7 @@
     };
 
     # --- AI Tools ---
-    "github.copilot.editor.enableInlineSuggest" = false;
+    "github.copilot.inlineSuggest.enable" = false;
   };
 
   keybindings = [

@@ -61,6 +61,33 @@ in
         description = "The GPU render node path.";
       };
     };
+
+    services = mkOption {
+      type = types.submoduleWith {
+        modules = [ ];
+        shorthandOnlyDefinesConfig = true;
+      };
+      default = { };
+      description = "Custom services defined under the 'my' namespace.";
+    };
+
+    containers = mkOption {
+      type = types.submoduleWith {
+        modules = [ ];
+        shorthandOnlyDefinesConfig = true;
+      };
+      default = { };
+      description = "Custom container definitions under the 'my' namespace.";
+    };
+
+    monitoring = mkOption {
+      type = types.submoduleWith {
+        modules = [ ];
+        shorthandOnlyDefinesConfig = true;
+      };
+      default = { };
+      description = "Custom monitoring settings under the 'my' namespace.";
+    };
   };
 
   # Compatibility shim for nix-mineral vs newer nixpkgs

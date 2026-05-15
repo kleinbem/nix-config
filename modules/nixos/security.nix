@@ -271,6 +271,53 @@ in
     # HARDENING & AUDITING
     # ==========================================
     security = {
+      sudo.extraRules = [
+        {
+          users = [ "martin" ];
+          commands = [
+            {
+              command = "${pkgs.nh}/bin/nh os switch";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "${pkgs.nh}/bin/nh os boot";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/nixos-rebuild";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl restart container@*";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl start ollama.service";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl stop ollama.service";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl restart ollama.service";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl start vllm.service";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl stop vllm.service";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/systemctl restart vllm.service";
+              options = [ "NOPASSWD" ];
+            }
+          ];
+        }
+      ];
       # Explicitly disable Gnome Keyring in PAM for the greeter
       pam = {
         services = {

@@ -1,11 +1,17 @@
 {
   pkgs,
+  inputs,
+  self,
   ...
 }:
 
 {
   # ─── Nix-on-Droid System Configuration ────────────────────────
   # This corresponds to the nix-on-droid.nix file
+
+  imports = [
+    "${self}/modules/nix-on-droid/dashboard.nix"
+  ];
 
   system.stateVersion = "24.05";
 
@@ -20,6 +26,7 @@
     vim
     git
     htop
+    # olivetin
     btop
     openssh
     rsync
@@ -42,7 +49,7 @@
       {
         imports = [
           # Use the slimmed-down phone config to avoid desktop circular dependencies
-          ../../users/martin/home-phone.nix
+          "${self}/users/martin/home-phone.nix"
         ];
 
         # Override home.stateVersion for Nix-on-Droid if needed
@@ -54,7 +61,21 @@
   };
 
   # ─── Nix Configuration ───────────────────────────────────────
+
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
+
+  # Pin the flake registry for faster offline lookups
+  nix.registry = {
+    nix-config.flake = self;
+    nix-presets.flake = inputs.nix-presets;
+    nix-devshells.flake = inputs.nix-devshells;
+  };
+
+  # ─── SSH Configuration (Managed via Home Manager) ─────────────
+  # services.openssh.enable = true;
+  # users.users.nix-on-droid.openssh.authorizedKeys.keys = [
+  #   "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFLSRkt7uoF1c2iWpwt7mJi2krEtmpdUD4wLUm0XTn5JbGIBce+avhSqY02YRe3dpRVqo7KGE8upe11xI8IcEjk= PIV AUTH pubkey"
+  # ];
 }

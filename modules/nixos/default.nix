@@ -20,5 +20,6 @@
 
     # Services
     ./scripts.nix
+    ./services/rpi-eeprom.nix
   ];
 }

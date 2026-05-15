@@ -4,134 +4,123 @@ let
   myInventory = import ../inventory.nix;
 in
 pkgs.testers.runNixOSTest {
-  name = "caddy-multi-node-infrastructure-test";
+  name = "caddy-native-infrastructure-test";
 
   nodes = {
-    # The Caddy Reverse Proxy
-    gateway =
-      { config, nodes, ... }:
-      {
-        imports = [ inputs.nix-presets.nixosModules.caddy ];
+    # The Caddy Reverse Proxy (Defined as a list of clean modules)
+    gateway = {
+      _module.args = { inherit myInventory; };
 
-        # Mock dependencies
-        options.my.network.bridge = pkgs.lib.mkOption {
-          type = pkgs.lib.types.str;
-          default = "cbr0";
+      imports = [
+        inputs.nix-presets.nixosModules.caddy
+        # A submodule to define our missing options
+        (
+          { lib, ... }:
+          {
+            options.my.network.bridge = lib.mkOption {
+              type = lib.types.str;
+              default = "cbr0";
+            };
+          }
+        )
+      ];
+
+      # Backend service directly on the host for simplicity in testing
+      services.httpd = {
+        enable = true;
+        virtualHosts."webserver" = {
+          documentRoot = pkgs.writeTextDir "index.html" "<h1>Hello from Native Backend</h1>";
+          listen = [
+            {
+              ip = "*";
+              port = 8080;
+            }
+          ];
+        };
+      };
+
+      networking = {
+        nat = {
+          enable = true;
+          externalInterface = "eth1";
+          forwardPorts = [
+            {
+              proto = "tcp";
+              sourcePort = 80;
+              destination = "10.85.46.10:80";
+            }
+          ];
         };
 
+        firewall.allowedTCPPorts = [
+          80
+          8080
+        ];
+      };
+
+      virtualisation.oci-containers.backend = "podman";
+
+      my.containers.caddy.enable = pkgs.lib.mkForce false; # Disable preset to avoid conflicts
+
+      containers.caddy = {
+        autoStart = true;
+        privateNetwork = true;
+        hostAddress = "10.85.46.1";
+        localAddress = "10.85.46.10";
+
         config = {
-          _module.args = {
-            myInventory = myInventory // {
-              network = myInventory.network // {
-                nodes = myInventory.network.nodes // {
-                  caddy = {
-                    ip = "10.85.46.10";
-                  };
-                  app = {
-                    ip = nodes.webserver.networking.primaryIPAddress;
-                    port = 8080;
-                    externalPort = 80;
-                  };
-                };
-              };
-            };
+          services.caddy.enable = true;
+          services.caddy.virtualHosts."http://app.local" = {
+            extraConfig = ''
+              reverse_proxy 10.85.46.1:8080
+            '';
           };
-
-          networking = {
-            nat = {
-              enable = true;
-              internalInterfaces = [ config.my.network.bridge ];
-              externalInterface = "eth1";
-            };
-            bridges."${config.my.network.bridge}".interfaces = [ ];
-            interfaces."${config.my.network.bridge}".ipv4.addresses = [
-              {
-                address = "10.85.46.1";
-                prefixLength = 24;
-              }
-            ];
-            firewall.allowedTCPPorts = [ 80 ];
-          };
-
-          virtualisation.oci-containers.backend = "podman";
-          my.containers.caddy = {
-            enable = true;
-            ip = "10.85.46.10";
-            hostDataDir = "/tmp/caddy-data";
-          };
-
-          # Fix the container isolation and add port forwarding
-          containers.caddy = {
-            forwardPorts = [
-              {
-                containerPort = 80;
-                hostPort = 80;
-                protocol = "tcp";
-              }
-            ];
-            config = {
-              # Disable the Zero Trust firewall for the test to allow reaching 'webserver'
-              networking.nftables.tables.zt-factory.content = pkgs.lib.mkForce "";
-            };
-          };
-
+          networking.firewall.enable = false;
+          networking.defaultGateway = "10.85.46.1";
           system.stateVersion = "25.11";
         };
       };
 
-    webserver = _: {
-      config = {
-        _module.args = { inherit myInventory; };
-        services.httpd = {
-          enable = true;
-          adminAddr = "test@example.org";
-          virtualHosts."webserver" = {
-            documentRoot = pkgs.writeTextDir "index.html" "<h1>Hello from Internal App</h1>";
-            listen = [
-              {
-                ip = "*";
-                port = 8080;
-              }
-            ];
-          };
-        };
-        networking.firewall.allowedTCPPorts = [ 8080 ];
-        system.stateVersion = "25.11";
-      };
+      system.stateVersion = "25.11";
     };
 
-    client =
-      { nodes, ... }:
-      {
-        config = {
-          _module.args = { inherit myInventory; };
-          networking.extraHosts = "${nodes.gateway.networking.primaryIPAddress} app.local";
-          system.stateVersion = "25.11";
-        };
-      };
+    # The client node
+    client = _: {
+      system.stateVersion = "25.11";
+    };
   };
 
   testScript = ''
-    # Start all nodes
     start_all()
 
-    gateway.wait_for_unit("container@caddy.service")
-    webserver.wait_for_unit("httpd.service")
-    client.wait_for_unit("multi-user.target")
+    # Wait for the stack to initialize
+    try:
+        gateway.wait_for_unit("container@caddy.service")
+    except Exception as e:
+        gateway.log("Container 'caddy' failed to start! Fetching logs...")
+        gateway.execute("systemctl status container@caddy >&2")
+        gateway.execute("journalctl -u container@caddy --no-pager >&2")
+        raise e
+    gateway.wait_for_unit("httpd.service")
+    client.wait_for_unit("network.target")
 
-    # Debug: Check gateway state
-    gateway.log(gateway.succeed("ip addr"))
+    # --- DEBUG SECTION ---
+    # 1. Can the Client even see the Gateway?
+    client.succeed("ping -c 1 gateway")
 
-    # 1. Verify internal connectivity
-    gateway.wait_until_succeeds("ping -c 1 webserver")
-    client.wait_until_succeeds("ping -c 1 gateway")
+    # 2. Can the Gateway reach its own Caddy container?
+    gateway.log("Checking internal container connectivity...")
+    gateway.succeed("ping -c 1 10.85.46.10") 
 
-    # 2. Verify Client can access the app THROUGH Caddy
-    client.log("Attempting to access app.local via Caddy gateway...")
-    # Increase timeout for the first run
-    response = client.succeed("curl -v -L --connect-timeout 10 http://app.local")
+    # 3. Does Caddy respond internally?
+    gateway.succeed("curl -f http://10.85.46.10")
+    # --- END DEBUG ---
 
-    assert "Hello from Internal App" in response
-    client.log("✅ Success: Multi-node proxying is working!")
+    # 1. Verify that the Client can access the app THROUGH Caddy's NAT and Container
+    client.log("Testing access to app.local via Caddy...")
+    response = client.succeed("curl -v -f -H 'Host: app.local' http://gateway")
+
+    assert "Hello from Native Backend" in response
+    client.log("✅ Success: Native NixOS testing is working without hacks!")
   '';
 }

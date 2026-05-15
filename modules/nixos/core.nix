@@ -24,7 +24,12 @@ in
     builtins.elem (lib.getName pkg) [
       "vscode-extension-anthropic-claude-code"
       "claude-code"
-    ];
+      "ollama-cuda"
+      "cuda_cudart"
+      "cuda_cccl"
+      "cuda_nvcc"
+    ]
+    || (lib.hasPrefix "cuda" (lib.getName pkg));
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {

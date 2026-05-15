@@ -17,6 +17,7 @@ in
   modules = {
     devshell-launchers.enable = true;
     service-launchers.enable = true;
+    mcp.enable = true;
     opencode.enable = true;
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet

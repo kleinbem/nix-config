@@ -12,6 +12,7 @@ in
   options.my.desktop = {
     enable = lib.mkEnableOption "Desktop Environment (Cosmic)";
     gnome.enable = lib.mkEnableOption "Desktop Environment (GNOME 50)";
+    lite.enable = lib.mkEnableOption "Lite Desktop (Sway)";
   };
 
   imports = [ ];
@@ -62,9 +63,9 @@ in
         gnome-keyring.enable = true;
       };
 
-      # Enable host printing service for GNOME Printer Settings UI.
-      # It will discover the CUPS container via Avahi/mDNS.
-      services.printing.enable = true;
+      # The host should use the containerized CUPS via CUPS_SERVER env var.
+      # Enabling it here causes a conflict on port 631 and shadows the container.
+      services.printing.enable = false;
 
       xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
 
@@ -128,9 +129,61 @@ in
     })
 
     # ==========================================
+    # LITE DESKTOP (SWAY) - TUNED FOR ORIN NANO
+    # ==========================================
+    (lib.mkIf cfg.lite.enable {
+      programs.sway = {
+        enable = true;
+        wrapperFeatures.gtk = true;
+        extraSessionCommands = ''
+          # NVIDIA / JetPack Wayland Compatibility
+          export WLR_NO_HARDWARE_CURSORS=1
+          export WLR_RENDERER=vulkan
+          export __GL_GSYNC_ALLOWED=0
+          export __GL_VRR_ALLOWED=0
+          # Fix for Java apps
+          export _JAVA_AWT_WM_NONREPARENTING=1
+        '';
+        extraPackages = with pkgs; [
+          swaylock-effects # Prettier lockscreen
+          swayidle
+          foot # Minimal fast terminal
+          wofi # Premium launcher
+          waybar # Glassmorphism status bar
+          mako # Notification daemon
+          grim # Screenshot
+          slurp # Select region
+          wl-clipboard
+          kanshi # Display management
+          swaybg # Wallpaper support
+        ];
+      };
+
+      # Force Wayland for Chromium/Electron
+      environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
+      # Use a minimal but modern greeter
+      services.greetd = {
+        enable = true;
+        settings = {
+          default_session = {
+            command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd 'sway --unsupported-gpu'";
+            user = "greeter";
+          };
+        };
+      };
+
+      # Standard font for the UI
+      fonts.packages = with pkgs; [
+        inter
+        nerd-fonts.jetbrains-mono
+      ];
+    })
+
+    # ==========================================
     # COMMON DESKTOP CONFIGURATION
     # ==========================================
-    (lib.mkIf (cfg.enable || cfg.gnome.enable) {
+    (lib.mkIf (cfg.enable || cfg.gnome.enable || cfg.lite.enable) {
       boot.plymouth = {
         enable = true;
         theme = "bgrt";

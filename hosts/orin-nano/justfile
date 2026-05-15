@@ -1,0 +1,16 @@
+# Orin Nano Local Management
+import '../../../.just/orin.just'
+
+# --- Local Shortcuts ---
+
+[group("Local")]
+apply:
+    @just maintenance::apply
+
+[group("Local")]
+test:
+    @just nixos::test
+
+[group("Local")]
+edit:
+    @$EDITOR default.nix
