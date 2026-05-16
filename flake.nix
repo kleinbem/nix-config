@@ -48,7 +48,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "path:../nix-presets";
+      url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
