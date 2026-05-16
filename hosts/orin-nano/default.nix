@@ -40,6 +40,11 @@ in
       allowUnfreePredicate = _: true;
       allowUnsupportedSystem = true;
     };
+    overlays = [
+      (final: _prev: {
+        cudaPackages = final.cudaPackages_12_6;
+      })
+    ];
   };
 
   # ─── Jetson-specific hardware ───────────────────────────────
