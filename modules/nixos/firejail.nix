@@ -17,7 +17,7 @@ in
           enable = true;
           wrappedBinaries = {
             firefox = {
-              executable = "${pkgs.firefox-beta}/bin/firefox";
+              executable = "${pkgs.firefox-beta}/bin/firefox-beta";
               profile = "${pkgs.firejail}/etc/firejail/firefox.profile";
               extraArgs = [
                 "--dns=1.1.1.1"

@@ -1,5 +1,5 @@
 # 🏗️ System Reference (Auto-generated)
-*Last Updated: 2026-05-12T16:35:23Z*
+*Last Updated: 2026-05-16T21:51:20Z*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure. 
@@ -8,10 +8,16 @@
 ## 📦 Core Revisions
 - **nixpkgs**: [`9f31d28882185d30c0e3082fbc52dab1cd4e879f`](https://github.com/NixOS/nixpkgs/commit/9f31d28882185d30c0e3082fbc52dab1cd4e879f)
 - **home-manager**: `aacb796ccd42be1555196c20013b9b674b71df75`
+- **sops-nix**: `9899edaca6d8d1a0575323f76f93bc6a5d4acffa`
 
 ## 🖥️ Managed Hosts
+- **core-gateway**
 - **core-pi**
 - **hass-pi**
+- **mesh-node**
+- **mesh-node-2**
+- **nasbook**
+- **net-brain**
 - **nixos-nvme**
 - **orin-nano**
 - **phone**
@@ -21,12 +27,14 @@
 ## 📡 Network Services
 - **agent-team**
 - **agent-zero**
+- **anythingllm**
 - **authelia**
 - **backup**
 - **caddy**
 - **cockpit**
 - **code-server**
 - **comfyui**
+- **crowdsec**
 - **cups**
 - **dashboard**
 - **frigate**
@@ -44,9 +52,11 @@
 - **ollama-rpi**
 - **open-webui**
 - **openclaw**
+- **paperless**
 - **playground**
 - **qdrant**
 - **syncthing**
+- **syncthing-orin**
 - **vllm**
 
 ## 🛠️ Workspace Status
@@ -76,6 +86,8 @@ get_calendar_events- ****
 get_hardware_profile- ****
 search_drive_docs- ****
 read_drive_doc- ****
+search_paperless- ****
+get_paperless_document- ****
 troubleshoot_unit- ****
 analyze_nix_closure- ****
 checkpoint_workspace_state- ****

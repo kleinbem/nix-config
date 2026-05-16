@@ -31,7 +31,6 @@ in
           vsx.mkhl.direnv
           vsx.jnoortheen.nix-ide
           vsx.tamasfe.even-better-toml
-          vsx.eamodio.gitlens
           vsx.waderyan.gitblame
           vsx.ms-python.python
           vsx.usernamehw.errorlens
