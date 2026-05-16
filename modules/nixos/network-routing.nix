@@ -25,7 +25,7 @@ let
 
 in
 {
-  networking.interfaces."${config.my.network.bridge}".ipv4.routes = routes;
+  networking.interfaces."${config.my.network.externalInterface}".ipv4.routes = routes;
 
   # Ensure IP forwarding is enabled if this host acts as a gateway for its containers
   boot.kernel.sysctl."net.ipv4.ip_forward" = lib.mkDefault 1;

@@ -81,7 +81,7 @@ in
           config.my.network.bridge
           "virbr0"
         ];
-        externalInterface = "wlo1";
+        inherit (config.my.network) externalInterface;
       };
 
       # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
@@ -89,12 +89,12 @@ in
         trustedInterfaces = [ "virbr0" ];
         extraForwardRules = ''
           # Podman Bridge
-          iifname "${config.my.network.bridge}" oifname "wlo1" accept
-          iifname "wlo1" oifname "${config.my.network.bridge}" ct state { established, related } accept
+          iifname "${config.my.network.bridge}" oifname "${config.my.network.externalInterface}" accept
+          iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ct state { established, related } accept
 
           # Libvirt Bridge (Bluefin)
-          iifname "virbr0" oifname "wlo1" accept
-          iifname "wlo1" oifname "virbr0" ct state { established, related } accept
+          iifname "virbr0" oifname "${config.my.network.externalInterface}" accept
+          iifname "${config.my.network.externalInterface}" oifname "virbr0" ct state { established, related } accept
         '';
       };
     };

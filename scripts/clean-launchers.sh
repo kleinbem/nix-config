@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# nix-config/scripts/clean-launchers.sh
+# SOURCE OF TRUTH: nix-config/scripts/clean-launchers.sh
 # Identifies and removes .desktop files that point to missing binaries or profiles.
 
 APP_DIR="$HOME/.local/share/applications"

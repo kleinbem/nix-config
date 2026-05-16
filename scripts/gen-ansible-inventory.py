@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SOURCE OF TRUTH: nix-config/scripts/gen-ansible-inventory.py
 import json
 import subprocess
 import os

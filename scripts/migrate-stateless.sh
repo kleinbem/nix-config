@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# SOURCE OF TRUTH: nix-config/scripts/migrate-stateless.sh
 # Mission: Stateless Vault - Identity Migration Script
 # Run this BEFORE your first reboot after applying the stateless configuration.
 

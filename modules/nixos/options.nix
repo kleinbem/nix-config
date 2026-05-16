@@ -52,6 +52,11 @@ in
         default = myInventory.hosts.nixos-nvme.ip;
         description = "The host address on the container bridge.";
       };
+      externalInterface = mkOption {
+        type = types.str;
+        default = "wlo1";
+        description = "The external/WAN interface name.";
+      };
     };
 
     hardware = {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/tag-generation.sh
+# SOURCE OF TRUTH: nix-config/scripts/tag-generation.sh
 
 # Get the current system generation number
 GEN=$(readlink /nix/var/nix/profiles/system | grep -oP "system-\K[0-9]+")

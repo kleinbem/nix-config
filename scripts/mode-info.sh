@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# SOURCE OF TRUTH: nix-config/scripts/mode-info.sh
 # Dynamic System Profile Info Script - V4.3 (Multi-Profile Support)
 # Shows ALL services, their status, and ALL assigned profiles
 

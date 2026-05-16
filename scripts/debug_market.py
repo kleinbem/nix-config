@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# SOURCE OF TRUTH: nix-config/scripts/debug_market.py
 import requests
 import json
 import sys
