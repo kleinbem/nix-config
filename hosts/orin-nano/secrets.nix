@@ -14,6 +14,10 @@
         neededForUsers = true;
       };
       u2f_keys = { };
+      github_read_all_token = {
+        mode = "0440";
+        group = "wheel";
+      };
     };
   };
 }
