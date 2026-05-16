@@ -139,6 +139,16 @@
           description = "Reverse Proxy & SSL Termination.";
         };
       };
+      crowdsec = {
+        ip = "10.85.46.119";
+        port = 8080;
+        meta = {
+          name = "CrowdSec LAPI";
+          category = "Security";
+          icon = "🛡️";
+          description = "Intrusion detection & IP reputation engine.";
+        };
+      };
 
       # App Containers
       dashboard = {

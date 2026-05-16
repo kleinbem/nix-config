@@ -32,9 +32,28 @@ in
       "-a always,exit -F arch=b64 -S mount -k mounts"
       "-a always,exit -F arch=b64 -S setsockopt -k nftables_changes" # Simplified for stability
 
-      # --- Runtime Behavioral Monitoring ---
-      # Handled by auditd (this file) + AppArmor (security.nix) + systemd hardening.
-      # Falco was removed — no nixpkgs package/module exists.
+      # --- Runtime Behavioral Monitoring (Worm & Malware Detection) ---
+      # 1. Execution from Temporary / Shared Memory Directories
+      "-w /tmp -p x -k tmp_exec"
+      "-w /var/tmp -p x -k tmp_exec"
+      "-w /dev/shm -p x -k shm_exec"
+
+      # 2. 32-bit Execution (Often used by legacy malware/worms to bypass 64-bit eBPF/audit rules)
+      "-a always,exit -F arch=b32 -S execve -k 32bit_exec"
+
+      # 3. Unauthorized DNS & Hostname Modifications
+      "-w /etc/resolv.conf -p wa -k dns_modification"
+      "-w /etc/hosts -p wa -k dns_modification"
+      "-a always,exit -F arch=b64 -S sethostname -S setdomainname -k sethostname"
+
+      # 4. Kernel Module Loading / Rootkit Behavior
+      "-w /sbin/insmod -p x -k kmod_change"
+      "-w /sbin/rmmod -p x -k kmod_change"
+      "-w /sbin/modprobe -p x -k kmod_change"
+      "-a always,exit -F arch=b64 -S init_module -S delete_module -k kmod_change"
+
+      # 5. Process Injection / Ptrace (Process Hollowing)
+      "-a always,exit -F arch=b64 -S ptrace -k code_injection"
 
       # --- Sensitive File Access (Immutable Identity & Config) ---
       "-w /var/lib/sops -p r -k sops_read"

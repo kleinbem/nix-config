@@ -32,6 +32,7 @@
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.litellm
     inputs.nix-presets.nixosModules.loki
+    inputs.nix-presets.nixosModules.crowdsec
     inputs.nix-presets.nixosModules.netdata
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
@@ -230,6 +231,12 @@
         memoryLimit = "512M";
       };
 
+      crowdsec = {
+        enable = true;
+        ip = "${myInventory.network.nodes.crowdsec.ip}/24";
+        hostDataDir = "/var/lib/images/crowdsec";
+      };
+
       netdata = {
         enable = false;
         ip = "${myInventory.network.nodes.netdata.ip}/24";
@@ -312,18 +319,58 @@
     android.enable = true;
   };
 
-  # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust
-  # This runs on the host and is fail-safe to prevent restart loops.
-  systemd.services."container@caddy".postStart = ''
-    if [ -f /var/lib/caddy/pki/authorities/local/root.crt ]; then
-      mkdir -p /home/${config.my.username}/.pki
-      cp -f /var/lib/caddy/pki/authorities/local/root.crt /home/${config.my.username}/.pki/caddy-root.crt
-      chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
-      echo "✅ Caddy Root CA copied to user profile."
-    else
-      echo "⚠️ Caddy Root CA not found yet. Skipping copy."
-    fi
-  '';
+  systemd = {
+    services = {
+      # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust
+      # This runs on the host and is fail-safe to prevent restart loops.
+      "container@caddy".postStart = ''
+        if [ -f /var/lib/caddy/pki/authorities/local/root.crt ]; then
+          mkdir -p /home/${config.my.username}/.pki
+          cp -f /var/lib/caddy/pki/authorities/local/root.crt /home/${config.my.username}/.pki/caddy-root.crt
+          chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
+          echo "✅ Caddy Root CA copied to user profile."
+        else
+          echo "⚠️ Caddy Root CA not found yet. Skipping copy."
+        fi
+      '';
+
+      crowdsec-firewall-bouncer = {
+        after = [ "container@crowdsec.service" ];
+      };
+
+      "container@crowdsec".preStart = ''
+        mkdir -p /var/lib/images/crowdsec
+        if [ ! -f /var/lib/images/crowdsec/bouncer-key ]; then
+          tr -dc A-Za-z0-9 </dev/urandom | head -c 32 > /var/lib/images/crowdsec/bouncer-key
+          chmod 600 /var/lib/images/crowdsec/bouncer-key
+        fi
+      '';
+    };
+
+    # IMAGE STATE STORAGE
+    tmpfiles.rules = [
+      "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
+      "d /var/lib/images/n8n 0755 root root - -"
+      "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
+      "d /var/lib/images/caddy 0755 root root - -"
+      "d /var/lib/images/litellm 0755 root root - -"
+      "d /var/lib/images/loki 0755 root root - -"
+      "d /var/lib/images/crowdsec 0755 root root - -"
+      "d /var/lib/images/monitoring 0755 root root - -"
+      "d /var/lib/images/monitoring/db 0755 root root - -"
+      "d /var/lib/images/monitoring/grafana 0755 root root - -"
+      "d /var/lib/images/qdrant 0755 root root - -"
+      "d /var/lib/images/open-webui 0755 root root - -"
+      "d /var/lib/images/lmstudio 0750 martin users - -"
+      "d /var/lib/images/netdata 0755 root root - -"
+      "d /var/lib/images/netdata/cache 0755 root root - -"
+      "d /var/lib/images/netdata/lib 0755 root root - -"
+      "d /var/lib/images/langfuse 0755 root root - -"
+      "d /var/lib/images/langfuse/db 0755 root root - -"
+      "d /var/lib/images/github-runner 0755 1000 100 - -"
+      "d /var/lib/images/syncthing 0755 root root - -"
+    ];
+  };
 
   home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
   home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
@@ -385,28 +432,15 @@
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
   boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
 
-  # IMAGE STATE STORAGE
-  systemd.tmpfiles.rules = [
-    "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
-    "d /var/lib/images/n8n 0755 root root - -"
-    "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
-    "d /var/lib/images/caddy 0755 root root - -"
-    "d /var/lib/images/litellm 0755 root root - -"
-    "d /var/lib/images/loki 0755 root root - -"
-    "d /var/lib/images/monitoring 0755 root root - -"
-    "d /var/lib/images/monitoring/db 0755 root root - -"
-    "d /var/lib/images/monitoring/grafana 0755 root root - -"
-    "d /var/lib/images/qdrant 0755 root root - -"
-    "d /var/lib/images/open-webui 0755 root root - -"
-    "d /var/lib/images/lmstudio 0750 martin users - -"
-    "d /var/lib/images/netdata 0755 root root - -"
-    "d /var/lib/images/netdata/cache 0755 root root - -"
-    "d /var/lib/images/netdata/lib 0755 root root - -"
-    "d /var/lib/images/langfuse 0755 root root - -"
-    "d /var/lib/images/langfuse/db 0755 root root - -"
-    "d /var/lib/images/github-runner 0755 1000 100 - -"
-    "d /var/lib/images/syncthing 0755 root root - -"
-  ];
+  # Host-level CrowdSec Firewall Bouncer
+  services.crowdsec-firewall-bouncer = {
+    enable = true;
+    secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
+    settings = {
+      api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
+      api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
+    };
+  };
 
   hardware = {
     cpu.intel.updateMicrocode = true;
