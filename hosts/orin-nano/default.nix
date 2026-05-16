@@ -156,7 +156,7 @@ in
     sops
     age
     libfido2
-    jetson-stats # Essential: provides the 'jtop' command
+    inputs.jetpack-nixos.legacyPackages.${pkgs.stdenv.hostPlatform.system}.jetson-stats # Essential: provides the 'jtop' command
   ];
 
   # Disko handles all fileSystems (/, /boot, /mnt/data)
