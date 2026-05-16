@@ -6229,11 +6229,11 @@
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1777664100,
-        "narHash": "sha256-NczFilYdsCqIWmyhqpQYGTBNfJVZq1T69W+oCWWnnH8=",
+        "lastModified": 1778876413,
+        "narHash": "sha256-aW29xgeJiuh0HOpdPbf2AWpb0CfF5MfQeT4B37xrA28=",
         "owner": "kleinbem",
         "repo": "nix-secrets",
-        "rev": "8e50d532c498ad9b1ecf3989bcbb5c815959e0ba",
+        "rev": "522c60ca74be1a7dcce16b38a6fb3e77d77ac941",
         "type": "github"
       },
       "original": {
