@@ -45,6 +45,7 @@ in
   # ─── Jetson-specific hardware ───────────────────────────────
   # The Orin Nano uses NVIDIA's JetPack BSP via jetpack-nixos.
   hardware = {
+    graphics.enable = true;
     enableRedistributableFirmware = true;
     # Enable automatic firmware synchronization for future updates
     nvidia-jetpack = {
