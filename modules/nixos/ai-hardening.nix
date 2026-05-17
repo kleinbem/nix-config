@@ -16,6 +16,21 @@ in
       default = true;
       description = "Enable global strict egress filtering for known AI containers.";
     };
+    airlockIPs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default =
+        let
+          inv = import ../../inventory.nix;
+        in
+        [
+          inv.network.nodes.comfyui.ip
+          inv.network.nodes.langflow.ip
+          inv.network.nodes.langfuse.ip
+          inv.network.nodes.vllm.ip
+          inv.network.nodes.litellm.ip
+        ];
+      description = "List of AI container IP addresses subject to strict egress filtering.";
+    };
     whitelistDomains = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -98,8 +113,10 @@ in
           # Allow traffic to dynamically whitelisted IPs
           ip daddr @ai_whitelisted_ips accept comment "Airlock 2.0: Dynamic Whitelist"
 
-          # Block egress from AI subnet to internet (anything not local)
-          ip saddr ${net.subnet} oifname "wlo1" log prefix "AI-AIRLOCK-EXT-DENY: " drop
+          # Block egress from AI containers to internet (anything not local)
+          ${lib.concatMapStringsSep "\n          " (
+            ip: ''ip saddr ${ip} oifname "${net.externalInterface}" log prefix "AI-AIRLOCK-EXT-DENY: " drop''
+          ) cfg.airlockIPs}
           
           # Allow local container-to-container if already established
           ct state { established, related } accept

@@ -315,6 +315,50 @@ in
               command = "/run/current-system/sw/bin/systemctl restart vllm.service";
               options = [ "NOPASSWD" ];
             }
+            {
+              command = "/run/current-system/sw/bin/nft list ruleset";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/ip route";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/ip addr";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/ip addr";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/ip route";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/cat /etc/hosts";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/cat /etc/resolv.conf";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/journalctl -u *";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/journalctl --machine *";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/systemctl status *";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/run/current-system/sw/bin/apparmor_status";
+              options = [ "NOPASSWD" ];
+            }
           ];
         }
       ];
