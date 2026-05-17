@@ -274,7 +274,6 @@
                     };
                   };
                 }
-                inputs.nix-topology.nixosModules.default
               ]
               ++ (if builtins.isList modules then modules else [ modules ]);
             };

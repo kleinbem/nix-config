@@ -17,10 +17,10 @@
       "plugdev"
       "adbusers"
     ];
-    hashedPasswordFile = config.sops.secrets.martin_password.path;
+    hashedPasswordFile = config.sops.secrets.martin_password_hash.path;
   };
 
-  sops.secrets.martin_password = {
+  sops.secrets.martin_password_hash = {
     neededForUsers = true;
   };
 }

@@ -10,7 +10,7 @@
 
     # We only need the user password for now
     secrets = {
-      martin_password = {
+      martin_password_hash = {
         neededForUsers = true;
       };
       u2f_keys = { };

@@ -196,8 +196,8 @@ in
           allow id 046d:c548
 
           # --- Security Keys ---
-          # YubiKey 5 (OTP+FIDO+CCID)
-          allow id 1050:0407
+          # Trust all Yubico devices (YubiKeys in any interface mode: OTP/FIDO/CCID)
+          allow id 1050:*
           # VeriMark DT Fingerprint Key
           allow id 047d:00f2
 
@@ -281,6 +281,18 @@ in
             }
             {
               command = "${pkgs.nh}/bin/nh os boot";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/nix/store/*-nixos-system-*/bin/switch-to-configuration switch";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/nix/store/*-nixos-system-*/bin/switch-to-configuration boot";
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = "/nix/store/*-nixos-system-*/bin/switch-to-configuration test";
               options = [ "NOPASSWD" ];
             }
             {
