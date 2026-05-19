@@ -3,11 +3,9 @@
   inputs,
   self,
   myInventory,
+  config,
   ...
 }:
-let
-  keys = import "${self}/modules/nixos/keys.nix";
-in
 {
   imports = [
     # IMPORTANT: You must run `nixos-generate-config` on the physical NASbook
@@ -26,7 +24,7 @@ in
     inputs.nix-presets.nixosModules.backup
 
     # Needs SOPS to unlock the secrets below
-    # ./secrets.nix
+    ./secrets.nix
   ];
 
   networking.hostName = "nasbook";
@@ -39,7 +37,7 @@ in
         ip = "${myInventory.network.nodes.paperless.ip}/24";
         hostDataDir = "/mnt/data/Archive/Paperless";
         hostConsumptionDir = "/mnt/data/Archive/Inbox";
-        # passwordFile = config.sops.secrets.paperless_password.path;
+        passwordFile = config.sops.secrets.paperless_password.path;
       };
 
       agent-team = {
@@ -85,9 +83,9 @@ in
       backup = {
         enable = true;
         ip = "${myInventory.network.nodes.backup.ip}/24";
-        # passwordFile = config.sops.secrets.restic_password.path;
-        # systemPasswordFile = config.sops.secrets.restic_system_password.path;
-        # rcloneConfigFile = config.sops.secrets.rclone_config.path;
+        passwordFile = config.sops.secrets.restic_password.path;
+        systemPasswordFile = config.sops.secrets.restic_system_password.path;
+        rcloneConfigFile = config.sops.secrets.rclone_config.path;
         targets = {
           "/mnt/data" = "/mnt/data";
         };
@@ -122,9 +120,10 @@ in
     interfaces."wt0".allowedTCPPorts = [ 22 ];
   };
 
-  users.users.martin.openssh.authorizedKeys.keys = [
-    keys.ssh.yubikey
-  ];
+  boot.loader = {
+    systemd-boot.enable = true;
+    efi.canTouchEfiVariables = true;
+  };
 
   system.stateVersion = "25.11"; # Or whatever the current state version is
 }

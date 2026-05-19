@@ -21,6 +21,10 @@ pkgs.testers.runNixOSTest {
           type = pkgs.lib.types.str;
           default = "cbr0";
         };
+        hostAddress = pkgs.lib.mkOption {
+          type = pkgs.lib.types.str;
+          default = "10.88.0.1";
+        };
       };
 
       config = {

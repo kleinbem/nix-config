@@ -9,7 +9,7 @@
     users = {
       root = {
         # Restoring sops-based password now that system is stable
-        hashedPasswordFile = config.sops.secrets.root_password_hash.path;
+        hashedPasswordFile = config.sops.secrets.root-password-hash.path;
       };
     };
 
@@ -21,7 +21,8 @@
   # Security: Disable unauthenticated stage-1 shell now that system boots correctly
   boot.initrd.systemd.emergencyAccess = true;
 
-  sops.secrets.root_password_hash = {
+  sops.secrets.root-password-hash = {
+    key = "root_password_hash";
     neededForUsers = true;
   };
 

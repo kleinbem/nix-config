@@ -42,7 +42,7 @@ in
           mkt.github.copilot
           mkt.rooveterinaryinc.roo-cline
           mkt.github.copilot-chat
-          # Claude-Code removed because it depends on the broken Wireshark package.
+          mkt.anthropic.claude-code # Re-enabled to test if upstream wireshark dependency issue is resolved
         ];
     };
   };

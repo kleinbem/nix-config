@@ -92,6 +92,12 @@ in
       wants = [ "network-online.target" ];
     };
 
+    # Allow containers on the bridge to reach dnsmasq on port 53
+    networking.firewall.interfaces."${net.bridge}" = lib.mkIf cfg.strictEgress {
+      allowedTCPPorts = [ 53 ];
+      allowedUDPPorts = [ 53 ];
+    };
+
     networking.nftables.tables.ai-airlock = lib.mkIf cfg.strictEgress {
       family = "inet";
       content = ''

@@ -88,7 +88,7 @@ in
           RestrictRealtime = true;
           RestrictSUIDSGID = true;
         };
-        scriptArgs = "%i";
+        scriptArgs = "%I";
         script = ''
           # Input format: "Title|Message|ReportPath"
           IFS='|' read -r TITLE MESSAGE REPORT <<< "$1"
@@ -169,13 +169,14 @@ in
 
           TITLE="Daily-Heartbeat"
           MSG="$STATUS-Checked-Host-and-Containers"
-          ${config.systemd.package}/bin/systemctl start "security-notify@$TITLE|$MSG|HEARTBEAT.service"
+          ESCAPED=$(${config.systemd.package}/bin/systemd-escape "$TITLE|$MSG|HEARTBEAT")
+          ${config.systemd.package}/bin/systemctl start "security-notify@$ESCAPED.service"
         '';
       };
 
       # Proactive Alerts: Notify on Home Manager failure
       "home-manager-${config.my.username}" = {
-        unitConfig.OnFailure = "security-notify@HM-Failure|Home-Manager-Activation-Failed|CHECK-LOGS";
+        unitConfig.OnFailure = "security-notify@HM\\x2dFailure\\x7cHome\\x2dManager\\x2dActivation\\x2dFailed\\x7cCHECK\\x2dLOGS.service";
       };
     };
 

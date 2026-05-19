@@ -122,11 +122,15 @@ notify_if_needed() {
   # Check if this is running as a service
   if ! [ -t 1 ]; then
     if [ -s "$REPORT_HOST" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$REPORT_HOST"; then
-      systemctl start "security-notify@Security-Risks-Detected|Host-vulnerabilities-found|$REPORT_HOST.service" || true
+      local ESCAPED_HOST
+      ESCAPED_HOST=$(systemd-escape "Security-Risks-Detected|Host-vulnerabilities-found|$REPORT_HOST")
+      systemctl start "security-notify@$ESCAPED_HOST.service" || true
     fi
 
     if [ -s "$REPORT_CONT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$REPORT_CONT"; then
-      systemctl start "security-notify@Container-Vulnerabilities-Found|Risks-detected-in-Podman|$REPORT_CONT.service" || true
+      local ESCAPED_CONT
+      ESCAPED_CONT=$(systemd-escape "Container-Vulnerabilities-Found|Risks-detected-in-Podman|$REPORT_CONT")
+      systemctl start "security-notify@$ESCAPED_CONT.service" || true
     fi
   fi
 }

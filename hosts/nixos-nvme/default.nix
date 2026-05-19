@@ -392,10 +392,11 @@
       ];
       systemd.enable = true;
       systemd.tpm2.enable = true;
+      services.lvm.enable = true;
     };
     loader = {
       systemd-boot.enable = lib.mkForce false;
-      systemd-boot.configurationLimit = 10;
+      systemd-boot.configurationLimit = 50;
       efi.canTouchEfiVariables = true;
     };
     lanzaboote = {
