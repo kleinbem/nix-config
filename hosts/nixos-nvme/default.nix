@@ -336,6 +336,12 @@
 
       crowdsec-firewall-bouncer = {
         after = [ "container@crowdsec.service" ];
+        serviceConfig = {
+          ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 30); do ${pkgs.netcat-openbsd}/bin/nc -z ${myInventory.network.nodes.crowdsec.ip} ${toString myInventory.network.nodes.crowdsec.port} && exit 0 || sleep 5; done; exit 1'";
+          Restart = "on-failure";
+          RestartSec = "10s";
+          TimeoutStartSec = "180";
+        };
       };
 
       "container@crowdsec".preStart = ''
