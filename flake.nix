@@ -292,6 +292,10 @@
             orin-nano = mkHost "orin-nano" {
               modules = [ ./hosts/orin-nano/default.nix ];
             };
+            orin-nano-bootstrap = mkHost "orin-nano-bootstrap" {
+              system = "aarch64-linux";
+              modules = [ ./hosts/orin-nano-bootstrap/default.nix ];
+            };
             core-pi = mkHost "core-pi" {
               modules = [ ./hosts/core-pi/default.nix ];
             };

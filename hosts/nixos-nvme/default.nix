@@ -439,6 +439,9 @@
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
   boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
 
+  # Allow the nix sandbox to access the qemu binfmt interpreter for aarch64 builds
+  nix.settings.extra-sandbox-paths = [ "/run/binfmt" ];
+
   # Host-level CrowdSec Firewall Bouncer
   services.crowdsec-firewall-bouncer = {
     enable = true;
