@@ -16,6 +16,21 @@ in
         programs.firejail = {
           enable = true;
           wrappedBinaries = {
+            mpv = {
+              executable = "${pkgs.mpv}/bin/mpv";
+              profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
+            };
+            chromium = {
+              executable = "${pkgs.chromium}/bin/chromium";
+              profile = "${pkgs.firejail}/etc/firejail/chromium.profile";
+              extraArgs = [ "--noblacklist=/etc/cups" ];
+            };
+            zathura = {
+              executable = "${pkgs.zathura}/bin/zathura";
+              profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
+            };
+          }
+          // lib.optionalAttrs isX86 {
             firefox = {
               executable = "${pkgs.firefox-beta}/bin/firefox-beta";
               profile = "${pkgs.firejail}/etc/firejail/firefox.profile";
@@ -45,10 +60,6 @@ in
               executable = "${pkgs.obsidian}/bin/obsidian";
               profile = "${pkgs.firejail}/etc/firejail/obsidian.profile";
             };
-            mpv = {
-              executable = "${pkgs.mpv}/bin/mpv";
-              profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
-            };
             bitwarden = {
               executable = "${pkgs.bitwarden-desktop}/bin/bitwarden";
               profile = "${pkgs.firejail}/etc/firejail/bitwarden.profile";
@@ -61,17 +72,6 @@ in
               executable = "${pkgs.obs-studio}/bin/obs";
               profile = "${pkgs.firejail}/etc/firejail/obs.profile";
             };
-            chromium = {
-              executable = "${pkgs.chromium}/bin/chromium";
-              profile = "${pkgs.firejail}/etc/firejail/chromium.profile";
-              extraArgs = [ "--noblacklist=/etc/cups" ];
-            };
-            zathura = {
-              executable = "${pkgs.zathura}/bin/zathura";
-              profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
-            };
-          }
-          // lib.optionalAttrs isX86 {
             google-chrome-stable = {
               executable = "${pkgs.google-chrome}/bin/google-chrome-stable";
               profile = "${pkgs.firejail}/etc/firejail/google-chrome.profile";

@@ -29,7 +29,6 @@ in
     ./disko.nix
     ./secrets.nix
     "${self}/modules/nixos/persistence.nix"
-    "${self}/modules/nixos/desktop.nix"
   ];
 
   networking.hostName = "orin-nano";
@@ -178,8 +177,6 @@ in
   };
 
   # ─── AI Edge Services ──────────────────────────────────────
-  virtualisation.libvirtd.enable = true;
-
   my = {
     containers = {
       ollama = {
@@ -269,8 +266,7 @@ in
         ip = "${myInventory.network.nodes.syncthing-orin.ip}/24";
         hostDataDir = "/var/lib/images/syncthing";
         vaults = {
-          "/home/martin/Documents/Notes" = "/home/martin/Documents/Notes";
-          "/home/martin/Develop" = "/home/martin/Develop";
+          "/home/martin/Develop/github.com/kleinbem/nix" = "/home/martin/Develop/github.com/kleinbem/nix";
         };
       };
     };

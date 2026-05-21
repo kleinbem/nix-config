@@ -1,11 +1,8 @@
 {
   device ? "/dev/sdc",
+  secondDiskDevice ? "/dev/nvme1n1",
   ...
 }:
-let
-  # The 2nd NVMe SSD for Frigate storage
-  secondDiskDevice = "/dev/nvme1n1";
-in
 {
   disko.devices = {
     disk = {
