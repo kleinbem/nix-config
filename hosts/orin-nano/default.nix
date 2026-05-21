@@ -166,6 +166,7 @@ in
 
   # Disko handles all fileSystems (/, /boot, /mnt/data)
   disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1"; # Default for internal use
+  _module.args.secondDiskDevice = null; # No second disk by default; override at install time
 
   # ─── Virtualization ─────────────────────────────────────────
   containers.ollama.config = {
