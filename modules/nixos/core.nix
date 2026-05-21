@@ -45,6 +45,7 @@ in
         "https://kleinbem.cachix.org"
         "https://devenv.cachix.org"
         "https://cuda-maintainers.cachix.org"
+        "https://anduril.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
@@ -53,6 +54,7 @@ in
         keys.cachix.kleinbem
         keys.cachix.devenv
         keys.cachix.cuda-maintainers
+        keys.cachix.anduril
       ];
       download-buffer-size = 1073741824;
 

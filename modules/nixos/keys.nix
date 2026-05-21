@@ -6,6 +6,7 @@
     kleinbem = "kleinbem.cachix.org-1:/0lyoaF/Rq095fMmndnbvBpuoqXsqydTKmG1mUfMlN4=";
     devenv = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
     cuda-maintainers = "cuda-maintainers.cachix.org-1:0dq3Anpl63anx7FsVnefPGowuE6gj7KE8txarwKScsu=";
+    anduril = "anduril.cachix.org-1:0KJgGiAgDtCE9Pl0wvvyALRJlPhQMLRMMt+43JExFlY=";
   };
 
   # SSH Public Keys

@@ -108,7 +108,7 @@
 
     jetpack-nixos = {
       url = "github:anduril/jetpack-nixos";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # intentionally NOT following nixpkgs — anduril's cache is built with jetpack's pinned nixpkgs
     };
 
     # cosmic flake removed — using nixpkgs COSMIC instead (more reliable, pre-built by Hydra)
