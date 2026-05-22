@@ -335,7 +335,7 @@
             in
             {
               meta = {
-                nixpkgs = import inputs.nixpkgs { hostPlatform = "x86_64-linux"; };
+                nixpkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
                 specialArgs = {
                   inherit inputs self myInventory;
                 };
