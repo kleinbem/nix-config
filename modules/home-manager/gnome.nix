@@ -13,15 +13,20 @@
     dconf.settings = {
       "org/gnome/desktop/interface" = {
         color-scheme = "prefer-dark";
-        enable-hot-corners = false;
+        enable-hot-corners = true;
         show-battery-percentage = true;
         font-name = "Inter 11";
         document-font-name = "Inter 11";
         monospace-font-name = "JetBrainsMono Nerd Font 10";
         clock-show-weekday = true;
         clock-show-date = true;
+        clock-show-seconds = true;
         gtk-enable-primary-paste = true;
         locate-pointer = true;
+      };
+
+      "org/gnome/desktop/calendar" = {
+        show-weekdate = true;
       };
 
       "org/gnome/desktop/wm/preferences" = {
@@ -142,6 +147,8 @@
         animation = 1; # Fast animations
         window-demanding-attention-focus = true;
         startup-status = 0; # Startup status: Desktop (no overview)
+        panel-size = 28; # Sleeker top bar height
+        panel-button-padding-size = 6; # Closer top bar item spacing
       };
 
       "org/gnome/shell/extensions/space-bar/appearance" = {
@@ -181,7 +188,7 @@
         menu-button-icon-size = 20;
         menu-button-system-monitor = "${pkgs.mission-center}/bin/missioncenter";
         menu-button-terminal = "ptyxis";
-        show-activities-button = true;
+        show-activities-button = false;
         symbolic-icon = true;
       };
 
@@ -189,6 +196,21 @@
         enable-gradient = true;
         active-window-hint = 1; # Pulse hint
         active-window-hint-color = "rgba(53, 132, 228, 0.5)";
+      };
+
+      "org/gnome/shell/extensions/vitals" = {
+        hot-sensors = [
+          "_processor_usage_"
+          "_memory_usage_"
+          "_temperature_"
+        ];
+        show-cpu = true;
+        show-memory = true;
+        show-temperature = true;
+        show-battery = false;
+        show-storage = false;
+        show-network = false;
+        update-time = 2;
       };
 
       # --- Bluefin-inspired Improvements ---
