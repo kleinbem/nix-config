@@ -21,6 +21,7 @@
         clock-show-weekday = true;
         clock-show-date = true;
         gtk-enable-primary-paste = true;
+        locate-pointer = true;
       };
 
       "org/gnome/desktop/wm/preferences" = {
@@ -34,6 +35,7 @@
         edge-tiling = true;
         dynamic-workspaces = true;
         center-new-windows = true;
+        workspaces-only-on-primary = true;
         experimental-features = [
           "scale-monitor-framebuffer"
           "variable-refresh-rate"
@@ -48,10 +50,26 @@
       "org/gnome/desktop/peripherals/touchpad" = {
         tap-to-click = true;
         natural-scroll = true;
+        disable-while-typing = true;
+        click-method = "fingers";
       };
 
       "org/gnome/desktop/peripherals/mouse" = {
         accel-profile = "flat";
+      };
+
+      "org/gnome/settings-daemon/plugins/xsettings" = {
+        antialiasing = "rgba";
+        hinting = "slight";
+      };
+
+      "org/gnome/desktop/sound" = {
+        event-sounds = false;
+      };
+
+      "org/gnome/settings-daemon/plugins/power" = {
+        sleep-inactive-ac-type = "nothing";
+        power-button-action = "interactive";
       };
 
       "org/gnome/shell" = {
@@ -112,15 +130,28 @@
         dock-fixed = true;
         autohide = false;
         show-apps-at-top = true;
+        click-action = "minimize-or-previews";
+        scroll-action = "cycle-windows";
+        show-mounts = false;
+        custom-theme-shrink = true;
       };
 
       "org/gnome/shell/extensions/just-perfection" = {
         accessibility-menu = false;
         search = true;
+        animation = 1; # Fast animations
+        window-demanding-attention-focus = true;
+        startup-status = 0; # Startup status: Desktop (no overview)
       };
 
       "org/gnome/shell/extensions/space-bar/appearance" = {
         workspace-margin = 4;
+      };
+
+      "org/gnome/shell/extensions/clipboard-indicator" = {
+        toggle-menu = [ "<Super>v" ];
+        history-size = 100;
+        clear-history = [ "<Super><Shift>c" ];
       };
 
       "org/gnome/shell/extensions/search-light" = {
@@ -215,6 +246,41 @@
 
       "org/gnome/desktop/privacy" = {
         report-technical-problems = false;
+        remove-old-trash-files = true;
+        remove-old-temp-files = true;
+        old-files-age = lib.hm.gvariant.mkUint32 30;
+      };
+
+      # --- Desktop & Workspace Keybindings ---
+      "org/gnome/desktop/wm/keybindings" = {
+        close = [
+          "<Super>q"
+          "<Alt>F4"
+        ];
+        minimize = [ "<Super>comma" ];
+        maximize = [ "<Super>m" ];
+        toggle-maximized = [ "<Super>f" ];
+
+        # Workspace navigation (Sway-like)
+        switch-to-workspace-1 = [ "<Super>1" ];
+        switch-to-workspace-2 = [ "<Super>2" ];
+        switch-to-workspace-3 = [ "<Super>3" ];
+        switch-to-workspace-4 = [ "<Super>4" ];
+        switch-to-workspace-5 = [ "<Super>5" ];
+        switch-to-workspace-6 = [ "<Super>6" ];
+        switch-to-workspace-7 = [ "<Super>7" ];
+        switch-to-workspace-8 = [ "<Super>8" ];
+        switch-to-workspace-9 = [ "<Super>9" ];
+
+        move-to-workspace-1 = [ "<Super><Shift>1" ];
+        move-to-workspace-2 = [ "<Super><Shift>2" ];
+        move-to-workspace-3 = [ "<Super><Shift>3" ];
+        move-to-workspace-4 = [ "<Super><Shift>4" ];
+        move-to-workspace-5 = [ "<Super><Shift>5" ];
+        move-to-workspace-6 = [ "<Super><Shift>6" ];
+        move-to-workspace-7 = [ "<Super><Shift>7" ];
+        move-to-workspace-8 = [ "<Super><Shift>8" ];
+        move-to-workspace-9 = [ "<Super><Shift>9" ];
       };
 
       # --- Productivity Keybindings ---

@@ -70,9 +70,6 @@ in
     # High-performance fan profile for AI workloads
     nvfancontrol.enable = true;
 
-    # 1. Disable LVM and MDADM globally and in initrd to stop "dm-snapshot" from appearing.
-    lvm.enable = lib.mkForce false;
-
     netbird.enable = true;
 
     # SSD Health
@@ -93,25 +90,32 @@ in
     # Enable systemd in initrd for TPM2 auto-unlock (provided by Disko)
     initrd = {
       systemd.enable = true;
-
-      # 1. Disable LVM and MDADM globally and in initrd to stop "dm-snapshot" from appearing.
-      services.lvm.enable = lib.mkForce false;
-
-      # 2. Stop NixOS from adding any "default" PC modules.
       includeDefaultModules = false;
-
-      # 3. Explicitly force ONLY the modules we know exist in the JetPack kernel.
-      kernelModules = lib.mkForce [ ];
-      availableKernelModules = lib.mkForce [
+      # lib.mkOverride 0 beats jetpack-nixos's own lib.mkForce so lists don't
+      # concatenate and x86-only modules (tpm-tis) are never included.
+      kernelModules = lib.mkOverride 0 [
+        "phy-tegra-xusb" # Tegra USB PHY — needed before xhci-tegra can init USB
+        "xhci-tegra" # Tegra USB 3 host controller (USB-attached NVMe)
+        "phy_tegra194_p2u" # PCIe PHY — needed before pcie_tegra194
+        "pcie_tegra194" # Tegra PCIe host controller (internal NVMe)
+      ];
+      availableKernelModules = lib.mkOverride 0 [
+        # NVMe (internal PCIe or USB enclosure)
         "nvme"
-        "sd_mod"
-        "ext4"
+        "nvme-core"
+        # LUKS + LVM
         "dm_crypt"
         "dm_mod"
+        # Filesystems
+        "ext4"
+        # USB storage (for USB-attached NVMe enclosure)
         "uas"
         "usb_storage"
         "usbhid"
-        "tpm_crb" # Compatible with T234
+        # SCSI
+        "sd_mod"
+        # TPM — T234 uses CRB interface, not tpm-tis (x86 only)
+        "tpm_crb"
       ];
     };
     swraid.enable = false;
@@ -165,8 +169,9 @@ in
   ];
 
   # Disko handles all fileSystems (/, /boot, /mnt/data)
-  disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1"; # Default for internal use
-  _module.args.secondDiskDevice = null; # No second disk by default; override at install time
+  disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1";
+  _module.args.device = "/dev/nvme0n1"; # Passed to disko.nix function argument
+  _module.args.secondDiskDevice = null;
 
   # ─── Virtualization ─────────────────────────────────────────
   containers.ollama.config = {
@@ -188,7 +193,7 @@ in
         memoryLimit = "6G";
       };
       llama-cpp = {
-        enable = true; # Primary lean engine
+        enable = false; # Temporarily disabled: nixpkgs.perl eval error in 26.05 containers — re-enable after first boot
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-2-9b-it-q4_k_m.gguf"; # Updated to Gemma as requested
       };

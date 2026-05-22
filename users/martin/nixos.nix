@@ -16,6 +16,7 @@
       "tss"
       "plugdev"
       "adbusers"
+      "dialout"
     ];
     hashedPasswordFile = config.sops.secrets.martin_password.path;
   };

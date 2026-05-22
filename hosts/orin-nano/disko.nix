@@ -79,12 +79,13 @@
       vg_orin = {
         type = "lvm_vg";
         lvs = {
-          root = {
+          nix = {
             size = "128G";
             content = {
               type = "filesystem";
               format = "ext4";
-              mountpoint = "/";
+              mountpoint = "/nix";
+              mountOptions = [ "noatime" ];
             };
           };
           models = {

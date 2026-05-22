@@ -228,6 +228,10 @@ in
           # Webcam USB Audio
           allow id 0408:7a10
 
+          # --- Debug & Development ---
+          # FTDI FT232R USB UART (USB-to-TTL serial adapter for Jetson serial console)
+          allow id 0403:6001
+
           # --- Mobile Devices ---
           # Trust all Samsung Electronics Co., Ltd devices (MTP, ADB, Download Mode, etc.)
           allow id 04e8:*

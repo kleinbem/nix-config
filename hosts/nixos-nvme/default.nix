@@ -109,6 +109,7 @@
       openssl
       parted
       dosfstools
+      tio # serial terminal (USB-TTL, embedded devices)
     ];
   };
 

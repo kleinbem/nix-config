@@ -33,19 +33,40 @@ in
     loader = {
       systemd-boot.enable = lib.mkForce true;
       generic-extlinux-compatible.enable = lib.mkForce false;
-      efi.canTouchEfiVariables = true;
+      efi.canTouchEfiVariables = lib.mkForce false;
     };
     tmp.useTmpfs = false;
     swraid.enable = false;
+    kernelParams = [
+      "console=ttyTHS0,115200n8"
+      "console=tty0"
+    ];
+    kernelModules = lib.mkOverride 0 [ ];
     initrd = {
+      systemd.emergencyAccess = true;
       includeDefaultModules = false;
-      availableKernelModules = [
+      # Force-load USB PHY + host controller before udev runs so the USB SSD
+      # is already enumerated when systemd starts looking for disk-main-root.
+      kernelModules = lib.mkOverride 0 [
+        "phy-tegra-xusb" # Tegra USB PHY — xhci-tegra won't bring up ports without it
+        "xhci-tegra" # Tegra xHCI host controller
+      ];
+      availableKernelModules = lib.mkOverride 0 [
+        # Storage
         "nvme"
         "sd_mod"
         "ext4"
+        # USB storage protocols
         "uas"
         "usb_storage"
         "usbhid"
+        # USB Type-C
+        "ucsi_ccg"
+        "typec_ucsi"
+        "typec"
+        # PCIe (needed for NVMe and Ethernet on Orin)
+        "phy_tegra194_p2u"
+        "pcie_tegra194"
       ];
     };
   };
@@ -56,6 +77,14 @@ in
       settings.PasswordAuthentication = false;
     };
     fstrim.enable = true;
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      publish = {
+        enable = true;
+        addresses = true;
+      };
+    };
   };
 
   # SSH reachable on any interface — no netbird/VPN needed at this stage
@@ -65,7 +94,11 @@ in
   };
 
   users.users = {
-    root.openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+    root = {
+      openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+      # Temporary plain-text password for emergency shell access during commissioning
+      initialPassword = "nixos";
+    };
     martin = {
       isNormalUser = true;
       extraGroups = [ "wheel" ];
