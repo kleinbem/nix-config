@@ -493,6 +493,8 @@
         443 # Caddy HTTPS (access all services via reverse proxy)
         9091 # Cockpit
       ];
+      # Tang (LUKS auto-unlock for orin-nano) on the LAN/Wi-Fi interface only
+      interfaces."wlo1".allowedTCPPorts = [ 7654 ];
       allowedTCPPortRanges = [
         {
           from = 1714;
@@ -510,6 +512,13 @@
   };
 
   services = {
+    # Tang server for headless LUKS auto-unlock of fleet hosts (e.g. orin-nano clevis).
+    # LAN-only; security comes from network reachability + the encrypted JWE blob, not auth.
+    tang = {
+      enable = true;
+      ipAddressAllow = [ "10.0.0.0/16" ];
+    };
+
     journald.extraConfig = ''
       SystemMaxUse=500M
       SystemMaxFileSize=50M

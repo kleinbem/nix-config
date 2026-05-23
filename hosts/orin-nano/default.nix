@@ -89,7 +89,17 @@ in
     tmp.useTmpfs = true;
     # Enable systemd in initrd for TPM2 auto-unlock (provided by Disko)
     initrd = {
-      systemd.enable = true;
+      systemd = {
+        enable = true;
+        # Bring up the wired NIC (DHCP) in initrd so clevis can reach the Tang server.
+        network = {
+          enable = true;
+          networks."10-lan" = {
+            matchConfig.Name = "en* eth*";
+            networkConfig.DHCP = "ipv4";
+          };
+        };
+      };
       includeDefaultModules = false;
       # lib.mkOverride 0 beats jetpack-nixos's own lib.mkForce so lists don't
       # concatenate and x86-only modules (tpm-tis) are never included.
@@ -116,7 +126,17 @@ in
         "sd_mod"
         # TPM — T234 uses CRB interface, not tpm-tis (x86 only)
         "tpm_crb"
+        # Onboard Tegra ethernet — needed in initrd so clevis can reach Tang for unlock
+        "nvethernet"
       ];
+      # Headless LUKS auto-unlock: clevis fetches the key from the Tang server on the LAN
+      # during initrd. The LUKS passphrase keyslot stays as the fallback (prompted on
+      # serial) if Tang is unreachable, so a Tang/network outage can't lock us out.
+      clevis = {
+        enable = true;
+        useTang = true;
+        devices."orin_crypt".secretFile = ./orin_crypt.jwe;
+      };
     };
     swraid.enable = false;
   };

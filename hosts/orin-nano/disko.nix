@@ -28,10 +28,11 @@
                 name = "orin_crypt";
                 settings = {
                   allowDiscards = true;
-                  crypttabExtraOpts = [
-                    "tpm2-device=auto"
-                    "fido2-device=auto"
-                  ];
+                  # tpm2-device=auto / fido2-device=auto removed: this Jetson exposes no
+                  # /dev/tpm0 (no enrolled TPM/FIDO keyslot), so the initrd waited ~90s for
+                  # a TPM that never appears and dropped to emergency mode before the
+                  # passphrase fallback. Without them, boot prompts for the LUKS passphrase
+                  # on the serial console. Re-add after enrolling a TPM2 keyslot on-device.
                 };
                 content = {
                   type = "lvm_pv";
