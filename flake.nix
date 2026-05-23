@@ -376,6 +376,7 @@
                 deployment = {
                   targetHost = hostMeta.orin-nano.ip;
                   targetUser = "root";
+                  buildOnTarget = true; # l4t kernel modules can't cross-compile from x86_64
                   inherit (hostMeta.orin-nano) tags;
                 };
                 imports = [ ./hosts/orin-nano/default.nix ];

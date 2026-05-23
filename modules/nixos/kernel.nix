@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 
 {
   # ==========================================
@@ -80,14 +80,16 @@
 
     ];
 
-    # Early KMS: Professional flicker-free boot for Intel i915
-    initrd.kernelModules = [ "i915" ];
+    # Early KMS: Professional flicker-free boot for Intel i915 (x86 only — the module
+    # does not exist in the aarch64 Tegra kernel, which would break the initrd build).
+    initrd.kernelModules = lib.optionals pkgs.stdenv.hostPlatform.isx86 [ "i915" ];
 
     # Support for system analysis and crash dumps (Cockpit)
     crashDump.enable = true;
   };
 
-  # Thermald is vastly superior for Intel chips handling sustained AI thermal load
-  services.thermald.enable = lib.mkDefault true;
+  # Thermald is vastly superior for Intel chips handling sustained AI thermal load.
+  # x86 only: thermald includes <cpuid.h> and fails to compile on aarch64.
+  services.thermald.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isx86;
   services.power-profiles-daemon.enable = lib.mkForce false; # Disable to prevent conflicts
 }
