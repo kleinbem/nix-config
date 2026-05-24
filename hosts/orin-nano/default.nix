@@ -135,7 +135,12 @@ in
       clevis = {
         enable = true;
         useTang = true;
-        devices."orin_crypt".secretFile = ./orin_crypt.jwe;
+        # pkgs.writeText makes this a build derivation that colmena pushes to the Orin.
+        # A plain path (./orin_crypt.jwe) resolves to the git+file:// source, which
+        # buildOnTarget never copies — the Orin can't fetch local workstation URLs.
+        devices."orin_crypt".secretFile = pkgs.writeText "orin_crypt.jwe" (
+          builtins.readFile ./orin_crypt.jwe
+        );
       };
     };
     swraid.enable = false;
