@@ -351,6 +351,9 @@ in
       "1.1.1.1"
       "8.8.8.8"
     ];
+    # Include 'static' in interface order so 1.1.1.1/8.8.8.8 appear as fallbacks
+    # when NetBird's lo resolver (127.0.0.1) isn't running yet.
+    resolvconf.extraConfig = "interface_order='lo lo[0-9]* static'";
     # Container bridge — needed by frigate/syncthing nspawn containers
     bridges."cbr0".interfaces = [ ];
     useDHCP = false;
