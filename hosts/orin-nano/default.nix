@@ -394,8 +394,14 @@ in
   };
 
   users.users = {
-    martin.openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
-    root.openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+    martin.openssh.authorizedKeys.keys = [
+      keys.ssh.yubikey
+      keys.ssh.fido2
+    ];
+    root.openssh.authorizedKeys.keys = [
+      keys.ssh.yubikey
+      keys.ssh.fido2
+    ];
   };
 
   # --- Manual UI Specialisation ---
