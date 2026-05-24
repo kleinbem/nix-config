@@ -108,6 +108,10 @@ in
         "xhci-tegra" # Tegra USB 3 host controller (USB-attached NVMe)
         "phy_tegra194_p2u" # PCIe PHY — needed before pcie_tegra194
         "pcie_tegra194" # Tegra PCIe host controller (internal NVMe)
+        # Onboard NIC (Realtek RTL8168 via r8168 OOT driver, not nvethernet)
+        # Must be in kernelModules (eager) so networkd can bring up enP8p1s0
+        # before clevis attempts to contact the Tang server.
+        "r8168"
       ];
       availableKernelModules = lib.mkOverride 0 [
         # NVMe (internal PCIe or USB enclosure)
@@ -126,8 +130,6 @@ in
         "sd_mod"
         # TPM — T234 uses CRB interface, not tpm-tis (x86 only)
         "tpm_crb"
-        # Onboard Tegra ethernet — needed in initrd so clevis can reach Tang for unlock
-        "nvethernet"
       ];
       # Headless LUKS auto-unlock: clevis fetches the key from the Tang server on the LAN
       # during initrd. The LUKS passphrase keyslot stays as the fallback (prompted on
