@@ -375,9 +375,10 @@ in
     updater.enable = lib.mkForce false;
   };
 
-  users.users.martin.openssh.authorizedKeys.keys = [
-    keys.ssh.yubikey
-  ];
+  users.users = {
+    martin.openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+    root.openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+  };
 
   # --- Manual UI Specialisation ---
   # Only active if selected at boot or via 'sudo /run/current-system/specialisation/desktop/bin/switch'
