@@ -346,14 +346,25 @@ in
     "d /nix/persist/var/lib/frigate 0755 root root - -"
   ];
 
+  # systemd-resolved as the local DNS resolver — integrates cleanly with NetBird
+  # and provides fallback DNS even when NetBird is disconnected.
+  services.resolved = {
+    enable = true;
+    fallbackDns = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
+    dnssec = "false";
+    extraConfig = ''
+      DNSStubListener=yes
+    '';
+  };
+
   networking = {
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"
     ];
-    # Include 'static' in interface order so 1.1.1.1/8.8.8.8 appear as fallbacks
-    # when NetBird's lo resolver (127.0.0.1) isn't running yet.
-    resolvconf.extraConfig = "interface_order='lo lo[0-9]* static'";
     # Container bridge — needed by frigate/syncthing nspawn containers
     bridges."cbr0".interfaces = [ ];
     useDHCP = false;
