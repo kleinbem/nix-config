@@ -81,7 +81,7 @@ in
         PasswordAuthentication = false;
         # Disable 2FA for SSH — colmena deploys non-interactively and cannot
         # provide TOTP. Publickey-only is sufficient on a LAN-only service.
-        AuthenticationMethods = "publickey";
+        AuthenticationMethods = lib.mkForce "publickey";
       };
     };
   };
