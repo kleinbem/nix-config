@@ -120,6 +120,7 @@ in
         gnome-font-viewer
         gnome-logs
         smile # Modern Emoji Picker
+        waypipe # Wayland remote display forwarding over SSH
       ];
 
       fonts.packages = with pkgs; [
@@ -156,6 +157,7 @@ in
           wl-clipboard
           kanshi # Display management
           swaybg # Wallpaper support
+          waypipe # Wayland remote display forwarding over SSH
         ];
       };
 

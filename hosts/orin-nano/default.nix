@@ -129,11 +129,14 @@ in
         # Onboard Tegra ethernet — needed in initrd so clevis can reach Tang for unlock
         "nvethernet"
       ];
-      # Clevis/Tang auto-unlock: disabled until orin_crypt.jwe is generated.
-      # To enable: run `clevis luks bind -d /dev/nvme0n1p2 tang '{"url":"http://10.0.0.5:7654"}'`
-      # on the Orin, export the JWE token, commit as hosts/orin-nano/orin_crypt.jwe, then
-      # set clevis.enable = true and re-deploy.
-      clevis.enable = false;
+      # Headless LUKS auto-unlock: clevis fetches the key from the Tang server on the LAN
+      # during initrd. The LUKS passphrase keyslot stays as the fallback (prompted on
+      # serial) if Tang is unreachable, so a Tang/network outage can't lock us out.
+      clevis = {
+        enable = true;
+        useTang = true;
+        devices."orin_crypt".secretFile = ./orin_crypt.jwe;
+      };
     };
     swraid.enable = false;
   };
