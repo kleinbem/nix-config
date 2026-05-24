@@ -8756,11 +8756,11 @@
         "nixpkgs": "nixpkgs_49"
       },
       "locked": {
-        "lastModified": 1779654237,
-        "narHash": "sha256-sw0GMyBqKo9vM70BBRV9QptgZ4gN+hC/5aEWrQUdo1U=",
+        "lastModified": 1779654298,
+        "narHash": "sha256-2LRZ6Fp7j49gvjFRqHs/wMYh63jWHQJCLKgdKffLwkg=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "ff5f9f4d60cc259e9d1d1ce73b87003634874431",
+        "rev": "e94618103dd622d1209d0a030067ac0cb5b84113",
         "type": "github"
       },
       "original": {
