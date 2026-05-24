@@ -472,6 +472,12 @@
 
   networking = {
     hostName = "nixos-nvme";
+    # TODO: remove once OpenWrt router is enrolled in NetBird and pushes DNS nameserver rules.
+    # NetBird peer IPs are stable, but this bypasses proper split-DNS.
+    hosts."100.117.61.169" = [
+      "orin-nano.netbird.cloud"
+      "orin-nano"
+    ];
     networkmanager = {
       enable = true;
       plugins = [ pkgs.networkmanager-openvpn ];
