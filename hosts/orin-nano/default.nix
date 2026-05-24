@@ -363,6 +363,12 @@ in
   services.snapper.configs = lib.mkForce { };
   systemd.services.snapper-init-persist.enable = lib.mkForce false;
 
+  # ClamAV is irrelevant on a headless edge node with no user-facing file ingestion
+  services.clamav = {
+    daemon.enable = lib.mkForce false;
+    updater.enable = lib.mkForce false;
+  };
+
   users.users.martin.openssh.authorizedKeys.keys = [
     keys.ssh.yubikey
   ];
