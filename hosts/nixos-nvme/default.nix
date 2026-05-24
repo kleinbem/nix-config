@@ -384,6 +384,10 @@
 
   boot = {
     kernelPackages = pkgs.linuxPackages_zen;
+    # Force the JMicron JMS581 (152d:0581) USB-NVMe bridge out of UAS into BOT mode.
+    # Its UAS firmware resets under sustained write load, causing I/O errors and
+    # filesystem corruption when provisioning the Orin SSD over the USB enclosure.
+    kernelParams = [ "usb-storage.quirks=152d:0581:u" ];
     initrd = {
       availableKernelModules = [
         "nvme"

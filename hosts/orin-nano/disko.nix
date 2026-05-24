@@ -101,6 +101,12 @@
             size = "100%FREE";
             content = {
               type = "btrfs";
+              # block-group-tree (enabled by default in btrfs-progs ≥6.19) requires Linux 6.1+
+              # Jetson kernel is older — disable it to avoid mount failures
+              extraArgs = [
+                "-O"
+                "^block-group-tree"
+              ];
               subvolumes = {
                 "data" = {
                   mountpoint = "/mnt/data";

@@ -129,14 +129,11 @@ in
         # Onboard Tegra ethernet — needed in initrd so clevis can reach Tang for unlock
         "nvethernet"
       ];
-      # Headless LUKS auto-unlock: clevis fetches the key from the Tang server on the LAN
-      # during initrd. The LUKS passphrase keyslot stays as the fallback (prompted on
-      # serial) if Tang is unreachable, so a Tang/network outage can't lock us out.
-      clevis = {
-        enable = true;
-        useTang = true;
-        devices."orin_crypt".secretFile = ./orin_crypt.jwe;
-      };
+      # Clevis/Tang auto-unlock: disabled until orin_crypt.jwe is generated.
+      # To enable: run `clevis luks bind -d /dev/nvme0n1p2 tang '{"url":"http://10.0.0.5:7654"}'`
+      # on the Orin, export the JWE token, commit as hosts/orin-nano/orin_crypt.jwe, then
+      # set clevis.enable = true and re-deploy.
+      clevis.enable = false;
     };
     swraid.enable = false;
   };
@@ -305,11 +302,16 @@ in
   ];
 
   networking.firewall = {
-
     enable = true;
     # SSH only over NetBird — not exposed on LAN
     interfaces."wt0".allowedTCPPorts = [ 22 ];
+    # Also allow SSH on LAN for emergency access (e.g. before NetBird is running)
+    interfaces."enP8p1s0".allowedTCPPorts = [ 22 ];
   };
+
+  # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
+  services.snapper.configs = lib.mkForce { };
+  systemd.services.snapper-init-persist.enable = lib.mkForce false;
 
   users.users.martin.openssh.authorizedKeys.keys = [
     keys.ssh.yubikey

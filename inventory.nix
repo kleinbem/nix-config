@@ -69,7 +69,7 @@
       ];
     };
     orin-nano = {
-      ip = "192.168.1.10"; # TODO: Set actual Orin IP
+      ip = "10.0.0.12"; # LAN DHCP IP — assign static or use NetBird for production
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
