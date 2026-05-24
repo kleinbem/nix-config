@@ -271,6 +271,9 @@
                     config = {
                       allowUnfree = true;
                       allowUnfreePredicate = _: true;
+                      permittedInsecurePackages = [
+                        "nodejs-20.20.2"
+                      ];
                     };
                   };
                 }
