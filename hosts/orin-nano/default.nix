@@ -318,6 +318,19 @@ in
     "martin"
   ];
 
+  # colmena deploys as martin (PermitRootLogin = "no" in security.nix)
+  security.sudo.extraRules = [
+    {
+      users = [ "martin" ];
+      commands = [
+        {
+          command = "ALL";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # Create persistent syncthing vault and frigate data directories on ext4 /nix
   systemd.tmpfiles.rules = [
     "d /nix/persist/syncthing/nix-config 0755 1000 100 - -"
