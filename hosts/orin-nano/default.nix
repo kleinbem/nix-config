@@ -182,6 +182,8 @@ in
     sops
     age
     libfido2
+    clevis # LUKS Tang binding — run `clevis luks bind -d /dev/nvme0n1p2 tang '{"url":"http://10.0.0.5:7654"}'`
+    jose # JSON Object Signing and Encryption (clevis dependency)
     inputs.jetpack-nixos.legacyPackages.${pkgs.stdenv.hostPlatform.system}.l4t-tools # Essential: provides tegrastats and L4T utilities
   ];
 
@@ -201,6 +203,9 @@ in
 
   # ─── AI Edge Services ──────────────────────────────────────
   my = {
+    # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
+    network.externalInterface = "enP8p1s0";
+
     containers = {
       ollama = {
         enable = false; # Switched to llama-cpp for better memory efficiency
@@ -219,6 +224,7 @@ in
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "tensorrt";
         mediaDir = "/mnt/data/frigate";
+        hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
         innerConfig.services.frigate.settings = {
           # --- MQTT is required for Home Assistant integration ---
           mqtt = {
@@ -289,7 +295,8 @@ in
         ip = "${myInventory.network.nodes.syncthing-orin.ip}/24";
         hostDataDir = "/var/lib/images/syncthing";
         vaults = {
-          "/home/martin/Develop/github.com/kleinbem/nix" = "/home/martin/Develop/github.com/kleinbem/nix";
+          # Container path = host path (persistent — / is tmpfs on Orin)
+          "/home/martin/Develop/github.com/kleinbem/nix" = "/nix/persist/syncthing/nix-config";
         };
       };
     };
@@ -301,13 +308,48 @@ in
     "martin"
   ];
 
-  networking.firewall = {
-    enable = true;
-    # SSH only over NetBird — not exposed on LAN
-    interfaces."wt0".allowedTCPPorts = [ 22 ];
-    # Also allow SSH on LAN for emergency access (e.g. before NetBird is running)
-    interfaces."enP8p1s0".allowedTCPPorts = [ 22 ];
+  # Create persistent syncthing vault and frigate data directories on ext4 /nix
+  systemd.tmpfiles.rules = [
+    "d /nix/persist/syncthing/nix-config 0755 1000 100 - -"
+    "d /nix/persist/var/lib/frigate 0755 root root - -"
+  ];
+
+  networking = {
+    # Container bridge — needed by frigate/syncthing nspawn containers
+    bridges."cbr0".interfaces = [ ];
+    interfaces = {
+      "cbr0".ipv4.addresses = [
+        {
+          address = "10.85.46.1";
+          prefixLength = 24;
+        }
+      ];
+      # Suppress static routes from network-routing.nix — other hosts' container
+      # subnets (10.85.47-49.0/24) are not routable from the Orin's 10.0.0.x LAN.
+      "enP8p1s0".ipv4.routes = lib.mkForce [ ];
+    };
+    nat = {
+      enable = true;
+      internalInterfaces = [ "cbr0" ];
+      externalInterface = "enP8p1s0";
+    };
+    firewall = {
+      enable = true;
+      trustedInterfaces = [ "cbr0" ];
+      # SSH only over NetBird — not exposed on LAN
+      interfaces."wt0".allowedTCPPorts = [ 22 ];
+      # Also allow SSH on LAN for emergency access (e.g. before NetBird is running)
+      interfaces."enP8p1s0".allowedTCPPorts = [ 22 ];
+      extraForwardRules = ''
+        iifname "cbr0" oifname "enP8p1s0" accept
+        iifname "enP8p1s0" oifname "cbr0" ct state { established, related } accept
+      '';
+    };
   };
+
+  # Managed via colmena — self-upgrade is not needed and the flake path doesn't
+  # exist on the tmpfs root anyway.
+  system.autoUpgrade.enable = lib.mkForce false;
 
   # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
   services.snapper.configs = lib.mkForce { };

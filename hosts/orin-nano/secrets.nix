@@ -18,6 +18,7 @@
         mode = "0440";
         group = "wheel";
       };
+      netbird_setup_key = { };
     };
   };
 }

@@ -242,7 +242,7 @@ in
     enable = true;
     flake = "${config.my.developDir}/nix/nix-config";
     flags = [
-      # Replaced deprecated --update-input with modern positional syntax
+      "--update-input"
       "nixpkgs"
     ];
     dates = "04:00";
