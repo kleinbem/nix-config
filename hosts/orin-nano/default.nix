@@ -77,7 +77,12 @@ in
 
     openssh = {
       enable = true;
-      settings.PasswordAuthentication = false;
+      settings = {
+        PasswordAuthentication = false;
+        # Disable 2FA for SSH — colmena deploys non-interactively and cannot
+        # provide TOTP. Publickey-only is sufficient on a LAN-only service.
+        AuthenticationMethods = "publickey";
+      };
     };
   };
 
