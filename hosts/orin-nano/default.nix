@@ -101,7 +101,11 @@ in
           enable = true;
           networks."10-lan" = {
             matchConfig.Name = "en* eth*";
-            networkConfig.DHCP = "ipv4";
+            networkConfig = {
+              DHCP = "no";
+              Address = "10.0.0.12/16";
+              Gateway = "10.0.0.1";
+            };
           };
         };
       };
@@ -349,16 +353,31 @@ in
     ];
     # Container bridge — needed by frigate/syncthing nspawn containers
     bridges."cbr0".interfaces = [ ];
+    useDHCP = false;
     interfaces = {
+      "enP8p1s0" = {
+        ipv4 = {
+          addresses = [
+            {
+              address = "10.0.0.12";
+              prefixLength = 16;
+            }
+          ];
+          # Suppress static routes from network-routing.nix — other hosts' container
+          # subnets (10.85.47-49.0/24) are not routable from the Orin's 10.0.0.x LAN.
+          routes = lib.mkForce [ ];
+        };
+      };
       "cbr0".ipv4.addresses = [
         {
           address = "10.85.46.1";
           prefixLength = 24;
         }
       ];
-      # Suppress static routes from network-routing.nix — other hosts' container
-      # subnets (10.85.47-49.0/24) are not routable from the Orin's 10.0.0.x LAN.
-      "enP8p1s0".ipv4.routes = lib.mkForce [ ];
+    };
+    defaultGateway = {
+      address = "10.0.0.1";
+      interface = "enP8p1s0";
     };
     nat = {
       enable = true;
