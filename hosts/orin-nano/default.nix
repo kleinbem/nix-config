@@ -323,6 +323,10 @@ in
   ];
 
   networking = {
+    nameservers = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
     # Container bridge — needed by frigate/syncthing nspawn containers
     bridges."cbr0".interfaces = [ ];
     interfaces = {
