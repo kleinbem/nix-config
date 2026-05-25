@@ -45,7 +45,6 @@
     inputs.nix-presets.nixosModules.backup
     inputs.nix-presets.nixosModules.paperless
 
-    inputs.nix-presets.nixosModules.android-emulator
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"
@@ -252,7 +251,7 @@
       };
 
       cups = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.cups.ip}/24";
       };
 
@@ -282,7 +281,7 @@
 
       backup = {
         enable = true;
-        ip = "${myInventory.network.nodes.backup.ip}/24";
+        ip = "10.85.46.128/24";
         passwordFile = config.sops.secrets.restic_password.path;
         systemPasswordFile = config.sops.secrets.restic_system_password.path;
         rcloneConfigFile = config.sops.secrets.rclone_config.path;
@@ -300,7 +299,7 @@
       };
 
       paperless = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.paperless.ip}/24";
         hostDataDir = "/mnt/data/Archive/Paperless";
         hostConsumptionDir = "/mnt/data/Archive/Inbox";
@@ -536,10 +535,6 @@
       MaxRetentionSec=1month
     '';
 
-    android-desktop-emulator = {
-      enable = false;
-      user = config.my.username;
-    };
     netbird = {
       enable = true;
       ui.enable = true; # Adds the NetBird GUI/Tray Icon

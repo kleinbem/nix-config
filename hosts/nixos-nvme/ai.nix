@@ -3,7 +3,7 @@
 {
   my.containers = {
     litellm = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.litellm.ip}/24";
       hostDataDir = "/var/lib/images/litellm";
       autoStart = true;
@@ -105,7 +105,7 @@
     };
 
     langfuse = {
-      enable = true;
+      enable = false;
       ip = "${myInventory.network.nodes.langfuse.ip}/24";
       hostDataDir = "/var/lib/images/langfuse";
       autoStart = true;
@@ -113,7 +113,7 @@
     };
 
     agent-team = {
-      enable = true;
+      enable = false;
       autoStart = true;
       ip = "${myInventory.network.nodes.agent-team.ip}/24";
       hostDataDir = "/var/lib/images/agent-team";

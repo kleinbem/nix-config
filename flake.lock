@@ -6221,11 +6221,11 @@
         "treefmt-nix": "treefmt-nix_15"
       },
       "locked": {
-        "lastModified": 1779701511,
-        "narHash": "sha256-4wWNXq/KYEpNByagHqxEi9fhIdcOfy4kRyuTohUYDlY=",
+        "lastModified": 1779705716,
+        "narHash": "sha256-RqGAmXbF2pmWqhc0YsT+lZ3nG5bMfrZOG8CH+DDtaEI=",
         "ref": "refs/heads/main",
-        "rev": "f4ec5a472e63186abfcf307000ea1bb0bcf34a65",
-        "revCount": 95,
+        "rev": "b5ed58ad46b99923e5d5d85f28ee2465f9b5bed6",
+        "revCount": 96,
         "type": "git",
         "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
       },

@@ -13,6 +13,11 @@ in
     inputs.nix-hardware.nixosModules.rpi5
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+    "${self}/modules/nixos/virtualisation.nix"
+    "${self}/modules/nixos/zero-trust.nix"
+    "${self}/modules/nixos/pki.nix"
+    "${self}/modules/nixos/networking.nix"
+    "${self}/modules/nixos/network-routing.nix"
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.monitoring-node
@@ -27,6 +32,12 @@ in
 
   my = {
     services.rpi-eeprom.enable = true;
+
+    network = {
+      subnet = "10.85.48.0/24";
+      hostAddress = "10.85.48.1";
+      externalInterface = "end0";
+    };
 
     # ─── Frontend Services ──────────────────────────────────────
     containers = {
@@ -67,7 +78,7 @@ in
 
       dashboard = {
         enable = true;
-        ip = "${myInventory.network.nodes.dashboard.ip}/24";
+        ip = "10.85.48.103/24";
         hostBridgeIp = "192.168.1.20"; # core-pi IP
         memoryLimit = "512M";
       };

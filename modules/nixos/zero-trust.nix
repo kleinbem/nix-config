@@ -10,7 +10,7 @@
 
 let
   inv = myInventory.network;
-  hostAddr = config.my.network.hostAddress;
+  inherit (config.my.network) hostAddress subnet;
 
   # ─── Allowed East-West Traffic Flows ────────────────────────
   # Each rule = { src, dst, dport, comment }
@@ -146,12 +146,12 @@ let
     }
     {
       src = inv.nodes.monitoring.ip;
-      dst = inv.subnet;
+      dst = subnet;
       dport = 9100;
       comment = "Monitoring -> All Node Exporters";
     }
     {
-      src = inv.subnet;
+      src = subnet;
       dst = inv.nodes.loki.ip;
       dport = 3100;
       comment = "All Containers -> Loki Logging";
@@ -185,23 +185,23 @@ in
           type filter hook forward priority filter; policy accept;
 
           # Only apply to bridge traffic (container subnet)
-          ip saddr != ${inv.subnet} accept
-          ip daddr != ${inv.subnet} accept
+          ip saddr != ${subnet} accept
+          ip daddr != ${subnet} accept
 
           # --- Always allow: established/related connections ---
           ct state established,related accept
 
           # --- Always allow: container -> host (DNS, Avahi, etc) ---
-          ip daddr ${hostAddr} accept comment "Containers -> Host (DNS, services)"
+          ip daddr ${hostAddress} accept comment "Containers -> Host (DNS, services)"
 
           # --- Always allow: host -> containers (management) ---
-          ip saddr ${hostAddr} accept comment "Host -> Containers (management)"
+          ip saddr ${hostAddress} accept comment "Host -> Containers (management)"
 
           # --- Explicitly allowed east-west flows ---
       ${allowRules}
 
           # --- Default deny: container-to-container ---
-          ip saddr ${inv.subnet} ip daddr ${inv.subnet} log prefix "ZT-DENY: " drop comment "Zero Trust: deny unlisted flows"
+          ip saddr ${subnet} ip daddr ${subnet} log prefix "ZT-DENY: " drop comment "Zero Trust: deny unlisted flows"
         }
     '';
   };

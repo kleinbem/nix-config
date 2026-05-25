@@ -55,8 +55,13 @@ in
     # NIX-MINERAL — Standard Hardening
     # ==========================================
     nix-mineral = {
-      enable = false; # Temporarily disabled due to nosuid root lockout
+      enable = true; # Enabled globally, filesystem hardening explicitly disabled to prevent lockout
       preset = "compatibility"; # Best for desktop/workstation workloads
+
+      # Disable filesystem hardening to prevent 'nosuid' root lockout and
+      # prevent breaking /var/lib/machines where our systemd-nspawn containers run
+      filesystems.enable = false;
+
       settings = {
         # Custom overrides for workstation needs
         network.ip-forwarding = true; # Required for containers/bridges

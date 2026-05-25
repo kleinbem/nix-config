@@ -13,6 +13,11 @@
     ./hardware-configuration.nix
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+    "${self}/modules/nixos/virtualisation.nix"
+    "${self}/modules/nixos/zero-trust.nix"
+    "${self}/modules/nixos/pki.nix"
+    "${self}/modules/nixos/networking.nix"
+    "${self}/modules/nixos/network-routing.nix"
 
     # ─── Services moved from Workstation ─────────────────────
     inputs.nix-presets.nixosModules.paperless
@@ -30,6 +35,12 @@
   networking.hostName = "nasbook";
 
   my = {
+    network = {
+      subnet = "10.85.47.0/24";
+      hostAddress = "10.85.47.1";
+      externalInterface = "enp2s0";
+    };
+
     # ─── Data & Analytics Hub Services ───────────────────────
     containers = {
       paperless = {
@@ -72,7 +83,7 @@
 
       syncthing = {
         enable = true;
-        ip = "${myInventory.network.nodes.syncthing.ip}/24";
+        ip = "10.85.47.127/24";
         hostDataDir = "/var/lib/images/syncthing";
         # Syncing from Google Drive / Local Data
         vaults = {

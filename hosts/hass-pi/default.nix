@@ -11,6 +11,11 @@
     inputs.nix-hardware.nixosModules.rpi5
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+    "${self}/modules/nixos/virtualisation.nix"
+    "${self}/modules/nixos/zero-trust.nix"
+    "${self}/modules/nixos/pki.nix"
+    "${self}/modules/nixos/networking.nix"
+    "${self}/modules/nixos/network-routing.nix"
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.home-assistant
   ];
@@ -48,6 +53,12 @@
   my = {
     services.rpi-eeprom.enable = true;
     monitoring.node.enable = true;
+
+    network = {
+      subnet = "10.85.49.0/24";
+      hostAddress = "10.85.49.1";
+      externalInterface = "end0";
+    };
 
     containers = {
       # Smart Home Management
