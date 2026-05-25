@@ -84,6 +84,11 @@ in
         AuthenticationMethods = lib.mkForce "publickey";
       };
     };
+
+    # Add NetBird IP to Cockpit allowed origins
+    cockpit.allowed-origins = [
+      "https://${myInventory.network.nodes.ollama-orin.ip}:9091"
+    ];
   };
 
   boot = {

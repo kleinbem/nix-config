@@ -93,6 +93,23 @@ in
       enable = true;
       port = 9091;
       openFirewall = true;
+      allowed-origins = [
+        "https://127.0.0.1:9091"
+        "https://${config.networking.hostName}:9091"
+        "https://${config.networking.hostName}.local:9091"
+        "https://${config.networking.hostName}.netbird.cloud:9091"
+      ]
+      ++ (lib.concatLists (
+        lib.mapAttrsToList (
+          _: iface:
+          if iface ? ipv4 && iface.ipv4 ? addresses then
+            lib.concatMap (addr: [
+              "https://${addr.address}:9091"
+            ]) iface.ipv4.addresses
+          else
+            [ ]
+        ) config.networking.interfaces
+      ));
     };
 
     # = hardware monitoring =
