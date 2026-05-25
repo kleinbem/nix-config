@@ -11,6 +11,8 @@
     viAlias = true;
     vimAlias = true;
 
+    nixpkgs.source = inputs.nixpkgs;
+
     # Colorscheme
     colorschemes.tokyonight = {
       enable = true;

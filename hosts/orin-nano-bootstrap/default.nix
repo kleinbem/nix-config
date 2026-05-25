@@ -95,14 +95,22 @@ in
 
   users.users = {
     root = {
-      openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+      openssh.authorizedKeys.keys = [
+        keys.ssh.yubikey
+        keys.ssh.fido2
+        keys.ssh.fido2-backup
+      ];
       # Temporary plain-text password for emergency shell access during commissioning
       initialPassword = "nixos";
     };
     martin = {
       isNormalUser = true;
       extraGroups = [ "wheel" ];
-      openssh.authorizedKeys.keys = [ keys.ssh.yubikey ];
+      openssh.authorizedKeys.keys = [
+        keys.ssh.yubikey
+        keys.ssh.fido2
+        keys.ssh.fido2-backup
+      ];
     };
   };
 

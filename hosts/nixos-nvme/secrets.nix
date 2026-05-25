@@ -52,8 +52,21 @@
       langfuse_salt = { };
 
       # API Keys
-      github_pat = { };
-      brave_api_key = { };
+      github_pat = {
+        owner = "martin";
+      };
+      brave_api_key = {
+        owner = "martin";
+      };
+      github_app_id = {
+        owner = "martin";
+      };
+      github_app_installation_id = {
+        owner = "martin";
+      };
+      github_app_private_key = {
+        owner = "martin";
+      };
       vllm_huggingface_token = { };
       langfuse_public_key = {
         mode = "0444";

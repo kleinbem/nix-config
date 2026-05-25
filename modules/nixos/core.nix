@@ -66,8 +66,8 @@ in
 
       log-lines = 25;
       min-free = 1073741824; # 1GB
-      max-jobs = 4; # Increased from 2 to use 50% of available threads (8 total)
-      cores = 0; # Use all cores for each job
+      max-jobs = 3;
+      cores = 6; # Leave at least 2 cores free for the host GUI
       trusted-users = [
         "@wheel"
       ];

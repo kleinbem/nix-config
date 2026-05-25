@@ -309,6 +309,29 @@
             nasbook = mkHost "nasbook" {
               modules = [ ./hosts/nasbook/default.nix ];
             };
+
+            # --- Dedicated factory for building standalone containers ---
+            container-factory = mkHost "nixos-nvme" {
+              system = "x86_64-linux";
+              modules = [
+                # Import the specific container modules
+                ./modules/nixos/options.nix
+                inputs.nix-presets.nixosModules.n8n
+                {
+                  # Minimal config to satisfy factory.nix requirements
+                  my = {
+                    network.hostAddress = "10.85.46.1";
+                    network.bridge = "br0";
+                    hardware.gpuRenderNode = "/dev/dri/renderD128";
+                    containers.n8n = {
+                      enable = true;
+                      hostDataDir = "/var/lib/images/n8n";
+                      ip = "10.85.46.22/24";
+                    };
+                  };
+                }
+              ];
+            };
           };
 
           nixOnDroidConfigurations = {

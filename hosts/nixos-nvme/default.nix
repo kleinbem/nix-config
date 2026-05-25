@@ -117,7 +117,8 @@
   my = {
     containers = {
       n8n = {
-        enable = false;
+        enable = true;
+        standaloneRunner = true;
         ip = "${myInventory.network.nodes.n8n.ip}/24";
         hostDataDir = "/var/lib/images/n8n";
         memoryLimit = "6G";

@@ -62,6 +62,19 @@ in
         gnome-keyring.enable = true;
       };
 
+      # Disable GDM smartcard login to show normal user list when YubiKey is plugged in
+      programs.dconf.profiles.gdm = {
+        databases = [
+          {
+            settings = {
+              "org/gnome/login-screen" = {
+                "enable-smartcard-authentication" = false;
+              };
+            };
+          }
+        ];
+      };
+
       # The host should use the containerized CUPS via CUPS_SERVER env var.
       # Enabling it here causes a conflict on port 631 and shadows the container.
       services.printing.enable = false;

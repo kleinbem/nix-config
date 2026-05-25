@@ -9,7 +9,6 @@ let
   workProfile = {
     my.containers = {
       code-server.enable = lib.mkForce true;
-      n8n.enable = lib.mkForce true;
       authelia.enable = lib.mkForce true;
       caddy.enable = lib.mkForce true;
       github-runner.enable = lib.mkForce true;
@@ -19,9 +18,8 @@ let
   # Full AI & Service Suite
   playgroundProfile = {
     my.containers = {
-      n8n.enable = lib.mkForce true;
       code-server.enable = lib.mkForce true;
-      open-webui.enable = lib.mkForce true;
+      open-webui.enable = lib.mkForce false;
       qdrant.enable = lib.mkForce true;
       monitoring.enable = lib.mkForce true;
       netdata.enable = lib.mkForce true;

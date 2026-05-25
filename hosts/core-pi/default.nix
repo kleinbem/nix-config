@@ -115,6 +115,8 @@ in
 
   users.users.martin.openssh.authorizedKeys.keys = [
     keys.ssh.yubikey
+    keys.ssh.fido2
+    keys.ssh.fido2-backup
   ];
 
   system.stateVersion = "25.11";
