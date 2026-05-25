@@ -116,7 +116,7 @@
   my = {
     containers = {
       n8n = {
-        enable = true;
+        enable = false;
         standaloneRunner = true;
         ip = "${myInventory.network.nodes.n8n.ip}/24";
         hostDataDir = "/var/lib/images/n8n";
@@ -356,6 +356,9 @@
 
     # IMAGE STATE STORAGE
     tmpfiles.rules = [
+      "d /var/lib/machines 0755 root root - -"
+      "d /var/lib/machines/n8n 0755 root root - -"
+      "L+ /var/lib/machines/n8n/current - - - - ${self.nixosConfigurations.container-factory.config.containers.n8n.path}"
       "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
       "d /var/lib/images/n8n 0755 root root - -"
       "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
@@ -387,7 +390,10 @@
     # Force the JMicron JMS581 (152d:0581) USB-NVMe bridge out of UAS into BOT mode.
     # Its UAS firmware resets under sustained write load, causing I/O errors and
     # filesystem corruption when provisioning the Orin SSD over the USB enclosure.
-    kernelParams = [ "usb-storage.quirks=152d:0581:u" ];
+    kernelParams = [
+      "usb-storage.quirks=152d:0581:u"
+      "systemd.machine_id=875e6f722d80415e955ebddd39206430"
+    ];
     initrd = {
       availableKernelModules = [
         "nvme"

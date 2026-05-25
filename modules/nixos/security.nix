@@ -507,6 +507,12 @@ in
     #  rules load correctly on next boot)
     systemd.services.audit-rules-nixos.serviceConfig.SuccessExitStatus = [ 1 ];
 
+    # Relax seccomp hardening for jitterentropy to allow mlock (syscall 149)
+    systemd.services.jitterentropy.serviceConfig.SystemCallFilter = lib.mkForce [
+      "@system-service"
+      "~@chown @clock @cpu-emulation @debug @ipc @module @mount @obsolete @privileged @raw-io @reboot @swap memfd_create mincore personality"
+    ];
+
     boot = {
       # Security & Performance Tweaks
       blacklistedKernelModules = [

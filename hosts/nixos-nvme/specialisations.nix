@@ -18,6 +18,7 @@ let
   playgroundProfile = {
     my.containers = {
       code-server.enable = lib.mkForce true;
+      n8n.enable = lib.mkForce true;
       qdrant = {
         enable = lib.mkForce true;
         ip = lib.mkForce "10.85.46.105/24";

@@ -1,5 +1,7 @@
 {
   inputs,
+  config,
+  lib,
   ...
 }:
 {
@@ -45,11 +47,11 @@
       "/var/lib/lxc" # LXC state
     ];
     files = [
-      "/etc/machine-id"
       "/etc/ssh/ssh_host_rsa_key"
       "/etc/ssh/ssh_host_rsa_key.pub"
       "/etc/ssh/ssh_host_ed25519_key"
       "/etc/ssh/ssh_host_ed25519_key.pub"
-    ];
+    ]
+    ++ lib.optional (!config.boot.initrd.systemd.enable) "/etc/machine-id";
   };
 }

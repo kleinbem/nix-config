@@ -21,6 +21,9 @@ let
     address = lib.head (lib.splitString "/" subnets.${name});
     prefixLength = 24;
     via = host.ip;
+    options = {
+      onlink = "";
+    };
   }) (lib.filterAttrs (name: _: subnets ? ${name} && otherHosts ? ${name}) otherHosts);
 
 in
