@@ -54,7 +54,9 @@
             echo "NetBird needs login. Attempting to join with setup key..."
             KEY_PATH="${config.sops.secrets.netbird_setup_key.path}"
             if [ -f "$KEY_PATH" ]; then
-              ${pkgs.netbird}/bin/netbird up --setup-key "$(cat "$KEY_PATH")"
+              if ! ${pkgs.netbird}/bin/netbird up --setup-key "$(cat "$KEY_PATH")"; then
+                echo "Warning: Failed to authenticate NetBird daemon. You may need to manually log in."
+              fi
             else
               echo "Error: Setup key file not found at $KEY_PATH"
               exit 1

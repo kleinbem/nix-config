@@ -3,7 +3,6 @@
   inputs,
   lib,
   config,
-  myInventory,
   ...
 }:
 let
@@ -94,12 +93,6 @@ in
       enable = true;
       port = 9091;
       openFirewall = true;
-      settings = {
-        WebService = {
-          Origins = lib.mkForce "https://${myInventory.network.nodes.caddy.ip}:${toString myInventory.network.nodes.cockpit.externalPort}";
-          ProtocolHeader = "X-Forwarded-Proto";
-        };
-      };
     };
 
     # = hardware monitoring =

@@ -528,6 +528,13 @@
   };
 
   services = {
+    cockpit.settings = {
+      WebService = {
+        Origins = lib.mkForce "https://${myInventory.network.nodes.caddy.ip}:${toString myInventory.network.nodes.cockpit.externalPort}";
+        ProtocolHeader = "X-Forwarded-Proto";
+      };
+    };
+
     # Tang server for headless LUKS auto-unlock of fleet hosts (e.g. orin-nano clevis).
     # LAN-only; security comes from network reachability + the encrypted JWE blob, not auth.
     tang = {

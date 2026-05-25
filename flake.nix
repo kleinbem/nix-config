@@ -188,9 +188,9 @@
           # ---------------------------------------------------------
           checks =
             let
-              # Filter hosts that match the current system
+              # Filter hosts that match the current system (excluding non-bootable helpers)
               systemHosts = lib.filterAttrs (
-                _: host: host.pkgs.stdenv.hostPlatform.system == system
+                name: host: name != "container-factory" && host.pkgs.stdenv.hostPlatform.system == system
               ) self.nixosConfigurations;
 
               # Create a check derivation for each matching host
@@ -207,8 +207,8 @@
               specChecks = lib.optionalAttrs (system == "x86_64-linux" && (systemHosts ? "nixos-nvme")) {
                 host-nixos-nvme-playground =
                   self.nixosConfigurations.nixos-nvme.config.specialisation.playground.configuration.system.build.toplevel;
-                host-nixos-nvme-hardened =
-                  self.nixosConfigurations.nixos-nvme.config.specialisation.hardened.configuration.system.build.toplevel;
+                host-nixos-nvme-work =
+                  self.nixosConfigurations.nixos-nvme.config.specialisation.work.configuration.system.build.toplevel;
               };
             in
             {
@@ -329,6 +329,12 @@
                       ip = "10.85.46.22/24";
                     };
                   };
+                  # Satisfy basic NixOS assertions for flake check evaluation
+                  fileSystems."/" = {
+                    device = "dummy";
+                    fsType = "tmpfs";
+                  };
+                  boot.loader.systemd-boot.enable = true;
                 }
               ];
             };
