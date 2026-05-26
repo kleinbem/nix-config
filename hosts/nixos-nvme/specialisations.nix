@@ -7,6 +7,7 @@ let
 
   # Productivity & Development
   workProfile = {
+    environment.etc."specialisation".text = lib.mkForce "work";
     my.containers = {
       code-server.enable = lib.mkForce true;
       authelia.enable = lib.mkForce true;
@@ -16,6 +17,7 @@ let
 
   # Full AI & Service Suite
   playgroundProfile = {
+    environment.etc."specialisation".text = lib.mkForce "playground";
     my.containers = {
       code-server.enable = lib.mkForce true;
       n8n.enable = lib.mkForce true;

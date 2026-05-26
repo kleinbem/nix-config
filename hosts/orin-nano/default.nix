@@ -441,6 +441,7 @@ in
   # --- Manual UI Specialisation ---
   # Only active if selected at boot or via 'sudo /run/current-system/specialisation/desktop/bin/switch'
   specialisation.desktop.configuration = {
+    environment.etc."specialisation".text = lib.mkForce "desktop";
     my.desktop.lite.enable = true;
 
     # We KEEP Frigate on because Sway is lite enough!

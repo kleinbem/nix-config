@@ -36,6 +36,8 @@
     inputs.lanzaboote.nixosModules.lanzaboote
   ];
 
+  environment.etc."specialisation".text = "base";
+
   services.avahi = {
     enable = true;
     nssmdns4 = true;
