@@ -11,12 +11,12 @@ jobs:
       DIRENV_CACHE: $HOME/.direnv/cache
     steps:
       - name: Checkout nix-config
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           path: nix-config
 
       - name: Checkout nix-secrets (shallow)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           repository: kleinbem/nix-secrets
           token: ${{ secrets.GH_PAT }}
@@ -36,7 +36,7 @@ jobs:
           key: nix-secrets-${{ runner.os }}-${{ hashFiles('nix-secrets/**') }}
 
       - name: Set up Nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v31.10.6
 
       - name: Override and lock nix-secrets
         run: |
