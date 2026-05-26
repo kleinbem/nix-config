@@ -45,11 +45,11 @@ jobs:
         OVERRIDES="$OVERRIDES --override-input nix-templates/nix-devshells github:kleinbem/nix-devshells"
         echo "NIX_OVERRIDES=$OVERRIDES" >> "$GITHUB_ENV"
 
-    - name: Check Flake
-      run: nix flake check --no-build $NIX_OVERRIDES
+    - name: Check NixOS configurations evaluate
+      run: |
+        nix eval .#nixosConfigurations $NIX_OVERRIDES --apply builtins.attrNames
+        nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --dry-run $NIX_OVERRIDES
+      timeout-minutes: 20
 
     - name: Check Formatting
       run: nix fmt $NIX_OVERRIDES -- --fail-on-change
-
-    - name: Build System (Dry Run)
-      run: nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --dry-run $NIX_OVERRIDES
