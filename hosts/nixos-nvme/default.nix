@@ -45,6 +45,7 @@
     inputs.nix-presets.nixosModules.backup
     inputs.nix-presets.nixosModules.paperless
 
+    "${self}/modules/nixos/services/github-runner.nix"
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"

@@ -52,7 +52,45 @@ in
   # GitHub Runners Service
   # ---------------------------------------------------------
   services.github-runners = {
-    # Runner 1: OpenWrt Builder
+    # Runner: nix meta-workspace
+    nix = {
+      enable = true;
+      url = "https://github.com/kleinbem/nix";
+      tokenFile = config.sops.secrets.github_runner_nix.path;
+      replace = true;
+      name = "nixos-nvme-nix";
+      extraLabels = [ "nixos" ];
+      extraPackages = with pkgs; [
+        git
+        cachix
+      ];
+      serviceOverrides = {
+        DynamicUser = false;
+        User = "github-runner";
+        Group = "github-runner";
+      };
+    };
+
+    # Runner: nix-config
+    nix-config = {
+      enable = true;
+      url = "https://github.com/kleinbem/nix-config";
+      tokenFile = config.sops.secrets.github_runner_nix_config.path;
+      replace = true;
+      name = "nixos-nvme-nix-config";
+      extraLabels = [ "nixos" ];
+      extraPackages = with pkgs; [
+        git
+        cachix
+      ];
+      serviceOverrides = {
+        DynamicUser = false;
+        User = "github-runner";
+        Group = "github-runner";
+      };
+    };
+
+    # Runner: OpenWrt Builder
     openwrt-builder = {
       enable = true;
       url = "https://github.com/kleinbem/openwrt-builder";
@@ -117,24 +155,32 @@ in
     };
   };
 
-  # Ensure the runner waits for the network to be online
-  systemd.services."github-runner-openwrt-builder" = {
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-  };
+  # Ensure runners wait for the network to be online
+  systemd.services = {
+    "github-runner-nix" = {
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+    };
+    "github-runner-nix-config" = {
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+    };
+    "github-runner-openwrt-builder" = {
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+    };
 
-  # ---------------------------------------------------------
-  # Cleanup Service
-  # ---------------------------------------------------------
-  systemd.services.github-runner-cleanup = {
-    description = "Cleanup GitHub Runner Workspace";
-    startAt = "daily";
-    serviceConfig = {
-      Type = "oneshot";
-      User = "github-runner";
-      # Cleans the '_work' directory to preventing disk exhaustion.
-      # Path assumes default state directory configuration: /var/lib/github-runners/<attr-name>
-      ExecStart = "${pkgs.coreutils}/bin/rm -rf /var/lib/github-runners/openwrt-builder/_work";
+    # ---------------------------------------------------------
+    # Cleanup Service
+    # ---------------------------------------------------------
+    github-runner-cleanup = {
+      description = "Cleanup GitHub Runner Workspaces";
+      startAt = "daily";
+      serviceConfig = {
+        Type = "oneshot";
+        User = "github-runner";
+        ExecStart = "${pkgs.bash}/bin/bash -c 'rm -rf /var/lib/github-runners/nix/_work /var/lib/github-runners/nix-config/_work /var/lib/github-runners/openwrt-builder/_work'";
+      };
     };
   };
 

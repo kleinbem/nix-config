@@ -39,6 +39,12 @@
         mode = "0440";
         group = "wheel";
       };
+      github_runner_nix = {
+        owner = "github-runner";
+      };
+      github_runner_nix_config = {
+        owner = "github-runner";
+      };
       u2f_keys = { };
 
       # Service Internal Secrets
