@@ -27,13 +27,20 @@ jobs:
 
     - name: Set Nix input overrides
       run: |
-        echo "NIX_OVERRIDES=\
-          --override-input nix-secrets /tmp/dummy-secrets \
-          --override-input nix-devshells github:kleinbem/nix-devshells \
-          --override-input nix-hardware github:kleinbem/nix-hardware \
-          --override-input nix-packages github:kleinbem/nix-packages \
-          --override-input nix-presets github:kleinbem/nix-presets \
-          --override-input nix-templates github:kleinbem/nix-templates" >> "$GITHUB_ENV"
+        OVERRIDES=""
+        OVERRIDES="$OVERRIDES --override-input nix-secrets /tmp/dummy-secrets"
+        OVERRIDES="$OVERRIDES --override-input nix-devshells github:kleinbem/nix-devshells"
+        OVERRIDES="$OVERRIDES --override-input nix-hardware github:kleinbem/nix-hardware"
+        OVERRIDES="$OVERRIDES --override-input nix-hardware/nix-devshells github:kleinbem/nix-devshells"
+        OVERRIDES="$OVERRIDES --override-input nix-packages github:kleinbem/nix-packages"
+        OVERRIDES="$OVERRIDES --override-input nix-packages/nix-devshells github:kleinbem/nix-devshells"
+        OVERRIDES="$OVERRIDES --override-input nix-presets github:kleinbem/nix-presets"
+        OVERRIDES="$OVERRIDES --override-input nix-presets/nix-devshells github:kleinbem/nix-devshells"
+        OVERRIDES="$OVERRIDES --override-input nix-presets/nix-packages github:kleinbem/nix-packages"
+        OVERRIDES="$OVERRIDES --override-input nix-presets/nix-packages/nix-devshells github:kleinbem/nix-devshells"
+        OVERRIDES="$OVERRIDES --override-input nix-templates github:kleinbem/nix-templates"
+        OVERRIDES="$OVERRIDES --override-input nix-templates/nix-devshells github:kleinbem/nix-devshells"
+        echo "NIX_OVERRIDES=$OVERRIDES" >> "$GITHUB_ENV"
 
     - name: Check Flake
       run: nix flake check $NIX_OVERRIDES
