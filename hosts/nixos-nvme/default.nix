@@ -179,7 +179,7 @@
       dashboard = {
         enable = true;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
-        hostBridgeIp = myInventory.network.nodes.cockpit.ip;
+        hostBridgeIp = myInventory.hosts.nixos-nvme.ip;
         memoryLimit = "1G";
         secretsFile = config.sops.templates."homepage.env".path;
       };
@@ -210,7 +210,7 @@
         hostDataDir = "/var/lib/images/monitoring";
         # Automatically scrape the host and important infrastructure nodes
         nodeTargets = [
-          myInventory.network.nodes.cockpit.ip
+          myInventory.hosts.nixos-nvme.ip
           myInventory.hosts.router-1.ip
           myInventory.hosts.router-2.ip
         ];
@@ -507,7 +507,6 @@
       interfaces."wt0".allowedTCPPorts = [
         22 # SSH
         443 # Caddy HTTPS (access all services via reverse proxy)
-        9091 # Cockpit
       ];
       # Tang (LUKS auto-unlock for orin-nano) on the LAN/Wi-Fi interface only
       interfaces."wlo1".allowedTCPPorts = [ 7654 ];
@@ -528,13 +527,6 @@
   };
 
   services = {
-    cockpit.settings = {
-      WebService = {
-        Origins = lib.mkForce "https://${myInventory.network.nodes.caddy.ip}:${toString myInventory.network.nodes.cockpit.externalPort}";
-        ProtocolHeader = "X-Forwarded-Proto";
-      };
-    };
-
     # Tang server for headless LUKS auto-unlock of fleet hosts (e.g. orin-nano clevis).
     # LAN-only; security comes from network reachability + the encrypted JWE blob, not auth.
     tang = {

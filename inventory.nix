@@ -322,6 +322,19 @@
           description = "VictoriaMetrics + Grafana Stack.";
         };
       };
+      alertmanager = {
+        enabled = true;
+        ip = "10.85.47.114"; # Runs in monitoring container
+        port = 9093;
+        externalPort = 9093;
+        auth = true; # Protected by Authelia
+        meta = {
+          name = "Alertmanager";
+          category = "Infrastructure";
+          icon = "🔔";
+          description = "Alert Routing & Management.";
+        };
+      };
       litellm = {
         ip = "10.85.46.115";
         port = 4000;
@@ -376,19 +389,6 @@
         };
       };
 
-      # Host-level Services (10.85.46.1)
-      cockpit = {
-        ip = "10.85.46.1";
-        port = 9091;
-        externalPort = 9090;
-        secure = true;
-        meta = {
-          name = "Cockpit";
-          category = "Infrastructure";
-          icon = "🚀";
-          description = "System Administration.";
-        };
-      };
       cups = {
         ip = "10.85.48.124"; # Core-Pi
         port = 631;

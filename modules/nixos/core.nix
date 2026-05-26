@@ -88,56 +88,12 @@ in
     # Prevent /var/log/journal from growing indefinitely
     journald.extraConfig = "SystemMaxUse=1G";
 
-    # Web-based System Administration
-    cockpit = {
-      enable = true;
-      port = 9091;
-      openFirewall = true;
-      allowed-origins = [
-        "https://127.0.0.1:9091"
-        "https://${config.networking.hostName}:9091"
-        "https://${config.networking.hostName}.local:9091"
-        "https://${config.networking.hostName}.netbird.cloud:9091"
-      ]
-      ++ (lib.concatLists (
-        lib.mapAttrsToList (
-          _: iface:
-          if iface ? ipv4 && iface.ipv4 ? addresses then
-            lib.concatMap (addr: [
-              "https://${addr.address}:9091"
-            ]) iface.ipv4.addresses
-          else
-            [ ]
-        ) config.networking.interfaces
-      ));
-    };
-
     # = hardware monitoring =
     smartd.enable = true;
     fwupd.enable = true;
 
     # Mobile Device Support
     gvfs.enable = true; # MTP/PTP support for file transfer
-  };
-
-  # Ensure /etc/cockpit is a writable directory (not a symlink to read-only store)
-  # and link the config file inside it, avoiding "Read-only file system" errors.
-  systemd.tmpfiles.rules = [
-    "d /etc/cockpit 0755 root root -"
-    "L+ /etc/cockpit/cockpit.conf - - - - /etc/static/cockpit/cockpit.conf"
-    "d /etc/cockpit/ws-certs.d 0755 nobody nobody -"
-  ];
-
-  # Alias kexec-load to kdump to satisfy Cockpit's check
-  systemd.services.kdump = {
-    description = "Kdump Service Alias (kexec-load)";
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.coreutils}/bin/true";
-      RemainAfterExit = true;
-    };
-    unitConfig.Documentation = "man:kexec-load(8)";
   };
 
   # Generic Boot Preferences
@@ -230,12 +186,6 @@ in
     deadnix
     statix
 
-    # Cockpit Tools
-    cockpit-machines
-    cockpit-podman
-    cockpit-files
-    kexec-tools # Kernel Crash Dumps
-    sosreport # System Analysis
     android-tools # ADB & Fastboot
     lm_sensors # Hardware heat sensors
   ];

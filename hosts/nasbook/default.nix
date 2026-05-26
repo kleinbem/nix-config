@@ -62,7 +62,7 @@
         hostDataDir = "/var/lib/images/monitoring";
         # Automatically scrape the host and important infrastructure nodes
         nodeTargets = [
-          myInventory.network.nodes.cockpit.ip
+          myInventory.hosts.nixos-nvme.ip
           myInventory.hosts.router-1.ip
           myInventory.hosts.router-2.ip
         ];
