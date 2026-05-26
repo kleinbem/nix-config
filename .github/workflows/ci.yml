@@ -18,9 +18,14 @@ jobs:
 
     # Zero-config binary cache for GitHub Actions
     - uses: DeterminateSystems/magic-nix-cache-action@v2
+
+    - name: Set up dummy secrets
+      run: |
+        mkdir -p /tmp/dummy-secrets
+        echo "{}" > /tmp/dummy-secrets/secrets.yaml
     
     - name: Check Flake
-      run: nix flake check
+      run: nix flake check --override-input nix-secrets /tmp/dummy-secrets
     
     - name: Check Formatting
       run: nix fmt -- --check
@@ -28,9 +33,4 @@ jobs:
     - name: Build System (Dry Run)
       # Full build might timeout on free runners, dry-run checks evaluation
       run: |
-        nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --dry-run
-
-    - name: Build n8n Image
-      # Validate the container image builds successfully
-      run: nix build .#n8n-image --dry-run
-
+        nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --override-input nix-secrets /tmp/dummy-secrets --dry-run

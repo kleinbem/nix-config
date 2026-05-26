@@ -573,6 +573,12 @@
     };
   };
 
+  # Shorten the boot menu label so specialisation names are visible in systemd-boot.
+  # The default label includes the full NixOS version hash (e.g. "26.05.20260523.64c08a7")
+  # which, combined with distroName + codeName + kernel version + generation info,
+  # pushes the specialisation suffix (-work, -playground) off-screen.
+  system.nixos.label = lib.trivial.release;
+
   system.stateVersion = "25.11";
   my.security.ai-hardening.enable = true;
 
