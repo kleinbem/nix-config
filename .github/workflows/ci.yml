@@ -11,26 +11,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - uses: cachix/install-nix-action@v27
       with:
         nix_path: nixpkgs=channel:nixos-unstable
+        extra_nix_config: |
+          access-tokens = github.com=${{ secrets.GH_PAT }}
 
-    # Zero-config binary cache for GitHub Actions
     - uses: DeterminateSystems/magic-nix-cache-action@v2
 
     - name: Set up dummy secrets
       run: |
         mkdir -p /tmp/dummy-secrets
         echo "{}" > /tmp/dummy-secrets/secrets.yaml
-    
+
+    - name: Set Nix input overrides
+      run: |
+        echo "NIX_OVERRIDES=\
+          --override-input nix-secrets /tmp/dummy-secrets \
+          --override-input nix-devshells github:kleinbem/nix-devshells \
+          --override-input nix-hardware github:kleinbem/nix-hardware \
+          --override-input nix-packages github:kleinbem/nix-packages \
+          --override-input nix-presets github:kleinbem/nix-presets \
+          --override-input nix-templates github:kleinbem/nix-templates" >> "$GITHUB_ENV"
+
     - name: Check Flake
-      run: nix flake check --override-input nix-secrets /tmp/dummy-secrets
-    
+      run: nix flake check $NIX_OVERRIDES
+
     - name: Check Formatting
-      run: nix fmt -- --check
+      run: nix fmt $NIX_OVERRIDES -- --fail-on-change
 
     - name: Build System (Dry Run)
-      # Full build might timeout on free runners, dry-run checks evaluation
-      run: |
-        nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --override-input nix-secrets /tmp/dummy-secrets --dry-run
+      run: nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --dry-run $NIX_OVERRIDES
