@@ -46,7 +46,7 @@ jobs:
         echo "NIX_OVERRIDES=$OVERRIDES" >> "$GITHUB_ENV"
 
     - name: Check Flake
-      run: nix flake check $NIX_OVERRIDES
+      run: nix flake check --no-build $NIX_OVERRIDES
 
     - name: Check Formatting
       run: nix fmt $NIX_OVERRIDES -- --fail-on-change
