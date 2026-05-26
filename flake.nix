@@ -48,7 +48,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets";
+      url = "github:kleinbem/nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
@@ -271,6 +271,7 @@
                     config = {
                       allowUnfree = true;
                       allowUnfreePredicate = _: true;
+                      android_sdk.accept_license = true;
                       permittedInsecurePackages = [
                         "nodejs-20.20.2"
                         "nodejs-slim-20.20.2"
