@@ -65,8 +65,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -141,7 +141,7 @@
   outputs =
     inputs@{
       self,
-      pre-commit-hooks,
+      git-hooks,
       flake-parts,
       ...
     }:
@@ -212,7 +212,7 @@
               };
             in
             {
-              pre-commit-check = pre-commit-hooks.lib.${system}.run {
+              pre-commit-check = git-hooks.lib.${system}.run {
                 src = ./.;
                 hooks = {
                   nixfmt.enable = true;
