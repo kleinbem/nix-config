@@ -168,6 +168,7 @@
         ip = "10.85.46.120";
         port = 8080;
         externalPort = 8080;
+        domain = "cache.kleinbem.dev";
         meta = {
           name = "Attic Binary Cache";
           category = "Infrastructure";

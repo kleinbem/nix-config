@@ -493,6 +493,9 @@
       "orin-nano.netbird.cloud"
       "orin-nano"
     ];
+    hosts."10.85.46.107" = [
+      "cache.kleinbem.dev"
+    ];
     networkmanager = {
       enable = true;
       plugins = [ pkgs.networkmanager-openvpn ];

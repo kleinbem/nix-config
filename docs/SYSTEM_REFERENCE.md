@@ -1,14 +1,14 @@
 # 🏗️ System Reference (Auto-generated)
-*Last Updated: 2026-05-27T02:13:56Z*
+*Last Updated: 2026-05-27T11:30:04Z*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure. 
 > Antigravity MUST read this file at the start of any configuration task.
 
 ## 📦 Core Revisions
-- **nixpkgs**: [`d6e05bbcf2d1048184709dcbcf064bc8e16af0b0`](https://github.com/NixOS/nixpkgs/commit/d6e05bbcf2d1048184709dcbcf064bc8e16af0b0)
+- **nixpkgs**: [`aeade212c9201d922eba3ad7a84805b64df26d39`](https://github.com/NixOS/nixpkgs/commit/aeade212c9201d922eba3ad7a84805b64df26d39)
 - **home-manager**: `aacb796ccd42be1555196c20013b9b674b71df75`
-- **sops-nix**: `bc6e4faf48b1d5c8890b4b3825c6cfb8482a22e2`
+- **sops-nix**: `00904e221489353d67e7f79ff97b2647424401ae`
 
 ## 🖥️ Managed Hosts
 - **core-gateway**
