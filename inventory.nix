@@ -155,6 +155,7 @@
         ip = "10.85.46.103";
         port = 80;
         externalPort = 443; # Default HTTPS
+        domain = "home.kleinbem.dev";
         maintenance = false;
         auth = true; # Protected by Authelia
         meta = {
@@ -179,7 +180,8 @@
       n8n = {
         ip = "10.85.46.99";
         port = 5678;
-        externalPort = 5678;
+        externalPort = 443;
+        domain = "n8n.kleinbem.dev";
         mtls = true;
         auth = true; # Protected by Authelia
         meta = {
@@ -192,7 +194,8 @@
       code-server = {
         ip = "10.85.46.101";
         port = 4444;
-        externalPort = 4444;
+        externalPort = 443;
+        domain = "code.kleinbem.dev";
         meta = {
           name = "Code Server";
           category = "Dev";
@@ -203,7 +206,8 @@
       open-webui = {
         ip = "10.85.48.102"; # Core-Pi
         port = 8080;
-        externalPort = 8080;
+        externalPort = 443;
+        domain = "chat.kleinbem.dev";
         mtls = true;
         meta = {
           name = "Open WebUI";
