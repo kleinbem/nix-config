@@ -91,7 +91,7 @@ in
     };
 
     # Runner: OpenWrt Builder
-    openwrt-builder = {
+    openwrt-builder-v2 = {
       enable = true;
       url = "https://github.com/kleinbem/openwrt-builder";
       # Token managed by sops
@@ -165,7 +165,7 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
     };
-    "github-runner-openwrt-builder" = {
+    "github-runner-openwrt-builder-v2" = {
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
     };
@@ -179,7 +179,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         User = "github-runner";
-        ExecStart = "${pkgs.bash}/bin/bash -c 'rm -rf /var/lib/github-runners/nix/_work /var/lib/github-runners/nix-config/_work /var/lib/github-runners/openwrt-builder/_work'";
+        ExecStart = "${pkgs.bash}/bin/bash -c 'rm -rf /var/lib/github-runners/nix/_work /var/lib/github-runners/nix-config/_work /var/lib/github-runners/openwrt-builder-v2/_work'";
       };
     };
   };

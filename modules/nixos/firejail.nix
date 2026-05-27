@@ -38,6 +38,7 @@ in
                 "--dns=1.1.1.1"
                 "--noblacklist=/etc/cups"
                 "--ignore=private-dev" # Required for YubiKey/FIDO2 access
+                "--ignore=nou2f" # Required for YubiKey/WebAuthn access
                 "--ignore=nogroups" # Required for some USB hardware access
                 "--dbus-user.talk=org.freedesktop.secrets" # Allow access to GNOME Keyring
               ];
@@ -48,6 +49,7 @@ in
               extraArgs = [
                 "--noblacklist=/etc/cups"
                 "--ignore=private-dev"
+                "--ignore=nou2f"
                 "--ignore=nogroups"
                 "--dbus-user.talk=org.freedesktop.secrets"
               ];
