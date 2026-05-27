@@ -240,6 +240,9 @@ in
           # --- Mobile Devices ---
           # Trust all Samsung Electronics Co., Ltd devices (MTP, ADB, Download Mode, etc.)
           allow id 04e8:*
+          # Trust all Huawei Technologies Co., Ltd. devices (MTP, ADB, MatePad Pro, etc.)
+          allow id 12d1:*
+
 
 
           # Block everything else
