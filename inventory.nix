@@ -164,6 +164,17 @@
           description = "Homelab Landing Page.";
         };
       };
+      attic = {
+        ip = "10.85.46.120";
+        port = 8080;
+        externalPort = 8080;
+        meta = {
+          name = "Attic Binary Cache";
+          category = "Infrastructure";
+          icon = "📦";
+          description = "Nix binary cache server.";
+        };
+      };
       n8n = {
         ip = "10.85.46.99";
         port = 5678;

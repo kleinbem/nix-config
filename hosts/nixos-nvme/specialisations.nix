@@ -12,6 +12,7 @@ let
       code-server.enable = lib.mkForce true;
       authelia.enable = lib.mkForce true;
       github-runner.enable = lib.mkForce true;
+      attic.enable = lib.mkForce true;
     };
   };
 

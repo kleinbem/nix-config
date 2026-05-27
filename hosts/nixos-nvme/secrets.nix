@@ -103,6 +103,7 @@
       paperless_password = {
         neededForUsers = true;
       };
+      attic_server_token_rs256 = { };
     };
 
     # --- Templated Env Files ---
@@ -156,6 +157,12 @@
           N8N_USER_MANAGEMENT_JWT_SECRET=${config.sops.placeholder.n8n_jwt_secret}
           N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
           N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
+        '';
+      };
+      "attic.env" = {
+        mode = "0444";
+        content = ''
+          ATTIC_SERVER_TOKEN_RS256_SECRET="${config.sops.placeholder.attic_server_token_rs256}"
         '';
       };
       # "syncthing.env".content = ''

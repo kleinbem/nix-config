@@ -18,6 +18,7 @@
     "${self}/users/martin/nixos.nix"
     "${self}/users/dhirujaan/nixos.nix"
     inputs.nix-presets.nixosModules.n8n
+    inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.code-server
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.dashboard
@@ -231,6 +232,13 @@
         ip = "${myInventory.network.nodes.caddy.ip}/24";
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
+      };
+
+      attic = {
+        enable = false; # Handled by specialisations
+        ip = "${myInventory.network.nodes.attic.ip}/24";
+        hostDataDir = "/var/lib/images/attic";
+        secretsFile = config.sops.templates."attic.env".path;
       };
 
       crowdsec = {
