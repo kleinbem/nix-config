@@ -178,7 +178,7 @@
       "attic.env" = {
         mode = "0444";
         content = ''
-          ATTIC_SERVER_TOKEN_RS256_SECRET="${config.sops.placeholder.attic_server_token_rs256}"
+          ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="${config.sops.placeholder.attic_server_token_rs256}"
         '';
       };
       # "syncthing.env".content = ''
