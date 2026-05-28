@@ -63,6 +63,7 @@ in
       extraPackages = with pkgs; [
         git
         cachix
+        attic-client
       ];
       serviceOverrides = {
         DynamicUser = false;
@@ -86,6 +87,7 @@ in
       extraPackages = with pkgs; [
         git
         cachix
+        attic-client
       ];
       serviceOverrides = {
         DynamicUser = false;
