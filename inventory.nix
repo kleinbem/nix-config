@@ -168,9 +168,8 @@
       attic = {
         ip = "10.85.46.120";
         port = 8080;
-        externalPort = 80;
+        externalPort = 443;
         domain = "cache.kleinbem.dev";
-        insecure = true;
         meta = {
           name = "Attic Binary Cache";
           category = "Infrastructure";

@@ -335,13 +335,19 @@
       # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust
       # This runs on the host and is fail-safe to prevent restart loops.
       "container@caddy".postStart = ''
-        if [ -f /var/lib/caddy/pki/authorities/local/root.crt ]; then
+        SRC_CERT="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+        if [ -f "$SRC_CERT" ]; then
           mkdir -p /home/${config.my.username}/.pki
-          cp -f /var/lib/caddy/pki/authorities/local/root.crt /home/${config.my.username}/.pki/caddy-root.crt
+          cp -f "$SRC_CERT" /home/${config.my.username}/.pki/caddy-root.crt
           chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
-          echo "✅ Caddy Root CA copied to user profile."
+          
+          # Generate combined bundle for other services (e.g. github-runner) to trust local CA
+          cat /etc/ssl/certs/ca-certificates.crt "$SRC_CERT" > /var/lib/caddy/ca-bundle.crt
+          chmod 644 /var/lib/caddy/ca-bundle.crt
+          
+          echo "✅ Caddy Root CA copied and combined bundle generated."
         else
-          echo "⚠️ Caddy Root CA not found yet. Skipping copy."
+          echo "⚠️ Caddy Root CA not found at $SRC_CERT. Skipping copy."
         fi
       '';
 

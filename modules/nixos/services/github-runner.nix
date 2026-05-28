@@ -68,6 +68,10 @@ in
         DynamicUser = false;
         User = "github-runner";
         Group = "github-runner";
+        Environment = [
+          "NIX_SSL_CERT_FILE=/var/lib/caddy/ca-bundle.crt"
+          "SSL_CERT_FILE=/var/lib/caddy/ca-bundle.crt"
+        ];
       };
     };
 
@@ -87,6 +91,10 @@ in
         DynamicUser = false;
         User = "github-runner";
         Group = "github-runner";
+        Environment = [
+          "NIX_SSL_CERT_FILE=/var/lib/caddy/ca-bundle.crt"
+          "SSL_CERT_FILE=/var/lib/caddy/ca-bundle.crt"
+        ];
       };
     };
 
@@ -151,6 +159,10 @@ in
         DynamicUser = false;
         User = "github-runner";
         Group = "github-runner";
+        Environment = [
+          "NIX_SSL_CERT_FILE=/var/lib/caddy/ca-bundle.crt"
+          "SSL_CERT_FILE=/var/lib/caddy/ca-bundle.crt"
+        ];
       };
     };
   };
