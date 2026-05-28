@@ -45,6 +45,7 @@ in
         "https://devenv.cachix.org"
         "https://cuda-maintainers.cachix.org"
         "https://anduril.cachix.org"
+        "https://cache.kleinbem.dev/system"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
@@ -54,6 +55,7 @@ in
         keys.cachix.devenv
         keys.cachix.cuda-maintainers
         keys.cachix.anduril
+        "system:EVrT+UgMV5xzRZSNKPEFflQwGc5qqgMro6PA5lzD05U="
       ];
       download-buffer-size = 1073741824;
 
@@ -83,6 +85,25 @@ in
       options = "--delete-older-than 14d";
     };
   };
+
+  # ==========================================
+  # PKI CERTIFICATES (Fleet Trust Chain)
+  # ==========================================
+  security.pki.certificateFiles = [
+    (pkgs.writeText "caddy-local-ca.crt" ''
+      -----BEGIN CERTIFICATE-----
+      MIIBpTCCAUqgAwIBAgIRALxQmzl2VPMTVn+VlRkHDZgwCgYIKoZIzj0EAwIwMDEu
+      MCwGA1UEAxMlQ2FkZHkgTG9jYWwgQXV0aG9yaXR5IC0gMjAyNiBFQ0MgUm9vdDAe
+      Fw0yNjA1MDMxMjUxMDlaFw0zNjAzMTExMjUxMDlaMDAxLjAsBgNVBAMTJUNhZGR5
+      IExvY2FsIEF1dGhvcml0eSAtIDIwMjYgRUNDIFJvb3QwWTATBgcqhkjOPQIBBggq
+      hkjOPQMBBwNCAASJFpKowZV2j55pcwXzETHaqYH5QNGVg9PBtp3krqTPAlLtZ0zw
+      acN2fnqAjfhDhpbTfp9SKToSnssomEZPmVBZo0UwQzAOBgNVHQ8BAf8EBAMCAQYw
+      EgYDVR0TAQH/BAgwBgEB/wIBATAdBgNVHQ4EFgQUFjpeQR+f9pRtwPOHU1hVypTW
+      xVIwCgYIKoZIzj0EAwIDSQAwRgIhANAOPOljXeM6ya774ubB374ZcMgPTTA6A9lx
+      bGXyGFMGAiEAhGYXtAh/N7sA8V4ry3b1InUi0djDIciwBU3ghPOxxzg=
+      -----END CERTIFICATE-----
+    '')
+  ];
 
   services = {
     # Prevent /var/log/journal from growing indefinitely
