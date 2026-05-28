@@ -224,7 +224,15 @@ in
         extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
       };
 
-      programs.dconf.enable = true;
+      programs = {
+        dconf.enable = true;
+        weylus = {
+          enable = true;
+          openFirewall = true;
+          users = [ config.my.username ];
+        };
+        xwayland.enable = true;
+      };
 
       # System-wide Default Browser
       xdg.mime.defaultApplications = {
@@ -267,7 +275,6 @@ in
       };
 
       fonts.fontconfig.enable = true;
-      programs.xwayland.enable = true;
     })
   ];
 }
