@@ -60,6 +60,8 @@
       # API Keys
       github_pat = {
         owner = "martin";
+        group = "github-runner";
+        mode = "0440";
       };
       brave_api_key = {
         owner = "martin";

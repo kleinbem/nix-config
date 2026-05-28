@@ -56,7 +56,7 @@ in
     nix = {
       enable = true;
       url = "https://github.com/kleinbem/nix";
-      tokenFile = config.sops.secrets.github_runner_nix.path;
+      tokenFile = config.sops.secrets.github_pat.path;
       replace = true;
       name = "nixos-nvme-nix";
       extraLabels = [ "nixos" ];
@@ -75,7 +75,7 @@ in
     nix-config = {
       enable = true;
       url = "https://github.com/kleinbem/nix-config";
-      tokenFile = config.sops.secrets.github_runner_nix_config.path;
+      tokenFile = config.sops.secrets.github_pat.path;
       replace = true;
       name = "nixos-nvme-nix-config";
       extraLabels = [ "nixos" ];
