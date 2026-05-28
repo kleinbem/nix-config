@@ -114,9 +114,7 @@
     # --- Templated Env Files ---
     templates = {
       "cloudflare-tunnel-credentials.json" = {
-        owner = "cloudflared";
-        group = "cloudflared";
-        mode = "0400";
+        mode = "0444";
         content = ''
           {
             "AccountTag": "${config.sops.placeholder.cloudflare_account_id}",
