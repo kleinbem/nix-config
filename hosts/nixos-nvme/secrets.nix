@@ -106,10 +106,26 @@
         neededForUsers = true;
       };
       attic_server_token_rs256 = { };
+      cloudflare_account_id = { };
+      cloudflare_tunnel_id = { };
+      cloudflare_tunnel_secret = { };
     };
 
     # --- Templated Env Files ---
     templates = {
+      "cloudflare-tunnel-credentials.json" = {
+        owner = "cloudflared";
+        group = "cloudflared";
+        mode = "0400";
+        content = ''
+          {
+            "AccountTag": "${config.sops.placeholder.cloudflare_account_id}",
+            "TunnelID": "${config.sops.placeholder.cloudflare_tunnel_id}",
+            "TunnelName": "nixos-nvme",
+            "TunnelSecret": "${config.sops.placeholder.cloudflare_tunnel_secret}"
+          }
+        '';
+      };
       "homepage.env" = {
         mode = "0444";
         content = ''

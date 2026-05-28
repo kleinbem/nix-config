@@ -47,6 +47,7 @@
     inputs.nix-presets.nixosModules.paperless
 
     "${self}/modules/nixos/services/github-runner.nix"
+    "${self}/modules/nixos/services/cloudflare-tunnel.nix"
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"
