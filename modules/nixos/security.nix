@@ -55,7 +55,12 @@ in
     # NIX-MINERAL — Standard Hardening
     # ==========================================
     nix-mineral = {
-      enable = true; # Enabled globally, filesystem hardening explicitly disabled to prevent lockout
+      # x86_64 only: nix-mineral's kernel boot params (iommu=force, cfi=kcfi,
+      # vsyscall=none, panic=-1, …) are x86-desktop-oriented and panic the
+      # aarch64 Jetson/RPi kernel at boot (panic=-1 then instant-reboots, hiding
+      # it → boot loop). Gate to x86 so ARM SBCs boot. (filesystem hardening also
+      # disabled below to prevent nosuid root lockout.)
+      enable = pkgs.stdenv.hostPlatform.isx86_64;
       preset = "compatibility"; # Best for desktop/workstation workloads
 
       # Disable filesystem hardening to prevent 'nosuid' root lockout and

@@ -1,5 +1,5 @@
 # 🏗️ System Reference (Auto-generated)
-*Last Updated: 2026-05-29T21:17:45Z*
+*Last Updated: 2026-05-29T21:55:23Z*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure. 
@@ -8,7 +8,7 @@
 ## 📦 Core Revisions
 - **nixpkgs**: [`e857f976b3423316a632bfe93091feadd3434211`](https://github.com/NixOS/nixpkgs/commit/e857f976b3423316a632bfe93091feadd3434211)
 - **home-manager**: `b48c2c0ee5f33ef109160c975dc901bb8c9443cb`
-- **sops-nix**: `50f909d55e1c5836746cdd7e8f73046436863e45`
+- **sops-nix**: `e4dcd896d22e8110eb528edb071166711f99510a`
 
 ## 🖥️ Managed Hosts
 - **core-gateway**
