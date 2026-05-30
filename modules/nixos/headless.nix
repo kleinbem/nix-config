@@ -46,12 +46,10 @@ in
       substituters = [
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
-        "https://kleinbem.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
         keys.cachix.nix-community
-        # keys.cachix.kleinbem
       ];
       builders-use-substitutes = true;
       trusted-users = [

@@ -41,7 +41,6 @@ in
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
         "https://cosmic.cachix.org"
-        "https://kleinbem.cachix.org"
         "https://devenv.cachix.org"
         "https://cuda-maintainers.cachix.org"
         "https://anduril.cachix.org"
@@ -51,7 +50,6 @@ in
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
         keys.cachix.nix-community
         keys.cachix.cosmic
-        keys.cachix.kleinbem
         keys.cachix.devenv
         keys.cachix.cuda-maintainers
         keys.cachix.anduril
