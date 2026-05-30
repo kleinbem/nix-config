@@ -11,7 +11,6 @@ let
   commonBuildInputs = with pkgs; [
     # Core Build Tools
     git
-    cachix
     gnumake
     gcc
     binutils
@@ -62,7 +61,6 @@ in
       extraLabels = [ "nixos" ];
       extraPackages = with pkgs; [
         git
-        cachix
         attic-client
       ];
       serviceOverrides = {
@@ -86,7 +84,6 @@ in
       extraLabels = [ "nixos" ];
       extraPackages = with pkgs; [
         git
-        cachix
         attic-client
       ];
       serviceOverrides = {
