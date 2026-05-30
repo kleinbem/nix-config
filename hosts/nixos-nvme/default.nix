@@ -506,14 +506,16 @@
     networkmanager = {
       enable = true;
       plugins = [ pkgs.networkmanager-openvpn ];
-      extraConfig = ''
-        [device]
-        wifi.scan-rand-mac-address=no
-
-        [connection]
-        wifi.cloned-mac-address=preserve
-        ethernet.cloned-mac-address=preserve
-      '';
+      # Stop Wi-Fi MAC randomization so the workstation keeps a stable DHCP lease
+      # (Tang host for the Orin's headless LUKS unlock must stay put — see
+      # docs / openwrt static_leases). extraConfig was removed upstream → settings.
+      settings = {
+        device."wifi.scan-rand-mac-address" = "no";
+        connection = {
+          "wifi.cloned-mac-address" = "permanent";
+          "ethernet.cloned-mac-address" = "permanent";
+        };
+      };
     };
     # Fix Routing for the Ricoh Printer subnet (10.0.x.x)
     interfaces.wlo1.ipv4.routes = [
