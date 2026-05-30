@@ -201,6 +201,8 @@ in
   users.users.github-runner = {
     isNormalUser = true;
     group = "github-runner";
+    # kvm: so CI nixosTest VMs (caddy-test, recovery-test, …) can use /dev/kvm.
+    extraGroups = [ "kvm" ];
     # REQUIRED for Rootless Podman/Docker:
     autoSubUidGidRange = true;
   };
