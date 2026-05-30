@@ -22,6 +22,11 @@
 
   networking.hostName = "hass-pi";
 
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/NIXOS_BOOT";
+    fsType = "vfat";
+  };
+
   # ─── Networking & Security ──────────────────────────────────
   services.netbird.enable = true;
 

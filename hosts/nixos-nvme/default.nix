@@ -218,6 +218,12 @@
           myInventory.hosts.router-2.ip
         ];
         vllmTargets = [ myInventory.network.nodes.vllm.ip ];
+        # GitHub Actions dashboard: json-exporter scrapes the GitHub API (outbound).
+        githubMetrics = {
+          enable = true;
+          repos = [ "kleinbem/nix" ];
+          configFile = config.sops.templates."json-exporter.yml".path;
+        };
       };
 
       openclaw = {

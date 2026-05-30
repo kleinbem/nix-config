@@ -79,7 +79,7 @@
       ];
     };
     core-pi = {
-      ip = "192.168.1.20"; # TODO: Set actual RPi IP
+      ip = "10.0.0.20";
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [

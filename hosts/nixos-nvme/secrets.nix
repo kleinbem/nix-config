@@ -181,6 +181,41 @@
           ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="${config.sops.placeholder.attic_server_token_rs256}"
         '';
       };
+      # json-exporter config for the GitHub Actions dashboard (monitoring container).
+      # Module mappings + the GitHub API bearer token (reuses github_pat — classic
+      # repo scope covers Actions-read + self-hosted-runner-read). The token lives
+      # here (not in the store) because json-exporter needs it inside its config.
+      "json-exporter.yml" = {
+        mode = "0444";
+        content = ''
+          modules:
+            runners:
+              headers:
+                Authorization: "Bearer ${config.sops.placeholder.github_pat}"
+                Accept: "application/vnd.github+json"
+                X-GitHub-Api-Version: "2022-11-28"
+              metrics:
+                - name: github_runner
+                  type: object
+                  help: "Self-hosted runner (value=busy 1/0; label status=online/offline)"
+                  path: '{.runners[*]}'
+                  labels:
+                    name: '{.name}'
+                    status: '{.status}'
+                  values:
+                    busy: '{.busy}'
+            runs_count:
+              headers:
+                Authorization: "Bearer ${config.sops.placeholder.github_pat}"
+                Accept: "application/vnd.github+json"
+                X-GitHub-Api-Version: "2022-11-28"
+              metrics:
+                - name: github_workflow_runs
+                  type: value
+                  help: "Workflow runs in the queried status"
+                  path: '{.total_count}'
+        '';
+      };
       # "syncthing.env".content = ''
       #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
       # '';

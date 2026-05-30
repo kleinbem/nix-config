@@ -17,18 +17,22 @@ in
   i18n.defaultLocale = "en_IE.UTF-8";
   console.keyMap = "us";
 
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.allowUnfreePredicate =
-    pkg:
-    builtins.elem (lib.getName pkg) [
-      "vscode-extension-anthropic-claude-code"
-      "claude-code"
-      "ollama-cuda"
-      "cuda_cudart"
-      "cuda_cccl"
-      "cuda_nvcc"
-    ]
-    || (lib.hasPrefix "cuda" (lib.getName pkg));
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      allowUnfreePredicate =
+        pkg:
+        builtins.elem (lib.getName pkg) [
+          "vscode-extension-anthropic-claude-code"
+          "claude-code"
+          "ollama-cuda"
+          "cuda_cudart"
+          "cuda_cccl"
+          "cuda_nvcc"
+        ]
+        || (lib.hasPrefix "cuda" (lib.getName pkg));
+    };
+  };
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
