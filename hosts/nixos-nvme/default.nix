@@ -506,6 +506,14 @@
     networkmanager = {
       enable = true;
       plugins = [ pkgs.networkmanager-openvpn ];
+      extraConfig = ''
+        [device]
+        wifi.scan-rand-mac-address=no
+
+        [connection]
+        wifi.cloned-mac-address=preserve
+        ethernet.cloned-mac-address=preserve
+      '';
     };
     # Fix Routing for the Ricoh Printer subnet (10.0.x.x)
     interfaces.wlo1.ipv4.routes = [
