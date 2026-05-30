@@ -148,6 +148,14 @@ in
             ExecStart = waitForTang;
           };
         };
+
+        # The gate's own before/wantedBy didn't reliably gate clevis in the initrd,
+        # so order the clevis unlock explicitly AFTER the gate. The gate exits 0 even
+        # on fall-through, so clevis always runs — by which point Tang is reachable.
+        services."cryptsetup-clevis-orin_crypt" = {
+          after = [ "wait-for-tang.service" ];
+          wants = [ "wait-for-tang.service" ];
+        };
       };
       includeDefaultModules = false;
       # lib.mkOverride 0 beats jetpack-nixos's own lib.mkForce so lists don't
