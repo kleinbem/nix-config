@@ -9,6 +9,23 @@
 }:
 let
   keys = import "${self}/modules/nixos/keys.nix";
+  # Initrd gate: poll Tang until it answers before clevis runs, sidestepping the
+  # wired-Orin → Wi-Fi-Tang initrd race. MUST be added to
+  # boot.initrd.systemd.storePaths (below) or systemd-initrd can't find it → 203/EXEC.
+  waitForTang = pkgs.writeShellScript "wait-for-tang" ''
+    i=0
+    while [ "$i" -lt 30 ]; do
+      if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null http://10.0.0.5:7654/adv; then
+        echo "wait-for-tang: Tang reachable after $i retry(ies)"
+        exit 0
+      fi
+      echo "wait-for-tang: Tang not reachable yet ($i)"
+      ${pkgs.coreutils}/bin/sleep 1
+      i=$((i + 1))
+    done
+    echo "wait-for-tang: Tang still unreachable; continuing (clevis falls back to passphrase)"
+    exit 0
+  '';
 in
 {
   imports = [
@@ -115,6 +132,10 @@ in
         # so clevis raced ahead, failed with "Error communicating with server", and
         # fell through to the passphrase prompt. This oneshot polls Tang's /adv until
         # it answers (then clevis succeeds), bounded so a real outage still falls back.
+        # systemd-initrd doesn't auto-include ExecStart store paths → pull the gate
+        # script + its curl/coreutils/bash closure into the initrd explicitly.
+        storePaths = [ waitForTang ];
+
         services.wait-for-tang = {
           description = "Wait for Tang reachability before clevis LUKS unlock";
           after = [ "systemd-networkd.service" ];
@@ -123,20 +144,8 @@ in
           unitConfig.DefaultDependencies = false;
           serviceConfig = {
             Type = "oneshot";
-            TimeoutStartSec = 90;
-            ExecStart = pkgs.writeShellScript "wait-for-tang" ''
-              i=0
-              while [ "$i" -lt 30 ]; do
-                if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null http://10.0.0.5:7654/adv; then
-                  echo "wait-for-tang: Tang reachable after $i retry(ies)"
-                  exit 0
-                fi
-                ${pkgs.coreutils}/bin/sleep 1
-                i=$((i + 1))
-              done
-              echo "wait-for-tang: Tang unreachable after ~60s; continuing (clevis will fall back to passphrase)"
-              exit 0
-            '';
+            TimeoutStartSec = 120;
+            ExecStart = waitForTang;
           };
         };
       };
