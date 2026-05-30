@@ -108,6 +108,37 @@ in
             };
           };
         };
+
+        # Gate clevis on Tang actually being reachable. The Orin is wired and Tang
+        # (10.0.0.5) is the Wi-Fi workstation bridged by the router; in the initrd
+        # the cross-medium path isn't forwarding the instant the static IP is set,
+        # so clevis raced ahead, failed with "Error communicating with server", and
+        # fell through to the passphrase prompt. This oneshot polls Tang's /adv until
+        # it answers (then clevis succeeds), bounded so a real outage still falls back.
+        services.wait-for-tang = {
+          description = "Wait for Tang reachability before clevis LUKS unlock";
+          after = [ "systemd-networkd.service" ];
+          before = [ "cryptsetup-clevis-orin_crypt.service" ];
+          wantedBy = [ "cryptsetup-clevis-orin_crypt.service" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            TimeoutStartSec = 90;
+            ExecStart = pkgs.writeShellScript "wait-for-tang" ''
+              i=0
+              while [ "$i" -lt 30 ]; do
+                if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null http://10.0.0.5:7654/adv; then
+                  echo "wait-for-tang: Tang reachable after $i retry(ies)"
+                  exit 0
+                fi
+                ${pkgs.coreutils}/bin/sleep 1
+                i=$((i + 1))
+              done
+              echo "wait-for-tang: Tang unreachable after ~60s; continuing (clevis will fall back to passphrase)"
+              exit 0
+            '';
+          };
+        };
       };
       includeDefaultModules = false;
       # lib.mkOverride 0 beats jetpack-nixos's own lib.mkForce so lists don't
