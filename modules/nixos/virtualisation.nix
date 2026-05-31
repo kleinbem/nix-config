@@ -12,16 +12,35 @@ in
 {
   options.my.virtualisation = {
     enable = lib.mkEnableOption "Virtualisation (Docker, Podman, Libvirt)";
+
+    libvirtd.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable host-level libvirtd daemon and tools.";
+    };
+
+    podman.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable host-level Podman container engine and tools.";
+    };
+
+    lxc.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable host-level LXC daemonless tools.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
     boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
     # ==========================================
     # VIRTUALIZATION
     # ==========================================
     virtualisation = {
       libvirtd = {
-        enable = true;
+        inherit (cfg.libvirtd) enable;
         onBoot = "start";
       };
 
@@ -30,20 +49,20 @@ in
 
       # Podman (Side-by-side)
       podman = {
-        enable = true;
+        inherit (cfg.podman) enable;
         # Provide Docker-compatible socket via Podman
-        dockerSocket.enable = true;
-        dockerCompat = true;
+        dockerSocket.enable = cfg.podman.enable;
+        dockerCompat = cfg.podman.enable;
         defaultNetwork.settings.dns_enabled = true;
         autoPrune = {
-          enable = true;
+          inherit (cfg.podman) enable;
           dates = "daily";
           flags = [ "--all" ];
         };
       };
 
       # Redirect Podman storage to disk (Prevent /var tmpfs exhaustion)
-      containers = {
+      containers = lib.mkIf cfg.podman.enable {
         enable = true;
         storage.settings = {
           storage = {
@@ -56,8 +75,8 @@ in
 
       # Raw LXC (Daemonless)
       lxc = {
-        enable = true;
-        lxcfs.enable = true;
+        inherit (cfg.lxc) enable;
+        lxcfs.enable = cfg.lxc.enable;
         defaultConfig = "lxc.include = ${pkgs.lxc}/share/lxc/config/common.conf.d/00-lxcfs.conf";
       };
     };
@@ -79,18 +98,20 @@ in
         enable = true;
         internalInterfaces = [
           config.my.network.bridge
-          "virbr0"
-        ];
+        ]
+        ++ lib.optional cfg.libvirtd.enable "virbr0";
         inherit (config.my.network) externalInterface;
       };
 
       # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
       firewall = {
-        trustedInterfaces = [ "virbr0" ];
+        trustedInterfaces = lib.optional cfg.libvirtd.enable "virbr0";
         extraForwardRules = ''
-          # Podman Bridge
+          # Container Bridge
           iifname "${config.my.network.bridge}" oifname "${config.my.network.externalInterface}" accept
           iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ct state { established, related } accept
+        ''
+        + lib.optionalString cfg.libvirtd.enable ''
 
           # Libvirt Bridge (Bluefin)
           iifname "virbr0" oifname "${config.my.network.externalInterface}" accept
@@ -105,16 +126,18 @@ in
 
     systemd = {
       # Ensure /images is owned by the user and libvirtd group
-      tmpfiles.rules = [
-        "d /images 0775 ${config.my.username} libvirtd - -"
-        "d /var/lib/images/podman 0755 root root - -"
-        "d /var/lib/images/podman/tmp 1777 root root - -"
+      tmpfiles.rules = lib.flatten [
+        (lib.optional cfg.libvirtd.enable "d /images 0775 ${config.my.username} libvirtd - -")
+        (lib.optionals cfg.podman.enable [
+          "d /var/lib/images/podman 0755 root root - -"
+          "d /var/lib/images/podman/tmp 1777 root root - -"
+        ])
       ];
 
       # Consolidated services
       services = {
         # HOTFIX: The virt-secret-init-encryption service uses /usr/bin/sh
-        virt-secret-init-encryption = {
+        virt-secret-init-encryption = lib.mkIf cfg.libvirtd.enable {
           serviceConfig.ExecStart = [
             ""
             "${pkgs.bash}/bin/sh -c 'umask 0077 && (${pkgs.coreutils}/bin/dd if=/dev/random status=none bs=32 count=1 | ${config.systemd.package}/bin/systemd-creds encrypt --name=secrets-encryption-key - /var/lib/libvirt/secrets/secrets-encryption-key)'"
@@ -122,7 +145,7 @@ in
         };
 
         # Ensure the Podman network exists and provides the physical bridge for ALL containers
-        podman-network-cbr0 = {
+        podman-network-cbr0 = lib.mkIf cfg.podman.enable {
           description = "Ensure Podman cbr0 network exists";
           after = [
             "podman.service"
@@ -171,7 +194,7 @@ in
         };
 
         # Ensure libvirt 'default' network is active
-        libvirtd = {
+        libvirtd = lib.mkIf cfg.libvirtd.enable {
           postStart = ''
             ${pkgs.libvirt}/bin/virsh net-start default || true
           '';
@@ -180,15 +203,19 @@ in
 
     };
 
-    programs.virt-manager.enable = true;
+    programs.virt-manager.enable = cfg.libvirtd.enable;
 
-    environment.systemPackages = with pkgs; [
-      virt-manager
-      libvirt
-      podman-tui
-      podman-compose
-      docker-compose
-      crosvm
+    environment.systemPackages = lib.flatten [
+      (lib.optionals cfg.libvirtd.enable [
+        virt-manager
+        libvirt
+      ])
+      (lib.optionals cfg.podman.enable [
+        podman-tui
+        podman-compose
+        docker-compose
+      ])
+      (lib.optional (cfg.libvirtd.enable || cfg.lxc.enable) crosvm)
     ];
   };
 }

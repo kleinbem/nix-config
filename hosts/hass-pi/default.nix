@@ -59,6 +59,13 @@
     services.rpi-eeprom.enable = true;
     monitoring.node.enable = true;
 
+    virtualisation = {
+      enable = true;
+      libvirtd.enable = false;
+      podman.enable = false;
+      lxc.enable = false;
+    };
+
     network = {
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";

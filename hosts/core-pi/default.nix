@@ -37,7 +37,12 @@ in
     # Container bridge (cbr0), NAT, IP forwarding and firewall forward rules
     # for the nspawn containers below. Without this, container@dashboard /
     # container@cups can't attach to the non-existent bridge.
-    virtualisation.enable = true;
+    virtualisation = {
+      enable = true;
+      libvirtd.enable = false;
+      podman.enable = false;
+      lxc.enable = false;
+    };
 
     network = {
       subnet = "10.85.48.0/24";
@@ -108,11 +113,12 @@ in
     # systemd-resolved as local DNS resolver
     resolved = {
       enable = true;
-      fallbackDns = [
-        "1.1.1.1"
-        "8.8.8.8"
-      ];
-      dnssec = "false";
+      settings = {
+        Resolve = {
+          FallbackDNS = "1.1.1.1 8.8.8.8";
+          DNSSEC = "false";
+        };
+      };
     };
   };
 
