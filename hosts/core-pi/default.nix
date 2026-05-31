@@ -230,6 +230,24 @@ in
 
   # Enable systemd in initrd for LUKS auto-unlock
   boot.initrd = {
+    network = {
+      enable = true;
+      ssh = {
+        enable = true;
+        port = 2222;
+        authorizedKeys = [
+          keys.ssh.yubikey
+          keys.ssh.fido2
+          keys.ssh.fido2-backup
+        ];
+        hostKeys =
+          let
+            key = "/etc/secrets/initrd/ssh_host_ed25519_key";
+          in
+          if builtins.pathExists key then [ key ] else [ ];
+      };
+    };
+
     systemd = {
       enable = true;
       # Bring up the wired NIC in initrd so clevis can reach the Tang server.
