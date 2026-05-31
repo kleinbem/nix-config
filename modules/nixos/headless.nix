@@ -123,4 +123,12 @@ in
   };
 
   security.sudo.wheelNeedsPassword = false;
+
+  # ─── Silent Boot ────────────────────────────────────────────
+  boot.kernelParams = [
+    "quiet"
+    "loglevel=3"
+    "systemd.show_status=auto"
+    "rd.udev.log_level=3"
+  ];
 }

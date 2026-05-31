@@ -9,7 +9,6 @@
   nixpkgs.overlays = [
     inputs.nur.overlays.default
     inputs.nix-packages.overlays.default
-    inputs.antigravity-nix.overlays.default
     inputs.nix-vscode-extensions.overlays.default
     inputs.nix-topology.overlays.default
     (_final: prev: {

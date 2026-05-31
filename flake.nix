@@ -101,11 +101,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    antigravity-nix = {
-      url = "github:jacopone/antigravity-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     jetpack-nixos = {
       url = "github:anduril/jetpack-nixos";
       # intentionally NOT following nixpkgs — anduril's cache is built with jetpack's pinned nixpkgs

@@ -8,6 +8,34 @@
   ...
 }:
 
+let
+  keys = import "${self}/modules/nixos/keys.nix";
+  # Initrd gate: poll Tang until it answers before clevis runs.
+  # Tang auto-unlock only works when ethernet (eno2) is plugged in.
+  # When on WiFi only, the YubiKey FIDO2 touch is the unlock method.
+  waitForTang = pkgs.writeShellScript "wait-for-tang" ''
+    i=0
+    TANG_SERVERS=(
+      "http://10.0.0.12:7654"
+      "http://10.0.0.20:7654"
+      "http://192.168.1.30:7654"
+      "http://192.168.1.21:7654"
+    )
+    while [ "$i" -lt 30 ]; do
+      for server in "''${TANG_SERVERS[@]}"; do
+        if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then
+          echo "wait-for-tang: Tang server $server reachable after $i retry(ies)"
+          exit 0
+        fi
+      done
+      echo "wait-for-tang: Tang servers not reachable yet ($i)"
+      ${pkgs.coreutils}/bin/sleep 1
+      i=$((i + 1))
+    done
+    echo "wait-for-tang: Tang still unreachable; continuing (FIDO2 or passphrase fallback)"
+    exit 0
+  '';
+in
 {
   imports = [
     inputs.nix-hardware.nixosModules.nixos-nvme
@@ -112,6 +140,9 @@
       parted
       dosfstools
       tio # serial terminal (USB-TTL, embedded devices)
+      clevis # LUKS Tang binding
+      jose # JSON Object Signing and Encryption (clevis dependency)
+      google-antigravity-ide-no-fhs # Google Antigravity IDE (self-vendored, no-FHS so sudo works in terminal)
     ];
   };
 
@@ -428,10 +459,67 @@
       kernelModules = [
         "usbhid"
         "hid_generic"
+        "e1000e" # Intel Ethernet — must load eagerly so networkd can bring up eno2 for Tang
       ];
-      systemd.enable = true;
-      systemd.tpm2.enable = true;
+      network = {
+        enable = true;
+        ssh = {
+          enable = builtins.pathExists "/etc/secrets/initrd/ssh_host_ed25519_key";
+          port = 2222;
+          authorizedKeys = [
+            keys.ssh.yubikey
+            keys.ssh.fido2
+            keys.ssh.fido2-backup
+          ];
+          hostKeys = [ "/etc/secrets/initrd/ssh_host_ed25519_key" ];
+        };
+      };
+      systemd = {
+        enable = true;
+        tpm2.enable = true;
+        # Bring up wired NIC (eno2) in initrd so clevis can reach Tang servers.
+        # WiFi (wlo1) is NOT available in initrd — Tang only works when docked via ethernet.
+        network = {
+          enable = true;
+          networks."10-lan" = {
+            matchConfig.Name = "en* eth*";
+            networkConfig = {
+              DHCP = "yes";
+            };
+          };
+        };
+
+        # Gate clevis on Tang actually being reachable.
+        storePaths = [ waitForTang ];
+
+        services.wait-for-tang = {
+          description = "Wait for Tang reachability before clevis LUKS unlock";
+          after = [ "systemd-networkd.service" ];
+          before = [ "cryptsetup-clevis-cryptroot.service" ];
+          wantedBy = [ "cryptsetup-clevis-cryptroot.service" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            TimeoutStartSec = 120;
+            ExecStart = waitForTang;
+          };
+        };
+
+        services."cryptsetup-clevis-cryptroot" = {
+          after = [ "wait-for-tang.service" ];
+          wants = [ "wait-for-tang.service" ];
+        };
+      };
       services.lvm.enable = true;
+
+      # Clevis LUKS auto-unlock: fetches key from Tang servers on the LAN.
+      # Only works when ethernet is plugged in. FIDO2 (YubiKey touch) is the
+      # primary interactive unlock when on WiFi / undocked.
+      clevis = {
+        enable = true;
+        useTang = true;
+        devices."cryptroot".secretFile = ./cryptroot.jwe;
+      };
     };
     loader = {
       systemd-boot.enable = lib.mkForce false;

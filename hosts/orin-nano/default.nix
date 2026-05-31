@@ -14,12 +14,20 @@ let
   # boot.initrd.systemd.storePaths (below) or systemd-initrd can't find it → 203/EXEC.
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
     i=0
+    TANG_SERVERS=(
+      "http://10.0.0.5:7654"
+      "http://10.0.0.20:7654"
+      "http://192.168.1.30:7654"
+      "http://192.168.1.21:7654"
+    )
     while [ "$i" -lt 30 ]; do
-      if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null http://10.0.0.5:7654/adv; then
-        echo "wait-for-tang: Tang reachable after $i retry(ies)"
-        exit 0
-      fi
-      echo "wait-for-tang: Tang not reachable yet ($i)"
+      for server in "''${TANG_SERVERS[@]}"; do
+        if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then
+          echo "wait-for-tang: Tang server $server reachable after $i retry(ies)"
+          exit 0
+        fi
+      done
+      echo "wait-for-tang: Tang servers not reachable yet ($i)"
       ${pkgs.coreutils}/bin/sleep 1
       i=$((i + 1))
     done
@@ -111,6 +119,19 @@ in
     tmp.useTmpfs = true;
     # Enable systemd in initrd for TPM2 auto-unlock (provided by Disko)
     initrd = {
+      network = {
+        enable = true;
+        ssh = {
+          enable = builtins.pathExists "/etc/secrets/initrd/ssh_host_ed25519_key";
+          port = 2222;
+          authorizedKeys = [
+            keys.ssh.yubikey
+            keys.ssh.fido2
+            keys.ssh.fido2-backup
+          ];
+          hostKeys = [ "/etc/secrets/initrd/ssh_host_ed25519_key" ];
+        };
+      };
       systemd = {
         enable = true;
         # Bring up the wired NIC (DHCP) in initrd so clevis can reach the Tang server.

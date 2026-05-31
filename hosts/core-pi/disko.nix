@@ -28,6 +28,10 @@
                 name = "core_crypt";
                 settings = {
                   allowDiscards = true;
+                  crypttabExtraOpts = [
+                    "fido2-device=auto"
+                    "x-systemd.device-timeout=60s"
+                  ];
                 };
                 content = {
                   type = "btrfs";
