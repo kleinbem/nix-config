@@ -16,6 +16,7 @@
     "${self}/modules/nixos/pki.nix"
     "${self}/modules/nixos/networking.nix"
     "${self}/modules/nixos/network-routing.nix"
+    "${self}/modules/nixos/services/rpi-eeprom.nix"
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.home-assistant
   ];

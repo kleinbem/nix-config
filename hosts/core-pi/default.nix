@@ -4,14 +4,33 @@
   self,
   myInventory,
   lib,
+  pkgs,
   ...
 }:
 let
   keys = import "${self}/modules/nixos/keys.nix";
+  # Initrd gate: poll Tang until it answers before clevis runs, sidestepping the
+  # initrd network race. MUST be added to boot.initrd.systemd.storePaths.
+  waitForTang = pkgs.writeShellScript "wait-for-tang" ''
+    i=0
+    while [ "$i" -lt 30 ]; do
+      if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null http://10.0.0.5:7654/adv; then
+        echo "wait-for-tang: Tang reachable after $i retry(ies)"
+        exit 0
+      fi
+      echo "wait-for-tang: Tang not reachable yet ($i)"
+      ${pkgs.coreutils}/bin/sleep 1
+      i=$((i + 1))
+    done
+    echo "wait-for-tang: Tang still unreachable; continuing (clevis falls back to passphrase)"
+    exit 0
+  '';
 in
 {
   imports = [
     inputs.nix-hardware.nixosModules.rpi5
+    inputs.disko.nixosModules.disko
+    ./disko.nix
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
     "${self}/modules/nixos/persistence.nix"
@@ -19,6 +38,7 @@ in
     "${self}/modules/nixos/pki.nix"
     "${self}/modules/nixos/networking.nix"
     "${self}/modules/nixos/network-routing.nix"
+    "${self}/modules/nixos/services/rpi-eeprom.nix"
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.monitoring-node
@@ -204,17 +224,65 @@ in
       ];
       neededForBoot = true;
     };
-    "/nix" = {
-      device = "/dev/disk/by-label/NIXOS_SD";
-      fsType = "ext4";
-      neededForBoot = true;
-      options = [ "noatime" ];
+    "/nix".neededForBoot = true;
+    "/nix/persist".neededForBoot = true;
+  };
+
+  # Enable systemd in initrd for LUKS auto-unlock
+  boot.initrd = {
+    systemd = {
+      enable = true;
+      # Bring up the wired NIC in initrd so clevis can reach the Tang server.
+      network = {
+        enable = true;
+        networks."10-lan" = {
+          matchConfig.Name = "en* eth*";
+          networkConfig = {
+            DHCP = "no";
+            Address = "10.0.0.20/16";
+            Gateway = "10.0.0.1";
+          };
+        };
+      };
+
+      # Gate clevis on Tang actually being reachable.
+      storePaths = [ waitForTang ];
+
+      services.wait-for-tang = {
+        description = "Wait for Tang reachability before clevis LUKS unlock";
+        after = [ "systemd-networkd.service" ];
+        before = [ "cryptsetup-clevis-core_crypt.service" ];
+        wantedBy = [ "cryptsetup-clevis-core_crypt.service" ];
+        unitConfig.DefaultDependencies = false;
+        serviceConfig = {
+          Type = "oneshot";
+          TimeoutStartSec = 120;
+          ExecStart = waitForTang;
+        };
+      };
+
+      services."cryptsetup-clevis-core_crypt" = {
+        after = [ "wait-for-tang.service" ];
+        wants = [ "wait-for-tang.service" ];
+      };
     };
-    "/boot" = {
-      device = "/dev/disk/by-label/NIXOS_BOOT";
-      fsType = "vfat";
+
+    # Clevis LUKS auto-unlock configuration
+    clevis = {
+      enable = true;
+      useTang = true;
+      devices."core_crypt".secretFile = ./core_crypt.jwe;
     };
   };
+
+  # Disko configuration defaults
+  disko.devices.disk.main.device = lib.mkDefault "/dev/mmcblk0";
+  _module.args.device = "/dev/mmcblk0";
+
+  environment.systemPackages = with pkgs; [
+    clevis # LUKS Tang binding — run `clevis luks bind -d /dev/mmcblk0p2 tang '{"url":"http://10.0.0.5:7654"}'`
+    jose # JSON Object Signing and Encryption
+  ];
 
   # Host-specific state persistence
   environment.persistence."/nix/persist" = {
