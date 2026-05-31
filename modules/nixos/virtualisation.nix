@@ -207,15 +207,15 @@ in
 
     environment.systemPackages = lib.flatten [
       (lib.optionals cfg.libvirtd.enable [
-        virt-manager
-        libvirt
+        pkgs.virt-manager
+        pkgs.libvirt
       ])
       (lib.optionals cfg.podman.enable [
-        podman-tui
-        podman-compose
-        docker-compose
+        pkgs.podman-tui
+        pkgs.podman-compose
+        pkgs.docker-compose
       ])
-      (lib.optional (cfg.libvirtd.enable || cfg.lxc.enable) crosvm)
+      (lib.optional (cfg.libvirtd.enable || cfg.lxc.enable) pkgs.crosvm)
     ];
   };
 }
