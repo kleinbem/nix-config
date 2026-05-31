@@ -560,15 +560,7 @@
     };
     nftables.enable = true;
   };
-
   services = {
-    # Tang server for headless LUKS auto-unlock of fleet hosts (e.g. orin-nano clevis).
-    # LAN-only; security comes from network reachability + the encrypted JWE blob, not auth.
-    tang = {
-      enable = true;
-      ipAddressAllow = [ "10.0.0.0/16" ];
-    };
-
     journald.extraConfig = ''
       SystemMaxUse=500M
       SystemMaxFileSize=50M
@@ -616,5 +608,6 @@
 
   system.stateVersion = "25.11";
   my.security.ai-hardening.enable = true;
+  my.services.tang.enable = true;
 
 }

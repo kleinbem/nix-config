@@ -15,6 +15,7 @@ in
   imports = [
     ./options.nix
     inputs.sops-nix.nixosModules.sops
+    ./services/tang.nix
   ];
 
   # Overlays (same as common.nix but without NUR/desktop-specific overlays)

@@ -500,4 +500,5 @@ in
   };
 
   system.stateVersion = "25.11";
+  my.services.tang.enable = true;
 }
