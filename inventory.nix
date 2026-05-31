@@ -157,7 +157,7 @@
         externalPort = 443; # Default HTTPS
         domain = "home.kleinbem.dev";
         maintenance = false;
-        auth = true; # Protected by Authelia
+        auth = false; # Gated at the edge by Cloudflare Access (terraform/cloudflare-access.tf); Authelia retired here
         meta = {
           name = "Dashboard";
           category = "Infrastructure";

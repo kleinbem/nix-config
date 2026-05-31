@@ -44,7 +44,7 @@
       "/var/lib/images" # Container state (Caddy, n8n, databases, etc)
       "/var/lib/containers" # NixOS Containers (systemd-nspawn)
       "/var/lib/syncthing" # Syncthing device identity and config
-      "/var/lib/tang" # Tang NBDE server keys (stable across reboots for Clevis bindings)
+      "/var/lib/private/tang" # Tang NBDE keys (DynamicUser → /var/lib/private)
       "/var/lib/lxc" # LXC state
     ];
     files = [
