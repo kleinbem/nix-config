@@ -16,7 +16,6 @@ in
     "${self}/modules/nixos/hosts.nix"
     "${self}/modules/nixos/persistence.nix"
     "${self}/modules/nixos/virtualisation.nix"
-    "${self}/modules/nixos/zero-trust.nix"
     "${self}/modules/nixos/pki.nix"
     "${self}/modules/nixos/networking.nix"
     "${self}/modules/nixos/network-routing.nix"
@@ -34,6 +33,11 @@ in
 
   my = {
     services.rpi-eeprom.enable = true;
+
+    # Container bridge (cbr0), NAT, IP forwarding and firewall forward rules
+    # for the nspawn containers below. Without this, container@dashboard /
+    # container@cups can't attach to the non-existent bridge.
+    virtualisation.enable = true;
 
     network = {
       subnet = "10.85.48.0/24";
