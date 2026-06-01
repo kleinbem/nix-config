@@ -1,5 +1,5 @@
 # 🏗️ System Reference (Auto-generated)
-*Last Updated: 2026-06-01T01:24:46Z*
+*Last Updated: 2026-06-01T22:42:06Z*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure. 
@@ -8,7 +8,7 @@
 ## 📦 Core Revisions
 - **nixpkgs**: [`e8be573b417f3daa3dd4cb9052178f848e0c9d1d`](https://github.com/NixOS/nixpkgs/commit/e8be573b417f3daa3dd4cb9052178f848e0c9d1d)
 - **home-manager**: `2fb63a1031e02530fcf3214952ff5b7bf354eb27`
-- **sops-nix**: `740e372309f8e2a50e126fcd7e3898be26dd5f16`
+- **sops-nix**: `4c5141ef4debf9dc96ee523cf51cc9524a079e62`
 
 ## 🖥️ Managed Hosts
 - **core-gateway**
@@ -58,7 +58,6 @@
 - **qdrant**
 - **syncthing**
 - **syncthing-orin**
-- **vllm**
 
 ## 🛠️ Workspace Status
 - **Devenv**: Available

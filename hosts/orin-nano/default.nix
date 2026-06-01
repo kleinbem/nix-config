@@ -14,12 +14,7 @@ let
   # boot.initrd.systemd.storePaths (below) or systemd-initrd can't find it → 203/EXEC.
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
     i=0
-    TANG_SERVERS=(
-      "http://10.0.0.5:7654"
-      "http://10.0.0.20:7654"
-      "http://192.168.1.30:7654"
-      "http://192.168.1.21:7654"
-    )
+    TANG_SERVERS=(${lib.concatMapStrings (s: " \"${s}\"") myInventory.tangServers})
     while [ "$i" -lt 30 ]; do
       for server in "''${TANG_SERVERS[@]}"; do
         if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then

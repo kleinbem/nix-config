@@ -15,8 +15,7 @@
     };
 
     devenv = {
-      # FIXME: Temporary pin to bypass broken libghostty-vt requirement in devenv 2.1
-      url = "github:cachix/devenv/070577452d0c81d62168ef8b158ee4317ace7e21";
+      url = "github:cachix/devenv";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.ghostty.follows = "ghostty";
     };
@@ -120,6 +119,8 @@
       url = "github:cynicsketch/nix-mineral";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-flatpak.url = "github:gmodena/nix-flatpak";
 
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
 
@@ -260,6 +261,7 @@
                 inherit inputs self myInventory;
               };
               modules = [
+                inputs.nix-flatpak.nixosModules.nix-flatpak
                 {
                   nixpkgs = {
                     hostPlatform = system;
@@ -268,6 +270,8 @@
                       allowUnfreePredicate = _: true;
                       android_sdk.accept_license = true;
                       permittedInsecurePackages = [
+                        # nixpkgs github-runner 2.334.0 still bundles Node 20 internally;
+                        # remove once nixpkgs upgrades it to Node 22.
                         "nodejs-20.20.2"
                         "nodejs-slim-20.20.2"
                         "openclaw-2026.5.7"

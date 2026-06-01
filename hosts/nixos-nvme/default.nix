@@ -15,12 +15,7 @@ let
   # When on WiFi only, the YubiKey FIDO2 touch is the unlock method.
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
     i=0
-    TANG_SERVERS=(
-      "http://10.0.0.12:7654"
-      "http://10.0.0.20:7654"
-      "http://192.168.1.30:7654"
-      "http://192.168.1.21:7654"
-    )
+    TANG_SERVERS=(${lib.concatMapStrings (s: " \"${s}\"") myInventory.tangServers})
     while [ "$i" -lt 30 ]; do
       for server in "''${TANG_SERVERS[@]}"; do
         if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then
@@ -56,7 +51,6 @@ in
     inputs.nix-presets.nixosModules.comfyui
     inputs.nix-presets.nixosModules.langfuse
     inputs.nix-presets.nixosModules.langflow
-    inputs.nix-presets.nixosModules.vllm
     inputs.nix-presets.nixosModules.monitoring
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.litellm
@@ -164,11 +158,6 @@ in
           serverPort = 5678;
           upstreams = [
             {
-              name = "vllm";
-              target = myInventory.network.nodes.vllm.ip;
-              port = 8000;
-            }
-            {
               name = "qdrant";
               target = myInventory.network.nodes.qdrant.ip;
               port = 6333;
@@ -189,18 +178,12 @@ in
         enable = false;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/images/open-webui";
-        vllmUrl = "http://localhost:8000/v1"; # Via mTLS sidecar → vLLM
         memoryLimit = "4G";
         secretsFile = config.sops.templates."openwebui.env".path;
         tls = {
           enable = true;
           serverPort = 8080;
           upstreams = [
-            {
-              name = "vllm";
-              target = myInventory.network.nodes.vllm.ip;
-              port = 8000;
-            }
             {
               name = "langfuse";
               target = myInventory.network.nodes.langfuse.ip;
@@ -230,8 +213,6 @@ in
         };
       };
 
-      # --- Advanced AI Suite (Managed via ai.nix) ---
-
       loki = {
         enable = false;
         ip = "${myInventory.network.nodes.loki.ip}/24";
@@ -242,14 +223,11 @@ in
         enable = false;
         ip = "${myInventory.network.nodes.monitoring.ip}/24";
         hostDataDir = "/var/lib/images/monitoring";
-        # Automatically scrape the host and important infrastructure nodes
         nodeTargets = [
           myInventory.hosts.nixos-nvme.ip
           myInventory.hosts.router-1.ip
           myInventory.hosts.router-2.ip
         ];
-        vllmTargets = [ myInventory.network.nodes.vllm.ip ];
-        # GitHub Actions dashboard: json-exporter scrapes the GitHub API (outbound).
         githubMetrics = {
           enable = true;
           repos = [ "kleinbem/nix" ];
@@ -262,9 +240,7 @@ in
         ip = "${myInventory.network.nodes.openclaw.ip}/24";
         hostDataDir = "/var/lib/images/openclaw";
       };
-    };
 
-    containers = {
       caddy = {
         enable = lib.mkForce true;
         ip = "${myInventory.network.nodes.caddy.ip}/24";

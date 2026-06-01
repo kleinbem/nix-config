@@ -63,9 +63,6 @@
         myInventory.hosts.router-1.ip
         myInventory.hosts.router-2.ip
       ];
-      vllmTargets = [
-        # All edge nodes migrated to Ollama
-      ];
       ollamaTargets = [
         myInventory.network.nodes.ollama-orin.ip
         myInventory.network.nodes.ollama-rpi.ip

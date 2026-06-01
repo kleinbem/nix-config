@@ -67,12 +67,6 @@ let
     }
     {
       src = inv.nodes.caddy.ip;
-      dst = inv.nodes.vllm.ip;
-      dport = 8000;
-      comment = "Caddy -> vLLM";
-    }
-    {
-      src = inv.nodes.caddy.ip;
       dst = inv.nodes.litellm.ip;
       dport = 443;
       comment = "Caddy -> LiteLLM (mTLS)";

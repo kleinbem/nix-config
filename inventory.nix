@@ -1,6 +1,18 @@
 {
   user = "martin";
 
+  # ─── Tang NBDE Servers ──────────────────────────────────────
+  # All physical hosts that run the Tang service (my.services.tang.enable = true).
+  # waitForTang in each host's initrd polls this list; clevis only needs one
+  # server to respond. A host's own Tang is not up during its own initrd unlock.
+  tangServers = [
+    "http://10.0.0.5:7654" # nixos-nvme (LAN interface)
+    "http://10.0.0.12:7654" # orin-nano
+    "http://10.0.0.20:7654" # core-pi
+    "http://192.168.1.30:7654" # nasbook
+    "http://10.0.0.21:7654" # hass-pi (planned, not yet active)
+  ];
+
   # ─── Managed Hosts ──────────────────────────────────────────
   hosts = {
     nixos-nvme = {
@@ -42,12 +54,11 @@
       ];
     };
     mesh-node-2 = {
-      ip = "192.168.1.6"; # TODO: Verify if a second one exists
-      system = "aarch64-linux";
-      deployType = "ssh";
+      ip = "192.168.1.6"; # Second BPI-R4 — not yet active
+      type = "openwrt";
       tags = [
-        "router"
-        "lxc"
+        "physical"
+        "mesh"
       ];
     };
     router-1 = {
@@ -88,7 +99,7 @@
       ];
     };
     hass-pi = {
-      ip = "192.168.1.21"; # TODO: Set actual RPi IP
+      ip = "10.0.0.21"; # Raspberry Pi — not yet active
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -259,17 +270,6 @@
           category = "AI Engineering";
           icon = "👁️";
           description = "LLM telemetry and tracing. [AIRLOCK: Restricted Egress]";
-        };
-      };
-      vllm = {
-        ip = "10.85.46.111";
-        port = 8000;
-        externalPort = 8000;
-        meta = {
-          name = "vLLM Workstation";
-          category = "AI Engineering";
-          icon = "⚡";
-          description = "High-throughput model serving (Intel XPU). [AIRLOCK: Restricted Egress]";
         };
       };
       ollama-rpi = {

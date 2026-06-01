@@ -205,7 +205,19 @@ in
 
       services = {
         power-profiles-daemon.enable = true;
-        flatpak.enable = true;
+        flatpak = {
+          enable = true;
+          update.auto = {
+            enable = true;
+            onCalendar = "weekly";
+          };
+          packages = [
+            {
+              appId = "us.zoom.Zoom";
+              origin = "flathub";
+            }
+          ];
+        };
         pulseaudio.enable = false;
         pipewire = {
           enable = true;
@@ -268,7 +280,6 @@ in
           libsForQt5.qt5.qtwayland
           qt6.qtwayland
           nyxt
-          zoom-us
           bleachbit
           just
         ];
