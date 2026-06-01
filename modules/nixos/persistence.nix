@@ -55,4 +55,11 @@
     ]
     ++ lib.optional (!config.boot.initrd.systemd.enable) "/etc/machine-id";
   };
+
+  # Impermanence mkdir -p creates parent directories (like /var/lib/private) with 0755.
+  # This breaks systemd DynamicUser services (like tangd) which require 0700.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/private 0700 root root - -"
+    "d /nix/persist/var/lib/private 0700 root root - -"
+  ];
 }
