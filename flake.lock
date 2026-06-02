@@ -5802,10 +5802,10 @@
         "treefmt-nix": "treefmt-nix_11"
       },
       "locked": {
-        "lastModified": 1780357024,
+        "lastModified": 1780357140,
         "narHash": "sha256-tW2fg+JUcGcr1nBtIJ/4S9fJhNqHbIq+7a4e+/3f1EA=",
         "ref": "refs/heads/main",
-        "rev": "2143a7e703899a21400159f3db00b460c415f82f",
+        "rev": "cf5ea7c38cf90b07d55358da495d52d42da1bf26",
         "revCount": 83,
         "type": "git",
         "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells"
@@ -5835,10 +5835,10 @@
         "treefmt-nix": "treefmt-nix_13"
       },
       "locked": {
-        "lastModified": 1780357024,
+        "lastModified": 1780357140,
         "narHash": "sha256-tW2fg+JUcGcr1nBtIJ/4S9fJhNqHbIq+7a4e+/3f1EA=",
         "ref": "refs/heads/main",
-        "rev": "2143a7e703899a21400159f3db00b460c415f82f",
+        "rev": "cf5ea7c38cf90b07d55358da495d52d42da1bf26",
         "revCount": 83,
         "type": "git",
         "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-devshells"
@@ -6074,11 +6074,11 @@
         "treefmt-nix": "treefmt-nix_14"
       },
       "locked": {
-        "lastModified": 1780357029,
-        "narHash": "sha256-8ekcl+xMMIO/JQH7TEzojdz9ux07UkUdXXHbCtgUvE8=",
+        "lastModified": 1780357178,
+        "narHash": "sha256-VDrrFfXOtTJMeXc4vuNOE05NvI5Sp5E9p2+84dcBRAs=",
         "ref": "refs/heads/main",
-        "rev": "2d49f3bb0e8491f4045626302c6995510170109b",
-        "revCount": 88,
+        "rev": "bfeffcb8b53b72850f4439361c813a77a84de0f6",
+        "revCount": 89,
         "type": "git",
         "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-packages"
       },
@@ -6102,13 +6102,12 @@
         "treefmt-nix": "treefmt-nix_15"
       },
       "locked": {
-        "lastModified": 1780357034,
-        "narHash": "sha256-3I91leQfnGEVay39qVAuww1s4AndUy2OoEvGXyGNNUM=",
-        "ref": "refs/heads/main",
-        "rev": "cfaf6d48d0a2a558792615437557dcf29b392524",
-        "revCount": 153,
-        "type": "git",
-        "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
+        "lastModified": 1780365991,
+        "narHash": "sha256-R7JqixX1j2nx0riZLC5sP7mEZyu862aKkITHs13N/Us=",
+        "owner": "kleinbem",
+        "repo": "nix-presets",
+        "rev": "ce898309384fc7da268f403b4a40b3463251ffe3",
+        "type": "github"
       },
       "original": {
         "owner": "kleinbem",

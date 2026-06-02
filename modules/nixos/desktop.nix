@@ -225,6 +225,10 @@ in
               origin = "flathub";
             }
             {
+              appId = "com.github.tchx84.Flatseal";
+              origin = "flathub";
+            }
+            {
               appId = "io.github.flattool.Warehouse";
               origin = "flathub";
             }

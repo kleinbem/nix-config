@@ -26,7 +26,6 @@ in
           inv.network.nodes.comfyui.ip
           inv.network.nodes.langflow.ip
           inv.network.nodes.langfuse.ip
-          inv.network.nodes.vllm.ip
           inv.network.nodes.litellm.ip
         ];
       description = "List of AI container IP addresses subject to strict egress filtering.";
