@@ -9,15 +9,14 @@
 }:
 let
   keys = import "${self}/modules/nixos/keys.nix";
+  # Generate list of remote Tang servers (filtering out our own)
+  remoteTangServers = lib.filter (s: !lib.hasInfix "10.0.0.20" s) myInventory.tangServers;
   # Initrd gate: poll Tang until it answers before clevis runs, sidestepping the
   # initrd network race. MUST be added to boot.initrd.systemd.storePaths.
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
     i=0
     TANG_SERVERS=(
-      "http://10.0.0.5:7654"
-      "http://10.0.0.12:7654"
-      "http://192.168.1.30:7654"
-      "http://192.168.1.21:7654"
+      ${lib.concatMapStringsSep "\n      " (s: "\"${s}\"") remoteTangServers}
     )
     while [ "$i" -lt 30 ]; do
       for server in "''${TANG_SERVERS[@]}"; do
@@ -238,17 +237,30 @@ in
 
   # Enable systemd in initrd for LUKS auto-unlock
   boot.initrd = {
+    # Ensure USB storage controller and ethernet drivers are available in early boot
+    availableKernelModules = [
+      "usb_storage"
+      "uas"
+      "pcie_brcmstb"
+      "nvme"
+      "sd_mod"
+      "xhci_pci"
+    ];
+    kernelModules = [
+      "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
+    ];
+
     network = {
       enable = true;
       ssh = {
-        enable = builtins.pathExists "/etc/secrets/initrd/ssh_host_ed25519_key";
+        enable = builtins.pathExists "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_core-pi";
         port = 2222;
         authorizedKeys = [
           keys.ssh.yubikey
           keys.ssh.fido2
           keys.ssh.fido2-backup
         ];
-        hostKeys = [ "/etc/secrets/initrd/ssh_host_ed25519_key" ];
+        hostKeys = [ "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_core-pi" ];
       };
     };
 
@@ -297,9 +309,9 @@ in
     };
   };
 
-  # Disko configuration defaults
-  disko.devices.disk.main.device = lib.mkDefault "/dev/mmcblk0";
-  _module.args.device = "/dev/mmcblk0";
+  # Disko configuration defaults (SSD over USB boots as /dev/sda on the Pi)
+  disko.devices.disk.main.device = lib.mkDefault "/dev/sda";
+  _module.args.device = "/dev/sda";
 
   environment.systemPackages = with pkgs; [
     clevis # LUKS Tang binding — run `clevis luks bind -d /dev/mmcblk0p2 tang '{"url":"http://10.0.0.5:7654"}'`

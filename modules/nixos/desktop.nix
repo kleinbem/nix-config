@@ -78,9 +78,6 @@ in
       # Enable local CUPS daemon to act as a proxy/client for GUI applications like Chrome
       services.printing = {
         enable = true;
-        clientConf = ''
-          ServerName 10.85.46.124
-        '';
       };
 
       xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gnome ];

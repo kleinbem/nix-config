@@ -29,6 +29,7 @@
       "/var/lib/usbguard"
       "/var/db/sudo"
       "/etc/NetworkManager/system-connections"
+      "/etc/secrets"
       # "/etc/waydroid-extra"
       "/var/lib/sbctl"
       # --- Added Missing Service & System State ---

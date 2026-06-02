@@ -274,7 +274,7 @@
                         # remove once nixpkgs upgrades it to Node 22.
                         "nodejs-20.20.2"
                         "nodejs-slim-20.20.2"
-                        "openclaw-2026.5.7"
+                        "openclaw-2026.5.12"
                       ];
                     };
                   };

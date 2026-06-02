@@ -116,7 +116,6 @@ in
 
     # Global environment variables
     variables = {
-      CUPS_SERVER = myInventory.network.nodes.cups.ip;
     };
 
     systemPackages = with pkgs; [
@@ -440,14 +439,14 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists "/etc/secrets/initrd/ssh_host_ed25519_key";
+          enable = builtins.pathExists "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_nixos-nvme";
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
             keys.ssh.fido2
             keys.ssh.fido2-backup
           ];
-          hostKeys = [ "/etc/secrets/initrd/ssh_host_ed25519_key" ];
+          hostKeys = [ "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_nixos-nvme" ];
         };
       };
       systemd = {
