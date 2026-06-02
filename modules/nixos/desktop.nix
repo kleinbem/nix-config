@@ -75,9 +75,13 @@ in
         ];
       };
 
-      # The host should use the containerized CUPS via CUPS_SERVER env var.
-      # Enabling it here causes a conflict on port 631 and shadows the container.
-      services.printing.enable = false;
+      # Enable local CUPS daemon to act as a proxy/client for GUI applications like Chrome
+      services.printing = {
+        enable = true;
+        clientConf = ''
+          ServerName 10.85.46.124
+        '';
+      };
 
       xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
 

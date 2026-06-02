@@ -112,9 +112,6 @@ in
   # --- Persistent Identity (Declarative Symlinks) ---
   environment = {
     etc = {
-      "cups/client.conf".text = ''
-        ServerName ${myInventory.network.nodes.cups.ip}
-      '';
     };
 
     # Global environment variables
