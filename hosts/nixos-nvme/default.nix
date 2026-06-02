@@ -274,7 +274,7 @@ in
       };
 
       cups = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.cups.ip}/24";
       };
 
