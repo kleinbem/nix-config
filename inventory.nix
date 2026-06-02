@@ -406,7 +406,7 @@
       };
 
       cups = {
-        ip = "10.85.48.124"; # Core-Pi
+        ip = "10.85.46.124";
         port = 631;
         secure = true; # Uses https upstream
         meta = {
