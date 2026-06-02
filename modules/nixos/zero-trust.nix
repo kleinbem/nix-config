@@ -92,38 +92,12 @@ let
       comment = "n8n -> LiteLLM (mTLS)";
     }
 
-    # ─── Gateway → vLLM Backend (internal) ────────────────────
-    {
-      src = inv.nodes.litellm.ip;
-      dst = inv.nodes.vllm.ip;
-      dport = 443;
-      comment = "LiteLLM -> vLLM (mTLS)";
-    }
-
     # ─── East-West mTLS Flows (all via port 443) ──────────────
-    {
-      src = inv.nodes.open-webui.ip;
-      dst = inv.nodes.vllm.ip;
-      dport = 443;
-      comment = "Open WebUI -> vLLM (Direct Failover)";
-    }
     {
       src = inv.nodes.open-webui.ip;
       dst = inv.nodes.langfuse.ip;
       dport = 443;
       comment = "Open WebUI -> Langfuse (mTLS)";
-    }
-    {
-      src = inv.nodes.agent-zero.ip;
-      dst = inv.nodes.vllm.ip;
-      dport = 443;
-      comment = "Agent Zero -> vLLM (Direct Failover)";
-    }
-    {
-      src = inv.nodes.n8n.ip;
-      dst = inv.nodes.vllm.ip;
-      dport = 443;
-      comment = "n8n -> vLLM (Direct Failover)";
     }
     {
       src = inv.nodes.n8n.ip;
@@ -132,12 +106,6 @@ let
       comment = "n8n -> Qdrant (mTLS)";
     }
     # ─── Monitoring & Logging ───────────────────────────────
-    {
-      src = inv.nodes.monitoring.ip;
-      dst = inv.nodes.vllm.ip;
-      dport = 8000;
-      comment = "Monitoring -> vLLM Metrics";
-    }
     {
       src = inv.nodes.monitoring.ip;
       dst = subnet;

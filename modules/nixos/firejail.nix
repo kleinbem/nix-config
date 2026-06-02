@@ -62,14 +62,6 @@ in
               executable = "${pkgs.obsidian}/bin/obsidian";
               profile = "${pkgs.firejail}/etc/firejail/obsidian.profile";
             };
-            bitwarden = {
-              executable = "${pkgs.bitwarden-desktop}/bin/bitwarden";
-              profile = "${pkgs.firejail}/etc/firejail/bitwarden.profile";
-            };
-            logseq = {
-              executable = "${pkgs.logseq}/bin/logseq";
-              profile = "${pkgs.firejail}/etc/firejail/logseq.profile";
-            };
             obs-studio = {
               executable = "${pkgs.obs-studio}/bin/obs";
               profile = "${pkgs.firejail}/etc/firejail/obs.profile";
