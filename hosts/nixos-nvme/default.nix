@@ -439,14 +439,16 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_nixos-nvme";
+          enable = builtins.pathExists (inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_nixos-nvme");
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
             keys.ssh.fido2
             keys.ssh.fido2-backup
           ];
-          hostKeys = [ "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_nixos-nvme" ];
+          hostKeys = [
+            (builtins.unsafeDiscardStringContext "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_nixos-nvme")
+          ];
         };
       };
       systemd = {

@@ -528,6 +528,10 @@ in
         "snd_pcsp"
       ];
 
+      initrd.systemd.storePaths = lib.mkIf config.boot.initrd.systemd.enable [
+        pkgs.pcsclite.lib
+      ];
+
       # Kernel parameters moved to kernel.nix for consolidation
 
       kernel.sysctl = {

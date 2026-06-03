@@ -260,7 +260,9 @@ in
           keys.ssh.fido2
           keys.ssh.fido2-backup
         ];
-        hostKeys = [ "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_core-pi" ];
+        hostKeys = [
+          (builtins.unsafeDiscardStringContext "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_core-pi")
+        ];
       };
     };
 
