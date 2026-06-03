@@ -124,11 +124,12 @@ in
             keys.ssh.fido2
             keys.ssh.fido2-backup
           ];
-          hostKeys = [
-            (builtins.unsafeDiscardStringContext "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_orin-nano")
-          ];
+          hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_orin-nano" ];
         };
       };
+      secrets."/etc/ssh/ssh_host_ed25519_key_orin-nano" = lib.mkForce (
+        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_orin-nano"
+      );
       systemd = {
         enable = true;
         # Bring up the wired NIC (DHCP) in initrd so clevis can reach the Tang server.

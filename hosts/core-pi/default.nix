@@ -260,11 +260,12 @@ in
           keys.ssh.fido2
           keys.ssh.fido2-backup
         ];
-        hostKeys = [
-          (builtins.unsafeDiscardStringContext "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_core-pi")
-        ];
+        hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_core-pi" ];
       };
     };
+    secrets."/etc/ssh/ssh_host_ed25519_key_core-pi" = lib.mkForce (
+      inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_core-pi"
+    );
 
     systemd = {
       enable = true;

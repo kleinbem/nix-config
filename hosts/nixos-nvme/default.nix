@@ -446,11 +446,12 @@ in
             keys.ssh.fido2
             keys.ssh.fido2-backup
           ];
-          hostKeys = [
-            (builtins.unsafeDiscardStringContext "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_nixos-nvme")
-          ];
+          hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_nixos-nvme" ];
         };
       };
+      secrets."/etc/ssh/ssh_host_ed25519_key_nixos-nvme" = lib.mkForce (
+        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_nixos-nvme"
+      );
       systemd = {
         enable = true;
         tpm2.enable = true;
