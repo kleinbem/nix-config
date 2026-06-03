@@ -135,6 +135,7 @@ in
       tio # serial terminal (USB-TTL, embedded devices)
       clevis # LUKS Tang binding
       jose # JSON Object Signing and Encryption (clevis dependency)
+      efibootmgr # EFI NVRAM entry management (recovery + boot guard)
       google-antigravity-ide-no-fhs # Google Antigravity IDE (self-vendored, no-FHS so sudo works in terminal)
     ];
   };
@@ -380,6 +381,49 @@ in
           chmod 600 /var/lib/images/crowdsec/bouncer-key
         fi
       '';
+
+      # Windows overwrites \EFI\BOOT\BOOTX64.EFI and can drop the NVRAM entry
+      # on every Windows session, making NixOS invisible in the BIOS boot menu.
+      # This service runs after each successful NixOS boot to restore both.
+      efi-boot-guard = {
+        description = "Restore EFI fallback path and NVRAM entry after Windows rewrites them";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "local-fs.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        path = with pkgs; [ coreutils efibootmgr util-linux ];
+        script = ''
+          SYSTEMD_BOOT="/boot/EFI/systemd/systemd-bootx64.efi"
+          FALLBACK="/boot/EFI/BOOT/BOOTX64.EFI"
+
+          # Restore the UEFI fallback path to systemd-boot. UEFI spec requires
+          # firmware to try \EFI\BOOT\BOOTX64.EFI even with no NVRAM entries,
+          # so keeping it as systemd-boot guarantees NixOS is always reachable.
+          if [ -f "$SYSTEMD_BOOT" ]; then
+            if ! cmp -s "$SYSTEMD_BOOT" "$FALLBACK" 2>/dev/null; then
+              echo "efi-boot-guard: restoring EFI fallback path to systemd-boot"
+              mkdir -p "$(dirname "$FALLBACK")"
+              cp "$SYSTEMD_BOOT" "$FALLBACK"
+            fi
+          fi
+
+          # Re-register the NVRAM entry if Windows removed it.
+          if ! efibootmgr | grep -q "Linux Boot Manager"; then
+            echo "efi-boot-guard: NVRAM entry missing, re-registering..."
+            ESP_DEV=$(findmnt -n -o SOURCE /boot)
+            DISK=$(lsblk -dnpo PKNAME "$ESP_DEV")
+            PART_NUM=$(lsblk -no PARTN "$ESP_DEV")
+            efibootmgr --create \
+              --disk "$DISK" \
+              --part "$PART_NUM" \
+              --label "Linux Boot Manager" \
+              --loader '\EFI\systemd\systemd-bootx64.efi' \
+              --unicode || true
+          fi
+        '';
+      };
     };
 
     # IMAGE STATE STORAGE
@@ -498,12 +542,12 @@ in
     };
     loader = {
       systemd-boot.enable = lib.mkForce false;
-      systemd-boot.configurationLimit = 15;
       efi.canTouchEfiVariables = true;
     };
     lanzaboote = {
       enable = true;
       pkiBundle = "/nix/persist/var/lib/sbctl";
+      configurationLimit = 15;
     };
     # Kernel parameters now handled by kernel.nix and audit.nix
     # i915 enhancements moved to kernel.nix
