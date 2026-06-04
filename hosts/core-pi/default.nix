@@ -336,7 +336,7 @@ in
     agents.configuration = {
       my.containers = {
         open-webui.enable = lib.mkForce true;
-        openclaw.enable = lib.mkForce true;
+        # openclaw.enable = lib.mkForce true; # Temporarily disabled due to upstream pnpm hash mismatch
         agent-zero.enable = lib.mkForce true;
         anythingllm.enable = lib.mkForce true;
       };
