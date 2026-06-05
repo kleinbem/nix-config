@@ -65,6 +65,10 @@ in
     "/nix/persist".neededForBoot = true;
   };
 
+  boot.kernelParams = [
+    "ip=10.0.0.21::10.0.0.1:255.255.0.0:hass-pi::off"
+  ];
+
   # Enable systemd in initrd for LUKS auto-unlock
   boot.initrd = {
     availableKernelModules = [
