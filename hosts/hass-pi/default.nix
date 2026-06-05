@@ -36,10 +36,12 @@ let
 in
 {
   imports = [
+    inputs.disko.nixosModules.disko
     ./disko.nix
     inputs.nix-hardware.nixosModules.rpi5
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+    "${self}/modules/nixos/persistence.nix"
     "${self}/modules/nixos/virtualisation.nix"
     "${self}/modules/nixos/zero-trust.nix"
     "${self}/modules/nixos/pki.nix"
@@ -210,7 +212,7 @@ in
     virtualisation = {
       enable = true;
       libvirtd.enable = false;
-      podman.enable = false;
+      podman.enable = true;
       lxc.enable = false;
     };
 
@@ -258,13 +260,15 @@ in
 
     # Voice Pipeline
     wyoming = {
-      openwakeword.enable = true;
+      openwakeword.enable = false; # broken upstream right now
       piper.servers."piper" = {
         enable = true;
+        uri = "tcp://0.0.0.0:10200";
         voice = "en_US-lessac-medium";
       };
-      whisper.servers."whisper" = {
+      faster-whisper.servers."whisper" = {
         enable = true;
+        uri = "tcp://0.0.0.0:10300";
         model = "tiny-int8";
         language = "en";
       };
