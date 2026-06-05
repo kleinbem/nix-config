@@ -264,14 +264,6 @@ in
         ];
         hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_core-pi" ];
       };
-      interfaces."eth0" = {
-        ipv4.addresses = [
-          {
-            address = "10.0.0.22";
-            prefixLength = 16;
-          }
-        ];
-      };
     };
     secrets."/etc/ssh/ssh_host_ed25519_key_core-pi" = lib.mkForce (
       inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_core-pi"
