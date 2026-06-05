@@ -74,6 +74,11 @@ in
       "nvme"
       "sd_mod"
       "xhci_pci"
+      "usbhid"
+      "hid_generic"
+      "rp1_pci"
+      "pinctrl-rp1"
+      "clk-rp1"
     ];
     kernelModules = [
       "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
@@ -161,7 +166,7 @@ in
     network = {
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";
-      externalInterface = "end0";
+      externalInterface = "eth0";
     };
 
     containers = {
@@ -220,7 +225,7 @@ in
     avahi = {
       enable = true;
       reflector = true;
-      allowInterfaces = [ "end0" ]; # Forward from physical LAN
+      allowInterfaces = [ "eth0" ]; # Forward from physical LAN
     };
   };
 
