@@ -9,29 +9,7 @@
 }:
 let
   keys = import "${self}/modules/nixos/keys.nix";
-  # Generate list of remote Tang servers (filtering out our own)
-  remoteTangServers = lib.filter (s: !lib.hasInfix "10.0.0.20" s) myInventory.tangServers;
-  # Initrd gate: poll Tang until it answers before clevis runs, sidestepping the
-  # initrd network race. MUST be added to boot.initrd.systemd.storePaths.
-  waitForTang = pkgs.writeShellScript "wait-for-tang" ''
-    i=0
-    TANG_SERVERS=(
-      ${lib.concatMapStringsSep "\n      " (s: "\"${s}\"") remoteTangServers}
-    )
-    while [ "$i" -lt 30 ]; do
-      for server in "''${TANG_SERVERS[@]}"; do
-        if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then
-          echo "wait-for-tang: Tang server $server reachable after $i retry(ies)"
-          exit 0
-        fi
-      done
-      echo "wait-for-tang: Tang servers not reachable yet ($i)"
-      ${pkgs.coreutils}/bin/sleep 1
-      i=$((i + 1))
-    done
-    echo "wait-for-tang: Tang still unreachable; continuing (clevis falls back to passphrase)"
-    exit 0
-  '';
+
 in
 {
   imports = [
@@ -59,6 +37,14 @@ in
   networking.hostName = "core-pi";
 
   my = {
+    boot.clevis-initrd = {
+      enable = true;
+      luksDevice = "core_crypt";
+      hostIp = "10.0.0.20";
+      secretFile = ./cryptroot.jwe;
+      fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
+    };
+    services.tang.enable = true;
     services.rpi-eeprom.enable = true;
 
     # Container bridge (cbr0), NAT, IP forwarding and firewall forward rules
@@ -267,49 +253,7 @@ in
       inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_core-pi"
     );
 
-    systemd = {
-      enable = true;
-      # Bring up the wired NIC in initrd so clevis can reach the Tang server.
-      network = {
-        enable = true;
-        networks."10-lan" = {
-          matchConfig.Name = "en* eth*";
-          networkConfig = {
-            DHCP = "no";
-            Address = "10.0.0.20/16";
-            Gateway = "10.0.0.1";
-          };
-        };
-      };
-
-      # Gate clevis on Tang actually being reachable.
-      storePaths = [ waitForTang ];
-
-      services.wait-for-tang = {
-        description = "Wait for Tang reachability before clevis LUKS unlock";
-        after = [ "systemd-networkd.service" ];
-        before = [ "cryptsetup-clevis-core_crypt.service" ];
-        wantedBy = [ "cryptsetup-clevis-core_crypt.service" ];
-        unitConfig.DefaultDependencies = false;
-        serviceConfig = {
-          Type = "oneshot";
-          TimeoutStartSec = 120;
-          ExecStart = waitForTang;
-        };
-      };
-
-      services."cryptsetup-clevis-core_crypt" = {
-        after = [ "wait-for-tang.service" ];
-        wants = [ "wait-for-tang.service" ];
-      };
-    };
-
-    # Clevis LUKS auto-unlock configuration
-    clevis = {
-      enable = true;
-      useTang = true;
-      devices."core_crypt".secretFile = ./cryptroot.jwe;
-    };
+    systemd.enable = true;
   };
 
   # Disko configuration defaults (SSD over USB boots as /dev/sda on the Pi)
@@ -317,8 +261,6 @@ in
   _module.args.device = "/dev/sda";
 
   environment.systemPackages = with pkgs; [
-    clevis # LUKS Tang binding — run `clevis luks bind -d /dev/mmcblk0p2 tang '{"url":"http://10.0.0.5:7654"}'`
-    jose # JSON Object Signing and Encryption
   ];
 
   # Host-specific state persistence
@@ -332,5 +274,4 @@ in
   };
 
   system.stateVersion = "25.11";
-  my.services.tang.enable = true;
 }

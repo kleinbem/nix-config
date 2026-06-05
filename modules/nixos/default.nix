@@ -22,5 +22,6 @@
     ./scripts.nix
     ./services/rpi-eeprom.nix
     ./services/tang.nix
+    ./clevis-initrd.nix
   ];
 }

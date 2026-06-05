@@ -9,26 +9,7 @@
 }:
 let
   keys = import "${self}/modules/nixos/keys.nix";
-  # Initrd gate: poll Tang until it answers before clevis runs, sidestepping the
-  # wired-Orin → Wi-Fi-Tang initrd race. MUST be added to
-  # boot.initrd.systemd.storePaths (below) or systemd-initrd can't find it → 203/EXEC.
-  waitForTang = pkgs.writeShellScript "wait-for-tang" ''
-    i=0
-    TANG_SERVERS=(${lib.concatMapStrings (s: " \"${s}\"") myInventory.tangServers})
-    while [ "$i" -lt 30 ]; do
-      for server in "''${TANG_SERVERS[@]}"; do
-        if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then
-          echo "wait-for-tang: Tang server $server reachable after $i retry(ies)"
-          exit 0
-        fi
-      done
-      echo "wait-for-tang: Tang servers not reachable yet ($i)"
-      ${pkgs.coreutils}/bin/sleep 1
-      i=$((i + 1))
-    done
-    echo "wait-for-tang: Tang still unreachable; continuing (clevis falls back to passphrase)"
-    exit 0
-  '';
+
 in
 {
   imports = [
@@ -132,49 +113,7 @@ in
       );
       systemd = {
         enable = true;
-        # Bring up the wired NIC (DHCP) in initrd so clevis can reach the Tang server.
-        network = {
-          enable = true;
-          networks."10-lan" = {
-            matchConfig.Name = "en* eth*";
-            networkConfig = {
-              DHCP = "no";
-              Address = "10.0.0.12/16";
-              Gateway = "10.0.0.1";
-            };
-          };
-        };
 
-        # Gate clevis on Tang actually being reachable. The Orin is wired and Tang
-        # (10.0.0.5) is the Wi-Fi workstation bridged by the router; in the initrd
-        # the cross-medium path isn't forwarding the instant the static IP is set,
-        # so clevis raced ahead, failed with "Error communicating with server", and
-        # fell through to the passphrase prompt. This oneshot polls Tang's /adv until
-        # it answers (then clevis succeeds), bounded so a real outage still falls back.
-        # systemd-initrd doesn't auto-include ExecStart store paths → pull the gate
-        # script + its curl/coreutils/bash closure into the initrd explicitly.
-        storePaths = [ waitForTang ];
-
-        services.wait-for-tang = {
-          description = "Wait for Tang reachability before clevis LUKS unlock";
-          after = [ "systemd-networkd.service" ];
-          before = [ "cryptsetup-clevis-orin_crypt.service" ];
-          wantedBy = [ "cryptsetup-clevis-orin_crypt.service" ];
-          unitConfig.DefaultDependencies = false;
-          serviceConfig = {
-            Type = "oneshot";
-            TimeoutStartSec = 120;
-            ExecStart = waitForTang;
-          };
-        };
-
-        # The gate's own before/wantedBy didn't reliably gate clevis in the initrd,
-        # so order the clevis unlock explicitly AFTER the gate. The gate exits 0 even
-        # on fall-through, so clevis always runs — by which point Tang is reachable.
-        services."cryptsetup-clevis-orin_crypt" = {
-          after = [ "wait-for-tang.service" ];
-          wants = [ "wait-for-tang.service" ];
-        };
       };
       includeDefaultModules = false;
       # lib.mkOverride 0 beats jetpack-nixos's own lib.mkForce so lists don't
@@ -207,19 +146,7 @@ in
         # TPM — T234 uses CRB interface, not tpm-tis (x86 only)
         "tpm_crb"
       ];
-      # Headless LUKS auto-unlock: clevis fetches the key from the Tang server on the LAN
-      # during initrd. The LUKS passphrase keyslot stays as the fallback (prompted on
-      # serial) if Tang is unreachable, so a Tang/network outage can't lock us out.
-      clevis = {
-        enable = true;
-        useTang = true;
-        # pkgs.writeText makes this a build derivation that colmena pushes to the Orin.
-        # A plain path (./cryptroot.jwe) resolves to the git+file:// source, which
-        # causes "not allowed to refer to a store path" in the restricted initrd eval.
-        devices."orin_crypt".secretFile = pkgs.writeText "cryptroot.jwe" (
-          builtins.readFile ./cryptroot.jwe
-        );
-      };
+
     };
     swraid.enable = false;
   };
@@ -268,8 +195,7 @@ in
     sops
     age
     libfido2
-    clevis # LUKS Tang binding — run `clevis luks bind -d /dev/nvme0n1p2 tang '{"url":"http://10.0.0.5:7654"}'`
-    jose # JSON Object Signing and Encryption (clevis dependency)
+
     inputs.jetpack-nixos.legacyPackages.${pkgs.stdenv.hostPlatform.system}.l4t-tools # Essential: provides tegrastats and L4T utilities
   ];
 
@@ -289,6 +215,14 @@ in
 
   # ─── AI Edge Services ──────────────────────────────────────
   my = {
+    boot.clevis-initrd = {
+      enable = true;
+      luksDevice = "orin_crypt";
+      hostIp = "10.0.0.12";
+      secretFile = pkgs.writeText "cryptroot.jwe" (builtins.readFile ./cryptroot.jwe);
+      fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
+    };
+    services.tang.enable = true;
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";
 
@@ -519,5 +453,4 @@ in
   };
 
   system.stateVersion = "25.11";
-  my.services.tang.enable = true;
 }
