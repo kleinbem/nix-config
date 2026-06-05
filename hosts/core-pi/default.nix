@@ -41,7 +41,7 @@ in
     boot.clevis-initrd = {
       enable = true;
       luksDevice = "core_crypt";
-      hostIp = "10.0.0.20";
+      hostIp = "10.0.0.22";
       secretFile = ./cryptroot.jwe;
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
@@ -105,7 +105,7 @@ in
       dashboard = {
         enable = true;
         ip = "10.85.48.103/24";
-        hostBridgeIp = "10.0.0.20"; # core-pi IP
+        hostBridgeIp = "10.0.0.22"; # core-pi IP
         memoryLimit = "512M";
       };
 
@@ -149,7 +149,7 @@ in
         ipv4 = {
           addresses = [
             {
-              address = "10.0.0.20";
+              address = "10.0.0.22";
               prefixLength = 16;
             }
           ];

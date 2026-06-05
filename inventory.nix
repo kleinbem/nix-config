@@ -8,7 +8,7 @@
   tangServers = [
     "http://10.0.0.5:7654" # nixos-nvme (LAN interface)
     "http://10.0.0.12:7654" # orin-nano
-    "http://10.0.0.20:7654" # core-pi
+    "http://10.0.0.22:7654" # core-pi
     "http://192.168.1.30:7654" # nasbook
     "http://10.0.0.21:7654" # hass-pi (planned, not yet active)
   ];
@@ -90,7 +90,7 @@
       ];
     };
     core-pi = {
-      ip = "10.0.0.20";
+      ip = "10.0.0.22";
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
