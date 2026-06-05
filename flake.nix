@@ -398,7 +398,8 @@
               core-pi = {
                 deployment = {
                   targetHost = hostMeta.core-pi.ip;
-                  targetUser = "root";
+                  targetUser = "martin";
+                  buildOnTarget = true;
                   inherit (hostMeta.core-pi) tags;
                 };
                 imports = [ ./hosts/core-pi/default.nix ];
@@ -407,7 +408,8 @@
               hass-pi = {
                 deployment = {
                   targetHost = hostMeta.hass-pi.ip;
-                  targetUser = "root";
+                  targetUser = "martin";
+                  buildOnTarget = true;
                   inherit (hostMeta.hass-pi) tags;
                 };
                 imports = [ ./hosts/hass-pi/default.nix ];
