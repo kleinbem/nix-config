@@ -156,7 +156,7 @@ in
     clevis = {
       enable = true;
       useTang = true;
-      devices."hass_crypt".secretFile = ./hass_crypt.jwe;
+      devices."hass_crypt".secretFile = ./cryptroot.jwe;
     };
   };
 

@@ -80,7 +80,7 @@ in
     # ─── Frontend Services ──────────────────────────────────────
     containers = {
       open-webui = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/open-webui";
         vllmUrl = "https://litellm.internal";
@@ -97,7 +97,7 @@ in
       };
 
       agent-zero = {
-        enable = false; # Set to true to enable
+        enable = true; # Set to true to enable
         ip = "${myInventory.network.nodes.agent-zero.ip}/24";
         hostDataDir = "/var/lib/agent-zero";
         vllmUrl = "https://litellm.internal";
@@ -107,7 +107,7 @@ in
       ollama.enable = false;
 
       anythingllm = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.anythingllm.ip}/24";
         hostDataDir = "/var/lib/anythingllm";
         llmUrl = "https://litellm.internal";
@@ -308,7 +308,7 @@ in
     clevis = {
       enable = true;
       useTang = true;
-      devices."core_crypt".secretFile = ./core_crypt.jwe;
+      devices."core_crypt".secretFile = ./cryptroot.jwe;
     };
   };
 
@@ -329,18 +329,6 @@ in
       "/var/lib/agent-zero"
       "/var/lib/anythingllm"
     ];
-  };
-
-  # Workload Specialisations (Saves memory by default)
-  specialisation = {
-    agents.configuration = {
-      my.containers = {
-        open-webui.enable = lib.mkForce true;
-        # openclaw.enable = lib.mkForce true; # Temporarily disabled due to upstream pnpm hash mismatch
-        agent-zero.enable = lib.mkForce true;
-        anythingllm.enable = lib.mkForce true;
-      };
-    };
   };
 
   system.stateVersion = "25.11";

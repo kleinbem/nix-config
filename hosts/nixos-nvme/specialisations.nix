@@ -61,7 +61,9 @@ in
 {
   specialisation = {
     # --- Standard Profiles ---
-    playground.configuration = lib.recursiveUpdate commonFixes playgroundProfile;
+    playground.configuration = lib.recursiveUpdate commonFixes (
+      lib.recursiveUpdate workProfile playgroundProfile
+    );
     work.configuration = lib.recursiveUpdate commonFixes workProfile;
 
   };
