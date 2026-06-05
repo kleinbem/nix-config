@@ -156,10 +156,20 @@ in
           routes = lib.mkForce [ ];
         };
       };
+      "eth0" = {
+        ipv4 = {
+          addresses = [
+            {
+              address = "10.0.0.22";
+              prefixLength = 16;
+            }
+          ];
+          routes = lib.mkForce [ ];
+        };
+      };
     };
     defaultGateway = {
       address = "10.0.0.1";
-      interface = "end0";
     };
     firewall = {
       enable = true;
@@ -234,6 +244,9 @@ in
       "xhci_pci"
       "usbhid"
       "hid_generic"
+      "rp1_pci"
+      "pinctrl-rp1"
+      "clk-rp1"
     ];
     kernelModules = [
       "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
@@ -260,7 +273,7 @@ in
   };
 
   boot.kernelParams = [
-    "ip=10.0.0.22::10.0.0.1:255.255.0.0:core-pi:end0:off"
+    "ip=10.0.0.22::10.0.0.1:255.255.0.0:core-pi::off"
   ];
 
   # Disko configuration defaults (SSD over USB boots as /dev/sda on the Pi)
