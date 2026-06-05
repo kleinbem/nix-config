@@ -24,6 +24,7 @@ in
     "${self}/modules/nixos/networking.nix"
     "${self}/modules/nixos/network-routing.nix"
     "${self}/modules/nixos/services/rpi-eeprom.nix"
+    "${self}/modules/nixos/clevis-initrd.nix"
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.monitoring-node
