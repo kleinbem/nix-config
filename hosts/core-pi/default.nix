@@ -232,6 +232,8 @@ in
       "nvme"
       "sd_mod"
       "xhci_pci"
+      "usbhid"
+      "hid_generic"
     ];
     kernelModules = [
       "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
@@ -256,6 +258,10 @@ in
 
     systemd.enable = true;
   };
+
+  boot.kernelParams = [
+    "ip=10.0.0.22::10.0.0.1:255.255.0.0:core-pi:end0:off"
+  ];
 
   # Disko configuration defaults (SSD over USB boots as /dev/sda on the Pi)
   disko.devices.disk.main.device = lib.mkDefault "/dev/sda";
