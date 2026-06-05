@@ -120,10 +120,45 @@ in
   };
 
   # ─── Networking & Security ──────────────────────────────────
-  networking.firewall = {
-    enable = true;
-    # SSH only over NetBird — not exposed on LAN
-    interfaces."wt0".allowedTCPPorts = [ 22 ];
+  networking = {
+    useDHCP = false;
+    resolvconf.enable = lib.mkForce false;
+    nameservers = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
+    interfaces = {
+      "end0" = {
+        ipv4 = {
+          addresses = [
+            {
+              address = "10.0.0.21";
+              prefixLength = 16;
+            }
+          ];
+          routes = lib.mkForce [ ];
+        };
+      };
+      "eth0" = {
+        ipv4 = {
+          addresses = [
+            {
+              address = "10.0.0.21";
+              prefixLength = 16;
+            }
+          ];
+          routes = lib.mkForce [ ];
+        };
+      };
+    };
+    defaultGateway = {
+      address = "10.0.0.1";
+    };
+    firewall = {
+      enable = true;
+      # SSH only over NetBird — not exposed on LAN
+      interfaces."wt0".allowedTCPPorts = [ 22 ];
+    };
   };
 
   nix = {
