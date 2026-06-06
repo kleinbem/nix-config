@@ -108,6 +108,7 @@ in
         upstream_kernel=1
         device_tree=$FDT_PATH
         dtparam=pciex1_gen=3
+        dtoverlay=vc4-kms-v3d-pi5
         os_check=0
         EOF
 

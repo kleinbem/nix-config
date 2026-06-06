@@ -80,7 +80,10 @@ in
         enable = true;
         network = {
           enable = true;
-          wait-online.anyInterface = true;
+          wait-online.ignoredInterfaces = [
+            "wlan*"
+            "wlo*"
+          ];
           networks."10-lan" = {
             matchConfig.Name = cfg.networkInterface;
             networkConfig =
