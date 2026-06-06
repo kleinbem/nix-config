@@ -163,7 +163,7 @@ in
           routes = lib.mkForce [ ];
         };
       };
-      "eth0" = {
+      "end0" = {
         ipv4 = {
           addresses = [
             {
