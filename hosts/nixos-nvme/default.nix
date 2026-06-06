@@ -515,14 +515,14 @@ in
 
   };
   nix = {
-    # Distributed Builds: Use Orin Nano for native aarch64 builds
+    # Distributed Builds: Use core-pi (Raspberry Pi 5) as the dedicated ARM builder
     distributedBuilds = true;
     buildMachines = [
       {
-        hostName = "10.85.46.104"; # Orin Nano via NetBird Mesh
+        hostName = "10.0.0.22"; # core-pi (Dedicated Builder)
         sshUser = "martin";
         systems = [ "aarch64-linux" ];
-        maxJobs = 4;
+        maxJobs = 2; # Safe limit to leave RAM for Agent frameworks
         speedFactor = 2;
         supportedFeatures = [
           "nixos-test"
