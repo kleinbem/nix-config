@@ -27,6 +27,7 @@ in
     "${self}/modules/nixos/network-routing.nix"
     "${self}/modules/nixos/services/rpi-eeprom.nix"
     "${self}/modules/nixos/clevis-initrd.nix"
+    "${self}/modules/nixos/rpi-direct-boot.nix"
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.home-assistant
   ];
@@ -65,47 +66,50 @@ in
     "/nix/persist".neededForBoot = true;
   };
 
-  boot.kernelParams = [
-    "ip=10.0.0.21::10.0.0.1:255.255.0.0:hass-pi::off"
-  ];
-
-  # Enable systemd in initrd for LUKS auto-unlock
-  boot.initrd = {
-    availableKernelModules = [
-      "usb_storage"
-      "uas"
-      "pcie_brcmstb"
-      "nvme"
-      "sd_mod"
-      "xhci_pci"
-      "usbhid"
-      "hid_generic"
-      "rp1_pci"
-      "pinctrl-rp1"
-      "clk-rp1"
-    ];
-    kernelModules = [
-      "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
+  boot = {
+    kernelPackages = pkgs.linuxPackages_rpi4;
+    kernelParams = [
+      "ip=10.0.0.21::10.0.0.1:255.255.0.0:hass-pi::off"
     ];
 
-    network = {
-      enable = true;
-      ssh = {
-        enable = builtins.pathExists "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_hass-pi";
-        port = 2222;
-        authorizedKeys = [
-          keys.ssh.yubikey
-          keys.ssh.fido2
-          keys.ssh.fido2-backup
-        ];
-        hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_hass-pi" ];
+    # Enable systemd in initrd for LUKS auto-unlock
+    initrd = {
+      availableKernelModules = [
+        "usb_storage"
+        "uas"
+        "pcie_brcmstb"
+        "nvme"
+        "sd_mod"
+        "xhci_pci"
+        "usbhid"
+        "hid_generic"
+        "rp1_pci"
+        "pinctrl-rp1"
+        "clk-rp1"
+      ];
+      kernelModules = [
+        "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
+      ];
+
+      network = {
+        enable = true;
+        ssh = {
+          enable = builtins.pathExists "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_hass-pi";
+          port = 2222;
+          authorizedKeys = [
+            keys.ssh.yubikey
+            keys.ssh.fido2
+            keys.ssh.fido2-backup
+          ];
+          hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_hass-pi" ];
+        };
       };
-    };
-    secrets."/etc/ssh/ssh_host_ed25519_key_hass-pi" = lib.mkForce (
-      inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_hass-pi"
-    );
+      secrets."/etc/ssh/ssh_host_ed25519_key_hass-pi" = lib.mkForce (
+        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_hass-pi"
+      );
 
-    systemd.enable = true;
+      systemd.enable = true;
+    };
   };
 
   # Disko configuration defaults (SSD over USB boots as /dev/sda on the Pi)
@@ -143,17 +147,6 @@ in
     ];
 
     interfaces = {
-      "end0" = {
-        ipv4 = {
-          addresses = [
-            {
-              address = "10.0.0.21";
-              prefixLength = 16;
-            }
-          ];
-          routes = lib.mkForce [ ];
-        };
-      };
       "eth0" = {
         ipv4 = {
           addresses = [
@@ -195,7 +188,10 @@ in
     ];
   };
 
+  hardware.deviceTree.name = "broadcom/bcm2712-rpi-5-b.dtb";
+
   my = {
+    hardware.rpi-direct-boot.enable = true;
     boot.clevis-initrd = {
       enable = true;
       luksDevice = "hass_crypt";
