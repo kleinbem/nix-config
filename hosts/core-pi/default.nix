@@ -241,7 +241,6 @@ in
 
   # Enable systemd in initrd for LUKS auto-unlock
   boot = {
-    kernelPackages = pkgs.linuxPackages_rpi4;
     kernelParams = [
       "ip=10.0.0.22::10.0.0.1:255.255.0.0:core-pi::off"
     ];

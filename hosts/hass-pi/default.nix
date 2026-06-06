@@ -67,7 +67,6 @@ in
   };
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_rpi4;
     kernelParams = [
       "ip=10.0.0.21::10.0.0.1:255.255.0.0:hass-pi::off"
     ];
