@@ -112,24 +112,36 @@ in
   disko.devices.disk.main.device = lib.mkDefault "/dev/sda";
   _module.args.device = "/dev/sda";
 
-  environment.systemPackages = with pkgs; [
-  ];
-
-  # Host-specific state persistence
-  environment.persistence."/nix/persist" = {
-    directories = [
-      "/var/lib/home-assistant"
-      "/var/lib/homarr"
+  environment = {
+    systemPackages = with pkgs; [
     ];
+
+    # Host-specific state persistence
+    persistence."/nix/persist" = {
+      directories = [
+        "/var/lib/home-assistant"
+        "/var/lib/homarr"
+      ];
+    };
+
+    etc."resolv.conf".text = ''
+      nameserver 127.0.0.1
+      nameserver 1.1.1.1
+      nameserver 8.8.8.8
+      options edns0
+    '';
   };
 
   # ─── Networking & Security ──────────────────────────────────
   networking = {
     useDHCP = false;
+    resolvconf.enable = lib.mkForce false;
     nameservers = [
+      "127.0.0.1"
       "1.1.1.1"
       "8.8.8.8"
     ];
+
     interfaces = {
       "end0" = {
         ipv4 = {
@@ -266,6 +278,13 @@ in
       allowInterfaces = [ "eth0" ]; # Forward from physical LAN
     };
   };
+
+  systemd.tmpfiles.rules = [
+    "d /var/lib/homarr 0755 root root - -"
+    "d /var/lib/homarr/configs 0755 root root - -"
+    "d /var/lib/homarr/icons 0755 root root - -"
+    "d /var/lib/homarr/data 0755 root root - -"
+  ];
 
   virtualisation.oci-containers.containers.homarr = {
     image = "ghcr.io/ajnart/homarr:latest";
