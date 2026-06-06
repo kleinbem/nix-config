@@ -80,6 +80,7 @@ in
         enable = true;
         network = {
           enable = true;
+          wait-online.anyInterface = true;
           networks."10-lan" = {
             matchConfig.Name = cfg.networkInterface;
             networkConfig =
