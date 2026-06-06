@@ -109,6 +109,8 @@ in
         device_tree=$FDT_PATH
         dtparam=pciex1_gen=3
         os_check=0
+        boot_watchdog_timeout=15
+        kernel_watchdog_timeout=300
         EOF
 
                 sync
