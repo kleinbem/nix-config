@@ -82,7 +82,10 @@ in
                   }
                 ' "$CONF")
 
-                # Strip leading slashes to make paths relative to the FAT32 root
+                # Strip leading slashes or ../ to make paths relative to the FAT32 root
+                KERNEL_PATH=''${KERNEL_PATH#../}
+                INITRD_PATH=''${INITRD_PATH#../}
+                FDT_PATH=''${FDT_PATH#../}
                 KERNEL_PATH=''${KERNEL_PATH#/}
                 INITRD_PATH=''${INITRD_PATH#/}
                 FDT_PATH=''${FDT_PATH#/}
