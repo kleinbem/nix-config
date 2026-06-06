@@ -213,7 +213,7 @@ in
     network = {
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";
-      externalInterface = "eth0";
+      externalInterface = "end0";
     };
 
     containers = {
@@ -272,7 +272,7 @@ in
     avahi = {
       enable = true;
       reflector = true;
-      allowInterfaces = [ "eth0" ]; # Forward from physical LAN
+      allowInterfaces = [ "end0" ]; # Forward from physical LAN
     };
   };
 
