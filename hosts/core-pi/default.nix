@@ -40,6 +40,9 @@ in
 
   hardware.deviceTree.name = "broadcom/bcm2712-rpi-5-b.dtb";
 
+  # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
+  security.tpm2.enable = lib.mkForce false;
+
   my = {
     hardware.rpi-direct-boot.enable = true;
     boot.clevis-initrd = {
