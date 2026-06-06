@@ -108,7 +108,6 @@ in
         upstream_kernel=1
         device_tree=$FDT_PATH
         dtparam=pciex1_gen=3
-        dtoverlay=vc4-kms-v3d
         os_check=0
         boot_watchdog_timeout=15
         kernel_watchdog_timeout=300
