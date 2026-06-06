@@ -189,6 +189,7 @@ in
 
   # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
   security.tpm2.enable = lib.mkForce false;
+  boot.initrd.systemd.tpm2.enable = lib.mkForce false;
 
   my = {
     hardware.rpi-direct-boot.enable = true;
