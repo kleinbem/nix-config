@@ -83,9 +83,6 @@ in
         "xhci_pci"
         "usbhid"
         "hid_generic"
-        "rp1_pci"
-        "pinctrl-rp1"
-        "clk-rp1"
       ];
       kernelModules = [
         "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
