@@ -515,15 +515,28 @@ in
 
   };
   nix = {
-    # Distributed Builds: Use core-pi (Raspberry Pi 5) as the dedicated ARM builder
+    # Distributed Builds: Use core-pi (Raspberry Pi 5) as the primary ARM builder, with Orin Nano as backup
     distributedBuilds = true;
     buildMachines = [
       {
-        hostName = "10.0.0.22"; # core-pi (Dedicated Builder)
+        hostName = "10.0.0.22"; # core-pi (Primary Builder)
         sshUser = "martin";
         systems = [ "aarch64-linux" ];
         maxJobs = 2; # Safe limit to leave RAM for Agent frameworks
-        speedFactor = 2;
+        speedFactor = 2; # Higher speed factor makes this the preferred builder
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+          "kvm"
+        ];
+      }
+      {
+        hostName = "10.85.46.104"; # Orin Nano (Backup Builder) via NetBird
+        sshUser = "martin";
+        systems = [ "aarch64-linux" ];
+        maxJobs = 1; # Extremely safe limit to protect LLMs and Frigate
+        speedFactor = 1; # Lower speed factor so Nix only uses this if core-pi is offline
         supportedFeatures = [
           "nixos-test"
           "benchmark"
