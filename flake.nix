@@ -409,7 +409,7 @@
                 deployment = {
                   targetHost = hostMeta.hass-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = false;
+                  buildOnTarget = true; # TEMPORARY: Restored to harvest the 4-hour kernel cache!
                   inherit (hostMeta.hass-pi) tags;
                 };
                 imports = [ ./hosts/hass-pi/default.nix ];
