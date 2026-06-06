@@ -126,7 +126,6 @@ in
   # ─── Networking & Security ──────────────────────────────────
   networking = {
     useDHCP = false;
-    resolvconf.enable = lib.mkForce false;
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"

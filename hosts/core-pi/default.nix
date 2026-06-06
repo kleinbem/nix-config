@@ -139,7 +139,6 @@ in
   networking = {
     useDHCP = false;
     # systemd-resolved manages DNS; disable resolvconf to avoid conflict with networking.nix
-    resolvconf.enable = lib.mkForce false;
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"
