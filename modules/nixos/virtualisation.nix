@@ -7,7 +7,6 @@
 
 let
   cfg = config.my.virtualisation;
-  inv = import ../../inventory.nix;
 in
 {
   options.my.virtualisation = {
@@ -181,7 +180,7 @@ in
             ${pkgs.podman}/bin/podman network create \
               --driver bridge \
               --interface-name ${config.my.network.bridge} \
-              --subnet ${inv.network.subnet} \
+              --subnet ${config.my.network.subnet} \
               --gateway ${config.my.network.hostAddress} \
               --disable-dns \
               --opt mode=unmanaged \
