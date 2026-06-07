@@ -101,6 +101,9 @@ in
     ];
 
     boot.initrd = {
+      # Add the secret JWE file to initrd
+      secrets."/etc/clevis/${cfg.luksDevice}.jwe" = cfg.secretFile;
+
       systemd = {
         enable = true;
         network = {
@@ -130,8 +133,8 @@ in
         services.wait-for-tang = {
           description = "Wait for Tang reachability before clevis LUKS unlock";
           after = [ "systemd-networkd.service" ];
-          before = [ "cryptsetup-clevis-${cfg.luksDevice}.service" ];
-          wantedBy = [ "cryptsetup-clevis-${cfg.luksDevice}.service" ];
+          before = [ "clevis-jwe-unlock-${cfg.luksDevice}.service" ];
+          wantedBy = [ "clevis-jwe-unlock-${cfg.luksDevice}.service" ];
           unitConfig.DefaultDependencies = false;
           serviceConfig = {
             Type = "oneshot";
@@ -140,16 +143,81 @@ in
           };
         };
 
-        services."cryptsetup-clevis-${cfg.luksDevice}" = {
+        services."clevis-jwe-unlock-${cfg.luksDevice}" = {
+          description = "Unlock LUKS device ${cfg.luksDevice} using decrypted JWE secret";
           after = [ "wait-for-tang.service" ];
           wants = [ "wait-for-tang.service" ];
+          before = [ "cryptsetup.target" ];
+          wantedBy = [ "cryptsetup.target" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = pkgs.writeShellScript "clevis-jwe-unlock-${cfg.luksDevice}" ''
+              echo "clevis-jwe-unlock: Starting unlock agent for ${cfg.luksDevice}..."
+              JWE_FILE="/etc/clevis/${cfg.luksDevice}.jwe"
+              if [ ! -f "$JWE_FILE" ]; then
+                echo "clevis-jwe-unlock: JWE file $JWE_FILE not found. Exiting."
+                exit 0
+              fi
+
+              if [ -e "/dev/mapper/${cfg.luksDevice}" ]; then
+                echo "clevis-jwe-unlock: Device ${cfg.luksDevice} is already mapped. Exiting."
+                exit 0
+              fi
+
+              # Attempt to decrypt the JWE file using clevis
+              # Limit the time for clevis decrypt to 10 seconds to prevent hanging the boot
+              echo "clevis-jwe-unlock: Attempting to decrypt JWE secret..."
+              PASSPHRASE=$(${pkgs.coreutils}/bin/timeout 10 ${pkgs.clevis}/bin/clevis decrypt < "$JWE_FILE" 2>/dev/null || true)
+
+              if [ -z "$PASSPHRASE" ]; then
+                echo "clevis-jwe-unlock: Decryption failed or timed out (Tang offline/unreachable). Let fallback handle unlocking."
+                exit 0
+              fi
+
+              echo "clevis-jwe-unlock: Decrypted passphrase successfully. Waiting for systemd password query for ${cfg.luksDevice}..."
+              # Wait for the systemd ask-password query to appear (timeout after 30 seconds)
+              for attempt in {1..120}; do
+                if [ -e "/dev/mapper/${cfg.luksDevice}" ]; then
+                  echo "clevis-jwe-unlock: Device ${cfg.luksDevice} was unlocked by another agent. Exiting."
+                  exit 0
+                fi
+                for question in /run/systemd/ask-password/ask.*; do
+                  if [ -f "$question" ]; then
+                    socket=""
+                    device_id=""
+                    while IFS= read -r line; do
+                      case "$line" in
+                        Id=cryptsetup:*) device_id="''${line##Id=cryptsetup:}" ;;
+                        Socket=*) socket="''${line##Socket=}" ;;
+                      esac
+                    done < "$question"
+
+                    if [ "$device_id" = "${cfg.luksDevice}" ] && [ -n "$socket" ] && [ -S "$socket" ]; then
+                      echo "clevis-jwe-unlock: Found password query for ${cfg.luksDevice}. Sending decrypted passphrase..."
+                      if printf '%s' "$PASSPHRASE" | ${pkgs.systemd}/lib/systemd/systemd-reply-password 1 "$socket"; then
+                        echo "clevis-jwe-unlock: Successfully unlocked ${cfg.luksDevice} via systemd ask-password."
+                        exit 0
+                      else
+                        echo "clevis-jwe-unlock: Failed to send passphrase to systemd-reply-password."
+                      fi
+                    fi
+                  fi
+                done
+                ${pkgs.coreutils}/bin/sleep 0.25
+              done
+
+              echo "clevis-jwe-unlock: Timeout waiting for systemd password query for ${cfg.luksDevice}."
+              exit 0
+            '';
+          };
         };
       };
 
       clevis = {
         enable = true;
         useTang = true;
-        devices."${cfg.luksDevice}".secretFile = cfg.secretFile;
       };
     };
   };
