@@ -92,7 +92,7 @@ in
         script = ''
           # Input format: "Title|Message|ReportPath"
           IFS='|' read -r TITLE MESSAGE REPORT <<< "$1"
-          TOPIC="nixos-alerts-martin-$(hostname)"
+          TOPIC="nixos-alerts-martin-${config.networking.hostName}"
 
           echo "📢 Sending Alert: $TITLE - $MESSAGE"
 
