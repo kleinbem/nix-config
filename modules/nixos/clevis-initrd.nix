@@ -17,6 +17,31 @@ let
       myInventory.tangServers;
 
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
+    has_carrier=false
+    carrier_check=0
+    while [ "$carrier_check" -lt 5 ]; do
+      for pattern in ${cfg.networkInterface}; do
+        for dev in /sys/class/net/$pattern; do
+          if [ -e "$dev" ] && [ -f "$dev/carrier" ] && [ "$(cat "$dev/carrier")" = "1" ]; then
+            has_carrier=true
+            break 2
+          fi
+        done
+      done
+      if [ "$has_carrier" = "true" ]; then
+        break
+      fi
+      echo "wait-for-tang: Waiting for network carrier on ${cfg.networkInterface}... ($carrier_check)"
+      ${pkgs.coreutils}/bin/sleep 1
+      carrier_check=$((carrier_check + 1))
+    done
+
+    if [ "$has_carrier" = "false" ]; then
+      echo "wait-for-tang: No network carrier detected on ${cfg.networkInterface}. Skipping Tang wait."
+      echo "wait-for-tang: ${cfg.fallbackMessage}"
+      exit 0
+    fi
+
     i=0
     TANG_SERVERS=(
       ${lib.concatMapStringsSep "\n      " (s: "\"${s}\"") remoteTangServers}

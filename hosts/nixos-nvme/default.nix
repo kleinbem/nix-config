@@ -493,6 +493,7 @@ in
         tpm2.enable = true;
       };
       services.lvm.enable = true;
+      luks.devices.cryptroot.keyFileTimeout = 2;
     };
 
     # Clevis LUKS auto-unlock: fetches key from Tang servers on the LAN.
