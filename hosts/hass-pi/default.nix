@@ -87,7 +87,7 @@ in
         "xhci_pci" # USB host controller
         "usbhid" # USB keyboard
         "hid_generic" # Generic HID driver
-        "rp1" # RP1 southbridge (Pi 5)
+        "rp1_pci" # RP1 southbridge (Pi 5)
         "reset_raspberrypi"
       ];
 
