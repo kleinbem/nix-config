@@ -70,7 +70,7 @@ in
     kernelParams = [
       "ip=10.0.0.21::10.0.0.1:255.255.0.0:hass-pi::off"
     ];
-    kernelPackages = pkgs.linuxPackages_rpi5;
+    kernelPackages = pkgs.linuxPackages_rpi4;
 
     # Enable systemd in initrd for LUKS auto-unlock
     initrd = {

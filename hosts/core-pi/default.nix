@@ -244,7 +244,7 @@ in
     kernelParams = [
       "ip=10.0.0.22::10.0.0.1:255.255.0.0:core-pi::off"
     ];
-    kernelPackages = pkgs.linuxPackages_rpi5;
+    kernelPackages = pkgs.linuxPackages_rpi4;
     initrd = {
       # Ensure USB storage controller and ethernet drivers are available in early boot
       availableKernelModules = [
