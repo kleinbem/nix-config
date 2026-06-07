@@ -115,6 +115,7 @@ in
       dosfstools
       tio # serial terminal (USB-TTL, embedded devices)
       efibootmgr # EFI NVRAM entry management (recovery + boot guard)
+      bind.dnsutils # provides nslookup, dig
       google-antigravity-ide-no-fhs # Google Antigravity IDE (self-vendored, no-FHS so sudo works in terminal)
     ];
   };
