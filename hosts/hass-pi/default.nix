@@ -172,22 +172,7 @@ in
   };
 
   nix = {
-    distributedBuilds = true;
-    buildMachines = [
-      {
-        hostName = "10.85.46.104"; # Orin Nano via NetBird Mesh
-        sshUser = "martin";
-        systems = [ "aarch64-linux" ];
-        maxJobs = 4;
-        speedFactor = 2;
-        supportedFeatures = [
-          "nixos-test"
-          "benchmark"
-          "big-parallel"
-          "kvm"
-        ];
-      }
-    ];
+    # distributedBuilds disabled because Orin Nano is offline
   };
 
   hardware.deviceTree.name = "broadcom/bcm2712-rpi-5-b.dtb";
