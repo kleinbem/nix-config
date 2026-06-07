@@ -165,7 +165,8 @@ in
     };
     firewall = {
       enable = true;
-      # SSH only over NetBird — not exposed on LAN
+      # SSH allowed on LAN temporarily until NetBird is logged in
+      interfaces."end0".allowedTCPPorts = [ 22 ];
       interfaces."wt0".allowedTCPPorts = [ 22 ];
     };
   };
