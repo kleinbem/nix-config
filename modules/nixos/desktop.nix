@@ -208,32 +208,6 @@ in
         power-profiles-daemon.enable = true;
         flatpak = {
           enable = true;
-          update.auto = {
-            enable = true;
-            onCalendar = "weekly";
-          };
-          packages = [
-            {
-              appId = "us.zoom.Zoom";
-              origin = "flathub";
-            }
-            {
-              appId = "com.bitwarden.desktop";
-              origin = "flathub";
-            }
-            {
-              appId = "com.logseq.Logseq";
-              origin = "flathub";
-            }
-            {
-              appId = "com.github.tchx84.Flatseal";
-              origin = "flathub";
-            }
-            {
-              appId = "io.github.flattool.Warehouse";
-              origin = "flathub";
-            }
-          ];
         };
         pulseaudio.enable = false;
         pipewire = {
