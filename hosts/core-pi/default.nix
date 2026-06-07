@@ -244,6 +244,7 @@ in
     kernelParams = [
       "ip=10.0.0.22::10.0.0.1:255.255.0.0:core-pi::off"
     ];
+    kernelPackages = pkgs.linuxPackages_rpi5;
     initrd = {
       # Ensure USB storage controller and ethernet drivers are available in early boot
       availableKernelModules = [
@@ -260,7 +261,7 @@ in
         "xhci_pci" # USB host controller
         "usbhid" # USB keyboard
         "hid_generic" # Generic HID driver
-        "rp1_pci" # RP1 southbridge (Pi 5)
+        "rp1" # RP1 southbridge (Pi 5 official kernel)
         "reset_raspberrypi"
       ];
 

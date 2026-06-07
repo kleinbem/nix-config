@@ -70,6 +70,7 @@ in
     kernelParams = [
       "ip=10.0.0.21::10.0.0.1:255.255.0.0:hass-pi::off"
     ];
+    kernelPackages = pkgs.linuxPackages_rpi5;
 
     # Enable systemd in initrd for LUKS auto-unlock
     initrd = {
@@ -87,7 +88,7 @@ in
         "xhci_pci" # USB host controller
         "usbhid" # USB keyboard
         "hid_generic" # Generic HID driver
-        "rp1_pci" # RP1 southbridge (Pi 5)
+        "rp1" # RP1 southbridge (Pi 5 official kernel)
         "reset_raspberrypi"
       ];
 
