@@ -76,15 +76,19 @@ in
       availableKernelModules = [
         "usb_storage"
         "uas"
-        "pcie_brcmstb"
         "nvme"
         "sd_mod"
-        "xhci_pci"
-        "usbhid"
-        "hid_generic"
       ];
       kernelModules = [
         "macb" # Cadence MACB ethernet controller for onboard NIC on RPi5
+        "broadcom" # Broadcom PHY driver (BCM54213PE)
+        "phy_generic" # Generic PHY driver fallback
+        "pcie_brcmstb" # PCIe controller
+        "xhci_pci" # USB host controller
+        "usbhid" # USB keyboard
+        "hid_generic" # Generic HID driver
+        "rp1" # RP1 southbridge (Pi 5)
+        "reset_raspberrypi"
       ];
 
       network = {
