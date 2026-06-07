@@ -81,6 +81,9 @@ in
         network = {
           enable = true;
           wait-online.ignoredInterfaces = [ "wlan0" ];
+          # We only care that AT LEAST ONE interface (the physical LAN) is online.
+          # Otherwise, wait-online will hang for 120s waiting for unconfigured bridges like cbr0.
+          wait-online.anyInterface = true;
           networks."10-lan" = {
             matchConfig.Name = cfg.networkInterface;
             networkConfig =
