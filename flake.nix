@@ -399,7 +399,7 @@
                 deployment = {
                   targetHost = hostMeta.core-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = false;
+                  buildOnTarget = true;
                   inherit (hostMeta.core-pi) tags;
                 };
                 imports = [ ./hosts/core-pi/default.nix ];
@@ -409,7 +409,7 @@
                 deployment = {
                   targetHost = hostMeta.hass-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = false;
+                  buildOnTarget = true;
                   inherit (hostMeta.hass-pi) tags;
                 };
                 imports = [ ./hosts/hass-pi/default.nix ];
