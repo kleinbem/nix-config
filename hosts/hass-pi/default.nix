@@ -175,7 +175,11 @@ in
     # distributedBuilds disabled because Orin Nano is offline
   };
 
-  hardware.deviceTree.name = "broadcom/bcm2712-rpi-5-b.dtb";
+  hardware = {
+    deviceTree.name = "broadcom/bcm2712-rpi-5-b.dtb";
+    bluetooth.enable = true;
+    enableRedistributableFirmware = true;
+  };
 
   # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
   security.tpm2.enable = lib.mkForce false;

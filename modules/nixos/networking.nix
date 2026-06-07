@@ -20,7 +20,7 @@
     ];
 
     # Ensure resolvconf doesn't overwrite our preferred order
-    resolvconf.enable = true;
+    resolvconf.enable = lib.mkDefault true;
   };
 
   # prioritize Netbird startup
