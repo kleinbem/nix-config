@@ -16,7 +16,7 @@
   # ─── Managed Hosts ──────────────────────────────────────────
   hosts = {
     nixos-nvme = {
-      ip = "10.85.46.1";
+      ip = "10.0.0.5";
       system = "x86_64-linux";
       deployType = "local"; # Deployed via apply-local
       tags = [

@@ -163,17 +163,6 @@ in
           routes = lib.mkForce [ ];
         };
       };
-      "end0" = {
-        ipv4 = {
-          addresses = [
-            {
-              address = "10.0.0.22";
-              prefixLength = 16;
-            }
-          ];
-          routes = lib.mkForce [ ];
-        };
-      };
     };
     defaultGateway = {
       address = "10.0.0.1";
