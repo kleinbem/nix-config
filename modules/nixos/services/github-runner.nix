@@ -57,8 +57,11 @@ in
       url = "https://github.com/kleinbem/nix";
       tokenFile = config.sops.secrets.local_github_actions_runner.path;
       replace = true;
-      name = "nixos-nvme-nix";
-      extraLabels = [ "nixos" ];
+      name = "nixos-nvme-nix-v2";
+      extraLabels = [
+        "nixos"
+        "reset-1"
+      ];
       extraPackages = with pkgs; [
         git
         attic-client
@@ -80,8 +83,11 @@ in
       url = "https://github.com/kleinbem/nix-config";
       tokenFile = config.sops.secrets.local_github_actions_runner.path;
       replace = true;
-      name = "nixos-nvme-nix-config";
-      extraLabels = [ "nixos" ];
+      name = "nixos-nvme-nix-config-v2";
+      extraLabels = [
+        "nixos"
+        "reset-1"
+      ];
       extraPackages = with pkgs; [
         git
         attic-client
@@ -104,13 +110,14 @@ in
       # Token managed by sops
       tokenFile = config.sops.secrets.local_github_actions_runner.path;
       replace = true;
-      name = "nixos-bpi-builder";
+      name = "nixos-bpi-builder-v2";
 
       # Labels allow you to select this specific runner in the workflow
       extraLabels = [
         "nixos"
         "openwrt"
         "filogic"
+        "reset-1"
       ];
 
       # Bind the packages into the runner's path
