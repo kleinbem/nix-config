@@ -109,6 +109,8 @@ in
         device_tree=$FDT_PATH
         dtparam=pciex1_gen=3
         os_check=0
+        disable_splash=1
+        hdmi_force_hotplug=1
         EOF
 
                 sync
