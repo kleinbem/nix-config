@@ -23,7 +23,7 @@ Everything else should live in a module, preset, or the inventory — not inline
 
 ## Existing hosts
 
-The set is dynamic — check `ls ../hosts/` or the auto-generated host list in `../docs/SYSTEM_REFERENCE.md`.
+The set is dynamic — check `ls ../hosts/` or the auto-generated host list in `../docs/SYSTEM_REFERENCE.md`. For a per-host breakdown of which modules / presets / hardware / users a given host imports, see `../docs/IMPORTS.md`.
 
 ## Don't
 
