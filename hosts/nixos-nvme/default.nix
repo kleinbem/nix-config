@@ -521,7 +521,7 @@ in
     distributedBuilds = true;
     buildMachines = [
       {
-        hostName = "10.0.0.22"; # core-pi (Primary Builder)
+        hostName = "10.0.0.21"; # hass-pi (Temporary Builder)
         sshUser = "martin";
         systems = [ "aarch64-linux" ];
         maxJobs = 2; # Safe limit to leave RAM for Agent frameworks
