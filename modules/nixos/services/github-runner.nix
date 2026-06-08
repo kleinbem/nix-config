@@ -54,6 +54,7 @@ in
     # Runner: nix meta-workspace
     nix = {
       enable = true;
+      ephemeral = true; # Auto-deregister after each job; avoids stale-credential failures
       url = "https://github.com/kleinbem/nix";
       tokenFile = config.sops.secrets.local_github_actions_runner.path;
       replace = true;
@@ -80,6 +81,7 @@ in
     # Runner: nix-config
     nix-config = {
       enable = true;
+      ephemeral = true; # Auto-deregister after each job; avoids stale-credential failures
       url = "https://github.com/kleinbem/nix-config";
       tokenFile = config.sops.secrets.local_github_actions_runner.path;
       replace = true;
@@ -106,6 +108,7 @@ in
     # Runner: OpenWrt Builder
     openwrt-builder-v2 = {
       enable = true;
+      ephemeral = true; # Auto-deregister after each job; avoids stale-credential failures
       url = "https://github.com/kleinbem/openwrt-builder";
       # Token managed by sops
       tokenFile = config.sops.secrets.local_github_actions_runner.path;
