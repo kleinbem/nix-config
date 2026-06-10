@@ -3,6 +3,10 @@
 # SOURCE OF TRUTH: nix-config/scripts/mode-info.sh
 # Dynamic System Profile Info Script - V4.3 (Multi-Profile Support)
 # Shows ALL services, their status, and ALL assigned profiles
+#
+# NOTE: deliberately no `set -e` — every `systemctl` query is allowed to fail
+# silently (`2>/dev/null`) because not every host has every service, and the
+# fallback logic depends on those failures being non-fatal.
 
 MODE=${1:-minimal}
 

@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 {
   # ==========================================
@@ -27,7 +27,9 @@
   };
 
   security = {
-    sudo.wheelNeedsPassword = true;
+    # mkDefault so headless hosts (which set this to `false` for passwordless
+    # sudo over SSH key-only access) can override without `lib.mkForce`.
+    sudo.wheelNeedsPassword = lib.mkDefault true;
     rtkit.enable = true;
     polkit = {
       enable = true;

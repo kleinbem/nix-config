@@ -96,7 +96,7 @@ fix-yubikey:
 
 # Fix Chrome (Restart Panel & YubiKey & Chrome)
 fix-chrome:
-    pkill cosmic-panel || true
+    pkill -f gnome-shell || true # restart shell to pick up new YubiKey state
     pkill -f google-chrome || true
     just fix-yubikey
     google-chrome-stable > /dev/null 2>&1 &

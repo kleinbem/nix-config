@@ -1,12 +1,12 @@
 # `my.*` Options Index
 
-> **Auto-generated** by `scripts/generate-options-index.py`. Do not edit by hand.
+> **Auto-generated** by `nix-config/scripts/generate-options-index.py`. Do not edit by hand.
 >
 > Regenerate with `just maintenance::sync-agent`.
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 43  
+**Declarations indexed:** 41  
 **Consumer files scanned:** 11
 
 ---
@@ -25,13 +25,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/agent-team.nix:15`
 - **Sub-options:** `agents`, `autoStart`, `cpuLimit`, `enable`, `hostDataDir`, `ip`, `langfuse.enable`, `langfuse.host`, `langfuse.publicKey`, `langfuse.secretKey`, `litellmUrl`, `manager.humanInTheLoop`, `manager.process`, `memoryLimit`, `secretsFile`
-- **Consumed by:** `host:container-factory`, `host:nasbook`
+- **Default-enabled** (no hosts import the declaring file)
+- **Explicit overrides:** `host:container-factory`, `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.agent-zero`
 
 - **Declared:** `nix-presets/containers/agent-zero.nix:14`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
-- **Consumed by:** `host:container-factory`, `host:core-pi`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.anythingllm`
 
@@ -73,7 +74,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/comfyui.nix:12`
 - **Sub-options:** `autoStart`, `enable`, `enableAudio`, `enableGPU`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`
-- **Consumed by:** `host:container-factory`
+- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
 ### `my.containers.crowdsec`
 
@@ -93,16 +94,10 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `hostBridgeIp`, `ip`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
 
-### `my.containers.falco`
-
-- **Declared:** `nix-presets/containers/falco.nix:12`
-- **Sub-options:** `enable`, `ip`, `ntfyTopic`, `sidekickIp`
-- **Consumed by:** _(no opt-ins detected)_
-
 ### `my.containers.frigate`
 
 - **Declared:** `nix-presets/containers/frigate.nix:12`
-- **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `hostDataDir`, `innerConfig`, `ip`, `mediaDir`
+- **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `hostDataDir`, `innerConfig`, `ip`, `mediaDir`, `memoryLimit`
 - **Consumed by:** `host:container-factory`, `host:orin-nano`
 
 ### `my.containers.github-runner`
@@ -121,19 +116,19 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/langflow.nix:12`
 - **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`
-- **Consumed by:** `host:container-factory`
+- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
 ### `my.containers.langfuse`
 
 - **Declared:** `nix-presets/containers/langfuse.nix:13`
 - **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
-- **Consumed by:** `host:container-factory`
+- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
 ### `my.containers.litellm`
 
 - **Declared:** `nix-presets/containers/litellm.nix:13`
 - **Sub-options:** `autoStart`, `backends`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
-- **Consumed by:** `host:container-factory`
+- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
 ### `my.containers.llama-cpp`
 
@@ -165,12 +160,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `hostDataDir`, `ip`
 - **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
-### `my.containers.obsidian-web`
-
-- **Declared:** `nix-presets/containers/obsidian-web.nix:13`
-- **Sub-options:** `enable`, `hostDataDir`, `ip`, `user`
-- **Consumed by:** _(no opt-ins detected)_
-
 ### `my.containers.ollama`
 
 - **Declared:** `nix-presets/containers/ollama.nix:13`
@@ -199,7 +188,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/playground.nix:14`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `user`
-- **Consumed by:** `host:container-factory`
+- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
 ### `my.containers.qdrant`
 
@@ -224,8 +213,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.desktop`
 
 - **Declared:** `nix-config/modules/nixos/desktop.nix:12`
-- **Sub-options:** `enable`, `gnome.enable`, `lite.enable`
-- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
+- **Sub-options:** `gnome.enable`
+- **Consumed by:** `host:nixos-nvme`
 
 ## `my.hardware`
 
@@ -249,15 +238,9 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/ai-hardening.nix:12`
 - **Sub-options:** `airlockIPs`, `enable`, `strictEgress`, `whitelistDomains`
-- **Consumed by:** `host:nixos-nvme`
+- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.services`
-
-### `my.services.glances`
-
-- **Declared:** `nix-config/modules/nixos/services/glances.nix:12`
-- **Sub-options:** `enable`
-- **Consumed by:** _(no opt-ins detected)_
 
 ### `my.services.printing`
 
@@ -269,7 +252,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/rpi-eeprom.nix:13`
 - **Sub-options:** `autoApply`, `enable`, `schedule`
-- **Consumed by:** _(no opt-ins detected)_
+- **Consumed by:** `host:core-pi`, `host:hass-pi`
 
 ### `my.services.tang`
 
@@ -277,11 +260,19 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
+### `my.services.timesync`
+
+- **Declared:** `nix-config/modules/nixos/services/timesync.nix:11`
+- **Sub-options:** `enable`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
+- **Explicit overrides:** `host:router-1`, `host:router-2`
+
 ## `my.virtualisation`
 
 ### `my.virtualisation`
 
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
 - **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nixos-nvme`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
+- **Explicit overrides:** `host:core-pi`, `host:hass-pi`, `host:nixos-nvme`
 

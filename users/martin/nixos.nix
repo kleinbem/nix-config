@@ -3,6 +3,7 @@
 {
   users.users.martin = {
     isNormalUser = true;
+    description = "Martin";
     linger = true;
     extraGroups = [
       "wheel"

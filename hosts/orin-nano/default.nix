@@ -13,9 +13,22 @@ let
 in
 {
   imports = [
-    "${self}/modules/nixos/common.nix"
-    "${self}/modules/nixos/default.nix"
+    # Tier bundle + foundation
+    "${self}/modules/nixos/base.nix"
+    "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+
+    # Edge-device modules orin needs (curated — default.nix's workstation
+    # bundle would also pull in snapper/printing/security/android which
+    # don't apply to this host).
+    "${self}/modules/nixos/kernel.nix" # AI-tuned sysctl, BBR, swappiness
+    "${self}/modules/nixos/audit.nix" # security audit rules
+    "${self}/modules/nixos/users.nix" # sops-backed root password, mutableUsers=false
+    "${self}/modules/nixos/ai-hardening.nix" # AI workload sandboxing
+    "${self}/modules/nixos/ananicy.nix" # process scheduler
+    "${self}/modules/nixos/scripts.nix" # verify-system helpers
+    "${self}/modules/nixos/clevis-initrd.nix" # Tang/clevis LUKS unlock
+
     "${self}/users/martin/nixos.nix"
     # Hardware support from our local hardware flake
     inputs.nix-hardware.nixosModules.orin-nano
@@ -223,6 +236,7 @@ in
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
     services.tang.enable = true;
+    security.ai-hardening.enable = true; # AI workloads benefit from the strict-egress airlock
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";
 
@@ -245,6 +259,7 @@ in
         detector = "tensorrt";
         mediaDir = "/mnt/data/frigate";
         hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
+        memoryLimit = "3G"; # leave room for llama-cpp + syncthing + system on 8GB host
         innerConfig.services.frigate.settings = {
           # --- MQTT is required for Home Assistant integration ---
           mqtt = {
@@ -351,11 +366,9 @@ in
   # and provides fallback DNS even when NetBird is disconnected.
   services.resolved = {
     enable = true;
-    fallbackDns = [
-      "1.1.1.1"
-      "8.8.8.8"
-    ];
-    dnssec = "false";
+    # Migrated to the new option path (was `fallbackDns` / `dnssec`).
+    settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
+    settings.Resolve.DNSSEC = "false";
   };
 
   networking = {
@@ -439,18 +452,9 @@ in
     ];
   };
 
-  # --- Manual UI Specialisation ---
-  # Only active if selected at boot or via 'sudo /run/current-system/specialisation/desktop/bin/switch'
-  specialisation.desktop.configuration = {
-    environment.etc."specialisation".text = lib.mkForce "desktop";
-    my.desktop.lite.enable = true;
-
-    # We KEEP Frigate on because Sway is lite enough!
-    my.containers.frigate.enable = lib.mkForce true;
-
-    # Enable a graphical boot splash
-    boot.plymouth.enable = true;
-  };
+  # No desktop specialisation: orin-nano is a pure headless AI edge device.
+  # Local debug is text-mode TTY on HDMI (agetty on tty1); remote work is SSH.
+  # Need a remote Wayland app occasionally? `waypipe` it from your workstation.
 
   system.stateVersion = "25.11";
 }

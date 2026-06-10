@@ -4,21 +4,21 @@
   # ==========================================
   # ANANICY-CPP — Auto-Nice Daemon
   # ==========================================
-  # This daemon automatically prioritizes interactive applications (like COSMIC and Browsers)
-  # over background tasks (like Nix builds and AI containers).
+  # This daemon automatically prioritizes interactive applications (GNOME Shell
+  # and Browsers) over background tasks (like Nix builds and AI containers).
 
   services.ananicy = {
     enable = true;
     package = pkgs.ananicy-cpp;
     settings.apply_cgroups = false;
     extraRules = [
-      # Prioritize the COSMIC desktop environment
+      # Prioritize the GNOME desktop environment
       {
-        name = "cosmic-comp";
+        name = "gnome-shell";
         type = "Game";
       } # "Game" type gives high priority
       {
-        name = "cosmic-session";
+        name = "Xwayland";
         type = "Game";
       }
 

@@ -68,7 +68,7 @@ in
         Config(
           desktop_actions: true,
           max_entries: 5,
-          terminal: Some("cosmic-term"),
+          terminal: Some("ptyxis"),
         )
       '';
     };

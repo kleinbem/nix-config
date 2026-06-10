@@ -15,6 +15,7 @@
       "/var/log"
       "/var/lib/bluetooth"
       "/var/lib/nixos"
+      "/var/lib/AccountsService" # GDM user list & per-user icons/realnames
       "/var/lib/sops"
       "/var/lib/NetworkManager"
       "/var/lib/fprint"

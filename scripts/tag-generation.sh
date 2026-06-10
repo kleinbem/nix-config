@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 # SOURCE OF TRUTH: nix-config/scripts/tag-generation.sh
 
 # Get the current system generation number

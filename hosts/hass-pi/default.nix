@@ -34,6 +34,8 @@
       lxc.enable = false;
     };
 
+    services.rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
+
     # ─── Containers ──────────────────────────────────────────────
     containers = {
       home-assistant = {

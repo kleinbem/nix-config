@@ -1,79 +1,28 @@
-# headless.nix — Shared base module for all headless/remote nodes.
-# Imports options.nix and provides a minimal NixOS config suitable for
-# routers, edge devices, and headless servers (no desktop, Cockpit, etc).
+# headless.nix — extra bits for headless/remote nodes (RPi5, NASbook, routers).
+#
+# Foundational settings (Nix config, locale, fleet trust chain, sops-nix,
+# my.* schema, common overlays) live in `base.nix`. This file adds only the
+# host-class-specific concerns:
+#   - Tang clevis import
+#   - Headless-tier SSH (key-only)
+#   - Tight journald limits for storage-constrained nodes
+#   - mDNS publishing
+#   - A non-root user with sudo
+#   - Silent kernel boot
+#   - Container TUI (`lazydocker`) — headless hosts run all the containers
 {
-  inputs,
   config,
-  pkgs,
   lib,
+  pkgs,
   ...
 }:
-let
-  keys = import ./keys.nix;
-in
 {
   imports = [
-    ./options.nix
-    inputs.sops-nix.nixosModules.sops
     ./services/tang.nix
   ];
 
-  # Overlays (same as common.nix but without NUR/desktop-specific overlays)
-  nixpkgs = {
-    overlays = [
-      inputs.nix-packages.overlays.default
-      (_self: super: {
-        stable = import inputs.nixpkgs-stable {
-          inherit (super.stdenv.hostPlatform) system;
-          config.allowUnfree = true;
-        };
-      })
-    ];
-
-    # ─── Nix settings ───────────────────────────────────────────
-    config = {
-      allowUnfree = true;
-      allowUnfreePredicate = _: true;
-    };
-  };
-  nix = {
-    registry.nixpkgs.flake = inputs.nixpkgs;
-    settings = {
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      auto-optimise-store = true;
-      substituters = [
-        "https://cache.kleinbem.dev/system"
-        "https://cache.nixos.org"
-        "https://nix-community.cachix.org"
-      ];
-      trusted-public-keys = [
-        "system:EVrT+UgMV5xzRZSNKPEFflQwGc5qqgMro6PA5lzD05U="
-        "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
-        keys.cachix.nix-community
-      ];
-      builders-use-substitutes = true;
-      trusted-users = [
-        "@wheel"
-      ];
-    };
-    daemonCPUSchedPolicy = "idle";
-    daemonIOSchedClass = "idle";
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 14d";
-    };
-  };
-
-  # ─── Locale ─────────────────────────────────────────────────
-  time.timeZone = "Europe/Dublin";
-  i18n.defaultLocale = "en_IE.UTF-8";
-
   services = {
-    # ─── mDNS (mDNS is essential for .local resolution) ────────
+    # ─── mDNS (.local resolution on the LAN) ────────────────────
     avahi = {
       enable = true;
       nssmdns4 = true;
@@ -84,7 +33,15 @@ in
       };
     };
 
-    # ─── SSH (headless nodes need solid SSH) ────────────────────
+    # ─── SSH (headless tier) ────────────────────────────────────
+    # Key-only SSH for headless nodes (RPi nodes, NASbook, routers).
+    # This is the LOOSER of two SSH tiers in this repo:
+    #   - This (headless): publickey only — no MFA, since headless nodes
+    #     can't easily prompt for keyboard-interactive challenges.
+    #   - `security.nix` (workstation/server): publickey + keyboard-interactive
+    #     MFA (Google Authenticator), no root, stricter limits.
+    # The two configs are deliberately separate; do not consolidate without
+    # accounting for the different security postures.
     openssh = {
       enable = true;
       settings = {
@@ -93,40 +50,32 @@ in
       };
     };
 
-    # ─── Journal ────────────────────────────────────────────────
+    # ─── Journal (tighter than core.nix's 1G default) ───────────
+    # core.nix sets SystemMaxUse=1G for workstations. RPi nodes / routers
+    # have tighter storage, so we override with a smaller cap. types.lines
+    # concatenates, and journald takes the last duplicate key, so our value
+    # wins on hosts that load both.
     journald.extraConfig = ''
       SystemMaxUse=256M
       MaxRetentionSec=1month
     '';
   };
 
-  # ─── Minimal Packages ──────────────────────────────────────
-  environment.systemPackages = with pkgs; [
-    git
-    curl
-    btop
-    jq
-    ripgrep
-    fd
-  ];
-
-  # ─── Swap ───────────────────────────────────────────────────
-  zramSwap = {
-    enable = true;
-    algorithm = "zstd";
-    memoryPercent = 50;
-  };
-
   # ─── User ───────────────────────────────────────────────────
+  # Hosts that need SSH access add `users.users.${config.my.username}.openssh.authorizedKeys.keys`
+  # in their own configuration (with keys.nix references). This block just
+  # ensures the user exists with the right groups.
   users.users.${config.my.username} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = [
-      # TODO: Add your SSH public key here
-    ];
   };
 
   security.sudo.wheelNeedsPassword = false;
+
+  # ─── Container TUI ──────────────────────────────────────────
+  # Headless hosts run nspawn / podman containers (AI services, Frigate,
+  # paperless, etc). `lazydocker` is the TUI for inspecting them.
+  environment.systemPackages = [ pkgs.lazydocker ];
 
   # ─── Silent Boot ────────────────────────────────────────────
   boot.kernelParams = [

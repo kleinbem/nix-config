@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # SOURCE OF TRUTH: nix-config/scripts/migrate-stateless.sh
 # Mission: Stateless Vault - Identity Migration Script

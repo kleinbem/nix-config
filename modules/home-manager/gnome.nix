@@ -41,10 +41,20 @@
         dynamic-workspaces = true;
         center-new-windows = true;
         workspaces-only-on-primary = true;
+        # Free left-Super from triggering the overview; it's used as a modifier
+        # for workspace and pano shortcuts, so accidental taps are annoying.
+        # Right-Super still opens the overview, and <Super>a is bound below.
+        overlay-key = "Super_R";
         experimental-features = [
           "scale-monitor-framebuffer"
           "variable-refresh-rate"
         ];
+      };
+
+      "org/gnome/shell/keybindings" = {
+        toggle-overview = [ "<Super>a" ];
+        toggle-application-view = [ "<Super>grave" ];
+        toggle-message-tray = [ "<Super>n" ];
       };
 
       "org/gnome/settings-daemon/plugins/color" = {
@@ -86,13 +96,16 @@
           "just-perfection-desktop@just-perfection"
           "Vitals@corecoding.com"
           "caffeine@patapon.info"
-          "clipboard-indicator@tudmotu.com"
+          "pano@elhan.io"
           "gsconnect@andyholmes.github.io"
           "space-bar@luchrioh"
           "search-light@icedman.github.com"
           "drive-menu@gnome-shell-extensions.gcampax.github.com"
           "tiling-assistant@leleat-on-github"
           "logo-menu@pauguic.github.io"
+          "user-theme@gnome-shell-extensions.gcampax.github.com"
+          "quick-settings-tweaks@qwreey"
+          "custom-command-list@storageb.github.com"
         ];
         favorite-apps = [
           "firefox-standard.desktop"
@@ -132,8 +145,12 @@
         dash-max-icon-size = 42;
         dock-position = "BOTTOM";
         extend-height = false;
-        dock-fixed = true;
-        autohide = false;
+        dock-fixed = false;
+        autohide = true;
+        intellihide = true;
+        intellihide-mode = "FOCUS_APPLICATION_WINDOWS";
+        require-pressure-to-show = true;
+        pressure-threshold = 50.0;
         show-apps-at-top = true;
         click-action = "minimize-or-previews";
         scroll-action = "cycle-windows";
@@ -155,10 +172,15 @@
         workspace-margin = 4;
       };
 
-      "org/gnome/shell/extensions/clipboard-indicator" = {
-        toggle-menu = [ "<Super>v" ];
-        history-size = 100;
-        clear-history = [ "<Super><Shift>c" ];
+      "org/gnome/shell/extensions/pano" = {
+        global-shortcut = [ "<Super>v" ];
+        incognito-shortcut = [ "<Super><Shift>v" ];
+        paste-on-select = true;
+        send-notification-on-copy = false;
+        play-audio-on-copy = false;
+        history-length = 200;
+        link-previews = true;
+        sync-primary = false;
       };
 
       "org/gnome/shell/extensions/search-light" = {
@@ -198,6 +220,58 @@
         active-window-hint-color = "rgba(53, 132, 228, 0.5)";
       };
 
+      # Top-bar "Workspace" menu wired to common `just` recipes from the meta-flake.
+      # Commands run in ptyxis and keep the pane open so output is readable.
+      "org/gnome/shell/extensions/custom-command-list" =
+        let
+          repo = "${config.home.homeDirectory}/Develop/github.com/kleinbem/nix";
+          term =
+            cmd:
+            "ptyxis --new-window -- bash -lc 'cd ${repo} && ${cmd}; echo; read -n1 -r -p \"Press any key to close…\"'";
+        in
+        {
+          menutitle-setting = "Workspace";
+          menuicon-setting = "applications-system-symbolic";
+          menulocation-setting = 1; # Right side of top bar
+          refresh-enabled-setting = true;
+          command1 = lib.hm.gvariant.mkTuple [
+            "Apply (full)"
+            (term "just apply")
+            "system-software-update-symbolic"
+            true
+          ];
+          command2 = lib.hm.gvariant.mkTuple [
+            "Apply (fast)"
+            (term "just apply-fast")
+            "media-playback-start-symbolic"
+            true
+          ];
+          command3 = lib.hm.gvariant.mkTuple [
+            "Status"
+            (term "just status")
+            "view-list-symbolic"
+            true
+          ];
+          command4 = lib.hm.gvariant.mkTuple [
+            "Health Check"
+            (term "just maintenance::health-check")
+            "emblem-ok-symbolic"
+            true
+          ];
+          command5 = lib.hm.gvariant.mkTuple [
+            "Clean (GC)"
+            (term "just maintenance::clean")
+            "user-trash-symbolic"
+            true
+          ];
+          command6 = lib.hm.gvariant.mkTuple [
+            "Deploy Fleet"
+            (term "just deployment::fleet")
+            "network-server-symbolic"
+            true
+          ];
+        };
+
       "org/gnome/shell/extensions/vitals" = {
         hot-sensors = [
           "_processor_usage_"
@@ -218,7 +292,7 @@
         sources = [
           (lib.hm.gvariant.mkTuple [
             "xkb"
-            "ml+us-intl"
+            "gb"
           ])
         ];
         current = lib.hm.gvariant.mkUint32 0;

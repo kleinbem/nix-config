@@ -1,13 +1,13 @@
 # Host Import Graph
 
-> **Auto-generated** by `scripts/generate-imports-index.py`. Do not edit by hand.
+> **Auto-generated** by `nix-config/scripts/generate-imports-index.py`. Do not edit by hand.
 >
 > Regenerate with `just maintenance::sync-agent`.
 
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 63
+**Distinct imports:** 66
 
 ---
 
@@ -32,13 +32,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nasbook`
 
-- **Modules:** `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/network-routing.nix`, `modules/nixos/networking.nix`, `modules/nixos/pki.nix`, `modules/nixos/virtualisation.nix`, `modules/nixos/zero-trust.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:paperless`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Local:** `./hardware-configuration.nix`, `./secrets.nix`
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/common.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/snapper.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/snapper.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
@@ -47,7 +47,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `orin-nano`
 
-- **Modules:** `modules/nixos/common.nix`, `modules/nixos/default.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`
+- **Modules:** `modules/nixos/ai-hardening.nix`, `modules/nixos/ananicy.nix`, `modules/nixos/audit.nix`, `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/kernel.nix`, `modules/nixos/persistence.nix`, `modules/nixos/scripts.nix`, `modules/nixos/users.nix`
 - **Presets:** `nix-presets:frigate`, `nix-presets:llama-cpp`, `nix-presets:monitoring-node`, `nix-presets:ollama`, `nix-presets:syncthing`
 - **Hardware:** `nix-hardware:orin-nano`
 - **Users:** `user:martin`
@@ -66,13 +66,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `router-1`
 
-- **Modules:** `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
 - **Presets:** `nix-presets:monitoring-node`
 - **Hardware:** `nix-hardware:lxc-guest`
 
 ### `router-2`
 
-- **Modules:** `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
 - **Presets:** `nix-presets:monitoring-node`
 - **Hardware:** `nix-hardware:lxc-guest`
 
@@ -86,23 +86,26 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./specialisations.nix` ← nixos-nvme
 - `disko:disko` ← nixos-nvme, orin-nano, orin-nano-bootstrap
 - `modules/nix-on-droid/dashboard.nix` ← phone
+- `modules/nixos/ai-hardening.nix` ← orin-nano
+- `modules/nixos/ananicy.nix` ← orin-nano
 - `modules/nixos/apps.nix` ← nixos-nvme
-- `modules/nixos/common.nix` ← nixos-nvme, orin-nano
+- `modules/nixos/audit.nix` ← orin-nano
+- `modules/nixos/base.nix` ← nasbook, orin-nano, router-1, router-2
+- `modules/nixos/clevis-initrd.nix` ← orin-nano
 - `modules/nixos/data-disk.nix` ← nixos-nvme
-- `modules/nixos/default.nix` ← nixos-nvme, orin-nano
+- `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/disko.nix` ← nixos-nvme
-- `modules/nixos/headless.nix` ← nasbook, router-1, router-2
+- `modules/nixos/headless.nix` ← nasbook, orin-nano, router-1, router-2
 - `modules/nixos/hosts.nix` ← nasbook, nixos-nvme, orin-nano, router-1, router-2
-- `modules/nixos/network-routing.nix` ← nasbook
-- `modules/nixos/networking.nix` ← nasbook
+- `modules/nixos/kernel.nix` ← orin-nano
 - `modules/nixos/persistence.nix` ← nixos-nvme, orin-nano
-- `modules/nixos/pki.nix` ← nasbook
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
+- `modules/nixos/scripts.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← nixos-nvme
 - `modules/nixos/services/github-runner.nix` ← nixos-nvme
 - `modules/nixos/snapper.nix` ← nixos-nvme
-- `modules/nixos/virtualisation.nix` ← nasbook
-- `modules/nixos/zero-trust.nix` ← nasbook
+- `modules/nixos/users.nix` ← orin-nano
+- `modules/nixos/workstation.nix` ← nixos-nvme
 - `nix-hardware:intel-compute` ← nixos-nvme
 - `nix-hardware:lxc-guest` ← router-1, router-2
 - `nix-hardware:nixos-nvme` ← nixos-nvme

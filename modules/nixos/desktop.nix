@@ -10,38 +10,12 @@ let
 in
 {
   options.my.desktop = {
-    enable = lib.mkEnableOption "Desktop Environment (Cosmic)";
     gnome.enable = lib.mkEnableOption "Desktop Environment (GNOME 50)";
-    lite.enable = lib.mkEnableOption "Lite Desktop (Sway)";
   };
 
   imports = [ ];
 
   config = lib.mkMerge [
-    # ==========================================
-    # DESKTOP (COSMIC)
-    # ==========================================
-    (lib.mkIf cfg.enable {
-      services = {
-        displayManager.cosmic-greeter.enable = lib.mkDefault true;
-        desktopManager.cosmic.enable = true;
-        system76-scheduler.enable = true;
-      };
-
-      xdg.portal = {
-        extraPortals = [ pkgs.xdg-desktop-portal-cosmic ];
-        config.common.default = "cosmic";
-      };
-
-      environment.systemPackages = with pkgs; [
-        cosmic-files
-        cosmic-term
-        cosmic-edit
-        cosmic-screenshot
-        cosmic-randr
-      ];
-    })
-
     # ==========================================
     # DESKTOP (GNOME 50)
     # ==========================================
@@ -51,9 +25,6 @@ in
           enable = true;
         };
         desktopManager.gnome.enable = true;
-
-        # If GNOME is enabled, GDM takes precedence over cosmic-greeter
-        displayManager.cosmic-greeter.enable = lib.mkForce false;
       };
 
       # GNOME specific optimizations
@@ -112,6 +83,10 @@ in
         gnomeExtensions.removable-drive-menu
         gnomeExtensions.tiling-assistant
         gnomeExtensions.logo-menu
+        gnomeExtensions.pano # Rich clipboard manager (replaces clipboard-indicator)
+        gnomeExtensions.user-themes
+        gnomeExtensions.quick-settings-tweaker
+        gnomeExtensions.custom-command-list # Top-bar shortcuts to `just` recipes
 
         # Modern GNOME Apps & Utilities (Premium Suite)
         ptyxis # Container-aware terminal
@@ -133,62 +108,8 @@ in
         gnome-font-viewer
         gnome-logs
         smile # Modern Emoji Picker
-        waypipe # Wayland remote display forwarding over SSH
       ];
 
-      fonts.packages = with pkgs; [
-        inter
-        nerd-fonts.jetbrains-mono
-      ];
-    })
-
-    # ==========================================
-    # LITE DESKTOP (SWAY) - TUNED FOR ORIN NANO
-    # ==========================================
-    (lib.mkIf cfg.lite.enable {
-      programs.sway = {
-        enable = true;
-        wrapperFeatures.gtk = true;
-        extraSessionCommands = ''
-          # NVIDIA / JetPack Wayland Compatibility
-          export WLR_NO_HARDWARE_CURSORS=1
-          export WLR_RENDERER=vulkan
-          export __GL_GSYNC_ALLOWED=0
-          export __GL_VRR_ALLOWED=0
-          # Fix for Java apps
-          export _JAVA_AWT_WM_NONREPARENTING=1
-        '';
-        extraPackages = with pkgs; [
-          swaylock-effects # Prettier lockscreen
-          swayidle
-          foot # Minimal fast terminal
-          wofi # Premium launcher
-          waybar # Glassmorphism status bar
-          mako # Notification daemon
-          grim # Screenshot
-          slurp # Select region
-          wl-clipboard
-          kanshi # Display management
-          swaybg # Wallpaper support
-          waypipe # Wayland remote display forwarding over SSH
-        ];
-      };
-
-      # Force Wayland for Chromium/Electron
-      environment.sessionVariables.NIXOS_OZONE_WL = "1";
-
-      # Use a minimal but modern greeter
-      services.greetd = {
-        enable = true;
-        settings = {
-          default_session = {
-            command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd 'sway --unsupported-gpu'";
-            user = "greeter";
-          };
-        };
-      };
-
-      # Standard font for the UI
       fonts.packages = with pkgs; [
         inter
         nerd-fonts.jetbrains-mono
@@ -198,7 +119,7 @@ in
     # ==========================================
     # COMMON DESKTOP CONFIGURATION
     # ==========================================
-    (lib.mkIf (cfg.enable || cfg.gnome.enable || cfg.lite.enable) {
+    (lib.mkIf cfg.gnome.enable {
       boot.plymouth = {
         enable = true;
         theme = "bgrt";

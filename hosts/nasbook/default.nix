@@ -11,13 +11,9 @@
     # IMPORTANT: You must run `nixos-generate-config` on the physical NASbook
     # and replace/create `./hardware-configuration.nix` with the output.
     ./hardware-configuration.nix
+    "${self}/modules/nixos/base.nix" # foundational, imported by every entry-point bundle
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
-    "${self}/modules/nixos/virtualisation.nix"
-    "${self}/modules/nixos/zero-trust.nix"
-    "${self}/modules/nixos/pki.nix"
-    "${self}/modules/nixos/networking.nix"
-    "${self}/modules/nixos/network-routing.nix"
 
     # ─── Services moved from Workstation ─────────────────────
     inputs.nix-presets.nixosModules.paperless

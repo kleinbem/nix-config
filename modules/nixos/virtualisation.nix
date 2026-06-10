@@ -14,8 +14,11 @@ in
 
     libvirtd.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
-      description = "Enable host-level libvirtd daemon and tools.";
+      # Default `false` so headless hosts don't pull in virt-manager (the only
+      # GUI app in the headless tier). Workstations that actually use KVM
+      # opt in explicitly.
+      default = false;
+      description = "Enable host-level libvirtd daemon and tools (incl. virt-manager GUI).";
     };
 
     podman.enable = lib.mkOption {

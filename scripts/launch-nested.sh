@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # SOURCE OF TRUTH: nix-config/scripts/launch-nested.sh
 # This script launches a nested lightweight Wayland session (Sway)

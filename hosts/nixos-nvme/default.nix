@@ -16,7 +16,7 @@ in
   imports = [
     inputs.nix-hardware.nixosModules.nixos-nvme
     inputs.nix-hardware.nixosModules.intel-compute
-    "${self}/modules/nixos/common.nix"
+    "${self}/modules/nixos/workstation.nix"
     "${self}/modules/nixos/hosts.nix"
     "${self}/modules/nixos/default.nix"
     "${self}/users/martin/nixos.nix"
@@ -321,11 +321,11 @@ in
 
     monitoring.node.enable = true;
 
-    desktop = {
-      enable = false;
-      gnome.enable = true;
+    desktop.gnome.enable = true;
+    virtualisation = {
+      enable = true;
+      libvirtd.enable = true; # workstation needs virt-manager + KVM
     };
-    virtualisation.enable = true;
     services = {
       printing.enable = false; # Handled by the cups container
     };

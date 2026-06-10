@@ -4,6 +4,7 @@
 {
   imports = [
     inputs.nix-hardware.nixosModules.lxc-guest
+    "${self}/modules/nixos/base.nix" # foundational, imported by every entry-point bundle
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
     inputs.nix-presets.nixosModules.monitoring-node
@@ -20,7 +21,10 @@
     interfaces."wt0".allowedTCPPorts = [ 22 ];
   };
 
-  my.monitoring.node.enable = true;
+  my = {
+    monitoring.node.enable = true;
+    services.timesync.enable = false; # LXC guests inherit time from the host
+  };
 
   system.stateVersion = "25.11";
 }

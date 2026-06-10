@@ -112,6 +112,14 @@ in
     services = {
       pcscd.enable = true;
 
+      # ─── SSH (workstation/server tier) ──────────────────────────
+      # Hardened SSH for hosts where a human can complete an interactive
+      # MFA challenge. This is the STRICTER of two SSH tiers in this repo:
+      #   - This (workstation/server): publickey + keyboard-interactive
+      #     MFA (Google Authenticator), no root, tight session limits.
+      #   - `headless.nix` (RPi nodes, NASbook, routers): publickey only.
+      # Both blocks set `enable = true` and `PasswordAuthentication = false`;
+      # they diverge on MFA requirements. Keep them separate intentionally.
       openssh = {
         enable = true;
         settings = {
