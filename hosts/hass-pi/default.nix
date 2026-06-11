@@ -44,6 +44,7 @@
         hostDataDir = "/var/lib/home-assistant";
         enableUSB = true; # For Zigbee/Z-Wave sticks
         enableBluetooth = true; # For BLE sensors
+        memoryLimit = "4G";
       };
     };
   };
@@ -53,6 +54,13 @@
     directories = [
       "/var/lib/home-assistant"
       "/var/lib/homarr"
+      # Native Services
+      "/var/lib/AdGuardHome"
+      "/var/lib/private/AdGuardHome"
+      "/var/lib/node-red"
+      "/var/lib/private/esphome"
+      "/var/lib/matter-server"
+      "/var/lib/wyoming"
     ];
   };
 

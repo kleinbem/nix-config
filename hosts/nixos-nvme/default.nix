@@ -4,14 +4,9 @@
   config,
   inputs,
   self,
-  myInventory,
   ...
 }:
 
-let
-  keys = import "${self}/modules/nixos/keys.nix";
-
-in
 {
   imports = [
     inputs.nix-hardware.nixosModules.nixos-nvme
@@ -21,6 +16,7 @@ in
     "${self}/modules/nixos/default.nix"
     "${self}/users/martin/nixos.nix"
     "${self}/users/dhirujaan/nixos.nix"
+
     inputs.nix-presets.nixosModules.n8n
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.code-server
@@ -60,45 +56,16 @@ in
     inputs.disko.nixosModules.disko
     ./ai.nix
     ./specialisations.nix
+    "${self}/modules/nixos/services/container-updater.nix"
+
+    ./hardware-boot.nix
+    ./network.nix
+    ./containers.nix
   ];
 
-  # --- Stateless Root / Var ---
-  fileSystems = {
-    "/" = lib.mkForce {
-      device = "none";
-      fsType = "tmpfs";
-      options = [
-        "defaults"
-        "size=4G"
-        "mode=755"
-      ];
-      neededForBoot = true;
-    };
-
-    "/var" = lib.mkForce {
-      device = "none";
-      fsType = "tmpfs";
-      options = [
-        "defaults"
-        "size=8G"
-        "mode=755"
-      ];
-      neededForBoot = true;
-    };
-
-    "/nix".neededForBoot = true;
-    "/nix/persist".neededForBoot = true;
-  };
-
-  # --- Persistent Identity (Declarative Symlinks) ---
   environment = {
-    etc = {
-    };
-
-    # Global environment variables
-    variables = {
-    };
-
+    etc = { };
+    variables = { };
     systemPackages = with pkgs; [
       sops
       age
@@ -116,577 +83,36 @@ in
       tio # serial terminal (USB-TTL, embedded devices)
       efibootmgr # EFI NVRAM entry management (recovery + boot guard)
       bind.dnsutils # provides nslookup, dig
-      google-antigravity-ide-no-fhs # Google Antigravity IDE (self-vendored, no-FHS so sudo works in terminal)
+      google-antigravity-ide-no-fhs # Google Antigravity IDE
     ];
   };
 
-  # --- Container Configuration ---
   my = {
-    boot.clevis-initrd = {
-      enable = true;
-      luksDevice = "cryptroot";
-      # hostIp = null; # uses DHCP by default
-      secretFile = ./cryptroot.jwe;
-      fallbackMessage = "Tang still unreachable; continuing (FIDO2 or passphrase fallback)";
-    };
     security.ai-hardening.enable = true;
-    services.tang.enable = true;
-    containers = {
-      n8n = {
-        enable = false;
-        standaloneRunner = true;
-        ip = "${myInventory.network.nodes.n8n.ip}/24";
-        hostDataDir = "/var/lib/images/n8n";
-        memoryLimit = "6G";
-        secretsFile = config.sops.templates."n8n.env".path;
-        noteDirs = {
-          repos = config.my.developDir;
-        };
-        tls = {
-          enable = true;
-          serverPort = 5678;
-          upstreams = [
-            {
-              name = "qdrant";
-              target = myInventory.network.nodes.qdrant.ip;
-              port = 6333;
-            }
-          ];
-        };
-      };
-
-      code-server = {
-        enable = false;
-        ip = "${myInventory.network.nodes.code-server.ip}/24";
-        hostDataDir = config.my.developDir;
-        user = config.my.username;
-        memoryLimit = "8G"; # IDEs are heavy
-      };
-
-      open-webui = {
-        enable = false;
-        ip = "${myInventory.network.nodes.open-webui.ip}/24";
-        hostDataDir = "/var/lib/images/open-webui";
-        memoryLimit = "4G";
-        secretsFile = config.sops.templates."openwebui.env".path;
-        tls = {
-          enable = true;
-          serverPort = 8080;
-          upstreams = [
-            {
-              name = "langfuse";
-              target = myInventory.network.nodes.langfuse.ip;
-              port = 3000;
-            }
-          ];
-        };
-      };
-
-      dashboard = {
-        enable = true;
-        ip = "${myInventory.network.nodes.dashboard.ip}/24";
-        hostBridgeIp = myInventory.hosts.nixos-nvme.ip;
-        memoryLimit = "1G";
-        secretsFile = config.sops.templates."homepage.env".path;
-      };
-
-      qdrant = {
-        enable = false;
-        ip = "${myInventory.network.nodes.qdrant.ip}/24";
-        hostDataDir = "/var/lib/images/qdrant";
-        memoryLimit = "2G";
-        tls = {
-          enable = true;
-          serverPort = 6333;
-          upstreams = [ ];
-        };
-      };
-
-      loki = {
-        enable = false;
-        ip = "${myInventory.network.nodes.loki.ip}/24";
-        hostDataDir = "/var/lib/images/loki";
-      };
-
-      monitoring = {
-        enable = false;
-        ip = "${myInventory.network.nodes.monitoring.ip}/24";
-        hostDataDir = "/var/lib/images/monitoring";
-        nodeTargets = [
-          myInventory.hosts.nixos-nvme.ip
-          myInventory.hosts.router-1.ip
-          myInventory.hosts.router-2.ip
-        ];
-        githubMetrics = {
-          enable = true;
-          repos = [ "kleinbem/nix" ];
-          configFile = config.sops.templates."json-exporter.yml".path;
-        };
-      };
-
-      openclaw = {
-        enable = false;
-        ip = "${myInventory.network.nodes.openclaw.ip}/24";
-        hostDataDir = "/var/lib/images/openclaw";
-      };
-
-      caddy = {
-        enable = lib.mkForce true;
-        ip = "${myInventory.network.nodes.caddy.ip}/24";
-        hostDataDir = "/var/lib/caddy";
-        memoryLimit = "512M";
-      };
-
-      attic = {
-        enable = false; # Handled by specialisations
-        ip = "${myInventory.network.nodes.attic.ip}/24";
-        hostDataDir = "/var/lib/images/attic";
-        secretsFile = config.sops.templates."attic.env".path;
-      };
-
-      crowdsec = {
-        enable = true;
-        ip = "${myInventory.network.nodes.crowdsec.ip}/24";
-        hostDataDir = "/var/lib/images/crowdsec";
-      };
-
-      netdata = {
-        enable = false;
-        ip = "${myInventory.network.nodes.netdata.ip}/24";
-      };
-
-      authelia = {
-        enable = false;
-        ip = "${myInventory.network.nodes.authelia.ip}/24";
-        hostDataDir = "/var/lib/images/authelia";
-        domain = "local";
-      };
-
-      cups = {
-        enable = true;
-        ip = "${myInventory.network.nodes.cups.ip}/24";
-      };
-
-      github-runner = {
-        enable = false; # Moved to workload profiles
-        ip = "${myInventory.network.nodes.github-runner.ip}/24";
-        hostDataDir = "/var/lib/images/github-runner";
-        secretsFile = config.sops.secrets.local_github_actions_runner.path;
-      };
-
-      ollama = {
-        enable = false; # Disabled by default; enabled in playground specialisation
-        ip = "${myInventory.network.nodes.ollama.ip}/24";
-        hostDataDir = "/var/lib/images/ollama";
-      };
-
-      syncthing = {
-        enable = true;
-        ip = "${myInventory.network.nodes.syncthing.ip}/24";
-        hostDataDir = "/var/lib/images/syncthing";
-        # secretsFile = config.sops.templates."syncthing.env".path;
-        vaults = {
-          "/home/${config.my.username}/Documents/Notes" = "/home/${config.my.username}/Documents/Notes";
-          "/home/${config.my.username}/Develop" = "/home/${config.my.username}/Develop";
-        };
-      };
-
-      backup = {
-        enable = true;
-        ip = "10.85.46.128/24";
-        passwordFile = config.sops.secrets.restic_password.path;
-        systemPasswordFile = config.sops.secrets.restic_system_password.path;
-        rcloneConfigFile = config.sops.secrets.rclone_config.path;
-        targets = {
-          "/home" = config.my.home;
-          "/var/lib/images/n8n" = "/var/lib/images/n8n";
-        };
-        systemTargets = {
-          "/etc/ssh" = "/etc/ssh";
-          "/var/lib/sops" = "/var/lib/sops";
-          "/nix/persist/var/lib/sbctl" = "/nix/persist/var/lib/sbctl";
-          "/var/lib/caddy" = "/var/lib/caddy";
-          "/var/lib/images" = "/var/lib/images";
-        };
-      };
-
-      paperless = {
-        enable = false;
-        ip = "${myInventory.network.nodes.paperless.ip}/24";
-        hostDataDir = "/mnt/data/Archive/Paperless";
-        hostConsumptionDir = "/mnt/data/Archive/Inbox";
-        passwordFile = config.sops.secrets.paperless_password.path;
-      };
-    };
-
     monitoring.node.enable = true;
-
     desktop.gnome.enable = true;
     virtualisation = {
       enable = true;
       libvirtd.enable = true; # workstation needs virt-manager + KVM
     };
-    services = {
-      printing.enable = false; # Handled by the cups container
-    };
     android.enable = true;
   };
 
-  systemd = {
-    services = {
-      # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust
-      # This runs on the host and is fail-safe to prevent restart loops.
-      "container@caddy".postStart = ''
-        SRC_CERT="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
-        if [ -f "$SRC_CERT" ]; then
-          mkdir -p /home/${config.my.username}/.pki
-          cp -f "$SRC_CERT" /home/${config.my.username}/.pki/caddy-root.crt
-          chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
-          
-          # Generate combined bundle for other services (e.g. github-runner) to trust local CA
-          cat /etc/ssl/certs/ca-certificates.crt "$SRC_CERT" > /var/lib/caddy/ca-bundle.crt
-          chmod 644 /var/lib/caddy/ca-bundle.crt
-          
-          echo "✅ Caddy Root CA copied and combined bundle generated."
-        else
-          echo "⚠️ Caddy Root CA not found at $SRC_CERT. Skipping copy."
-        fi
-      '';
-
-      crowdsec-firewall-bouncer = {
-        after = [ "container@crowdsec.service" ];
-        serviceConfig = {
-          ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 30); do ${pkgs.netcat-openbsd}/bin/nc -z ${myInventory.network.nodes.crowdsec.ip} ${toString myInventory.network.nodes.crowdsec.port} && exit 0 || sleep 5; done; exit 1'";
-          Restart = "on-failure";
-          RestartSec = "10s";
-          TimeoutStartSec = "180";
-        };
-      };
-
-      "container@crowdsec".preStart = ''
-        mkdir -p /var/lib/images/crowdsec
-        if [ ! -f /var/lib/images/crowdsec/bouncer-key ]; then
-          tr -dc A-Za-z0-9 </dev/urandom | head -c 32 > /var/lib/images/crowdsec/bouncer-key
-          chmod 600 /var/lib/images/crowdsec/bouncer-key
-        fi
-      '';
-
-      # Windows overwrites \EFI\BOOT\BOOTX64.EFI and can drop the NVRAM entry
-      # on every Windows session, making NixOS invisible in the BIOS boot menu.
-      # This service runs after each successful NixOS boot to restore both.
-      efi-boot-guard = {
-        description = "Restore EFI fallback path and NVRAM entry after Windows rewrites them";
-        wantedBy = [ "multi-user.target" ];
-        after = [ "local-fs.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        path = with pkgs; [
-          coreutils
-          efibootmgr
-          util-linux
-        ];
-        script = ''
-          SYSTEMD_BOOT="/boot/EFI/systemd/systemd-bootx64.efi"
-          FALLBACK="/boot/EFI/BOOT/BOOTX64.EFI"
-
-          # Restore the UEFI fallback path to systemd-boot. UEFI spec requires
-          # firmware to try \EFI\BOOT\BOOTX64.EFI even with no NVRAM entries,
-          # so keeping it as systemd-boot guarantees NixOS is always reachable.
-          if [ -f "$SYSTEMD_BOOT" ]; then
-            if ! cmp -s "$SYSTEMD_BOOT" "$FALLBACK" 2>/dev/null; then
-              echo "efi-boot-guard: restoring EFI fallback path to systemd-boot"
-              mkdir -p "$(dirname "$FALLBACK")"
-              cp "$SYSTEMD_BOOT" "$FALLBACK"
-            fi
-          fi
-
-          # Re-register the NVRAM entry if Windows removed it.
-          if ! efibootmgr | grep -q "Linux Boot Manager"; then
-            echo "efi-boot-guard: NVRAM entry missing, re-registering..."
-            ESP_DEV=$(findmnt -n -o SOURCE /boot)
-            DISK=$(lsblk -dnpo PKNAME "$ESP_DEV")
-            PART_NUM=$(lsblk -no PARTN "$ESP_DEV")
-            efibootmgr --create \
-              --disk "$DISK" \
-              --part "$PART_NUM" \
-              --label "Linux Boot Manager" \
-              --loader '\EFI\systemd\systemd-bootx64.efi' \
-              --unicode || true
-          fi
-        '';
-      };
-    };
-
-    # IMAGE STATE STORAGE
-    tmpfiles.rules = [
-      "d /var/lib/machines 0755 root root - -"
-      "d /var/lib/machines/n8n 0755 root root - -"
-      "L+ /var/lib/machines/n8n/current - - - - ${self.nixosConfigurations.container-factory.config.containers.n8n.path}"
-      "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
-      "d /var/lib/images/n8n 0755 root root - -"
-      "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
-      "d /var/lib/images/caddy 0755 root root - -"
-      "d /var/lib/images/litellm 0755 root root - -"
-      "d /var/lib/images/loki 0755 root root - -"
-      "d /var/lib/images/crowdsec 0755 root root - -"
-      "d /var/lib/images/monitoring 0755 root root - -"
-      "d /var/lib/images/monitoring/db 0755 root root - -"
-      "d /var/lib/images/monitoring/grafana 0755 root root - -"
-      "d /var/lib/images/qdrant 0755 root root - -"
-      "d /var/lib/images/open-webui 0755 root root - -"
-      "d /var/lib/images/lmstudio 0750 martin users - -"
-      "d /var/lib/images/netdata 0755 root root - -"
-      "d /var/lib/images/netdata/cache 0755 root root - -"
-      "d /var/lib/images/netdata/lib 0755 root root - -"
-      "d /var/lib/images/langfuse 0755 root root - -"
-      "d /var/lib/images/langfuse/db 0755 root root - -"
-      "d /var/lib/images/github-runner 0755 1000 100 - -"
-      "d /var/lib/images/syncthing 0755 root root - -"
-    ];
-  };
-
-  home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
-  home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
-
-  boot = {
-    kernelPackages = pkgs.linuxPackages_zen;
-    # Force the JMicron JMS581 (152d:0581) USB-NVMe bridge out of UAS into BOT mode.
-    # Its UAS firmware resets under sustained write load, causing I/O errors and
-    # filesystem corruption when provisioning the Orin SSD over the USB enclosure.
-    kernelParams = [
-      "usb-storage.quirks=152d:0581:u"
-      "systemd.machine_id=875e6f722d80415e955ebddd39206430"
-    ];
-    initrd = {
-      availableKernelModules = [
-        "nvme"
-        "xhci_pci"
-        "thunderbolt"
-        "usb_storage"
-        "sd_mod"
-        "ahci"
-      ];
-      kernelModules = [
-        "usbhid"
-        "hid_generic"
-        "e1000e" # Intel Ethernet — must load eagerly so networkd can bring up eno2 for Tang
-      ];
-      network = {
-        enable = true;
-        ssh = {
-          enable = builtins.pathExists (inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_nixos-nvme");
-          port = 2222;
-          authorizedKeys = [
-            keys.ssh.yubikey
-            keys.ssh.fido2
-            keys.ssh.fido2-backup
-          ];
-          hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_nixos-nvme" ];
-        };
-      };
-      secrets."/etc/ssh/ssh_host_ed25519_key_nixos-nvme" = lib.mkForce (
-        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_nixos-nvme"
-      );
-      systemd = {
-        enable = true;
-        tpm2.enable = true;
-      };
-      services.lvm.enable = true;
-      luks.devices.cryptroot.keyFileTimeout = 2;
-    };
-
-    # Clevis LUKS auto-unlock: fetches key from Tang servers on the LAN.
-    # Only works when ethernet is plugged in. FIDO2 (YubiKey touch) is the
-    # primary interactive unlock when on WiFi / undocked.
-
-    loader = {
-      systemd-boot.enable = lib.mkForce false;
-      efi.canTouchEfiVariables = true;
-    };
-    lanzaboote = {
-      enable = true;
-      pkiBundle = "/nix/persist/var/lib/sbctl";
-      configurationLimit = 15;
-    };
-    # Kernel parameters now handled by kernel.nix and audit.nix
-    # i915 enhancements moved to kernel.nix
-    tmp.useTmpfs = true;
-    tmp.tmpfsSize = "8G";
-
-  };
-  nix = {
-    # Distributed Builds: Use core-pi (Raspberry Pi 5) as the primary ARM builder, with Orin Nano as backup
-    distributedBuilds = true;
-    buildMachines = [
-      {
-        hostName = "10.0.0.21"; # hass-pi (Temporary Builder)
-        sshUser = "martin";
-        systems = [ "aarch64-linux" ];
-        maxJobs = 2; # Safe limit to leave RAM for Agent frameworks
-        speedFactor = 2; # Higher speed factor makes this the preferred builder
-        supportedFeatures = [
-          "nixos-test"
-          "benchmark"
-          "big-parallel"
-          "kvm"
-        ];
-      }
-      {
-        hostName = "10.85.46.104"; # Orin Nano (Backup Builder) via NetBird
-        sshUser = "martin";
-        systems = [ "aarch64-linux" ];
-        maxJobs = 1; # Extremely safe limit to protect LLMs and Frigate
-        speedFactor = 1; # Lower speed factor so Nix only uses this if core-pi is offline
-        supportedFeatures = [
-          "nixos-test"
-          "benchmark"
-          "big-parallel"
-          "kvm"
-        ];
-      }
-    ];
-  };
-
-  # Cross-compilation: fallback to emulation if Orin is offline
-  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
-  boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
-
-  # Allow the nix sandbox to access the qemu binfmt interpreter for aarch64 builds
-  nix.settings.extra-sandbox-paths = [ "/run/binfmt" ];
-
-  # Host-level CrowdSec Firewall Bouncer
-  services.crowdsec-firewall-bouncer = {
-    enable = true;
-    secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
-    settings = {
-      api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
-      api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
-    };
-  };
-
-  hardware = {
-    cpu.intel.updateMicrocode = true;
-    enableRedistributableFirmware = true;
-    graphics = {
-      enable = true;
-      extraPackages = with pkgs; [
-        intel-media-driver
-        intel-compute-runtime
-        libvdpau-va-gl
-      ];
-    };
-  };
-
-  networking = {
-    hostName = "nixos-nvme";
-    # TODO: remove once OpenWrt router is enrolled in NetBird and pushes DNS nameserver rules.
-    # NetBird peer IPs are stable, but this bypasses proper split-DNS.
-    hosts."100.117.61.169" = [
-      "orin-nano.netbird.cloud"
-      "orin-nano"
-    ];
-    hosts."10.85.46.107" = [
-      "cache.kleinbem.dev"
-    ];
-    networkmanager = {
-      enable = true;
-      plugins = [ pkgs.networkmanager-openvpn ];
-      # Stop Wi-Fi MAC randomization so the workstation keeps a stable DHCP lease
-      # (Tang host for the Orin's headless LUKS unlock must stay put — see
-      # docs / openwrt static_leases). extraConfig was removed upstream → settings.
-      settings = {
-        device."wifi.scan-rand-mac-address" = "no";
-        connection = {
-          "wifi.cloned-mac-address" = "permanent";
-          "ethernet.cloned-mac-address" = "permanent";
-        };
-      };
-    };
-    # Fix Routing for the Ricoh Printer subnet (10.0.x.x)
-    interfaces.wlo1.ipv4.routes = [
-      {
-        address = "10.0.0.0";
-        prefixLength = 16;
-      }
-    ];
-    firewall = {
-      enable = true;
-      # Open all ports that Caddy is proxying to allow external access
-      allowedTCPPorts = lib.mapAttrsToList (_: node: node.externalPort) (
-        lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
-      );
-
-      # Zero Trust: NetBird is NOT blanket-trusted.
-      # Only specific ports are open over the tunnel.
-      interfaces."wt0".allowedTCPPorts = [
-        22 # SSH
-        443 # Caddy HTTPS (access all services via reverse proxy)
-      ];
-      # Tang (LUKS auto-unlock for orin-nano) on the LAN/Wi-Fi interface only
-      interfaces."wlo1".allowedTCPPorts = [ 7654 ];
-      allowedTCPPortRanges = [
-        {
-          from = 1714;
-          to = 1764;
-        } # KDE Connect (GSConnect)
-      ];
-      allowedUDPPortRanges = [
-        {
-          from = 1714;
-          to = 1764;
-        } # KDE Connect (GSConnect)
-      ];
-    };
-    nftables.enable = true;
-  };
   services = {
     journald.extraConfig = ''
       SystemMaxUse=500M
       SystemMaxFileSize=50M
       MaxRetentionSec=1month
     '';
-
-    netbird = {
-      enable = true;
-      ui.enable = true; # Adds the NetBird GUI/Tray Icon
-    };
     pcscd.enable = true;
     fprintd.enable = true;
-    udev.packages = [
-      pkgs.yubikey-personalization
-      pkgs.libfido2
-    ];
-    udev.extraRules = ''
-      # Use kyber scheduler for NVMe to improve latency
-      ACTION=="add|change", KERNEL=="nvme*", ATTR{queue/scheduler}="kyber"
-    '';
-    fwupd.enable = true;
-    irqbalance.enable = true;
-    btrfs.autoScrub = {
-      enable = true;
-      interval = "weekly";
-      fileSystems = [
-        "/home"
-        "/nix"
-      ];
-    };
-    fstrim.enable = true;
-
-    # --- High-Performance Scheduling (Official Nixpkgs) ---
-    scx = {
-      enable = true;
-      scheduler = "scx_rusty"; # High-performance rust-based scheduler (successor to BORE)
-    };
   };
 
-  # Shorten the boot menu label so specialisation names are visible in systemd-boot.
-  # The default label includes the full NixOS version hash (e.g. "26.05.20260523.64c08a7")
-  # which, combined with distroName + codeName + kernel version + generation info,
-  # pushes the specialisation suffix (-work, -playground) off-screen.
-  system.nixos.label = lib.trivial.release;
+  home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
+  home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
 
+  # Shorten the boot menu label so specialisation names are visible in systemd-boot.
+  system.nixos.label = lib.trivial.release;
   system.stateVersion = "25.11";
 
 }

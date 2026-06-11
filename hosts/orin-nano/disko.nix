@@ -21,6 +21,14 @@
                 mountpoint = "/boot";
               };
             };
+            swap = {
+              size = "16G";
+              content = {
+                type = "swap";
+                discardPolicy = "both";
+                randomEncryption = true;
+              };
+            };
             luks = {
               size = "100%";
               content = {
@@ -62,7 +70,10 @@
                     name = "orin_frigate_crypt";
                     settings = {
                       allowDiscards = true;
-                      crypttabExtraOpts = [ "tpm2-device=auto" ];
+                      # Unlock using a keyfile stored on the main encrypted root.
+                      # This avoids prompting for a password twice and fixes the TPM2 bug
+                      # (Jetson has no /dev/tpm0).
+                      keyFile = "/nix/persist/etc/crypt/frigate.key";
                     };
                     content = {
                       type = "filesystem";

@@ -60,6 +60,9 @@ in
     ];
   };
 
+  # ─── Storage & Memory ───────────────────────────────────────
+  # Swap is now handled natively via disko LVM partition.
+
   # ─── Jetson-specific hardware ───────────────────────────────
   # The Orin Nano uses NVIDIA's JetPack BSP via jetpack-nixos.
   hardware = {
@@ -218,7 +221,7 @@ in
   _module.args.secondDiskDevice = null;
 
   # ─── Virtualization ─────────────────────────────────────────
-  containers.ollama.config = {
+  containers.ollama.config = lib.mkIf config.my.containers.ollama.enable {
     nixpkgs.config = {
       allowUnfree = true;
       allowUnfreePredicate = _: true;
@@ -252,6 +255,7 @@ in
         enable = false; # Temporarily disabled: nixpkgs.perl eval error in 26.05 containers — re-enable after first boot
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-2-9b-it-q4_k_m.gguf"; # Updated to Gemma as requested
+        memoryLimit = "5G";
       };
       frigate = {
         enable = true;

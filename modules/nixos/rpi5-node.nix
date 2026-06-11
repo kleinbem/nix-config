@@ -185,5 +185,8 @@ in
     # distributedBuilds disabled because Orin Nano is offline
   };
 
+  # ─── Storage & Memory ───────────────────────────────────────
+  # Swap is now natively handled by disko via a dedicated randomly-encrypted swap partition.
+
   system.stateVersion = "25.11";
 }

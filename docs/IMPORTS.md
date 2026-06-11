@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 66
+**Distinct imports:** 70
 
 ---
 
@@ -21,7 +21,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `core-pi`
 
 - **Modules:** `modules/nixos/rpi5-node.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`
 - **Local:** `./disko.nix`
 
 ### `hass-pi`
@@ -38,12 +38,12 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/snapper.nix`, `modules/nixos/workstation.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/snapper.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
 - **Other inputs:** `disko:disko`
-- **Local:** `./ai.nix`, `./secrets.nix`, `./specialisations.nix`
+- **Local:** `./ai.nix`, `./containers.nix`, `./hardware-boot.nix`, `./network.nix`, `./secrets.nix`, `./specialisations.nix`
 
 ### `orin-nano`
 
@@ -80,8 +80,11 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 - `../../modules/nixos/options.nix` ← container-factory
 - `./ai.nix` ← nixos-nvme
+- `./containers.nix` ← nixos-nvme
 - `./disko.nix` ← core-pi, hass-pi, orin-nano, orin-nano-bootstrap
+- `./hardware-boot.nix` ← nixos-nvme
 - `./hardware-configuration.nix` ← nasbook
+- `./network.nix` ← nixos-nvme
 - `./secrets.nix` ← nasbook, nixos-nvme, orin-nano
 - `./specialisations.nix` ← nixos-nvme
 - `disko:disko` ← nixos-nvme, orin-nano, orin-nano-bootstrap
@@ -102,6 +105,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← nixos-nvme
+- `modules/nixos/services/container-updater.nix` ← nixos-nvme
 - `modules/nixos/services/github-runner.nix` ← nixos-nvme
 - `modules/nixos/snapper.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano
@@ -123,7 +127,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:cups` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:dashboard` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:frigate` ← container-factory, orin-nano
-- `nix-presets:github-runner` ← container-factory, nixos-nvme
+- `nix-presets:github-runner` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:home-assistant` ← container-factory, hass-pi
 - `nix-presets:langflow` ← container-factory, nixos-nvme
 - `nix-presets:langfuse` ← container-factory, nixos-nvme

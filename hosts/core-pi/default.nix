@@ -17,6 +17,7 @@
     inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.cups
+    inputs.nix-presets.nixosModules.github-runner
   ];
 
   networking.hostName = "core-pi";
@@ -47,27 +48,30 @@
     # ─── Containers ──────────────────────────────────────────────
     containers = {
       open-webui = {
-        enable = true;
+        enable = false; # Temporarily disabled for fast USB bootstrap
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/open-webui";
+        memoryLimit = "2G";
       };
 
       openclaw = {
-        enable = true;
+        enable = false; # Temporarily disabled for fast USB bootstrap
         ip = "${myInventory.network.nodes.openclaw.ip}/24";
         hostDataDir = "/var/lib/openclaw";
+        memoryLimit = "1G";
       };
 
       agent-zero = {
-        enable = true;
+        enable = false; # Temporarily disabled for fast USB bootstrap
         ip = "${myInventory.network.nodes.agent-zero.ip}/24";
         hostDataDir = "/var/lib/agent-zero";
+        memoryLimit = "1G";
       };
 
       ollama.enable = false;
 
       anythingllm = {
-        enable = true;
+        enable = false; # Temporarily disabled for fast USB bootstrap
         ip = "${myInventory.network.nodes.anythingllm.ip}/24";
         hostDataDir = "/var/lib/anythingllm";
         llmUrl = "https://litellm.internal";
@@ -86,12 +90,32 @@
         enable = true;
         ip = "${myInventory.network.nodes.cups.ip}/24";
       };
+
+      github-runner = {
+        enable = false; # Disabled until core-pi is physically online
+        ip = "${myInventory.network.nodes.github-runner.ip}/24"; # Need to ensure this doesn't conflict if nvme also runs one
+        hostDataDir = "/var/lib/github-runner";
+        # secretsFile = config.sops.secrets.local_github_actions_runner.path;
+      };
     };
   };
 
   # ─── Extra Packages ─────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     bind.dnsutils
+  ];
+
+  # ─── Build Optimization ──────────────────────────────────────
+  nix.settings = {
+    cores = 0;
+    max-jobs = "auto";
+  };
+
+  # Redirect nix builds to the persistent SSD to avoid filling the 2GB tmpfs root.
+  # Kernel compilation requires ~15GB of temporary space.
+  systemd.services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
+  systemd.tmpfiles.rules = [
+    "d /nix/persist/tmp/nix-builds 1777 root root 7d"
   ];
 
   # ─── Persistence ─────────────────────────────────────────────

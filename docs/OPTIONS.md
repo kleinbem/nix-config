@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 41  
-**Consumer files scanned:** 11
+**Declarations indexed:** 42  
+**Consumer files scanned:** 13
 
 ---
 
@@ -104,12 +104,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/github-runner.nix:42`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
-- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.home-assistant`
 
 - **Declared:** `nix-presets/containers/home-assistant.nix:12`
-- **Sub-options:** `enable`, `enableBluetooth`, `enableUSB`, `hostDataDir`, `ip`
+- **Sub-options:** `enable`, `enableBluetooth`, `enableUSB`, `hostDataDir`, `ip`, `memoryLimit`
 - **Consumed by:** `host:container-factory`, `host:hass-pi`
 
 ### `my.containers.langflow`
@@ -133,7 +133,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.llama-cpp`
 
 - **Declared:** `nix-presets/containers/llama-cpp.nix:20`
-- **Sub-options:** `contextSize`, `enable`, `gpuLayers`, `ip`, `modelPath`
+- **Sub-options:** `contextSize`, `enable`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`
 - **Consumed by:** `host:container-factory`, `host:orin-nano`
 
 ### `my.containers.loki`
@@ -242,6 +242,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ## `my.services`
 
+### `my.services.container-updater`
+
+- **Declared:** `nix-config/modules/nixos/services/container-updater.nix:11`
+- **Sub-options:** `containers`, `enable`, `flakeURI`
+- **Consumed by:** `host:nixos-nvme`
+
 ### `my.services.printing`
 
 - **Declared:** `nix-config/modules/nixos/printing.nix:16`
@@ -258,7 +264,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/tang.nix:11`
 - **Sub-options:** `enable`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:nasbook`, `host:orin-nano`
 
 ### `my.services.timesync`
 
