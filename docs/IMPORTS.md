@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 71
+**Distinct imports:** 73
 
 ---
 
@@ -52,7 +52,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - **Hardware:** `nix-hardware:orin-nano`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`
-- **Local:** `./disko.nix`, `./secrets.nix`
+- **Local:** `./disko.nix`, `./hardware.nix`, `./network.nix`, `./secrets.nix`, `./services.nix`
 
 ### `orin-nano-bootstrap`
 
@@ -84,8 +84,10 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./disko.nix` ← core-pi, hass-pi, orin-nano, orin-nano-bootstrap
 - `./hardware-boot.nix` ← nixos-nvme
 - `./hardware-configuration.nix` ← nasbook
-- `./network.nix` ← nixos-nvme
+- `./hardware.nix` ← orin-nano
+- `./network.nix` ← nixos-nvme, orin-nano
 - `./secrets.nix` ← nasbook, nixos-nvme, orin-nano
+- `./services.nix` ← orin-nano
 - `./specialisations.nix` ← nixos-nvme
 - `disko:disko` ← nixos-nvme, orin-nano, orin-nano-bootstrap
 - `modules/nix-on-droid/dashboard.nix` ← phone

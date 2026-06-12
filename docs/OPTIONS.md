@@ -264,7 +264,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/tang.nix:11`
 - **Sub-options:** `enable`
-- **Consumed by:** `host:nasbook`, `host:orin-nano`
+- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.timesync`
 

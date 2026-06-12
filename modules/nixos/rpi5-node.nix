@@ -47,6 +47,9 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
+  users.users.root.openssh.authorizedKeys.keys = [
+    keys.ssh.temp-builder
+  ];
 
   # ─── Stateless Root (Impermanence) ──────────────────────────
   fileSystems = {

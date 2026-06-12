@@ -40,6 +40,7 @@ in
             settings = {
               "org/gnome/login-screen" = {
                 "enable-smartcard-authentication" = false;
+                "disable-user-list" = false;
               };
             };
           }

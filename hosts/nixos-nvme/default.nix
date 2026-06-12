@@ -91,6 +91,7 @@
   my = {
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
+    services.tang.enable = true;
     desktop.gnome.enable = true;
     virtualisation = {
       enable = true;

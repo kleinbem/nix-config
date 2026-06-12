@@ -432,7 +432,10 @@ pi-install-usb host device="/dev/sdc":
     MNT="/mnt/{{host}}"
 
     echo "🧹 Cleaning up existing mounts and LUKS mappings on {{device}}..."
-    sudo umount -R "$MNT" 2>/dev/null || sudo umount -l "$MNT" 2>/dev/null || true
+    for mp in $(awk '$2 ~ "^'"$MNT"'" {print $2}' /proc/mounts | sort -r); do
+        sudo fuser -km "$mp" 2>/dev/null || true
+        sudo umount "$mp" 2>/dev/null || sudo umount -l "$mp" 2>/dev/null || true
+    done
     disk_name=$(basename {{device}})
     for part in /sys/class/block/${disk_name}*/holders/*; do
         [ -e "$part" ] && sudo cryptsetup close "$(basename "$(readlink "$part")")" 2>/dev/null || true
@@ -462,10 +465,9 @@ pi-install-usb host device="/dev/sdc":
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
 
-    echo "🏗️ Building {{host}} closure (cross-compiled)..."
-    nix build .#nixosConfigurations.{{host}}-cross.config.system.build.toplevel \
+    echo "🏗️ Building {{host}} closure (natively via remote builder)..."
+    nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
         --option sandbox false \
-        --option builders "" \
         --out-link /tmp/{{host}}-system
 
     SYSTEM="$(readlink /tmp/{{host}}-system)"
@@ -551,7 +553,10 @@ pi-update-usb host device="/dev/sdc":
     MNT="/mnt/{{host}}"
 
     echo "🧹 Cleaning up existing mounts and LUKS mappings before mounting..."
-    sudo umount -R "$MNT" 2>/dev/null || sudo umount -l "$MNT" 2>/dev/null || true
+    for mp in $(awk '$2 ~ "^'"$MNT"'" {print $2}' /proc/mounts | sort -r); do
+        sudo fuser -km "$mp" 2>/dev/null || true
+        sudo umount "$mp" 2>/dev/null || sudo umount -l "$mp" 2>/dev/null || true
+    done
     disk_name=$(basename {{device}})
     for part in /sys/class/block/${disk_name}*/holders/*; do
         [ -e "$part" ] && sudo cryptsetup close "$(basename "$(readlink "$part")")" 2>/dev/null || true
@@ -571,10 +576,9 @@ pi-update-usb host device="/dev/sdc":
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
 
-    echo "🏗️ Building {{host}} closure (cross-compiled)..."
-    nix build .#nixosConfigurations.{{host}}-cross.config.system.build.toplevel \
+    echo "🏗️ Building {{host}} closure (natively via remote builder)..."
+    nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
         --option sandbox false \
-        --option builders "" \
         --out-link /tmp/{{host}}-system
 
     SYSTEM="$(readlink /tmp/{{host}}-system)"

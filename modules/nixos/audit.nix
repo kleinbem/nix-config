@@ -70,6 +70,7 @@ in
     pkgs.gitleaks # Secret scanning
     pkgs.ntfy-sh # Remote notifications
     pkgs.libnotify # Desktop notifications (notify-send)
+    pkgs.lynis # Security auditing
   ];
 
   systemd = {
@@ -178,6 +179,17 @@ in
       "home-manager-${config.my.username}" = {
         unitConfig.OnFailure = "security-notify@HM\\x2dFailure\\x7cHome\\x2dManager\\x2dActivation\\x2dFailed\\x7cCHECK\\x2dLOGS.service";
       };
+
+      # ---------------------------
+      # Lynis Security Audit (Weekly)
+      # ---------------------------
+      lynis-audit = {
+        description = "Lynis Security Audit";
+        serviceConfig.Type = "oneshot";
+        script = ''
+          ${pkgs.lynis}/bin/lynis audit system --no-colors --quiet > /var/log/lynis-report.txt 2>&1
+        '';
+      };
     };
 
     timers = {
@@ -203,6 +215,14 @@ in
         wantedBy = [ "timers.target" ];
         timerConfig = {
           OnCalendar = "daily";
+          Persistent = true;
+        };
+      };
+      lynis-audit = {
+        description = "Weekly Lynis Security Audit Timer";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "weekly";
           Persistent = true;
         };
       };

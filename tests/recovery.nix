@@ -28,6 +28,7 @@ pkgs.testers.nixosTest {
 
         config = {
           my.network.bridge = "br0";
+          system.stateVersion = "25.11";
 
           # Create the bridge interface for the container
           networking.bridges.br0.interfaces = [ ];

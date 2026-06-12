@@ -33,7 +33,6 @@
     };
 
     containers = {
-      standaloneRunner = true;
       n8n = {
         enable = false;
         ip = "${myInventory.network.nodes.n8n.ip}/24";

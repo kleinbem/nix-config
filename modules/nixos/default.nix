@@ -7,7 +7,7 @@
     ./audit.nix
     ./desktop.nix
     ./users.nix
-    ./security.nix
+    ./security
     ./snapper.nix
     ./printing.nix
     ./firejail.nix

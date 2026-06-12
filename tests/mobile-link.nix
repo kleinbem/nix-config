@@ -38,6 +38,8 @@ pkgs.testers.runNixOSTest {
             prefixLength = 24;
           }
         ];
+
+        system.stateVersion = "25.11";
       };
 
     # The "Mock Phone" (Source)
@@ -60,6 +62,8 @@ pkgs.testers.runNixOSTest {
 
         # Simulate the 'Host' resolution that NetBird would provide
         networking.extraHosts = "10.10.10.1 vault.internal";
+
+        system.stateVersion = "25.11";
       };
   };
 

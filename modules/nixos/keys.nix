@@ -14,6 +14,8 @@
     fido2 = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPbkLwSKFiip5e/0j9aHzIDr+4srK7s9C/aLbNOl7xJQAAAABHNzaDo=";
     # FIDO2 backup resident key
     fido2-backup = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINYunZXaiafJQO6qnCPsiQkaaZvZEBDLkgx4ygjVFP+6AAAABHNzaDo= ssh:";
+    # Temporary root builder key
+    temp-builder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfniLMozPzqGcLeIDEwAsGcG7ndYhqaO6elSjB57HkH root@nixos-nvme";
   };
 
   # Age/SOPS Public Keys (Recipients)

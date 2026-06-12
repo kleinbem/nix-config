@@ -41,7 +41,7 @@ in
   my.boot.clevis-initrd = {
     enable = true;
     luksDevice = "cryptroot";
-    secretFile = ./cryptroot.jwe;
+    secretFile = "${./cryptroot.jwe}";
     fallbackMessage = "Tang still unreachable; continuing (FIDO2 or passphrase fallback)";
   };
 
@@ -89,6 +89,13 @@ in
         tpm2.enable = true;
       };
       services.lvm.enable = true;
+      services.udev.rules = ''
+        # Prevent early-boot hangs (emergency shell) caused by empty USB storage readers
+        # Generic USB2.0 Card Reader
+        SUBSYSTEM=="block", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0153", ENV{SYSTEMD_READY}="0"
+        # USB to SATA/PCIe Bridge (External Harddisk Reader)
+        SUBSYSTEM=="block", ATTRS{idVendor}=="152d", ATTRS{idProduct}=="0581", ENV{SYSTEMD_READY}="0"
+      '';
       luks.devices.cryptroot.keyFileTimeout = 2;
     };
 
@@ -112,12 +119,11 @@ in
   };
 
   nix = {
-    # Distributed Builds: Disabled until core-pi is online and installed via USB.
-    # Once core-pi is online, change this to `true` to native-build aarch64 packages!
-    distributedBuilds = false;
+    # Distributed Builds: Offload aarch64 compilation to remote ARM nodes
+    distributedBuilds = true;
     buildMachines = [
       {
-        hostName = "10.0.0.22"; # core-pi static IP
+        hostName = "10.0.0.21"; # hass-pi static IP
         system = "aarch64-linux";
         protocol = "ssh-ng";
         maxJobs = 4;
@@ -129,8 +135,16 @@ in
           "kvm"
         ];
         mandatoryFeatures = [ ];
-        # sshKey = "/root/.ssh/id_ed25519"; # Ensure root on nixos-nvme can SSH to root on core-pi
+        sshKey = "/root/.ssh/id_ed25519"; # Daemon needs a non-Yubikey SSH key to connect silently
       }
+      # {
+      #   hostName = "10.0.0.22"; # core-pi static IP
+      #   system = "aarch64-linux";
+      #   protocol = "ssh-ng";
+      #   maxJobs = 4;
+      #   speedFactor = 2;
+      #   supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
+      # }
     ];
     settings.extra-sandbox-paths = [ "/run/binfmt" ];
   };

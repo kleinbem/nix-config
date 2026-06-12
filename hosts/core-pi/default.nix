@@ -28,7 +28,7 @@
       enable = true;
       luksDevice = "core_crypt";
       hostIp = "10.0.0.22";
-      secretFile = ./cryptroot.jwe;
+      secretFile = "${./cryptroot.jwe}";
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
 
