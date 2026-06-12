@@ -1,5 +1,6 @@
 # orin-nano — NVIDIA Jetson Orin Nano (aarch64)
 {
+  config,
   lib,
   pkgs,
   inputs,

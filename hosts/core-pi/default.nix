@@ -4,6 +4,7 @@
   self,
   myInventory,
   pkgs,
+  lib,
   ...
 }:
 {
@@ -107,8 +108,8 @@
 
   # ─── Build Optimization ──────────────────────────────────────
   nix.settings = {
-    cores = 0;
-    max-jobs = "auto";
+    cores = lib.mkForce 0;
+    max-jobs = lib.mkForce "auto";
   };
 
   # Redirect nix builds to the persistent SSD to avoid filling the 2GB tmpfs root.

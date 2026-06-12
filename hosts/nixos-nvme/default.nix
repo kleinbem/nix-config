@@ -17,6 +17,7 @@
     "${self}/users/martin/nixos.nix"
     "${self}/users/dhirujaan/nixos.nix"
 
+    inputs.nix-presets.nixosModules.container-common
     inputs.nix-presets.nixosModules.n8n
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.code-server

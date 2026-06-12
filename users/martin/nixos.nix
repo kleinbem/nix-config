@@ -8,6 +8,7 @@
     extraGroups = [
       "wheel"
       "networkmanager"
+      "systemd-journal"
       "podman"
       "docker"
       "video"

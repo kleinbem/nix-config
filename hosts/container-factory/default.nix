@@ -90,6 +90,7 @@ in
         enable = true;
         ip = ip 21;
         hostDataDir = dataDir "attic";
+        secretsFile = "/run/secrets/factory-dummy";
       };
       code-server = {
         enable = true;
@@ -197,7 +198,9 @@ in
       agent-team.enable = true;
       netdata.enable = true;
       syncthing.enable = true;
-      backup.enable = true;
+      backup = {
+        enable = true;
+      };
 
       # ---- OCI/podman containers (NOT Nix closures) ----
       # comfyui, vllm, langflow run via virtualisation.oci-containers and pull
@@ -217,4 +220,5 @@ in
       vllm.enable = true;
     };
   };
+
 }

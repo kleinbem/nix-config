@@ -462,8 +462,8 @@ pi-install-usb host device="/dev/sdc":
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
 
-    echo "🏗️ Building {{host}} closure..."
-    nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
+    echo "🏗️ Building {{host}} closure (cross-compiled)..."
+    nix build .#nixosConfigurations.{{host}}-cross.config.system.build.toplevel \
         --option sandbox false \
         --option builders "" \
         --out-link /tmp/{{host}}-system
@@ -571,8 +571,8 @@ pi-update-usb host device="/dev/sdc":
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
 
-    echo "🏗️ Building {{host}} closure..."
-    nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
+    echo "🏗️ Building {{host}} closure (cross-compiled)..."
+    nix build .#nixosConfigurations.{{host}}-cross.config.system.build.toplevel \
         --option sandbox false \
         --option builders "" \
         --out-link /tmp/{{host}}-system

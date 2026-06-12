@@ -22,15 +22,20 @@
           "github-runner"
           "ollama"
           "paperless"
+          "backup"
+          "syncthing"
+          "cups"
+          "crowdsec"
+          "dashboard"
         ];
       };
       printing.enable = false; # Handled by the cups container
     };
 
     containers = {
+      standaloneRunner = true;
       n8n = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.n8n.ip}/24";
         hostDataDir = "/var/lib/images/n8n";
         memoryLimit = "6G";
@@ -53,7 +58,6 @@
 
       code-server = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.code-server.ip}/24";
         hostDataDir = config.my.developDir;
         user = config.my.username;
@@ -62,7 +66,6 @@
 
       open-webui = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/images/open-webui";
         memoryLimit = "4G";
@@ -90,7 +93,6 @@
 
       qdrant = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.qdrant.ip}/24";
         hostDataDir = "/var/lib/images/qdrant";
         memoryLimit = "2G";
@@ -103,7 +105,6 @@
 
       loki = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.loki.ip}/24";
         hostDataDir = "/var/lib/images/loki";
       };
@@ -126,7 +127,6 @@
 
       openclaw = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.openclaw.ip}/24";
         hostDataDir = "/var/lib/images/openclaw";
       };
@@ -140,7 +140,6 @@
 
       attic = {
         enable = false; # Handled by specialisations
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.attic.ip}/24";
         hostDataDir = "/var/lib/images/attic";
         secretsFile = config.sops.templates."attic.env".path;
@@ -159,7 +158,6 @@
 
       authelia = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.authelia.ip}/24";
         hostDataDir = "/var/lib/images/authelia";
         domain = "local";
@@ -172,7 +170,6 @@
 
       github-runner = {
         enable = false; # Moved to workload profiles
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.github-runner.ip}/24";
         hostDataDir = "/var/lib/images/github-runner";
         secretsFile = config.sops.secrets.local_github_actions_runner.path;
@@ -180,7 +177,6 @@
 
       ollama = {
         enable = false; # Disabled by default; enabled in playground specialisation
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.ollama.ip}/24";
         hostDataDir = "/var/lib/images/ollama";
       };
@@ -217,7 +213,6 @@
 
       paperless = {
         enable = false;
-        standaloneRunner = true;
         ip = "${myInventory.network.nodes.paperless.ip}/24";
         hostDataDir = "/mnt/data/Archive/Paperless";
         hostConsumptionDir = "/mnt/data/Archive/Inbox";
@@ -225,32 +220,33 @@
       };
     };
 
-    # IMAGE STATE STORAGE
-    tmpfiles.rules = [
-      "d /var/lib/machines 0755 root root - -"
-      "d /var/lib/machines/n8n 0755 root root - -"
-      "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
-      "d /var/lib/images/n8n 0755 root root - -"
-      "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
-      "d /var/lib/images/caddy 0755 root root - -"
-      "d /var/lib/images/litellm 0755 root root - -"
-      "d /var/lib/images/loki 0755 root root - -"
-      "d /var/lib/images/crowdsec 0755 root root - -"
-      "d /var/lib/images/monitoring 0755 root root - -"
-      "d /var/lib/images/monitoring/db 0755 root root - -"
-      "d /var/lib/images/monitoring/grafana 0755 root root - -"
-      "d /var/lib/images/qdrant 0755 root root - -"
-      "d /var/lib/images/open-webui 0755 root root - -"
-      "d /var/lib/images/lmstudio 0750 martin users - -"
-      "d /var/lib/images/netdata 0755 root root - -"
-      "d /var/lib/images/netdata/cache 0755 root root - -"
-      "d /var/lib/images/netdata/lib 0755 root root - -"
-      "d /var/lib/images/langfuse 0755 root root - -"
-      "d /var/lib/images/langfuse/db 0755 root root - -"
-      "d /var/lib/images/github-runner 0755 1000 100 - -"
-      "d /var/lib/images/syncthing 0755 root root - -"
-    ];
   };
+
+  # IMAGE STATE STORAGE
+  systemd.tmpfiles.rules = [
+    "d /var/lib/machines 0755 root root - -"
+    "d /var/lib/machines/n8n 0755 root root - -"
+    "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
+    "d /var/lib/images/n8n 0755 root root - -"
+    "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
+    "d /var/lib/images/caddy 0755 root root - -"
+    "d /var/lib/images/litellm 0755 root root - -"
+    "d /var/lib/images/loki 0755 root root - -"
+    "d /var/lib/images/crowdsec 0755 root root - -"
+    "d /var/lib/images/monitoring 0755 root root - -"
+    "d /var/lib/images/monitoring/db 0755 root root - -"
+    "d /var/lib/images/monitoring/grafana 0755 root root - -"
+    "d /var/lib/images/qdrant 0755 root root - -"
+    "d /var/lib/images/open-webui 0755 root root - -"
+    "d /var/lib/images/lmstudio 0750 martin users - -"
+    "d /var/lib/images/netdata 0755 root root - -"
+    "d /var/lib/images/netdata/cache 0755 root root - -"
+    "d /var/lib/images/netdata/lib 0755 root root - -"
+    "d /var/lib/images/langfuse 0755 root root - -"
+    "d /var/lib/images/langfuse/db 0755 root root - -"
+    "d /var/lib/images/github-runner 0755 1000 100 - -"
+    "d /var/lib/images/syncthing 0755 root root - -"
+  ];
 
   systemd.services = {
     # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust

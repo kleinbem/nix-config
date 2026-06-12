@@ -12,7 +12,13 @@
             inherit system;
             modules = [
               ../../hosts/router-1/default.nix
-              { nixpkgs.config.allowUnfree = true; }
+              {
+                nixpkgs = {
+                  config.allowUnfree = true;
+                  buildPlatform = "x86_64-linux";
+                  hostPlatform = "aarch64-linux";
+                };
+              }
             ];
             format = "lxc";
             specialArgs = {

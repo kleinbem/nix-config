@@ -44,7 +44,9 @@
       "/var/lib/upower" # Power management history
       "/var/lib/logrotate" # Log rotation state
       "/var/lib/images" # Container state (Caddy, n8n, databases, etc)
-      "/var/lib/containers" # NixOS Containers (systemd-nspawn)
+      "/var/lib/containers" # Podman/Docker containers
+      "/var/lib/nixos-containers" # NixOS Containers (imperative/declarative roots)
+      "/var/lib/machines" # systemd-machined and systemd-nspawn container state
       "/var/lib/syncthing" # Syncthing device identity and config
       "/var/lib/private/tang" # Tang NBDE keys (DynamicUser → /var/lib/private)
       "/var/lib/lxc" # LXC state

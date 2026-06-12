@@ -357,14 +357,6 @@ in
               options = [ "NOPASSWD" ];
             }
             {
-              command = "/run/current-system/sw/bin/ip route";
-              options = [ "NOPASSWD" ];
-            }
-            {
-              command = "/run/current-system/sw/bin/ip addr";
-              options = [ "NOPASSWD" ];
-            }
-            {
               command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/ip addr";
               options = [ "NOPASSWD" ];
             }
@@ -378,14 +370,6 @@ in
             }
             {
               command = "/run/current-system/sw/bin/machinectl shell * /run/current-system/sw/bin/cat /etc/resolv.conf";
-              options = [ "NOPASSWD" ];
-            }
-            {
-              command = "/run/current-system/sw/bin/journalctl -u *";
-              options = [ "NOPASSWD" ];
-            }
-            {
-              command = "/run/current-system/sw/bin/journalctl --machine *";
               options = [ "NOPASSWD" ];
             }
             {

@@ -304,8 +304,20 @@
             core-pi = mkHost "core-pi" {
               modules = [ ./hosts/core-pi/default.nix ];
             };
+            core-pi-cross = mkHost "core-pi" {
+              modules = [
+                ./hosts/core-pi/default.nix
+                { nixpkgs.buildPlatform = "x86_64-linux"; }
+              ];
+            };
             hass-pi = mkHost "hass-pi" {
               modules = [ ./hosts/hass-pi/default.nix ];
+            };
+            hass-pi-cross = mkHost "hass-pi" {
+              modules = [
+                ./hosts/hass-pi/default.nix
+                { nixpkgs.buildPlatform = "x86_64-linux"; }
+              ];
             };
             nasbook = mkHost "nasbook" {
               modules = [ ./hosts/nasbook/default.nix ];
@@ -367,19 +379,23 @@
                 deployment = {
                   targetHost = hostMeta.router-1.ip;
                   targetUser = "root";
+                  buildOnTarget = false;
                   inherit (hostMeta.router-1) tags;
                 };
                 imports = [ ./hosts/router-1/default.nix ];
                 nixpkgs.hostPlatform = hostMeta.router-1.system;
+                nixpkgs.buildPlatform = "x86_64-linux";
               };
               router-2 = {
                 deployment = {
                   targetHost = hostMeta.router-2.ip;
                   targetUser = "root";
+                  buildOnTarget = false;
                   inherit (hostMeta.router-2) tags;
                 };
                 imports = [ ./hosts/router-2/default.nix ];
                 nixpkgs.hostPlatform = hostMeta.router-2.system;
+                nixpkgs.buildPlatform = "x86_64-linux";
               };
 
               # NVIDIA Jetson Orin Nano
@@ -399,21 +415,23 @@
                 deployment = {
                   targetHost = hostMeta.core-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = true;
+                  buildOnTarget = false;
                   inherit (hostMeta.core-pi) tags;
                 };
                 imports = [ ./hosts/core-pi/default.nix ];
                 nixpkgs.hostPlatform = hostMeta.core-pi.system;
+                nixpkgs.buildPlatform = "x86_64-linux";
               };
               hass-pi = {
                 deployment = {
                   targetHost = hostMeta.hass-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = true;
+                  buildOnTarget = false;
                   inherit (hostMeta.hass-pi) tags;
                 };
                 imports = [ ./hosts/hass-pi/default.nix ];
                 nixpkgs.hostPlatform = hostMeta.hass-pi.system;
+                nixpkgs.buildPlatform = "x86_64-linux";
               };
               nasbook = {
                 deployment = {

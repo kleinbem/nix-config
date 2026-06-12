@@ -13,5 +13,10 @@
     seahorse # Gnome Keyring Manager (and SSH Askpass provider)
     ssh-to-age
   ];
+  services.gpg-agent = {
+    enable = true;
+    enableSshSupport = true;
+    pinentryPackage = pkgs.pinentry-gnome3;
+  };
 
 }
