@@ -4,7 +4,6 @@
   self,
   myInventory,
   pkgs,
-  lib,
   ...
 }:
 {
@@ -104,19 +103,6 @@
   # ─── Extra Packages ─────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     bind.dnsutils
-  ];
-
-  # ─── Build Optimization ──────────────────────────────────────
-  nix.settings = {
-    cores = lib.mkForce 0;
-    max-jobs = lib.mkForce "auto";
-  };
-
-  # Redirect nix builds to the persistent SSD to avoid filling the 2GB tmpfs root.
-  # Kernel compilation requires ~15GB of temporary space.
-  systemd.services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
-  systemd.tmpfiles.rules = [
-    "d /nix/persist/tmp/nix-builds 1777 root root 7d"
   ];
 
   # ─── Persistence ─────────────────────────────────────────────

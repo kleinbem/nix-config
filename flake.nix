@@ -415,23 +415,21 @@
                 deployment = {
                   targetHost = hostMeta.core-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = false;
+                  buildOnTarget = true;
                   inherit (hostMeta.core-pi) tags;
                 };
                 imports = [ ./hosts/core-pi/default.nix ];
                 nixpkgs.hostPlatform = hostMeta.core-pi.system;
-                nixpkgs.buildPlatform = "x86_64-linux";
               };
               hass-pi = {
                 deployment = {
                   targetHost = hostMeta.hass-pi.ip;
                   targetUser = "martin";
-                  buildOnTarget = false;
+                  buildOnTarget = true;
                   inherit (hostMeta.hass-pi) tags;
                 };
                 imports = [ ./hosts/hass-pi/default.nix ];
                 nixpkgs.hostPlatform = hostMeta.hass-pi.system;
-                nixpkgs.buildPlatform = "x86_64-linux";
               };
               nasbook = {
                 deployment = {

@@ -183,7 +183,18 @@ in
 
   nix = {
     # distributedBuilds disabled because Orin Nano is offline
+    settings = {
+      cores = lib.mkDefault 2; # Limit cores to prevent OOM during kernel builds
+      max-jobs = lib.mkDefault 1;
+    };
   };
+
+  # Redirect nix builds to the persistent SSD to avoid filling the 2GB tmpfs root.
+  # Kernel compilation requires ~15GB of temporary space.
+  systemd.services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
+  systemd.tmpfiles.rules = [
+    "d /nix/persist/tmp/nix-builds 1777 root root 7d"
+  ];
 
   # ─── Storage & Memory ───────────────────────────────────────
   # Swap is now natively handled by disko via a dedicated randomly-encrypted swap partition.
