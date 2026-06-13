@@ -67,6 +67,15 @@
       ];
     };
     nftables.enable = true;
+    nftables.tables.netbird-nat = {
+      family = "inet";
+      content = ''
+        chain prerouting {
+          type nat hook prerouting priority dstnat; policy accept;
+          iifname "wt0" tcp dport { 80, 443 } dnat ip to ${myInventory.network.nodes.caddy.ip}
+        }
+      '';
+    };
   };
 
   services = {
