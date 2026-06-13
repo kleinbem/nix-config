@@ -54,10 +54,15 @@ jobs:
           fi
 
           CURRENT_SHA=$(gh api "repos/${GH_REPO}/contents/flake.lock?ref=${BRANCH}" --jq .sha)
-          CONTENT_B64=$(base64 -w0 flake.lock)
 
-          gh api --method PUT "repos/${GH_REPO}/contents/flake.lock" \
-            -f message="chore: update flake.lock (auto)" \
-            -f branch="${BRANCH}" \
-            -f sha="${CURRENT_SHA}" \
-            -f content="${CONTENT_B64}"
+          # Build the request body via stdin — passing the base64 content as a
+          # CLI arg via `-f content=…` blows past ARG_MAX for non-trivial
+          # lockfiles.
+          base64 -w0 flake.lock > /tmp/flake-lock.b64
+          jq -n \
+            --arg msg "chore: update flake.lock (auto)" \
+            --arg branch "${BRANCH}" \
+            --arg sha "${CURRENT_SHA}" \
+            --rawfile content /tmp/flake-lock.b64 \
+            '{message: $msg, branch: $branch, sha: $sha, content: $content}' \
+          | gh api --method PUT "repos/${GH_REPO}/contents/flake.lock" --input -
