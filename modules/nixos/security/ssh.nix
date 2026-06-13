@@ -1,5 +1,9 @@
 { pkgs, ... }:
 {
+  environment.variables = {
+    SSH_ASKPASS_REQUIRE = "prefer";
+  };
+
   environment.extraInit = ''
     export SSH_AUTH_SOCK="/run/user/$(id -u)/ssh-agent"
   '';
