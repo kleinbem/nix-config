@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   commonData = import ./code-common/settings.nix;
@@ -45,5 +45,12 @@ in
           mkt.anthropic.claude-code # Re-enabled to test if upstream wireshark dependency issue is resolved
         ];
     };
+  };
+
+  xdg.configFile = {
+    "Antigravity IDE/User/settings.json".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/settings.json";
+    "Antigravity IDE/User/keybindings.json".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/keybindings.json";
   };
 }

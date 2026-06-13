@@ -14,6 +14,9 @@
       "editor.defaultFormatter" = "jnoortheen.nix-ide";
     };
 
+    # --- Git ---
+    "git.useIntegratedAskPass" = false;
+
     # --- Marketplace Fix (CRITICAL) ---
     # Forces Windsurf, Cursor, and Antigravity to use the official VS Code Marketplace
     # instead of their proprietary ones, ensuring our Nix extensions load correctly.
