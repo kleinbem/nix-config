@@ -6,18 +6,12 @@ on:
 
 jobs:
   update:
-    runs-on: self-hosted
-    env:
-      DIRENV_CACHE: $HOME/.direnv/cache
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout nix-config
         uses: actions/checkout@v6.0.2
         with:
           path: nix-config
-
-      # No actions/cache for /nix/store — runs on a NixOS self-hosted runner
-      # where /nix/store is the host's persistent store. Caching it would be
-      # both pointless and (currently) broken due to runner working-dir layout.
 
       - name: Set up Nix
         uses: cachix/install-nix-action@v31.10.6
@@ -27,15 +21,13 @@ jobs:
           cd nix-config
           # nix-secrets is user-managed (rotated deliberately, not nightly)
           # AND private — CI has no PAT for it in Nix's access-tokens, so
-          # touching it here fetches 404. Discover remaining inputs dynamically
-          # so newly declared inputs are picked up automatically. Use nix shell
-          # for jq because it isn't on the runner's PATH.
-          inputs=$(nix shell nixpkgs#jq --command bash -c '
-            nix flake metadata --json | jq -r "
-              .locks.nodes.root.inputs
-              | keys[]
-              | select(. != \"nix-secrets\")
-            "
+          # fetching it here would 404. Discover remaining inputs dynamically
+          # so new inputs are picked up automatically. jq is preinstalled on
+          # ubuntu-latest.
+          inputs=$(nix flake metadata --json | jq -r '
+            .locks.nodes.root.inputs
+            | keys[]
+            | select(. != "nix-secrets")
           ' | tr '\n' ' ')
           if [ -z "$inputs" ]; then
             echo "::error::Could not discover flake inputs — refusing to run unbounded \`nix flake update\`."
@@ -53,15 +45,14 @@ jobs:
         run: |
           cd nix-config
           # Branch protection on main requires verified signatures. CI runners
-          # cannot use the YubiKey, so we push the change via the GitHub Contents
-          # API instead — commits created through the API get a web-flow signature
-          # that satisfies the protection rule.
+          # cannot use the YubiKey, so we push via the GitHub Contents API —
+          # commits created through the API get a web-flow signature that
+          # satisfies the protection rule.
           if git diff --quiet flake.lock; then
             echo "flake.lock unchanged — nothing to commit."
             exit 0
           fi
 
-          # Look up the current blob sha so the API accepts the PUT.
           CURRENT_SHA=$(gh api "repos/${GH_REPO}/contents/flake.lock?ref=${BRANCH}" --jq .sha)
           CONTENT_B64=$(base64 -w0 flake.lock)
 
