@@ -15,38 +15,27 @@ jobs:
         with:
           path: nix-config
 
-      - name: Checkout nix-secrets (shallow)
-        uses: actions/checkout@v6.0.2
-        with:
-          repository: kleinbem/nix-secrets
-          token: ${{ secrets.GH_PAT }}
-          path: nix-secrets
-          fetch-depth: 1
-
       - name: Cache Nix store
         uses: actions/cache@v4
         with:
           path: /nix/store
           key: nix-store-${{ runner.os }}-${{ hashFiles('nix-config/**') }}
 
-      - name: Cache nix-secrets directory
-        uses: actions/cache@v4
-        with:
-          path: nix-secrets
-          key: nix-secrets-${{ runner.os }}-${{ hashFiles('nix-secrets/**') }}
-
       - name: Set up Nix
         uses: cachix/install-nix-action@v31.10.6
 
-      - name: Override and lock nix-secrets
+      - name: Update flake inputs (excluding nix-secrets)
         run: |
           cd nix-config
-          nix flake lock --override-input nix-secrets ../nix-secrets
-
-      - name: Update flake inputs
-        run: |
-          cd nix-config
-          nix flake update
+          # nix-secrets is user-managed (rotated deliberately, not nightly),
+          # so we skip it here. Discover the remaining inputs dynamically so
+          # newly declared inputs are picked up automatically.
+          inputs=$(nix flake metadata --json | jq -r '
+            .locks.nodes.root.inputs
+            | keys[]
+            | select(. != "nix-secrets")
+          ' | tr '\n' ' ')
+          nix flake update $inputs
 
       - name: Commit lockfile changes via GitHub API (verified signature)
         if: github.ref == 'refs/heads/main'
