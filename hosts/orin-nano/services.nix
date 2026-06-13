@@ -7,8 +7,8 @@
 }:
 {
   # ─── Virtualization ─────────────────────────────────────────
-  containers.ollama.config = lib.mkIf config.my.containers.ollama.enable {
-    nixpkgs.config = {
+  containers = lib.mkIf config.my.containers.ollama.enable {
+    ollama.config.nixpkgs.config = {
       allowUnfree = true;
       allowUnfreePredicate = _: true;
       allowUnsupportedSystem = true;
