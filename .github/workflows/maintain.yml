@@ -25,14 +25,23 @@ jobs:
       - name: Update flake inputs (excluding nix-secrets)
         run: |
           cd nix-config
-          # nix-secrets is user-managed (rotated deliberately, not nightly),
-          # so we skip it here. Discover the remaining inputs dynamically so
-          # newly declared inputs are picked up automatically.
-          inputs=$(nix flake metadata --json | jq -r '
-            .locks.nodes.root.inputs
-            | keys[]
-            | select(. != "nix-secrets")
+          # nix-secrets is user-managed (rotated deliberately, not nightly)
+          # AND private — CI has no PAT for it in Nix's access-tokens, so
+          # touching it here fetches 404. Discover remaining inputs dynamically
+          # so newly declared inputs are picked up automatically. Use nix shell
+          # for jq because it isn't on the runner's PATH.
+          inputs=$(nix shell nixpkgs#jq --command bash -c '
+            nix flake metadata --json | jq -r "
+              .locks.nodes.root.inputs
+              | keys[]
+              | select(. != \"nix-secrets\")
+            "
           ' | tr '\n' ' ')
+          if [ -z "$inputs" ]; then
+            echo "::error::Could not discover flake inputs — refusing to run unbounded \`nix flake update\`."
+            exit 1
+          fi
+          echo "Updating inputs: $inputs"
           nix flake update $inputs
 
       - name: Commit lockfile changes via GitHub API (verified signature)
