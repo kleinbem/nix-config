@@ -7,6 +7,12 @@
   programs.ssh = {
     # Start the standard OpenSSH agent system-wide (replaces HM service)
     startAgent = true;
+
+    # Wrap lxqt-openssh-askpass to strip the trailing newline character
+    # This prevents the "incorrect passphrase" error when entering FIDO2 PINs via the GUI!
+    askPassword = "${pkgs.writeShellScript "ssh-askpass-clean" ''
+      ${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass "$@" | tr -d '\n'
+    ''}";
   };
 
   services = {
