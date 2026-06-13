@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
   environment.variables = {
-    SSH_ASKPASS_REQUIRE = "prefer";
+    SSH_ASKPASS_REQUIRE = "force";
   };
 
   environment.extraInit = ''
