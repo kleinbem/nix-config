@@ -64,7 +64,8 @@ in
             echo "Restarting container $CONTAINER to apply updates..."
             machinectl restart "$CONTAINER"
           else
-            echo "Container $CONTAINER is not currently running. Will use new profile on next start."
+            echo "Container $CONTAINER is not currently running. Starting it..."
+            systemctl start "container@$CONTAINER"
           fi
 
           echo "Update for $CONTAINER completed successfully."
