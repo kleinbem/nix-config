@@ -15,11 +15,9 @@ jobs:
         with:
           path: nix-config
 
-      - name: Cache Nix store
-        uses: actions/cache@v4
-        with:
-          path: /nix/store
-          key: nix-store-${{ runner.os }}-${{ hashFiles('nix-config/**') }}
+      # No actions/cache for /nix/store — runs on a NixOS self-hosted runner
+      # where /nix/store is the host's persistent store. Caching it would be
+      # both pointless and (currently) broken due to runner working-dir layout.
 
       - name: Set up Nix
         uses: cachix/install-nix-action@v31.10.6
