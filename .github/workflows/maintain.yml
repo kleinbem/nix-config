@@ -48,13 +48,29 @@ jobs:
           cd nix-config
           nix flake update
 
-      - name: Commit lockfile changes
+      - name: Commit lockfile changes via GitHub API (verified signature)
         if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add flake.lock
-          # NOTE: CI runners cannot use YubiKey for GPG signing.
-          # This commit is unsigned; ensure your remote does not enforce signed commits for CI.
-          git -c commit.gpgsign=false commit -m "chore: update flake.lock (auto)"
-          git push
+          cd nix-config
+          # Branch protection on main requires verified signatures. CI runners
+          # cannot use the YubiKey, so we push the change via the GitHub Contents
+          # API instead — commits created through the API get a web-flow signature
+          # that satisfies the protection rule.
+          if git diff --quiet flake.lock; then
+            echo "flake.lock unchanged — nothing to commit."
+            exit 0
+          fi
+
+          # Look up the current blob sha so the API accepts the PUT.
+          CURRENT_SHA=$(gh api "repos/${GH_REPO}/contents/flake.lock?ref=${BRANCH}" --jq .sha)
+          CONTENT_B64=$(base64 -w0 flake.lock)
+
+          gh api --method PUT "repos/${GH_REPO}/contents/flake.lock" \
+            -f message="chore: update flake.lock (auto)" \
+            -f branch="${BRANCH}" \
+            -f sha="${CURRENT_SHA}" \
+            -f content="${CONTENT_B64}"
