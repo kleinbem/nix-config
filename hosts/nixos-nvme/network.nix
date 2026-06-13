@@ -65,6 +65,10 @@
           to = 1764;
         } # KDE Connect (GSConnect)
       ];
+      extraForwardRules = ''
+        # Allow NetBird traffic that was NAT'd to reach the Caddy container
+        iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { 80, 443 } accept
+      '';
     };
     nftables.enable = true;
     nftables.tables.netbird-nat = {

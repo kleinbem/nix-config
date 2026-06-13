@@ -1,5 +1,5 @@
 # 🏗️ System Reference (Auto-generated)
-*Last Updated: 2026-06-13T00:31:21Z*
+*Last Updated: 2026-06-13T01:27:35Z*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure.
@@ -61,7 +61,7 @@
 
 ## 🛠️ Workspace Status
 - **Devenv**: Available
-- **Autonomous Guardian**: Active ✅
+- **Autonomous Guardian**: Inactive ❌
 
 ## 🤖 AI Capabilities (MCP Tools)
 netbird_status- ****
