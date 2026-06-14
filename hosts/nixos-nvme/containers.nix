@@ -171,7 +171,7 @@
         enable = false; # Moved to workload profiles
         ip = "${myInventory.network.nodes.github-runner.ip}/24";
         hostDataDir = "/var/lib/images/github-runner";
-        secretsFile = config.sops.secrets.local_github_actions_runner.path;
+        secretsFile = config.sops.secrets.github_runner_pat.path;
       };
 
       ollama = {

@@ -56,7 +56,7 @@ in
       enable = true;
       ephemeral = true; # Auto-deregister after each job; avoids stale-credential failures
       url = "https://github.com/kleinbem/nix";
-      tokenFile = config.sops.secrets.local_github_actions_runner.path;
+      tokenFile = config.sops.secrets.github_runner_pat.path;
       replace = true;
       name = "nixos-nvme-nix-v2";
       extraLabels = [
@@ -83,7 +83,7 @@ in
       enable = true;
       ephemeral = true; # Auto-deregister after each job; avoids stale-credential failures
       url = "https://github.com/kleinbem/nix-config";
-      tokenFile = config.sops.secrets.local_github_actions_runner.path;
+      tokenFile = config.sops.secrets.github_runner_pat.path;
       replace = true;
       name = "nixos-nvme-nix-config-v2";
       extraLabels = [
@@ -111,7 +111,7 @@ in
       ephemeral = true; # Auto-deregister after each job; avoids stale-credential failures
       url = "https://github.com/kleinbem/openwrt-builder";
       # Token managed by sops
-      tokenFile = config.sops.secrets.local_github_actions_runner.path;
+      tokenFile = config.sops.secrets.github_runner_pat.path;
       replace = true;
       name = "nixos-bpi-builder-v2";
 
@@ -221,7 +221,7 @@ in
   # ---------------------------------------------------------
   # Secrets Configuration
   # ---------------------------------------------------------
-  sops.secrets.local_github_actions_runner = {
+  sops.secrets.github_runner_pat = {
     owner = "github-runner"; # Must be readable by the service user
     # restartUnits = [ "github-runner-openwrt-builder.service" ]; # Restart runner if token changes
   };

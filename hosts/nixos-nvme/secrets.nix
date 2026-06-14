@@ -35,7 +35,7 @@
         # The nix-daemon needs to be able to read this file
         group = "wheel";
       };
-      local_github_actions_runner = {
+      github_runner_pat = {
         mode = "0440";
         group = "wheel";
       };
@@ -53,7 +53,7 @@
       n8n_jwt_secret = { };
       n8n_user_management_main_user_email = { };
       n8n_user_management_main_user_password = { };
-      webui_secret_key = { };
+      openwebui_secret_key = { };
       langfuse_nextauth_secret = { };
       langfuse_salt = { };
 
@@ -132,7 +132,7 @@
       "openwebui.env" = {
         mode = "0444";
         content = ''
-          WEBUI_SECRET_KEY=${config.sops.placeholder.webui_secret_key}
+          WEBUI_SECRET_KEY=${config.sops.placeholder.openwebui_secret_key}
         '';
       };
       "langfuse.env" = {

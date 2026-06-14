@@ -95,7 +95,7 @@
         enable = false; # Disabled until core-pi is physically online
         ip = "${myInventory.network.nodes.github-runner.ip}/24"; # Need to ensure this doesn't conflict if nvme also runs one
         hostDataDir = "/var/lib/github-runner";
-        # secretsFile = config.sops.secrets.local_github_actions_runner.path;
+        # secretsFile = config.sops.secrets.github_runner_pat.path;
       };
     };
   };
