@@ -90,7 +90,7 @@
 
     # Host-level CrowdSec Firewall Bouncer
     crowdsec-firewall-bouncer = {
-      enable = true;
+      enable = false;
       secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
       settings = {
         api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
@@ -100,14 +100,5 @@
   };
 
   systemd.services = {
-    crowdsec-firewall-bouncer = {
-      after = [ "container@crowdsec.service" ];
-      serviceConfig = {
-        ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 30); do ${pkgs.netcat-openbsd}/bin/nc -z ${myInventory.network.nodes.crowdsec.ip} ${toString myInventory.network.nodes.crowdsec.port} && exit 0 || sleep 5; done; exit 1'";
-        Restart = "on-failure";
-        RestartSec = "10s";
-        TimeoutStartSec = "180";
-      };
-    };
   };
 }

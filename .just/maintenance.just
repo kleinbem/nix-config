@@ -19,6 +19,7 @@ check-hosts *args="--impure":
 [private]
 _apply switch_target auth="":
     #!/usr/bin/env bash
+    set -e
     if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
         sudo -v
         while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
@@ -39,6 +40,7 @@ apply auth="":
 [group("Workflow")]
 apply-fast auth="" *args="":
     #!/usr/bin/env bash
+    set -e
     if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
         sudo -v
         while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
@@ -58,6 +60,9 @@ apply-boot auth="":
 sync-agent:
     @echo "🤖 Syncing system context for Antigravity..."
     @./scripts/sync-agent-context.sh
+    @if ! git diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; then \
+        git commit -m "docs: auto-update AI reference docs" docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md; \
+    fi
 
 # Print downstream consumers of changed files. Use `--git` to scan modified files,
 # or pass one or more paths. Catches the common AI mistake of editing a module

@@ -10,7 +10,7 @@ let
     my.containers = {
       code-server.enable = lib.mkForce true;
       authelia.enable = lib.mkForce true;
-      github-runner.enable = lib.mkForce true;
+      github-runner.enable = lib.mkForce false;
       attic.enable = lib.mkForce true;
     };
   };
@@ -41,7 +41,7 @@ let
       #   ip = lib.mkForce "10.85.46.113/24";
       # };
       # ollama.enable = lib.mkForce true;
-      github-runner.enable = lib.mkForce true;
+      github-runner.enable = lib.mkForce false;
     };
   };
 

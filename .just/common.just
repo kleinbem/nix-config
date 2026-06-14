@@ -21,4 +21,4 @@ OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-
 KEEP      := "3"
 TIMER     := "time "
 LOCK_FILE := "/tmp/nix-config-just.lock"
-LOCK_CMD  := "flock -n " + LOCK_FILE + " "
+LOCK_CMD := "bash -c 'if ! flock -n 9; then echo \"❌ ERROR: Workspace locked by another process at " + LOCK_FILE + ". Run \\`just maintenance::who\\` to check.\"; exit 1; fi; \"$@\"' 9>>" + LOCK_FILE + " -- "

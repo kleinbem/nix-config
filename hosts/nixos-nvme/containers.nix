@@ -192,7 +192,7 @@
       };
 
       backup = {
-        enable = true;
+        enable = false;
         ip = "10.85.46.128/24";
         passwordFile = config.sops.secrets.restic_password.path;
         systemPasswordFile = config.sops.secrets.restic_system_password.path;
