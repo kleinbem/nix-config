@@ -50,7 +50,7 @@ in
     home-manager.enable = true;
 
     # Inject hardware-protected signing keys from centralized proxy
-    git.settings.user.signingKey = "key::${keys.ssh.fido2}";
+    git.settings.user.signingKey = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouch.pub";
     jujutsu.settings.signing.key = "key::${keys.ssh.fido2}";
   };
 
