@@ -290,7 +290,7 @@ orin-install-usb device="/dev/sdb":
         echo "✅ Secrets updated."
         echo ""
         echo "   Commit nix-secrets + nix-config before deploying:"
-        echo "   just git::save 'feat: add orin-nano host key and re-encrypt secrets'"
+        echo "   just jj::save-all 'feat: add orin-nano host key and re-encrypt secrets'"
     }
 
     echo "🏗️ Installing NixOS closure to {{device}} mounted at /mnt/orin..."
@@ -351,7 +351,7 @@ orin-install-usb device="/dev/sdb":
     echo ""
     echo "✅ Orin Nano SSD installation complete!"
     echo "   Next steps:"
-    echo "   1. Commit: just git::save 'feat: orin-nano install'"
+    echo "   1. Commit: just jj::save-all 'feat: orin-nano install'"
     echo "   2. Plug SSD into the Jetson and boot"
     echo "   3. Deploy config: just deployment::deploy-orin"
     echo "   4. Seal TPM2: just deployment::orin-seal"

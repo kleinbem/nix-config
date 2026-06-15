@@ -27,7 +27,7 @@ _apply switch_target auth="":
         trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
     fi
     # Meta-workspace concerns: invoke from the parent justfile.
-    just -f ../justfile git::stage-all
+    # (No stage step — jj tracks working-copy changes automatically.)
     just -f ../justfile maintenance::update-local
     just maintenance::check
     just nixos::{{switch_target}} "{{auth}}"
@@ -47,7 +47,7 @@ apply-fast auth="" *args="":
         SUDO_PID=$!
         trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
     fi
-    just -f ../justfile git::stage-all
+    # (No stage step — jj tracks working-copy changes automatically.)
     just -f ../justfile maintenance::update-local
     just nixos::switch "{{auth}}" "" {{args}}
     just maintenance::sync-agent
@@ -60,10 +60,9 @@ apply-boot auth="":
 sync-agent:
     @echo "🤖 Syncing system context for Antigravity..."
     @./scripts/sync-agent-context.sh
-    @if ! git diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; then \
-        git add docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md; \
-        echo "  📝 Reference docs updated and staged — not committed (avoids FIDO PIN in nested subprocess)."; \
-        echo "     Commit when convenient: git commit -m \"docs: auto-update AI reference docs\""; \
+    @if ! jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; then \
+        echo "  📝 Reference docs updated — already in jj working copy (@)."; \
+        echo "     Commit when convenient: jj describe -m 'docs: auto-update AI reference docs'"; \
     fi
 
 # Print downstream consumers of changed files. Use `--git` to scan modified files,

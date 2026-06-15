@@ -93,9 +93,12 @@ scrcpy-dispatch serial ip bitrate *args:
 android-sync:
     @echo "🔄 Syncing phone configuration locks..."
     @nix flake lock --update-input nix-config
-    @git add flake.lock
-    @git commit -m "chore(phone): sync nix-config lock" || echo "Already synced."
-    @git push
+    @if ! jj diff --quiet 2>/dev/null; then \
+        jj describe -m "chore(phone): sync nix-config lock" && jj new; \
+        jj git push --allow-new; \
+    else \
+        echo "Already synced."; \
+    fi
 
 [group("Maintenance")]
 android-deploy:
