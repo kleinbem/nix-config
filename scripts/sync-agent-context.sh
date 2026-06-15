@@ -19,9 +19,11 @@ OUTPUT_FILE="$NIX_CONFIG_ROOT/docs/SYSTEM_REFERENCE.md"
 
 echo "🔍 Generating System Reference for Antigravity..."
 
-# Pull host list and service node names directly from inventory.nix.
-HOSTS=$(nix eval --json --file "$NIX_CONFIG_ROOT/inventory.nix" hosts --apply "builtins.attrNames" | jq -r '.[]')
-SERVICES=$(nix eval --json --file "$NIX_CONFIG_ROOT/inventory.nix" network.nodes --apply "builtins.attrNames" | jq -r '.[]')
+# Pull full host and service-node objects directly from inventory.nix.
+# We render details (ip/system/tags/domain/description) — name-only lists
+# weren't useful enough for AI navigation.
+HOSTS_JSON=$(nix eval --json --file "$NIX_CONFIG_ROOT/inventory.nix" hosts)
+SERVICES_JSON=$(nix eval --json --file "$NIX_CONFIG_ROOT/inventory.nix" network.nodes)
 
 cat <<EOF >"$OUTPUT_FILE"
 # 🏗️ System Reference (Auto-generated)
@@ -48,14 +50,37 @@ for input in "${inputs[@]}"; do
 done
 
 echo -e "\n## 🖥️ Managed Hosts" >>"$OUTPUT_FILE"
-for host in $HOSTS; do
-  echo "- **$host**" >>"$OUTPUT_FILE"
-done
+# Format: `- **name** (\`ip\`, system, deployType) — tag, tag, tag`
+# Fields may be absent for openwrt/special hosts; jq's // handles defaults.
+echo "$HOSTS_JSON" | jq -r '
+  to_entries
+  | sort_by(.key)
+  | .[]
+  | "- **\(.key)** "
+    + "(`\(.value.ip // "no-ip")`"
+    + (if .value.system then ", \(.value.system)" else "" end)
+    + (if .value.deployType then ", \(.value.deployType)" else "" end)
+    + (if .value.type then ", \(.value.type)" else "" end)
+    + ")"
+    + (if (.value.tags // []) | length > 0 then " — \(.value.tags | join(", "))" else "" end)
+' >>"$OUTPUT_FILE"
 
 echo -e "\n## 📡 Network Services" >>"$OUTPUT_FILE"
-for svc in $SERVICES; do
-  echo "- **$svc**" >>"$OUTPUT_FILE"
-done
+# Format: `- icon **Display Name** (\`key\`) — \`ip[:port]\` [→ domain] — description`
+echo "$SERVICES_JSON" | jq -r '
+  to_entries
+  | sort_by(.value.meta.category // "ZZZ", .key)
+  | .[]
+  | "- "
+    + (.value.meta.icon // "📦") + " "
+    + "**" + (.value.meta.name // .key) + "**"
+    + " (`\(.key)`)"
+    + " — `\(.value.ip // "no-ip")"
+    + (if .value.port then ":\(.value.port)" else "" end)
+    + "`"
+    + (if .value.domain then " → `\(.value.domain)`" else "" end)
+    + (if .value.meta.description then " — \(.value.meta.description)" else "" end)
+' >>"$OUTPUT_FILE"
 
 echo -e "\n## 🛠️ Workspace Status" >>"$OUTPUT_FILE"
 if command -v devenv &>/dev/null; then
@@ -71,8 +96,32 @@ else
 fi
 
 echo -e "\n## 🤖 AI Capabilities (MCP Tools)" >>"$OUTPUT_FILE"
-# workspace-mcp.py lives at the meta root (MCP is a meta-workspace concern).
-grep "@mcp.tool()" -A 1 "$META_ROOT/scripts/workspace-mcp.py" | grep "def " | sed 's/def //; s/(.*):/- **/; s/$/\**/' >>"$OUTPUT_FILE"
+# Parse @mcp.tool() functions properly: name + first-line docstring.
+# Previous bash sed pipeline produced `name- ****` because it stripped args
+# but never extracted descriptions. Python AST is the right tool here.
+python3 - "$META_ROOT/scripts/workspace-mcp.py" >>"$OUTPUT_FILE" <<'PY'
+import ast
+import sys
+
+source = open(sys.argv[1]).read()
+tree = ast.parse(source)
+
+for node in ast.walk(tree):
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        continue
+    is_tool = any(
+        (isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute) and d.func.attr == "tool")
+        or (isinstance(d, ast.Attribute) and d.attr == "tool")
+        for d in node.decorator_list
+    )
+    if not is_tool:
+        continue
+    doc = (ast.get_docstring(node) or "").strip().split("\n")[0].strip().rstrip(".")
+    if doc:
+        print(f"- **{node.name}** — {doc}.")
+    else:
+        print(f"- **{node.name}** — _(no docstring)_")
+PY
 
 echo "✅ System Reference updated at $OUTPUT_FILE"
 
