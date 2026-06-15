@@ -4,9 +4,6 @@
   my,
   ...
 }:
-let
-  keys = import ../../modules/nixos/keys.nix;
-in
 {
   imports = [
     ../../modules/home-manager/default.nix
@@ -51,7 +48,9 @@ in
 
     # Inject hardware-protected signing keys from centralized proxy
     git.settings.user.signingKey = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouch.pub";
-    jujutsu.settings.signing.key = "key::${keys.ssh.fido2}";
+    # jj's ssh backend wants a public-key file path; the `key::<blob>` form
+    # is git-specific and silently breaks signing in jj.
+    jujutsu.settings.signing.key = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouch.pub";
   };
 
   # Desktop Launchers
