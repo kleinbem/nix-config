@@ -61,7 +61,9 @@ sync-agent:
     @echo "🤖 Syncing system context for Antigravity..."
     @./scripts/sync-agent-context.sh
     @if ! git diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; then \
-        git commit -m "docs: auto-update AI reference docs" docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md; \
+        git add docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md; \
+        echo "  📝 Reference docs updated and staged — not committed (avoids FIDO PIN in nested subprocess)."; \
+        echo "     Commit when convenient: git commit -m \"docs: auto-update AI reference docs\""; \
     fi
 
 # Print downstream consumers of changed files. Use `--git` to scan modified files,
