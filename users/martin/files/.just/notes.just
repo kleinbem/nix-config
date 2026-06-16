@@ -1,5 +1,7 @@
 # `os notes::*` — Obsidian vault helpers.
 
+SCRIPTS := "~/Develop/github.com/kleinbem/nix/nix-config/users/martin/files/scripts"
+
 # Append a quick note to the Obsidian Inbox.
 add message="":
     @echo "📝 Capturing note..."
@@ -9,16 +11,15 @@ add message="":
 open:
     @obsidian &
 
-# Run the Obsidian vault housekeeping script.
+# Run the Obsidian vault organizer (Nushell script).
 organize:
-    @bash ~/Develop/github.com/kleinbem/nix/scripts/organize-notes.sh
+    @nu {{SCRIPTS}}/organize-notes.nu
 
 # Vault integrity check.
 check:
     @echo "🏠 Checking vault integrity..."
-    @bash ~/Develop/github.com/kleinbem/nix/scripts/vault-health.sh
+    @bash {{SCRIPTS}}/vault-health.sh
 
-# Symlink the workspace docs/ into Obsidian's Notes tree.
+# Symlink the workspace docs/ + each repo's knowledge bases into Obsidian.
 link-docs:
-    @echo "🔗 Linking workspace docs into Obsidian..."
-    @ln -sf ~/Develop/github.com/kleinbem/nix/docs $HOME/Documents/Notes/Project-Docs
+    @bash {{SCRIPTS}}/link-docs-to-obsidian.sh
