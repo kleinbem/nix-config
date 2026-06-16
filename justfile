@@ -14,6 +14,7 @@ mod android     '.just/android.just'
 mod ai          '.just/ai.just'
 mod deployment  '.just/deployment.just'
 mod maintenance '.just/maintenance.just'
+mod personas    '.just/personas.just'
 
 # Per-host operations (ping/shell/logs/gui)
 mod orin        '.just/orin.just'
