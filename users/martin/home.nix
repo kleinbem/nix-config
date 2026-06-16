@@ -76,16 +76,12 @@
     #   ssh -O exit git@github.com 2>/dev/null; rm -f ~/.ssh/cm-*
     ssh = {
       enable = true;
-      matchBlocks = {
-        "github.com" = {
-          hostname = "github.com";
-          user = "git";
-          extraOptions = {
-            ControlMaster = "auto";
-            ControlPath = "~/.ssh/cm-%r@%h:%p";
-            ControlPersist = "10m";
-          };
-        };
+      settings."github.com" = {
+        Hostname = "github.com";
+        User = "git";
+        ControlMaster = "auto";
+        ControlPath = "~/.ssh/cm-%r@%h:%p";
+        ControlPersist = "10m";
       };
     };
   };
