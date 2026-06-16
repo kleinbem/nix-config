@@ -29,6 +29,21 @@
       DEFAULT_BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
       BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
     };
+
+    # Personal System Control Center — `os <ns>::<recipe>`. The `os`
+    # shell alias lives in nix-presets/terminal.nix (generic); these
+    # source files are martin-specific (Obsidian paths, etc.) and so
+    # belong in martin's user dir rather than a shared preset.
+    file = {
+      ".justfile" = {
+        source = ./files/justfile;
+        force = true;
+      };
+      ".just" = {
+        source = ./files/.just;
+        recursive = true;
+      };
+    };
   };
 
   xdg.mimeApps = {
