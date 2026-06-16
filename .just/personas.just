@@ -22,6 +22,17 @@ list:
     @nix eval --raw --file personas.nix --apply \
         'p: builtins.concatStringsSep "\n" (map (n: "  - " + p.${n}."full-name" + " <" + p.${n}.email + ">  (" + p.${n}.tool + ")") (builtins.attrNames p))'
 
+# Regenerate docs/TEAM.md from personas.nix + personas-state.nix.
+# Idempotent — safe to run at any time. Writes a markdown directory
+# page rendering every persona's identity + current lifecycle state.
+[group("Personas")]
+team:
+    @echo "👥 Regenerating team page..."
+    @nix eval --raw --impure --expr \
+        'let p = import ./lib/personas.nix { lib = (import <nixpkgs> {}).lib; }; in p.teamMarkdown' \
+        > docs/TEAM.md
+    @echo "✅ Wrote $(wc -l < docs/TEAM.md) lines to nix-config/docs/TEAM.md"
+
 # Scaffold a persona end-to-end: signing key + sops + keys.nix patch +
 # GitHub upload + mailbox. See scripts/persona-scaffold.sh for what runs.
 [group("Personas")]
