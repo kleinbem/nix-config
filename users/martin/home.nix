@@ -66,6 +66,28 @@
     # jj's ssh backend wants a public-key file path; the `key::<blob>` form
     # is git-specific and silently breaks signing in jj.
     jujutsu.settings.signing.key = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouch.pub";
+
+    # SSH multiplexing for github.com — first touch-required FIDO op opens a
+    # master connection; subsequent SSH ops within ControlPersist reuse it
+    # without a fresh touch. Dramatically reduces YubiKey touches during
+    # `just apply` (was ~6 touches per apply, now typically 1-2).
+    #
+    # If stale sockets ever cause "Session open refused by peer" hangs, run:
+    #   ssh -O exit git@github.com 2>/dev/null; rm -f ~/.ssh/cm-*
+    ssh = {
+      enable = true;
+      matchBlocks = {
+        "github.com" = {
+          hostname = "github.com";
+          user = "git";
+          extraOptions = {
+            ControlMaster = "auto";
+            ControlPath = "~/.ssh/cm-%r@%h:%p";
+            ControlPersist = "10m";
+          };
+        };
+      };
+    };
   };
 
   # Desktop Launchers
