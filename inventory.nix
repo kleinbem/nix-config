@@ -129,10 +129,12 @@
 
   git = {
     name = "kleinbem";
-    # Email lives in personas-contact.nix (nix-secrets/personas-contact.nix → martin.email).
-    # Modules that need it should read it from there via the persona library, not from inventory.
-    # This default is a sentinel — replaced by actual value when nix-secrets is on the path.
-    email = "git@kleinbem.dev";
+    # Stays on gmail until Phase 1 (Stalwart) provides a real kleinbem.dev
+    # mailbox and we verify it on the GitHub account — GitHub's "verified
+    # signature" rule checks the committer email against verified emails on
+    # the account. Switching this address before then breaks signed pushes
+    # to branch-protected repos.
+    email = "martin.kleinberger@gmail.com";
   };
   hardware = {
     gpuRenderNode = "/dev/dri/renderD128";

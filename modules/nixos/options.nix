@@ -31,8 +31,8 @@ in
       };
       email = mkOption {
         type = types.str;
-        default = myInventory.git.email or "git@kleinbem.dev";
-        description = "Primary Git email. Real value lives in nix-secrets/personas-contact.nix (martin.email); sentinel default is used when nix-secrets isn't available (e.g. CI eval).";
+        default = myInventory.git.email or "martin.kleinberger@gmail.com";
+        description = "Primary Git email. Real value lives in inventory.nix; fallback is the gmail address — switching to a kleinbem.dev address must wait until Phase 1 (Stalwart) and GitHub-account email verification.";
       };
     };
 
