@@ -100,3 +100,52 @@ fix-chrome:
     pkill -f google-chrome || true
     just fix-yubikey
     google-chrome-stable > /dev/null 2>&1 &
+
+# --- Notes / Obsidian ---
+
+# Append a quick note to the Obsidian Inbox.
+[group("Notes")]
+note message="":
+    @echo "📝 Capturing note..."
+    @echo "- [ ] {{message}} (Captured on $(date))" >> $HOME/Documents/Notes/Inbox.md
+
+# Launch Obsidian in the background.
+[group("Notes")]
+obsidian:
+    @obsidian &
+
+# Run the Obsidian vault housekeeping script.
+[group("Notes")]
+notes-organize:
+    @bash ~/Develop/github.com/kleinbem/nix/scripts/organize-notes.sh
+
+# Vault integrity check.
+[group("Notes")]
+notes-check:
+    @echo "🏠 Checking vault integrity..."
+    @bash ~/Develop/github.com/kleinbem/nix/scripts/vault-health.sh
+
+# Symlink the workspace docs/ directory into Obsidian's Notes tree.
+[group("Notes")]
+notes-link-docs:
+    @echo "🔗 Linking workspace docs into Obsidian..."
+    @ln -sf ~/Develop/github.com/kleinbem/nix/docs $HOME/Documents/Notes/Project-Docs
+
+# --- Browser maintenance ---
+
+# Delete all Firefox profile folders that aren't the 'standard' one.
+[group("Cleanup")]
+[confirm("🦊 Delete all Firefox profile folders that aren't 'standard'?")]
+clean-browsers:
+    @echo "🦊 Cleaning browser profiles..."
+    @find ~/.mozilla/firefox -maxdepth 1 -type d -name "*.default*" -not -path "*standard*" -delete
+
+# Reset the Firefox 'laboratory' profile to a clean slate.
+[group("Cleanup")]
+[confirm("🧪 Reset the Firefox Laboratory profile? All data in that profile will be lost.")]
+reset-firefox-laboratory:
+    @echo "🧪 Resetting Laboratory profile..."
+    @rm -rf ~/.mozilla/firefox/*.laboratory
+    @firefox -P laboratory --headless &
+    @sleep 3
+    @pkill firefox
