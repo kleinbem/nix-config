@@ -16,6 +16,22 @@
     fido2-backup = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINYunZXaiafJQO6qnCPsiQkaaZvZEBDLkgx4ygjVFP+6AAAABHNzaDo= ssh:";
     # Temporary root builder key
     temp-builder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfniLMozPzqGcLeIDEwAsGcG7ndYhqaO6elSjB57HkH root@nixos-nvme";
+
+    # Per-persona signing public keys. Populated when each persona's
+    # private key is generated (Phase 1 — Stalwart provisioning). Until
+    # then the entries are empty strings; consumers (allowed_signers
+    # generator in lib/personas.nix) skip missing entries.
+    #
+    # Generation pattern per persona, run once per name in personas.nix:
+    #   ssh-keygen -t ed25519 -C "<email>" -f sops/personas/<name>/id_ed25519 -N ""
+    #   # then paste the .pub contents below.
+    personas = {
+      michael = "";
+      thomas = "";
+      daniel = "";
+      rahul = "";
+      juan = "";
+    };
   };
 
   # Age/SOPS Public Keys (Recipients)
