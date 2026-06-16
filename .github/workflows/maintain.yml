@@ -23,6 +23,9 @@ jobs:
 
       - name: Set up Nix
         uses: cachix/install-nix-action@v31.10.6
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ steps.app-token.outputs.token }}
 
       - name: Update flake inputs (excluding nix-secrets)
         run: |
@@ -43,6 +46,17 @@ jobs:
           fi
           echo "Updating inputs: $inputs"
           nix flake update $inputs
+
+      - name: Validate flake (eval-only — blocks a bad lock from landing)
+        run: |
+          # Mirror ci.yml's dummy-secrets pattern: nix-secrets is private and
+          # CI has no PAT in nix access-tokens, so substitute an empty stub.
+          # `or`-defaulted reads in eval handle the missing keys gracefully.
+          mkdir -p /tmp/dummy-secrets
+          echo "{}" > /tmp/dummy-secrets/secrets.yaml
+          cd nix-config
+          nix flake check --no-build \
+            --override-input nix-secrets /tmp/dummy-secrets
 
       - name: Commit lockfile changes via GitHub API (verified signature)
         if: github.ref == 'refs/heads/main'
