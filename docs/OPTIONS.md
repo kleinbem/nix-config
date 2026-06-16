@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 42  
+**Declarations indexed:** 46  
 **Consumer files scanned:** 13
 
 ---
@@ -52,6 +52,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`
 - **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
+### `my.containers.authentik`
+
+- **Declared:** `nix-presets/containers/authentik.nix:14`
+- **Sub-options:** `bootstrapAdminPasswordFile`, `bootstrapApiTokenFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `postgresPasswordFile`, `secretKeyFile`
+- **Consumed by:** _(no opt-ins detected)_
+
 ### `my.containers.backup`
 
 - **Declared:** `nix-presets/containers/backup.nix:12`
@@ -61,7 +67,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.caddy`
 
 - **Declared:** `nix-presets/containers/caddy/default.nix:18`
-- **Sub-options:** `enable`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`
+- **Sub-options:** `enable`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `staticSites`
 - **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
 ### `my.containers.code-server`
@@ -160,6 +166,18 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `hostDataDir`, `ip`
 - **Consumed by:** `host:container-factory`, `host:nixos-nvme`
 
+### `my.containers.nextcloud`
+
+- **Declared:** `nix-presets/containers/nextcloud.nix:14`
+- **Sub-options:** `adminPasswordFile`, `dbPasswordFile`, `domain`, `enable`, `enabledApps`, `hostDataDir`, `ip`, `memoryLimit`, `oidcUpstream`
+- **Consumed by:** _(no opt-ins detected)_
+
+### `my.containers.odoo`
+
+- **Declared:** `nix-presets/containers/odoo.nix:14`
+- **Sub-options:** `addons`, `adminPasswordFile`, `dbPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `oidcUpstream`
+- **Consumed by:** _(no opt-ins detected)_
+
 ### `my.containers.ollama`
 
 - **Declared:** `nix-presets/containers/ollama.nix:13`
@@ -195,6 +213,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/qdrant.nix:13`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`
 - **Consumed by:** `host:container-factory`, `host:nasbook`, `host:nixos-nvme`
+
+### `my.containers.stalwart`
+
+- **Declared:** `nix-presets/containers/stalwart.nix:23`
+- **Sub-options:** `adminPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relaySecretFile`
+- **Consumed by:** _(no opt-ins detected)_
 
 ### `my.containers.syncthing`
 
