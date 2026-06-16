@@ -129,7 +129,10 @@
 
   git = {
     name = "kleinbem";
-    email = "martin.kleinberger@gmail.com";
+    # Email lives in personas-contact.nix (nix-secrets/personas-contact.nix → martin.email).
+    # Modules that need it should read it from there via the persona library, not from inventory.
+    # This default is a sentinel — replaced by actual value when nix-secrets is on the path.
+    email = "git@kleinbem.dev";
   };
   hardware = {
     gpuRenderNode = "/dev/dri/renderD128";

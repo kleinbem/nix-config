@@ -42,3 +42,7 @@ tmp/
 config.tf.json
 *.tar
 *.tar.xz
+
+# Rendered persona views — contain PII; live in nix-secrets/docs/ instead.
+docs/TEAM.md
+docs/TEAM.html

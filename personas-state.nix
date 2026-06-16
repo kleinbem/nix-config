@@ -28,6 +28,15 @@
 #   active      → probation   (only if explicitly demoted)
 
 {
+  martin = {
+    status = "active";
+    status-since = "2025-01-01";
+    status-note = "";
+    return-date = null;
+    leave-type = null;
+    backup = null; # founder; no human backup
+  };
+
   michael = {
     status = "active";
     status-since = "2026-06-16";
