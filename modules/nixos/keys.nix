@@ -14,6 +14,9 @@
     fido2 = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPbkLwSKFiip5e/0j9aHzIDr+4srK7s9C/aLbNOl7xJQAAAABHNzaDo=";
     # FIDO2 backup resident key
     fido2-backup = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINYunZXaiafJQO6qnCPsiQkaaZvZEBDLkgx4ygjVFP+6AAAABHNzaDo= ssh:";
+    # FIDO2 no-touch SK key — file-based, used for git/jj commit signing
+    # without YubiKey touch prompts. Lives at ~/.ssh/id_ed25519_sk_rk_GitHubNoTouch.
+    fido2-notouch = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIEJKInVZSAOqjeQKEJ9Zdvsb0whwA9vSc7Ooy9gxJKJeAAAAEXNzaDpHaXRIdWJOb1RvdWNo ssh:GitHubNoTouch";
     # Temporary root builder key
     temp-builder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfniLMozPzqGcLeIDEwAsGcG7ndYhqaO6elSjB57HkH root@nixos-nvme";
 
