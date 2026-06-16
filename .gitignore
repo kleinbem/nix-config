@@ -46,3 +46,5 @@ config.tf.json
 # Rendered persona views — contain PII; live in nix-secrets/docs/ instead.
 docs/TEAM.md
 docs/TEAM.html
+
+docs/personas-changelog.md

@@ -75,40 +75,42 @@ Run `just apply`.
 
 ### 5. Set initial mailbox passwords
 
-After Stalwart starts, set each persona's mailbox password via the admin CLI:
+After Stalwart starts, set each persona's mailbox password via the admin CLI.
+Resolve `<email>` and `<full-name>` from `nix-secrets/personas-contact.nix`
+(the private contact file) for each persona key in `nix-config/personas.nix`:
 
 ```bash
 sudo machinectl shell stalwart /run/current-system/sw/bin/bash
-stalwart-cli account add michael@kleinbem.dev "Michael Gruber"
-# repeat for thomas, daniel, rahul, juan
+stalwart-cli account add <persona-email> "<persona-full-name>"
+# Loop over keys in personas.nix; emails come from the private contact file.
 ```
 
-### 6. Generate Michael's signing key
+### 6. Generate a persona's signing key
 
 ```bash
-mkdir -p ~/Develop/github.com/kleinbem/nix/nix-secrets/personas/michael
-ssh-keygen -t ed25519 -C "michael@kleinbem.dev" -N "" \
-  -f ~/Develop/github.com/kleinbem/nix/nix-secrets/personas/michael/id_ed25519
+mkdir -p ~/Develop/github.com/kleinbem/nix/nix-secrets/personas/<name>
+ssh-keygen -t ed25519 -C "<persona-email>" -N "" \
+  -f ~/Develop/github.com/kleinbem/nix/nix-secrets/personas/<name>/id_ed25519
 
 # Encrypt private key with sops
 cd ~/Develop/github.com/kleinbem/nix/nix-secrets
-sops --encrypt --in-place personas/michael/id_ed25519
+sops --encrypt --in-place personas/<name>/id_ed25519
 
 # Paste the .pub contents into nix-config/modules/nixos/keys.nix:
-#   ssh.personas.michael = "ssh-ed25519 AAAA...";
+#   ssh.personas.<name> = "ssh-ed25519 AAAA...";
 ```
 
-### 7. First Michael commit
+### 7. First persona commit
 
 ```bash
 # In any sub-flake (e.g. nix-presets to add a new container):
-just jj::as michael save-all "feat(presets): smoke-test commit as Michael"
+just jj::as <name> save-all "feat(presets): smoke-test commit as <name>"
 just jj::push-all
 ```
 
 The commit should land on GitHub with:
-- `Author: Michael Gruber <michael@kleinbem.dev>`
-- A "verified" signature (after his pubkey is uploaded to GitHub as a Signing key)
+- Author header set from the persona's contact entry (`<full-name> <email>`)
+- A "verified" signature (after the pubkey is uploaded to GitHub as a Signing key)
 - ✅ Phase 1 complete.
 
 ## What's NOT in scope here
