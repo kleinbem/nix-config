@@ -14,6 +14,13 @@ let
   keys = import "${self}/modules/nixos/keys.nix";
   hostName = config.networking.hostName;
   hostIp = config.my.boot.clevis-initrd.hostIp;
+  # CI uses --override-input nix-secrets /tmp/dummy-secrets, which lacks the
+  # initrd/ subtree. Both consumers below — `network.ssh.enable` and
+  # `boot.initrd.secrets` — gate on this, otherwise make-initrd-ng tries to
+  # walk a path component that isn't on disk and aborts with
+  # "failed to get symlink metadata for <…>/initrd".
+  initrdSshKey = "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_${hostName}";
+  hasInitrdSshKey = builtins.pathExists initrdSshKey;
 in
 {
   # ─── Common Imports ──────────────────────────────────────────
@@ -105,7 +112,7 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_${hostName}";
+          enable = hasInitrdSshKey;
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
@@ -115,9 +122,9 @@ in
           hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_${hostName}" ];
         };
       };
-      secrets."/etc/ssh/ssh_host_ed25519_key_${hostName}" = lib.mkForce (
-        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_${hostName}"
-      );
+      secrets = lib.optionalAttrs hasInitrdSshKey {
+        "/etc/ssh/ssh_host_ed25519_key_${hostName}" = lib.mkForce initrdSshKey;
+      };
 
       systemd.enable = true;
     };
