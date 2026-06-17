@@ -33,51 +33,110 @@ attic-coverage:
         echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
     fi
 
-[private]
-_apply switch_target auth="":
+# Unified apply: pull sub-flakes, sync locks, evaluate, surface cache misses, switch.
+# All flags optional and composable (except --rollback and --help which short-circuit).
+# Run `just apply --help` for the full menu.
+[group("Workflow")]
+apply *flags="":
     #!/usr/bin/env bash
-    set -e
-    if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
+    set -euo pipefail
+
+    MODE="switch"
+    FAST=0
+    DEBUG=0
+    AUTH=""
+    ROLLBACK=0
+
+    show_help() {
+        cat <<'HELP'
+    Usage: just apply [FLAGS]
+
+    Align sub-flakes with origin/main, sync lockfiles, evaluate the host
+    closure, surface any paths not yet in Attic, and switch the system.
+
+    Mode flags (mutually exclusive):
+      (default)         Build the current config and activate it.
+      --boot            Activate AND set the new generation as boot default.
+      --rollback        Roll back to the previous system generation.
+
+    Modifiers (composable with each other and with mode flags):
+      --fast            Skip the eval check + attic-coverage probe.
+                        Use when you trust the current state and want speed.
+      --debug           Verbose nh output + --show-trace on the build.
+      --auth sudo       Cache the sudo timestamp up front; avoids mid-run prompt.
+
+      -h, --help        Print this help and exit.
+
+    Examples:
+      just apply
+      just apply --boot
+      just apply --boot --fast
+      just apply --debug --auth sudo
+      just apply --rollback
+    HELP
+    }
+
+    # Parse flags. {{flags}} is just's *flags variadic argument joined by spaces.
+    set -- {{flags}}
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help) show_help; exit 0 ;;
+            --fast) FAST=1; shift ;;
+            --debug) DEBUG=1; shift ;;
+            --boot) MODE="switch-boot"; shift ;;
+            --rollback) ROLLBACK=1; shift ;;
+            --auth)
+                if [ $# -ge 2 ]; then AUTH="$2"; shift 2;
+                else echo "❌ --auth requires a value (e.g. --auth sudo)" >&2; exit 2; fi ;;
+            --auth=*) AUTH="${1#--auth=}"; shift ;;
+            "") shift ;;
+            *) echo "❌ Unknown flag: $1" >&2; echo "Try: just apply --help" >&2; exit 2 ;;
+        esac
+    done
+
+    # Cache sudo timestamp if requested
+    if [ "$AUTH" = "sudo" ] || [ "$AUTH" = "preauth" ] || [ "$AUTH" = "auth" ]; then
         sudo -v
         while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
         SUDO_PID=$!
         trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
     fi
-    # Align with CI's last green build: fetch + rebase every sub-repo onto origin/main
-    # so the closure we're about to evaluate matches what CI just pushed to Attic.
-    just -f ../justfile jj::pull-all
-    # (No stage step — jj tracks working-copy changes automatically.)
-    just -f ../justfile maintenance::update-local
-    just maintenance::check
-    just maintenance::attic-coverage
-    just nixos::{{switch_target}} "{{auth}}"
-    just maintenance::sync-agent
 
-[group("Workflow")]
-apply auth="":
-    @just maintenance::_apply "switch" "{{auth}}"
-
-[group("Workflow")]
-apply-fast auth="" *args="":
-    #!/usr/bin/env bash
-    set -e
-    if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
-        sudo -v
-        while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-        SUDO_PID=$!
-        trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
+    # --rollback short-circuits everything else; no pull, no eval needed
+    if [ "$ROLLBACK" -eq 1 ]; then
+        echo "↩️  Rolling back system to previous generation..."
+        {{LOCK_CMD}} nh os switch --rollback . -- {{OVERRIDES}}
+        exit 0
     fi
-    # Align with CI's last green build before applying. Skips check + cache-coverage
-    # for speed; use `just apply` when you want both safeguards.
+
+    # 1. Align with CI's last green build (fetch + rebase every sub-repo)
     just -f ../justfile jj::pull-all
-    # (No stage step — jj tracks working-copy changes automatically.)
+
+    # 2. Sync sub-flake lockfiles topologically
     just -f ../justfile maintenance::update-local
-    just nixos::switch "{{auth}}" "" {{args}}
+
+    # 3. Eval check + cache coverage (skipped with --fast)
+    if [ "$FAST" -eq 0 ]; then
+        just maintenance::check
+        just maintenance::attic-coverage
+    fi
+
+    # 4. Switch (combine MODE × DEBUG into the right nixos:: target)
+    target="$MODE"
+    [ "$DEBUG" -eq 1 ] && target="$MODE-debug"
+    just nixos::"$target" "$AUTH"
+
+    # 5. Regenerate Antigravity reference docs
     just maintenance::sync-agent
 
+# Convenience aliases — translate to the flag form of `apply`.
 [group("Workflow")]
-apply-boot auth="":
-    @just maintenance::_apply "switch-boot" "{{auth}}"
+apply-fast *args="":
+    @just maintenance::apply --fast {{args}}
+
+[group("Workflow")]
+apply-boot *args="":
+    @just maintenance::apply --boot {{args}}
 
 [group("Updates")]
 sync-agent:
