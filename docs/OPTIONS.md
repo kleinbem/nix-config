@@ -24,7 +24,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.agent-team`
 
 - **Declared:** `nix-presets/containers/agent-team.nix:15`
-- **Sub-options:** `agents`, `autoStart`, `cpuLimit`, `enable`, `hostDataDir`, `ip`, `langfuse.enable`, `langfuse.host`, `langfuse.publicKey`, `langfuse.secretKey`, `litellmUrl`, `manager.humanInTheLoop`, `manager.process`, `memoryLimit`, `secretsFile`
+- **Sub-options:** `agents`, `authorizedKeys`, `autoStart`, `cpuLimit`, `enable`, `hostDataDir`, `ip`, `langfuse.enable`, `langfuse.host`, `langfuse.publicKey`, `langfuse.secretKey`, `litellmUrl`, `manager.humanInTheLoop`, `manager.process`, `memoryLimit`, `secretsFile`
 - **Default-enabled** (no hosts import the declaring file)
 - **Explicit overrides:** `host:container-factory`, `host:nasbook`, `host:nixos-nvme`
 
@@ -192,7 +192,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.openclaw`
 
-- **Declared:** `nix-presets/containers/openclaw.nix:13`
+- **Declared:** `nix-presets/containers/openclaw.nix:14`
 - **Sub-options:** `enable`, `enableAudio`, `enableUSB`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `vllmUrl`
 - **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
 

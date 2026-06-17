@@ -24,9 +24,14 @@ in
 
   config = lib.mkIf cfg.enable {
     systemd = {
-      # Systemd service template for updating a specific container
-      services."update-container@" = {
-        description = "Update Standalone NixOS Container %i";
+      # ----------------------------------------------------------------
+      # Stage: fetch/build the new closure, register as profile, swap
+      # symlink. The running container is NOT touched — it keeps serving
+      # the old closure until activated. Safe to run on attic itself
+      # without disrupting other containers' substituter access.
+      # ----------------------------------------------------------------
+      services."update-container-stage@" = {
+        description = "Stage update for NixOS Container %i (no restart)";
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
 
@@ -40,13 +45,11 @@ in
         scriptArgs = "%i";
         script = ''
           CONTAINER=$1
-          echo "Starting update for container: $CONTAINER"
+          echo "Staging update for container: $CONTAINER"
 
-          # Pull the closure from the factory
           TARGET="${cfg.flakeURI}#nixosConfigurations.container-factory.config.containers.$CONTAINER.path"
 
           echo "Building/Fetching $TARGET..."
-          # --accept-flake-config to allow using binary caches automatically if defined
           STORE_PATH=$(nix build --print-out-paths --no-link --accept-flake-config "$TARGET")
 
           if [ -z "$STORE_PATH" ]; then
@@ -60,24 +63,73 @@ in
           echo "Updating symlink /var/lib/machines/$CONTAINER/current..."
           ln -sfn "/nix/var/nix/profiles/containers/$CONTAINER" "/var/lib/machines/$CONTAINER/current"
 
+          echo "Stage complete for $CONTAINER. Activate with:"
+          echo "  systemctl start update-container-activate@$CONTAINER.service"
+        '';
+
+        serviceConfig = {
+          Type = "oneshot";
+          TimeoutStartSec = "15m";
+        };
+      };
+
+      # ----------------------------------------------------------------
+      # Activate: restart the container so it picks up the staged closure.
+      # ~5-30s downtime per container. Must be run AFTER stage.
+      # ----------------------------------------------------------------
+      services."update-container-activate@" = {
+        description = "Activate staged update for NixOS Container %i (restart)";
+
+        path = with pkgs; [ systemd ];
+
+        scriptArgs = "%i";
+        script = ''
+          CONTAINER=$1
           if machinectl status "$CONTAINER" >/dev/null 2>&1; then
-            echo "Restarting container $CONTAINER to apply updates..."
+            echo "Restarting container $CONTAINER to apply staged update..."
             machinectl restart "$CONTAINER"
           else
             echo "Container $CONTAINER is not currently running. Starting it..."
             systemctl start "container@$CONTAINER"
           fi
-
-          echo "Update for $CONTAINER completed successfully."
+          echo "Activation complete for $CONTAINER."
         '';
 
         serviceConfig = {
           Type = "oneshot";
-          TimeoutStartSec = "15m"; # In case it has to build from source
+          TimeoutStartSec = "5m";
         };
       };
 
-      # Systemd timer to update all registered containers nightly
+      # ----------------------------------------------------------------
+      # Combined stage + activate (backward-compatible entry point).
+      # Equivalent to the original update-container@ behaviour: build,
+      # swap, restart, all in one shot.
+      # ----------------------------------------------------------------
+      services."update-container@" = {
+        description = "Update NixOS Container %i (stage + activate)";
+
+        path = with pkgs; [ systemd ];
+
+        scriptArgs = "%i";
+        script = ''
+          CONTAINER=$1
+          systemctl start --wait "update-container-stage@$CONTAINER.service"
+          systemctl start --wait "update-container-activate@$CONTAINER.service"
+        '';
+
+        serviceConfig = {
+          Type = "oneshot";
+          TimeoutStartSec = "20m";
+        };
+      };
+
+      # ----------------------------------------------------------------
+      # Bulk orchestrator: three-phase update of every registered
+      # container, designed to avoid the attic-eats-itself bootstrap
+      # window. Stage everything in parallel (no restarts → attic keeps
+      # serving). Then activate non-attic in parallel. Then attic last.
+      # ----------------------------------------------------------------
       timers."update-containers" = lib.mkIf (cfg.containers != [ ]) {
         description = "Nightly update of standalone NixOS containers";
         wantedBy = [ "timers.target" ];
@@ -89,15 +141,43 @@ in
       };
 
       services."update-containers" = lib.mkIf (cfg.containers != [ ]) {
-        description = "Trigger updates for all standalone NixOS containers";
+        description = "Smart bulk update of standalone NixOS containers (stage all → activate non-attic → activate attic last)";
+
+        path = with pkgs; [ systemd ];
+
         serviceConfig = {
           Type = "oneshot";
+          TimeoutStartSec = "1h";
         };
+
         script = ''
-          for container in ${lib.concatStringsSep " " cfg.containers}; do
-            echo "Triggering update for $container..."
-            ${pkgs.systemd}/bin/systemctl start update-container@$container.service
+          set -e
+          CONTAINERS="${lib.concatStringsSep " " cfg.containers}"
+
+          echo "=== Phase 1: staging updates for all containers in parallel ==="
+          for c in $CONTAINERS; do
+            echo "  staging $c..."
+            systemctl start --wait "update-container-stage@$c.service" &
           done
+          wait
+          echo "All stages complete."
+
+          echo "=== Phase 2: activating non-attic containers in parallel ==="
+          for c in $CONTAINERS; do
+            if [ "$c" != "attic" ]; then
+              echo "  activating $c..."
+              systemctl start --wait "update-container-activate@$c.service" &
+            fi
+          done
+          wait
+          echo "Non-attic activations complete."
+
+          if echo " $CONTAINERS " | grep -q " attic "; then
+            echo "=== Phase 3: activating attic last ==="
+            systemctl start --wait "update-container-activate@attic.service"
+          fi
+
+          echo "Bulk update complete."
         '';
       };
 
