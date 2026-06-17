@@ -16,6 +16,23 @@ check-hosts *args="--impure":
     @echo "🏗️  Verifying all Host Configurations (Evaluation & Build)..."
     @{{LOCK_CMD}} {{TIMER}} nix flake check . {{OVERRIDES}} {{args}}
 
+# Dry-run the system closure and surface anything not yet in Attic or cache.nixos.org.
+# Informational only — does not block. A non-empty list means `apply` will build locally.
+[group("Linter")]
+attic-coverage:
+    #!/usr/bin/env bash
+    set -e
+    echo "🔍 Probing cache coverage for nixos-nvme closure..."
+    output=$({{LOCK_CMD}} nix build --no-link --dry-run .#nixosConfigurations.nixos-nvme.config.system.build.toplevel {{OVERRIDES}} --impure 2>&1) || true
+    if echo "$output" | grep -qE "will be built"; then
+        echo "⚠️  These derivations would build locally (not in any cache):"
+        echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
+        echo ""
+        echo "   Tip: commit + push so CI builds them → pulls into Attic → just jj::pull-all && just apply"
+    else
+        echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
+    fi
+
 [private]
 _apply switch_target auth="":
     #!/usr/bin/env bash
@@ -26,10 +43,13 @@ _apply switch_target auth="":
         SUDO_PID=$!
         trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
     fi
-    # Meta-workspace concerns: invoke from the parent justfile.
+    # Align with CI's last green build: fetch + rebase every sub-repo onto origin/main
+    # so the closure we're about to evaluate matches what CI just pushed to Attic.
+    just -f ../justfile jj::pull-all
     # (No stage step — jj tracks working-copy changes automatically.)
     just -f ../justfile maintenance::update-local
     just maintenance::check
+    just maintenance::attic-coverage
     just nixos::{{switch_target}} "{{auth}}"
     just maintenance::sync-agent
 
@@ -47,6 +67,9 @@ apply-fast auth="" *args="":
         SUDO_PID=$!
         trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
     fi
+    # Align with CI's last green build before applying. Skips check + cache-coverage
+    # for speed; use `just apply` when you want both safeguards.
+    just -f ../justfile jj::pull-all
     # (No stage step — jj tracks working-copy changes automatically.)
     just -f ../justfile maintenance::update-local
     just nixos::switch "{{auth}}" "" {{args}}
