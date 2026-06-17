@@ -129,14 +129,6 @@ apply *flags="":
     # 5. Regenerate Antigravity reference docs
     just maintenance::sync-agent
 
-# Convenience aliases — translate to the flag form of `apply`.
-[group("Workflow")]
-apply-fast *args="":
-    @just maintenance::apply --fast {{args}}
-
-[group("Workflow")]
-apply-boot *args="":
-    @just maintenance::apply --boot {{args}}
 
 [group("Updates")]
 sync-agent:

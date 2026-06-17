@@ -20,6 +20,3 @@ mod system  '.just/system.just'
 default:
     @just --list --justfile ~/.justfile
 
-# `os rebuild` — top-level shortcut for the most-frequent operation.
-rebuild:
-    @just system::rebuild

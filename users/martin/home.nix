@@ -92,10 +92,10 @@ in
     home-manager.enable = true;
 
     # Inject hardware-protected signing keys from centralized proxy
-    git.settings.user.signingKey = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouch.pub";
+    git.settings.user.signingKey = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.pub";
     # jj's ssh backend wants a public-key file path; the `key::<blob>` form
     # is git-specific and silently breaks signing in jj.
-    jujutsu.settings.signing.key = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouch.pub";
+    jujutsu.settings.signing.key = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.pub";
 
     # SSH multiplexing for github.com — first touch-required FIDO op opens a
     # master connection; subsequent SSH ops within ControlPersist reuse it

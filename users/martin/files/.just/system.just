@@ -2,14 +2,6 @@
 
 FLAKE_PATH := "~/Develop/github.com/kleinbem/nix/nix-config"
 
-# Rebuild + activate the system configuration.
-rebuild:
-    nh os switch --ask --diff always {{FLAKE_PATH}}
-
-# Smart rebuild — checks build count first to skip no-op rebuilds.
-rebuild-smart:
-    {{FLAKE_PATH}}/scripts/smart-switch.sh {{FLAKE_PATH}}
-
 # Roll back to the previous system generation.
 rollback:
     nh os switch --rollback {{FLAKE_PATH}}
