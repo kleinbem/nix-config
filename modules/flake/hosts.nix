@@ -58,20 +58,8 @@ in
       core-pi = mkHost "core-pi" {
         modules = [ ../../hosts/core-pi/default.nix ];
       };
-      core-pi-cross = mkHost "core-pi" {
-        modules = [
-          ../../hosts/core-pi/default.nix
-          { nixpkgs.buildPlatform = "x86_64-linux"; }
-        ];
-      };
       hass-pi = mkHost "hass-pi" {
         modules = [ ../../hosts/hass-pi/default.nix ];
-      };
-      hass-pi-cross = mkHost "hass-pi" {
-        modules = [
-          ../../hosts/hass-pi/default.nix
-          { nixpkgs.buildPlatform = "x86_64-linux"; }
-        ];
       };
       nasbook = mkHost "nasbook" {
         modules = [ ../../hosts/nasbook/default.nix ];
