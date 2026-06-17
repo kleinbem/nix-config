@@ -60,6 +60,12 @@ in
           echo "Registering $CONTAINER as a Nix profile (GC safe)..."
           nix-env --profile "/nix/var/nix/profiles/containers/$CONTAINER" --set "$STORE_PATH"
 
+          # Defensive: /var/lib/machines/<name>/ is normally created by the NixOS
+          # containers module when my.containers.<name>.enable = true on this host.
+          # Create it ourselves if missing so a one-off update for a never-deployed
+          # container doesn't fail at the symlink swap.
+          mkdir -p "/var/lib/machines/$CONTAINER"
+
           echo "Updating symlink /var/lib/machines/$CONTAINER/current..."
           ln -sfn "/nix/var/nix/profiles/containers/$CONTAINER" "/var/lib/machines/$CONTAINER/current"
 

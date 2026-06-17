@@ -10,24 +10,19 @@
     services = {
       container-updater = {
         enable = true;
-        containers = [
-          "n8n"
-          "code-server"
-          "open-webui"
-          "qdrant"
-          "loki"
-          "openclaw"
-          "attic"
-          "authelia"
-          "github-runner"
-          "ollama"
-          "paperless"
-          "backup"
-          "syncthing"
-          "cups"
-          "crowdsec"
-          "dashboard"
-        ];
+        # Auto-derive from actually-enabled containers (specialisations included),
+        # minus an explicit exclude list. Avoids cron-time failures for containers
+        # that aren't deployed on this host.
+        containers =
+          let
+            excludeFromUpdater = [
+              "caddy" # reverse proxy — restart briefly kills every other container's traffic
+            ];
+            allEnabled = lib.attrNames (
+              lib.filterAttrs (_: v: v.enable or false) config.my.containers
+            );
+          in
+          lib.subtractLists excludeFromUpdater allEnabled;
       };
       printing.enable = false; # Handled by the cups container
     };
