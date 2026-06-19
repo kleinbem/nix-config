@@ -91,7 +91,9 @@
         disable-user-extensions = false;
         enabled-extensions = [
           "blur-my-shell@aunetx"
-          "dash-to-dock@micxgx.gmail.com"
+          "dash-to-panel@jderose9.github.com"
+          "arcmenu@arcmenu.com"
+          "ding@rastersoft.com"
           "appindicatorsupport@rgcjonas.gmail.com"
           "just-perfection-desktop@just-perfection"
           "Vitals@corecoding.com"
@@ -127,12 +129,10 @@
         sigma = 30;
       };
 
-      "org/gnome/shell/extensions/blur-my-shell/dash-to-dock" = {
+      "org/gnome/shell/extensions/blur-my-shell/dash-to-panel" = {
         blur = true;
         brightness = 0.6;
         sigma = 30;
-        static-blur = true;
-        style-dash-to-dock = 0;
       };
 
       "org/gnome/shell/extensions/blur-my-shell/panel" = {
@@ -141,21 +141,27 @@
         corner-radius = 0;
       };
 
-      "org/gnome/shell/extensions/dash-to-dock" = {
-        dash-max-icon-size = 42;
-        dock-position = "BOTTOM";
-        extend-height = false;
-        dock-fixed = false;
-        autohide = true;
-        intellihide = true;
-        intellihide-mode = "FOCUS_APPLICATION_WINDOWS";
-        require-pressure-to-show = true;
-        pressure-threshold = 50.0;
-        show-apps-at-top = true;
-        click-action = "minimize-or-previews";
-        scroll-action = "cycle-windows";
-        show-mounts = false;
-        custom-theme-shrink = true;
+      "org/gnome/shell/extensions/dash-to-panel" = {
+        panel-position = "BOTTOM";
+        appicon-margin = 4;
+        appicon-padding = 4;
+        dot-position = "BOTTOM";
+        show-apps-icon-file = "";
+        trans-use-dynamic-opacity = true;
+        leftbox-padding = -1;
+        tray-padding = -1;
+        window-preview-title-position = "TOP";
+      };
+
+      "org/gnome/shell/extensions/arcmenu" = {
+        menu-layout = "Windows";
+        position-in-panel = "Left";
+      };
+
+      "org/gnome/shell/extensions/ding" = {
+        show-home = true;
+        show-trash = true;
+        icon-size = "small";
       };
 
       "org/gnome/shell/extensions/just-perfection" = {

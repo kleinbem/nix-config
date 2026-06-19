@@ -72,7 +72,9 @@ in
 
         # Premium Extensions for GNOME 50
         gnomeExtensions.blur-my-shell
-        gnomeExtensions.dash-to-dock
+        gnomeExtensions.dash-to-panel
+        gnomeExtensions.arcmenu
+        gnomeExtensions.desktop-icons-ng-ding
         gnomeExtensions.appindicator
         gnomeExtensions.just-perfection
         gnomeExtensions.vitals
