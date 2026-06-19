@@ -132,6 +132,14 @@
       inputs.home-manager.follows = "home-manager";
     };
 
+    claude-for-linux = {
+      url = "github:heytcass/claude-for-linux";
+    };
+
+    claude-cowork-nix = {
+      url = "github:Reginleif88/claude-cowork-nix";
+    };
+
   };
 
   outputs =

@@ -45,6 +45,7 @@
     inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.backup
     inputs.nix-presets.nixosModules.paperless
+    inputs.nix-presets.nixosModules.claude
 
     "${self}/modules/nixos/services/github-runner.nix"
     "${self}/modules/nixos/services/cloudflare-tunnel.nix"
@@ -93,6 +94,7 @@
     monitoring.node.enable = true;
     services.tang.enable = true;
     desktop.gnome.enable = true;
+    desktop.claude.enable = true;
     virtualisation = {
       enable = true;
       libvirtd.enable = true; # workstation needs virt-manager + KVM
