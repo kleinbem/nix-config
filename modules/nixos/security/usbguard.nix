@@ -28,6 +28,8 @@ _: {
       allow id 0bda:0153
       # ESS Technology USB DAC (Audio)
       allow id 0495:3048
+      # Trust all GN Audio / Jabra devices (Speak 710, Link 370 dongle, headsets, …)
+      allow id 0b0e:*
       # USB 2.0 Hub
       allow id 05e3:0610
       # Terminus Technology Hubs (Nested in VIA units)

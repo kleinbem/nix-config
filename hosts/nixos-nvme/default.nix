@@ -95,6 +95,7 @@
     services.tang.enable = true;
     desktop.gnome.enable = true;
     desktop.claude.enable = true;
+    audio.jabra.preferred.enable = true;
     virtualisation = {
       enable = true;
       libvirtd.enable = true; # workstation needs virt-manager + KVM
