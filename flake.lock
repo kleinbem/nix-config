@@ -6161,10 +6161,11 @@
         "treefmt-nix": "treefmt-nix_15"
       },
       "locked": {
-        "lastModified": 1781895542,
-        "narHash": "sha256-29d4z0sa7EmbzZhfA6KIziIivlujxxndewnDg6HUVwk=",
-        "rev": "685606015118e5754dfd31747b678d6a5057c2a4",
-        "revCount": 227,
+        "lastModified": 1781912751,
+        "narHash": "sha256-WwtZdr4ypXttL6UQQtC3JnZfeHEEn+MZjapHg2cRGRA=",
+        "ref": "refs/heads/main",
+        "rev": "54e7ceb36aaed84c489052c0ad0b426af4a556e2",
+        "revCount": 228,
         "type": "git",
         "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
       },
@@ -6179,6 +6180,7 @@
       "locked": {
         "lastModified": 1781614461,
         "narHash": "sha256-VA/LPJdLyZW8f5OZXrfGEji8E58bl+X0hX3NJJ9kY34=",
+        "ref": "refs/heads/main",
         "rev": "41fc0ec69553a86b4110b05e84dbe60b554a2811",
         "revCount": 32,
         "type": "git",
