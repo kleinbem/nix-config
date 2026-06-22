@@ -13,12 +13,19 @@
       # ---------------------------------------------------------
       formatter = inputs.nix-devshells.formatter.${system};
 
-      devShells.default = inputs.nix-devshells.devShells.${system}.default.overrideAttrs (old: {
-        shellHook = ''
-          ${old.shellHook or ""}
-          ${config.checks.pre-commit-check.shellHook}
-        '';
-      });
+      # Gated to x86 only: the override creates a unique derivation hash, so
+      # aarch64 misses the cache and forces source compilation of the devenv
+      # Rust dependency chain (aws-lc-sys etc.) — either OOMs or hits a known
+      # aarch64 build bug. Our ARM hosts (orin-nano, core-pi, …) are servers
+      # without dev shells anyway, so the loss is purely cosmetic.
+      devShells = lib.optionalAttrs (system == "x86_64-linux") {
+        default = inputs.nix-devshells.devShells.${system}.default.overrideAttrs (old: {
+          shellHook = ''
+            ${old.shellHook or ""}
+            ${config.checks.pre-commit-check.shellHook}
+          '';
+        });
+      };
 
       # ---------------------------------------------------------
       # 3. Topology (Auto-generated network diagrams)
