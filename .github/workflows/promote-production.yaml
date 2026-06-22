@@ -1,0 +1,89 @@
+name: "Promote → production"
+
+# Pull-based fleet deploy: hosts run my.deploy.autoUpgrade which polls the
+# `production` git tag. This workflow advances that tag to the current main
+# SHA after a successful build-all, gating deploys behind CI green.
+#
+# Triggers:
+# - workflow_run: automatic on successful Build & Cache All (Fast)
+# - workflow_dispatch: manual override (e.g. promote without waiting)
+#
+# A failed build-all does NOT advance the tag — hosts keep running the last
+# known-good revision until the next green run.
+
+on:
+  workflow_run:
+    workflows: ["Build & Cache All (Fast)"]
+    branches: [main]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Override SHA to promote (default: latest main)"
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    name: "Move production tag → main"
+    runs-on: ubuntu-latest
+    # workflow_run fires regardless of conclusion; gate to success only.
+    # workflow_dispatch always runs.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Determine target SHA
+        id: target
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.sha }}" ]; then
+            SHA="${{ inputs.sha }}"
+            echo "Using dispatch-input SHA: $SHA"
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "Using build-all head SHA: $SHA"
+          else
+            SHA=$(gh api repos/${{ github.repository }}/git/refs/heads/main --jq '.object.sha')
+            echo "Using current main SHA: $SHA"
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Move production tag
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          SHA="${{ steps.target.outputs.sha }}"
+          # PATCH the tag ref. Force-move (PATCH with force=true) so we can
+          # advance even when the new SHA isn't a fast-forward descendant —
+          # rare, but happens after a force-push to main or a hotfix branch.
+          gh api -X PATCH \
+            "repos/${{ github.repository }}/git/refs/tags/production" \
+            -f sha="$SHA" \
+            -F force=true
+          echo "✅ production → $SHA"
+          {
+            echo "## 🚀 Promoted to production"
+            echo ""
+            echo "- **SHA**: \`$SHA\`"
+            echo "- **Trigger**: ${{ github.event_name }}"
+            echo ""
+            echo "Hosts running \`my.deploy.autoUpgrade\` will pick this up on their next cycle (default 04:00 ±30min)."
+          } >> "$GITHUB_STEP_SUMMARY"
