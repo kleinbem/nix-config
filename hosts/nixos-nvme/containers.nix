@@ -18,9 +18,7 @@
             excludeFromUpdater = [
               "caddy" # reverse proxy — restart briefly kills every other container's traffic
             ];
-            allEnabled = lib.attrNames (
-              lib.filterAttrs (_: v: v.enable or false) config.my.containers
-            );
+            allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
           in
           lib.subtractLists excludeFromUpdater allEnabled;
       };

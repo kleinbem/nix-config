@@ -17,7 +17,10 @@
 #   # Public-only:
 #   import ./lib/personas.nix { inherit lib; }
 
-{ lib, contact ? { } }:
+{
+  lib,
+  contact ? { },
+}:
 let
   publicData = import ../personas.nix;
   state = import ../personas-state.nix;
@@ -42,13 +45,16 @@ let
   defaultContact = lib.genAttrs contactFields (_: redacted);
 
   # Joined view: persona = public ⊕ contact ⊕ state.
-  all = lib.mapAttrs
-    (name: pub:
-      let
-        c = contact.${name} or defaultContact;
-      in
-      pub // c // {
-        state = state.${name} or {
+  all = lib.mapAttrs (
+    name: pub:
+    let
+      c = contact.${name} or defaultContact;
+    in
+    pub
+    // c
+    // {
+      state =
+        state.${name} or {
           status = "active";
           status-since = pub.date-joined or "1970-01-01";
           status-note = "(state file missing entry; treating as active)";
@@ -56,53 +62,86 @@ let
           leave-type = null;
           backup = null;
         };
-      })
-    publicData;
+    }
+  ) publicData;
 
   # `true` when called with real contact data; `false` when public-only.
   contactAvailable = contact != { };
 
   # --- Queries ---
 
-  author = name:
-    let p = all.${name}; in
-    if contactAvailable
-    then "${p.full-name} <${p.email}>"
-    else throw "lib/personas.nix: author() requires contact data — pass `contact = import inputs.nix-secrets + \"/personas-contact.nix\"`";
+  author =
+    name:
+    let
+      p = all.${name};
+    in
+    if contactAvailable then
+      "${p.full-name} <${p.email}>"
+    else
+      throw "lib/personas.nix: author() requires contact data — pass `contact = import inputs.nix-secrets + \"/personas-contact.nix\"`";
 
-  byTag = tag:
-    lib.filterAttrs (_: p: lib.elem tag (p.role-tags or [ ])) publicData;
+  byTag = tag: lib.filterAttrs (_: p: lib.elem tag (p.role-tags or [ ])) publicData;
 
-  byKind = wantedKind:
-    lib.filterAttrs (_: p: p.kind == wantedKind) publicData;
+  byKind = wantedKind: lib.filterAttrs (_: p: p.kind == wantedKind) publicData;
 
   humans = byKind "human";
   agents = byKind "agent";
 
-  byStatus = wantedStatus:
-    lib.filterAttrs (_: p: p.state.status == wantedStatus) all;
+  byStatus = wantedStatus: lib.filterAttrs (_: p: p.state.status == wantedStatus) all;
 
   active = byStatus "active";
   onLeave = byStatus "on-leave";
   retired = byStatus "retired";
   probation = byStatus "probation";
 
-  reachable = lib.filterAttrs
-    (_: p: lib.elem p.state.status [ "active" "probation" ])
-    all;
+  reachable = lib.filterAttrs (
+    _: p:
+    lib.elem p.state.status [
+      "active"
+      "probation"
+    ]
+  ) all;
 
   # --- Lifecycle transitions ---
 
-  validStatuses = [ "active" "probation" "on-leave" "retired" "purged" ];
-  validKinds = [ "human" "agent" ];
-  validLeaveTypes = [ "vacation" "sick" "parental" "sabbatical" "bereavement" "jury-duty" ];
+  validStatuses = [
+    "active"
+    "probation"
+    "on-leave"
+    "retired"
+    "purged"
+  ];
+  validKinds = [
+    "human"
+    "agent"
+  ];
+  validLeaveTypes = [
+    "vacation"
+    "sick"
+    "parental"
+    "sabbatical"
+    "bereavement"
+    "jury-duty"
+  ];
 
-  canTransition = from: to:
+  canTransition =
+    from: to:
     let
       table = {
-        active = [ "probation" "on-leave" "retired" ];
-        probation = [ "active" "on-leave" "retired" ];
-        on-leave = [ "active" "retired" ];
+        active = [
+          "probation"
+          "on-leave"
+          "retired"
+        ];
+        probation = [
+          "active"
+          "on-leave"
+          "retired"
+        ];
+        on-leave = [
+          "active"
+          "retired"
+        ];
         retired = [ "purged" ];
         purged = [ ];
       };
@@ -113,20 +152,24 @@ let
 
   # Render `~/.ssh/allowed_signers` from manifest + a pubkey map.
   # Personas with status retired/purged are excluded.
-  allowedSigners = personaPubkeys:
+  allowedSigners =
+    personaPubkeys:
     let
-      eligible = lib.filterAttrs
-        (_: p: !(lib.elem p.state.status [ "retired" "purged" ]))
-        all;
-      lines = lib.mapAttrsToList
-        (name: p:
-          let
-            key = personaPubkeys.${name} or null;
-            id = if contactAvailable then p.email else "${name}@local";
-          in
-          lib.optionalString (key != null && key != "") "${id} ${key}"
-        )
-        eligible;
+      eligible = lib.filterAttrs (
+        _: p:
+        !(lib.elem p.state.status [
+          "retired"
+          "purged"
+        ])
+      ) all;
+      lines = lib.mapAttrsToList (
+        name: p:
+        let
+          key = personaPubkeys.${name} or null;
+          id = if contactAvailable then p.email else "${name}@local";
+        in
+        lib.optionalString (key != null && key != "") "${id} ${key}"
+      ) eligible;
     in
     lib.concatStringsSep "\n" (lib.filter (s: s != "") lines) + "\n";
 
@@ -153,23 +196,27 @@ let
 
   assertComplete =
     let
-      checkPublic = name: p:
+      checkPublic =
+        name: p:
         let
           missing = lib.filter (k: !(p ? ${k})) requiredPublicFields;
           kindOk = lib.elem p.kind validKinds;
         in
-        lib.assertMsg (missing == [ ])
-          "persona '${name}' missing public field(s): ${lib.concatStringsSep ", " missing}"
-        && lib.assertMsg kindOk
-          "persona '${name}' has invalid kind: ${p.kind}";
-      checkState = name: p:
+        lib.assertMsg (
+          missing == [ ]
+        ) "persona '${name}' missing public field(s): ${lib.concatStringsSep ", " missing}"
+        && lib.assertMsg kindOk "persona '${name}' has invalid kind: ${p.kind}";
+      checkState =
+        name: p:
         let
           s = p.state;
           missing = lib.filter (k: !(s ? ${k})) requiredStateFields;
           statusOk = lib.elem s.status validStatuses;
           leaveOk = s.status != "on-leave" || lib.elem (s.leave-type or "") validLeaveTypes;
         in
-        lib.assertMsg (missing == [ ]) "persona '${name}' missing state field(s): ${lib.concatStringsSep ", " missing}"
+        lib.assertMsg (
+          missing == [ ]
+        ) "persona '${name}' missing state field(s): ${lib.concatStringsSep ", " missing}"
         && lib.assertMsg statusOk "persona '${name}' has invalid status: ${s.status}"
         && lib.assertMsg leaveOk "persona '${name}' status=on-leave requires valid leave-type";
     in
@@ -177,7 +224,8 @@ let
 
   # --- Uniqueness assertions ---
 
-  _findDuplicates = field: src:
+  _findDuplicates =
+    field: src:
     let
       values = lib.mapAttrsToList (_: p: p.${field} or null) src;
       nonNull = lib.filter (v: v != null) values;
@@ -187,50 +235,72 @@ let
 
   # signing-key uniqueness is checkable on public data alone
   assertUniqueSigningKeys =
-    let dups = _findDuplicates "signing-key" publicData; in
-    lib.assertMsg (dups == [ ])
-      "duplicate signing-key file(s) in personas.nix: ${lib.concatStringsSep ", " dups}";
+    let
+      dups = _findDuplicates "signing-key" publicData;
+    in
+    lib.assertMsg (
+      dups == [ ]
+    ) "duplicate signing-key file(s) in personas.nix: ${lib.concatStringsSep ", " dups}";
 
   # email/matrix-id uniqueness only checkable when contact data is loaded
   assertUniqueEmails =
-    if !contactAvailable then true else
-    let dups = _findDuplicates "email" contact; in
-    lib.assertMsg (dups == [ ])
-      "duplicate email(s) in personas-contact.nix: ${lib.concatStringsSep ", " dups}";
+    if !contactAvailable then
+      true
+    else
+      let
+        dups = _findDuplicates "email" contact;
+      in
+      lib.assertMsg (
+        dups == [ ]
+      ) "duplicate email(s) in personas-contact.nix: ${lib.concatStringsSep ", " dups}";
 
   assertUniqueMatrixIds =
-    if !contactAvailable then true else
-    let dups = _findDuplicates "matrix-id" contact; in
-    lib.assertMsg (dups == [ ])
-      "duplicate matrix-id(s) in personas-contact.nix: ${lib.concatStringsSep ", " dups}";
+    if !contactAvailable then
+      true
+    else
+      let
+        dups = _findDuplicates "matrix-id" contact;
+      in
+      lib.assertMsg (
+        dups == [ ]
+      ) "duplicate matrix-id(s) in personas-contact.nix: ${lib.concatStringsSep ", " dups}";
 
   assertValid =
-    assertComplete
-    && assertUniqueSigningKeys
-    && assertUniqueEmails
-    && assertUniqueMatrixIds;
+    assertComplete && assertUniqueSigningKeys && assertUniqueEmails && assertUniqueMatrixIds;
 
   # --- Rendered views ---
 
   teamMarkdown =
     let
-      statusBadge = s: {
-        active = "🟢 active";
-        probation = "🟡 probation";
-        on-leave = "🌴 on leave";
-        retired = "⚪ retired";
-        purged = "❌ purged";
-      }.${s} or s;
-      kindBadge = k: {
-        human = "👤 human";
-        agent = "🤖 agent";
-      }.${k} or k;
-      leaveDetail = s:
-        if s.status != "on-leave" then "" else
-          " — ${s.leave-type or "?"}"
-          + (if s.return-date != null then " (back ${s.return-date})" else "");
-      renderPersona = name: p:
-        let s = p.state; in ''
+      statusBadge =
+        s:
+        {
+          active = "🟢 active";
+          probation = "🟡 probation";
+          on-leave = "🌴 on leave";
+          retired = "⚪ retired";
+          purged = "❌ purged";
+        }
+        .${s} or s;
+      kindBadge =
+        k:
+        {
+          human = "👤 human";
+          agent = "🤖 agent";
+        }
+        .${k} or k;
+      leaveDetail =
+        s:
+        if s.status != "on-leave" then
+          ""
+        else
+          " — ${s.leave-type or "?"}" + (if s.return-date != null then " (back ${s.return-date})" else "");
+      renderPersona =
+        _name: p:
+        let
+          s = p.state;
+        in
+        ''
           ### ${p.full-name}
 
           | | |
@@ -260,7 +330,12 @@ let
       _Auto-generated from `nix-config/personas.nix` + private contact data + lifecycle state._
       _Regenerate with `just personas::team`._
 
-      ${if contactAvailable then "" else "**Note**: private contact data not loaded — names/emails show as `(private)`.\n\n"}
+      ${
+        if contactAvailable then
+          ""
+        else
+          "**Note**: private contact data not loaded — names/emails show as `(private)`.\n\n"
+      }
       ${lib.concatStrings (lib.mapAttrsToList renderPersona all)}
     '';
 in

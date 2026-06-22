@@ -7,94 +7,95 @@
 let
   cfg = config.my.audio;
 
-  jabraButtonsScript = pkgs.writers.writePython3Bin "jabra-buttons"
-    {
-      libraries = [ pkgs.python3Packages.evdev ];
-      flakeIgnore = [ "E501" ];
-    }
-    ''
-      """Dispatch Jabra HID button events to system actions.
-
-      Listens on every input device whose USB vendor id is 0x0b0e (GN Audio /
-      Jabra). Volume +/- and the dedicated Mute button are already wired up
-      by the kernel + desktop environment; this script handles the otherwise-
-      idle HID Telephony buttons (hook switch / Phone Mute / Smart).
-
-      Discover unmapped keys live with:
-          journalctl --user -u jabra-buttons -f
-      """
-      import os
-      import selectors
-      import subprocess
-      import time
-
-      import evdev
-      from evdev import ecodes
-
-      JABRA_VENDOR = 0x0b0e
-      WPCTL = "${pkgs.wireplumber}/bin/wpctl"
-
-
-      def run(cmd):
-          if cmd:
-              subprocess.Popen(cmd, shell=True)
-
-
-      def toggle_mic_mute():
-          run(f"{WPCTL} set-mute @DEFAULT_AUDIO_SOURCE@ toggle")
-
-
-      def smart_button():
-          run(os.environ.get("JABRA_SMART_BUTTON_CMD", ""))
-
-
-      ACTIONS = {
-          ecodes.KEY_PHONE: toggle_mic_mute,        # HID Telephony hook switch
-          ecodes.KEY_MICMUTE: toggle_mic_mute,      # HID Telephony Phone Mute
-          ecodes.KEY_VOICECOMMAND: smart_button,
-          ecodes.KEY_PROG1: smart_button,
+  jabraButtonsScript =
+    pkgs.writers.writePython3Bin "jabra-buttons"
+      {
+        libraries = [ pkgs.python3Packages.evdev ];
+        flakeIgnore = [ "E501" ];
       }
+      ''
+        """Dispatch Jabra HID button events to system actions.
+
+        Listens on every input device whose USB vendor id is 0x0b0e (GN Audio /
+        Jabra). Volume +/- and the dedicated Mute button are already wired up
+        by the kernel + desktop environment; this script handles the otherwise-
+        idle HID Telephony buttons (hook switch / Phone Mute / Smart).
+
+        Discover unmapped keys live with:
+            journalctl --user -u jabra-buttons -f
+        """
+        import os
+        import selectors
+        import subprocess
+        import time
+
+        import evdev
+        from evdev import ecodes
+
+        JABRA_VENDOR = 0x0b0e
+        WPCTL = "${pkgs.wireplumber}/bin/wpctl"
 
 
-      def find_devices():
-          out = []
-          for path in evdev.list_devices():
-              try:
-                  d = evdev.InputDevice(path)
-              except (OSError, PermissionError):
-                  continue
-              if d.info.vendor == JABRA_VENDOR:
-                  out.append(d)
-          return out
+        def run(cmd):
+            if cmd:
+                subprocess.Popen(cmd, shell=True)
 
 
-      def loop():
-          while True:
-              devices = find_devices()
-              if not devices:
-                  time.sleep(2)
-                  continue
-              sel = selectors.DefaultSelector()
-              for d in devices:
-                  sel.register(d.fd, selectors.EVENT_READ, d)
-              try:
-                  while True:
-                      for key, _ in sel.select(timeout=10.0):
-                          for ev in key.data.read():
-                              if ev.type == ecodes.EV_KEY and ev.value == 1:
-                                  name = ecodes.keys.get(ev.code, str(ev.code))
-                                  print(f"jabra key: {name}", flush=True)
-                                  act = ACTIONS.get(ev.code)
-                                  if act:
-                                      act()
-              except OSError:
-                  # Device unplugged; rediscover after a brief pause.
-                  time.sleep(1)
+        def toggle_mic_mute():
+            run(f"{WPCTL} set-mute @DEFAULT_AUDIO_SOURCE@ toggle")
 
 
-      if __name__ == "__main__":
-          loop()
-    '';
+        def smart_button():
+            run(os.environ.get("JABRA_SMART_BUTTON_CMD", ""))
+
+
+        ACTIONS = {
+            ecodes.KEY_PHONE: toggle_mic_mute,        # HID Telephony hook switch
+            ecodes.KEY_MICMUTE: toggle_mic_mute,      # HID Telephony Phone Mute
+            ecodes.KEY_VOICECOMMAND: smart_button,
+            ecodes.KEY_PROG1: smart_button,
+        }
+
+
+        def find_devices():
+            out = []
+            for path in evdev.list_devices():
+                try:
+                    d = evdev.InputDevice(path)
+                except (OSError, PermissionError):
+                    continue
+                if d.info.vendor == JABRA_VENDOR:
+                    out.append(d)
+            return out
+
+
+        def loop():
+            while True:
+                devices = find_devices()
+                if not devices:
+                    time.sleep(2)
+                    continue
+                sel = selectors.DefaultSelector()
+                for d in devices:
+                    sel.register(d.fd, selectors.EVENT_READ, d)
+                try:
+                    while True:
+                        for key, _ in sel.select(timeout=10.0):
+                            for ev in key.data.read():
+                                if ev.type == ecodes.EV_KEY and ev.value == 1:
+                                    name = ecodes.keys.get(ev.code, str(ev.code))
+                                    print(f"jabra key: {name}", flush=True)
+                                    act = ACTIONS.get(ev.code)
+                                    if act:
+                                        act()
+                except OSError:
+                    # Device unplugged; rediscover after a brief pause.
+                    time.sleep(1)
+
+
+        if __name__ == "__main__":
+            loop()
+      '';
 in
 {
   options.my.audio = {

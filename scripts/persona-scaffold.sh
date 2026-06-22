@@ -61,7 +61,7 @@ fi
 PUBKEY=$(cat "${KEY_PATH}.pub")
 
 # --- 3. Sops-encrypt the private key (if not already encrypted) ---
-if [[ -f "$KEY_PATH" ]] && ! grep -q '"sops":' "$KEY_PATH" 2>/dev/null; then
+if [[ -f $KEY_PATH ]] && ! grep -q '"sops":' "$KEY_PATH" 2>/dev/null; then
   if head -1 "$KEY_PATH" | grep -q -- '-----BEGIN'; then
     echo "  🔐 Encrypting private key with sops..."
     (cd "$SECRETS_REPO" && sops --encrypt --in-place "personas/$NAME/id_ed25519")
@@ -81,7 +81,7 @@ fi
 if command -v gh &>/dev/null && gh auth status &>/dev/null; then
   # Check if a key with this title already exists (idempotency)
   EXISTING=$(gh api /user/ssh_signing_keys --jq ".[] | select(.title == \"$PERSONA_EMAIL signing\") | .id" 2>/dev/null || true)
-  if [[ -n "$EXISTING" ]]; then
+  if [[ -n $EXISTING ]]; then
     echo "  ✓ GitHub already has signing key '$PERSONA_EMAIL signing'"
   else
     echo "  📤 Uploading pubkey to GitHub as signing key..."
@@ -96,11 +96,11 @@ fi
 
 # --- 6. Generate mailbox password (if not already in sops) ---
 MAILBOX_PASS_FILE="$PERSONA_SECRETS_DIR/mailbox-password"
-if [[ -f "$MAILBOX_PASS_FILE" ]]; then
+if [[ -f $MAILBOX_PASS_FILE ]]; then
   echo "  ✓ Mailbox password already in sops"
 else
   echo "  🔐 Generating mailbox password..."
-  openssl rand -base64 32 > "$MAILBOX_PASS_FILE"
+  openssl rand -base64 32 >"$MAILBOX_PASS_FILE"
   (cd "$SECRETS_REPO" && sops --encrypt --in-place "personas/$NAME/mailbox-password")
 fi
 
@@ -110,7 +110,7 @@ if systemctl is-active --quiet container@stalwart.service 2>/dev/null; then
   # The mailbox password isn't passed inline (it's set via the API after
   # decryption inside the container); this just ensures the account exists.
   sudo machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli \
-    account create "$PERSONA_EMAIL" "$PERSONA_FULLNAME" 2>/dev/null || \
+    account create "$PERSONA_EMAIL" "$PERSONA_FULLNAME" 2>/dev/null ||
     echo "    (mailbox may already exist — ignore if so)"
 else
   echo "  ℹ️  Stalwart not running — mailbox creation deferred."

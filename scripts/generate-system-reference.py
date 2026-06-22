@@ -43,15 +43,30 @@ def run_cmd(args: list[str], cwd: Path | None = None) -> str | None:
             timeout=30,
         )
         return result.stdout.strip()
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ):
         return None
 
 
 def load_inventory(nix_config: Path) -> dict[str, Any]:
     """Read inventory.nix's hosts + network.nodes as JSON."""
     out: dict[str, Any] = {"hosts": {}, "services": {}}
-    h = run_cmd(["nix", "eval", "--json", "--file", str(nix_config / "inventory.nix"), "hosts"])
-    s = run_cmd(["nix", "eval", "--json", "--file", str(nix_config / "inventory.nix"), "network.nodes"])
+    h = run_cmd(
+        ["nix", "eval", "--json", "--file", str(nix_config / "inventory.nix"), "hosts"]
+    )
+    s = run_cmd(
+        [
+            "nix",
+            "eval",
+            "--json",
+            "--file",
+            str(nix_config / "inventory.nix"),
+            "network.nodes",
+        ]
+    )
     if h:
         out["hosts"] = json.loads(h)
     if s:
@@ -70,7 +85,17 @@ def load_closure_pins(meta: Path) -> dict[str, str]:
         return {}
     nodes = data.get("nodes", {})
     pins: dict[str, str] = {}
-    for name in ("nixpkgs", "home-manager", "sops-nix", "devenv", "nix-config", "nix-packages", "nix-hardware", "nix-presets", "nix-devshells"):
+    for name in (
+        "nixpkgs",
+        "home-manager",
+        "sops-nix",
+        "devenv",
+        "nix-config",
+        "nix-packages",
+        "nix-hardware",
+        "nix-presets",
+        "nix-devshells",
+    ):
         n = nodes.get(name, {})
         rev = n.get("locked", {}).get("rev")
         if rev:
@@ -124,7 +149,10 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
                         current_container = m.group(1)
                         continue
                     # name.enable = true|false
-                    m = re.match(r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)", line)
+                    m = re.match(
+                        r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)",
+                        line,
+                    )
                     if m:
                         host_state[m.group(1)] = m.group(3) == "true"
                         continue
@@ -192,14 +220,23 @@ def ci_status(meta: Path) -> dict[str, dict[str, str]]:
     for wf in sorted(wf_dir.glob("*.yaml")):
         if wf.name.startswith("_"):
             continue
-        raw = run_cmd([
-            "gh", "run", "list",
-            "--repo", "kleinbem/nix",
-            "--workflow", wf.name,
-            "--branch", "main",
-            "--limit", "1",
-            "--json", "conclusion,status,headSha,displayTitle",
-        ])
+        raw = run_cmd(
+            [
+                "gh",
+                "run",
+                "list",
+                "--repo",
+                "kleinbem/nix",
+                "--workflow",
+                wf.name,
+                "--branch",
+                "main",
+                "--limit",
+                "1",
+                "--json",
+                "conclusion,status,headSha,displayTitle",
+            ]
+        )
         if not raw:
             continue
         try:
@@ -236,11 +273,13 @@ def open_adrs(meta: Path) -> list[dict[str, str]]:
         # Status: prefer YAML-frontmatter `status: open`, else look for line
         status_m = re.search(r"^status:\s*(\w+)", text, re.MULTILINE | re.IGNORECASE)
         status = status_m.group(1).lower() if status_m else "unknown"
-        out.append({
-            "file": str(md.relative_to(meta)),
-            "title": title,
-            "status": status,
-        })
+        out.append(
+            {
+                "file": str(md.relative_to(meta)),
+                "title": title,
+                "status": status,
+            }
+        )
     return out
 
 
@@ -274,8 +313,12 @@ def render(
         out.append(f"*Active specialisation on this machine: **{spec}***")
         out.append("")
     out.append("> [!IMPORTANT]")
-    out.append("> This file contains the \"ground truth\" for the current NixOS infrastructure.")
-    out.append("> AI assistants MUST read this file at the start of any configuration task.")
+    out.append(
+        '> This file contains the "ground truth" for the current NixOS infrastructure.'
+    )
+    out.append(
+        "> AI assistants MUST read this file at the start of any configuration task."
+    )
     out.append("")
 
     # --- Core Revisions ---
@@ -414,9 +457,7 @@ def render(
         for wf_name in sorted(ci):
             info = ci[wf_name]
             e = emoji_map.get(info["conclusion"], "❔")
-            out.append(
-                f"- {e} **{wf_name}** — `{info['sha']}` — {info['title']}"
-            )
+            out.append(f"- {e} **{wf_name}** — `{info['sha']}` — {info['title']}")
         out.append("")
 
     # --- Open ADRs ---
@@ -425,7 +466,9 @@ def render(
         out.append("## 📜 Open Decisions (ADRs)")
         out.append("")
         for adr in open_adrs_list:
-            out.append(f"- **{adr['title']}** (`{adr['status']}`) — _[src: {adr['file']}]_")
+            out.append(
+                f"- **{adr['title']}** (`{adr['status']}`) — _[src: {adr['file']}]_"
+            )
         out.append("")
 
     # --- AI Capabilities (MCP Tools) ---
@@ -440,6 +483,7 @@ def render(
 def render_mcp_tools(mcp: Path) -> list[str]:
     """Parse @mcp.tool() functions, return one bullet per tool."""
     import ast
+
     try:
         tree = ast.parse(mcp.read_text())
     except (OSError, SyntaxError):
@@ -449,7 +493,11 @@ def render_mcp_tools(mcp: Path) -> list[str]:
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         is_tool = any(
-            (isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute) and d.func.attr == "tool")
+            (
+                isinstance(d, ast.Call)
+                and isinstance(d.func, ast.Attribute)
+                and d.func.attr == "tool"
+            )
             or (isinstance(d, ast.Attribute) and d.attr == "tool")
             for d in node.decorator_list
         )
