@@ -49,6 +49,9 @@ in
   ];
 
   networking.hostName = "orin-nano";
+
+  my.deploy.autoUpgrade.enable = true;
+
   nixpkgs = {
     hostPlatform = "aarch64-linux";
     config = {

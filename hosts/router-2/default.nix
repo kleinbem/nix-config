@@ -22,6 +22,7 @@
   };
 
   my = {
+    deploy.autoUpgrade.enable = true;
     monitoring.node.enable = true;
     services.timesync.enable = false; # LXC guests inherit time from the host
   };

@@ -35,6 +35,10 @@
     # optional sops token, so it's safe to import everywhere.
     ./core.nix
 
+    # Pull-based fleet auto-upgrade option (my.deploy.autoUpgrade).
+    # Option only — default disabled. Hosts opt in per-host.
+    ./auto-upgrade.nix
+
     # Core services / system-wide concerns
     ./networking.nix
     ./network-routing.nix # inter-host routes generated from inventory

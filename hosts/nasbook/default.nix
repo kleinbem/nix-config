@@ -31,6 +31,8 @@
   networking.hostName = "nasbook";
 
   my = {
+    deploy.autoUpgrade.enable = true;
+
     network = {
       subnet = "10.85.47.0/24";
       hostAddress = "10.85.47.1";

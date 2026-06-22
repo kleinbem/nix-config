@@ -15,6 +15,8 @@
   networking.hostName = "hass-pi";
 
   my = {
+    deploy.autoUpgrade.enable = true;
+
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
       enable = true;
