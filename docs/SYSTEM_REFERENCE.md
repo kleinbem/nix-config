@@ -1,6 +1,5 @@
 # 🏗️ System Reference (Auto-generated)
 
-*Pin: nixpkgs `addf7cf5` · home-manager `b1f916ba` · sops-nix `9ed65852`*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure.
@@ -8,15 +7,6 @@
 
 ## 📦 Core Revisions
 
-- **nixpkgs**: [`addf7cf5`](https://github.com/NixOS/nixpkgs/commit/addf7cf5)
-- **home-manager**: `b1f916ba`
-- **sops-nix**: `9ed65852`
-- **devenv**: `07057745`
-- **nix-config**: `200081c1`
-- **nix-packages**: `534ceae4`
-- **nix-hardware**: `19cb843c`
-- **nix-presets**: `e7fad235`
-- **nix-devshells**: `d31f630a`
 
 ## 🖥️ Managed Hosts
 
@@ -117,7 +107,7 @@
 
 ## 🛠️ Workspace Status
 
-- **Devenv**: Available
+- **Devenv**: Not found in path
 - **Autonomous Guardian**: Inactive ❌
 
 ## 📜 Open Decisions (ADRs)
@@ -125,33 +115,3 @@
 - **001-structure-modules-users.md** (`unknown`) — _[src: .agent/decisions/001-structure-modules-users.md]_
 
 ## 🤖 AI Capabilities (MCP Tools)
-
-- **netbird_status** — Check the status of the NetBird mesh network and connected peers.
-- **syncthing_status** — Check Syncthing synchronization status.
-- **firefox_search** — Search Firefox history for a keyword in a specific profile (standard, laboratory, temp).
-- **get_tool_help** — Run --help on a local binary to see exact usage and flags.
-- **check_ai_stack_health** — Check health of containers and secrets on a specific host.
-- **get_fleet_status** — Check connectivity and status of all hosts in the inventory using Colmena/NetBird.
-- **list_skills** — List all available agent workflows (skills) in the workspace.
-- **is_task_running** — Check if a long-running workspace task (like apply or build) is currently active.
-- **get_inventory_summary** — Get full inventory of hosts and network nodes.
-- **run_just_recipe** — Run a just recipe from the workspace.
-- **update_todo** — Add or update a task in TODO.md.
-- **distill_knowledge** — Create a new Knowledge Item (KI) in the workspace.
-- **analyze_logs** — Fetch and analyze recent logs using ai-logs.py.
-- **semantic_search** — Search the Obsidian vault using semantic similarity (embeddings).
-- **manage_ai_services** — Manage local AI services (ollama, vllm).
-- **get_security_audit_summary** — Read and summarize the latest Lynis security audit report.
-- **reindex_vault** — Run the semantic indexer to refresh the vault index.
-- **get_system_telemetry** — Fetch real-time hardware telemetry (CPU, Mem, Disk, Temp).
-- **get_calendar_events** — Fetch upcoming events from Google Calendar.
-- **get_hardware_profile** — Fetch advanced hardware profile, including GPU and Jetson-specific stats.
-- **search_paperless** — Search for documents in Paperless-ngx matching a query.
-- **get_paperless_document** — Get the full details and OCR text content of a Paperless document.
-- **troubleshoot_unit** — Deep troubleshoot a systemd unit by correlating logs with knowledge base.
-- **analyze_nix_closure** — Calculate closure size and dependency count for a Nix attribute.
-- **checkpoint_workspace_state** — Save a snapshot of the current project state for context recovery.
-- **get_workspace_state** — Retrieve the last saved workspace state.
-- **check_binary_cache** — Check if a package is available in the Nix binary cache.
-- **manage_skill_progress** — Manage progress through a workspace skill.
-- **send_notification** — Send a desktop notification.

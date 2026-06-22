@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 46  
+**Declarations indexed:** 49  
 **Consumer files scanned:** 13
 
 ---
@@ -17,6 +17,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
 - **Sub-options:** `enable`
+- **Consumed by:** `host:nixos-nvme`
+
+## `my.audio`
+
+### `my.audio`
+
+- **Declared:** `nix-config/modules/nixos/audio.nix:101`
+- **Sub-options:** `jabra.buttons.enable`, `jabra.buttons.smartButtonCommand`, `jabra.preferred`
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.containers`
@@ -232,12 +240,26 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `autoStart`, `device`, `enable`, `enableAudio`, `enableGPU`, `enforceEager`, `extraArgs`, `gpuMemoryUtilization`, `hostDataDir`, `image`, `ip`, `maxModelLen`, `memoryLimit`, `memorySwapMax`, `model`, `openvinoDevice`, `openvinoKvCacheSpace`, `quantization`, `secretsFile`
 - **Consumed by:** `host:container-factory`
 
+## `my.deploy`
+
+### `my.deploy.autoUpgrade`
+
+- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:7`
+- **Sub-options:** `allowReboot`, `dates`, `enable`, `flakeRef`, `hostName`, `randomizedDelaySec`
+- **Consumed by:** `host:nixos-nvme`
+
 ## `my.desktop`
 
 ### `my.desktop`
 
 - **Declared:** `nix-config/modules/nixos/desktop.nix:12`
 - **Sub-options:** `gnome.enable`
+- **Consumed by:** `host:nixos-nvme`
+
+### `my.desktop.claude`
+
+- **Declared:** `nix-presets/nixosModules/claude.nix:8`
+- **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.hardware`
