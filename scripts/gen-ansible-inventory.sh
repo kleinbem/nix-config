@@ -1,5 +1,6 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i bash -p go
+# shellcheck shell=bash
 
 set -euo pipefail
 
