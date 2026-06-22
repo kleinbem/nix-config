@@ -69,10 +69,16 @@ jobs:
       - name: Run nix-fast-build
         run: |
           set -o pipefail
-          # Construct build arguments
+          # Construct build arguments.
+          # --eval-workers 2: cap parallel eval-jobs forks. Default = nproc,
+          # which on the 7 GiB hosted runner has been OOM-killing the runner
+          # before the build step produces any output (visible as the
+          # "hosted runner lost communication" error). Same issue hits meta's
+          # build-all; this is the conservative first-pass fix.
           ARGS=(
             "--no-nom"
             "--skip-cached"
+            "--eval-workers" "2"
             "--systems" "${{ matrix.system }}"
             "--flake" ".#nixosConfigurations"
             "--flake" ".#packages"
