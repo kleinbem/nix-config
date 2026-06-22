@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nix eval *)",
+      "Bash(nix flake show *)",
+      "Bash(nix flake metadata *)",
+      "Bash(nix flake check *)",
+      "Bash(nix log *)",
+      "Bash(nix path-info *)",
+      "Bash(nix show-derivation *)",
+      "Bash(nix-store --query *)",
+      "Bash(jj log *)",
+      "Bash(jj status *)",
+      "Bash(jj st *)",
+      "Bash(jj diff *)",
+      "Bash(just --list)",
+      "Bash(just --list *)",
+      "Bash(just check)",
+      "Bash(journalctl *)",
+      "Bash(systemctl status *)",
+      "Bash(gh search *)"
+    ]
+  }
+}
