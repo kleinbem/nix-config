@@ -1,5 +1,15 @@
+# hass-pi disko layout — Raspberry Pi 5 on native NVMe (PCIe HAT).
+#
+# No on-disk swap: hass-pi's job is to run Home Assistant, and all heavy
+# builds now happen in CI (GitHub Actions + Attic cache), so the box only
+# pulls prebuilt closures. Memory headroom is served by zram (core.nix,
+# zramSwap memoryPercent=50) — faster and zero SSD wear. A dedicated
+# encrypted swap partition only ever made sense for local kernel builds,
+# which no longer happen here. If disk swap is ever needed again it must
+# return as a *dedicated partition* (the "swap outside LUKS" rule rules out
+# a btrfs swapfile inside hass_crypt).
 {
-  device ? "/dev/mmcblk0",
+  device ? "/dev/nvme0n1",
   ...
 }:
 {
@@ -19,14 +29,6 @@
                 format = "vfat";
                 mountpoint = "/boot";
                 mountOptions = [ "umask=0077" ];
-              };
-            };
-            swap = {
-              size = "16G";
-              content = {
-                type = "swap";
-                discardPolicy = "both";
-                randomEncryption = true;
               };
             };
             luks = {

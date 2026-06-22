@@ -113,6 +113,38 @@ in
         ControlPath = "~/.ssh/cm-%r@%h:%p";
         ControlPersist = "10m";
       };
+
+      # hass-pi (Raspberry Pi 5, Home Assistant node). root is locked on the
+      # booted system, so connect as martin + sudo. The login key is a FIDO2
+      # hardware key (id_ed25519_sk); ssh-agent can't do PIN entry for it
+      # ("agent refused operation"), so bypass the agent (IdentityAgent none)
+      # and hand ssh the key file directly — it then prompts for PIN + touch.
+      #
+      # ControlMaster multiplexing (same trick as github.com above): the FIRST
+      # connection costs one PIN+touch and opens a master socket; every later
+      # `ssh hass-pi` / `just hass-pi::*` within ControlPersist reuses it with
+      # NO further touch. So it's ~1 touch per session window, not per command.
+      # (For YubiKey-free access from machines without a key, use NetBird SSH:
+      #  `netbird ssh hass-pi` once hass-pi is enrolled — auth is the peer
+      #  identity, no hardware key involved.)
+      settings."hass-pi" = {
+        Hostname = "10.0.0.21";
+        User = "martin";
+        IdentityFile = "~/.ssh/id_ed25519_sk";
+        IdentityAgent = "none";
+        ControlMaster = "auto";
+        ControlPath = "~/.ssh/cm-%r@%h:%p";
+        ControlPersist = "1h";
+      };
+      # initrd LUKS-unlock stage: root on port 2222 (clevis/tang usually unlocks
+      # automatically; this is the manual fallback).
+      settings."hass-pi-initrd" = {
+        Hostname = "10.0.0.21";
+        Port = 2222;
+        User = "root";
+        IdentityFile = "~/.ssh/id_ed25519_sk";
+        IdentityAgent = "none";
+      };
     };
   };
 

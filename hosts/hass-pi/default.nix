@@ -2,6 +2,7 @@
 {
   inputs,
   self,
+  lib,
   myInventory,
   ...
 }:
@@ -9,10 +10,18 @@
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
     ./disko.nix
+    ./secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
   ];
 
   networking.hostName = "hass-pi";
+
+  # hass-pi runs on a native NVMe drive (PCIe HAT), not the USB-SSD enclosure
+  # that rpi5-node.nix assumes (it hardcodes /dev/sda). Mounts are unaffected
+  # (disko uses stable by-partlabel paths), but a re-provision via disko-install
+  # must target the real disk — otherwise it would wipe whatever enumerates as
+  # /dev/sda (e.g. a USB stick). Pin it here.
+  _module.args.device = lib.mkForce "/dev/nvme0n1";
 
   my = {
     deploy.autoUpgrade.enable = true;
@@ -36,7 +45,13 @@
       lxc.enable = false;
     };
 
-    services.rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
+    services = {
+      rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
+      # Run NetBird's built-in SSH server so YubiKey-less devices can reach this
+      # headless node via `netbird ssh hass-pi` (auth = NetBird peer identity).
+      # Scope access to your own devices with a NetBird SSH policy in the console.
+      netbird.allowServerSsh = true;
+    };
 
     # ─── Containers ──────────────────────────────────────────────
     containers = {
