@@ -93,6 +93,7 @@
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
     services.tang.enable = true;
+    deploy.autoUpgrade.enable = true;
     desktop.gnome.enable = true;
     desktop.claude.enable = true;
     audio.jabra.preferred = true;

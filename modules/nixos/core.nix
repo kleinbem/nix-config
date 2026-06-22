@@ -231,19 +231,4 @@ in
     NH_FLAKE = "${config.my.developDir}/nix-config"; # nh 4.2+ support
   };
 
-  # ==========================================
-  # AUTOMATED SECURITY UPDATES
-  # ==========================================
-  system.autoUpgrade = {
-    enable = true;
-    flake = "${config.my.developDir}/nix/nix-config";
-    flags = [
-      "--update-input"
-      "nixpkgs"
-    ];
-    dates = "04:00";
-    allowReboot = false; # Stage only — user controls reboots
-    randomizedDelaySec = "30min";
-  };
-
 }

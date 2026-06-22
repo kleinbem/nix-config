@@ -91,10 +91,6 @@ in
     }
   ];
 
-  # Managed via colmena — self-upgrade is not needed and the flake path doesn't
-  # exist on the tmpfs root anyway.
-  system.autoUpgrade.enable = lib.mkForce false;
-
   # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
   services.snapper.configs = lib.mkForce { };
   systemd.services.snapper-init-persist.enable = lib.mkForce false;

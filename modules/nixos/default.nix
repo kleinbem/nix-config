@@ -6,6 +6,7 @@
     ./kernel.nix
     ./audit.nix
     ./audio.nix
+    ./auto-upgrade.nix
     ./desktop.nix
     ./users.nix
     ./security
