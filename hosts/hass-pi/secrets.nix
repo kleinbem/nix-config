@@ -34,6 +34,10 @@
       # Consumed by modules/nixos/networking.nix → netbird-autojoin oneshot,
       # which runs `netbird up --setup-key` when the daemon reports NeedsLogin.
       netbird_setup_key = { };
+      # Read-only Attic pull token. Activates modules/nixos/attic-pull.nix
+      # (netrc Bearer auth + NetBird routing) so hass-pi can substitute from the
+      # private cache instead of compiling (e.g. the linux-rpi kernel).
+      attic_pull_token = { };
     };
   };
 }

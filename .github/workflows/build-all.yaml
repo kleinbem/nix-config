@@ -98,22 +98,19 @@ jobs:
             ARGS+=("--flake" ".#checks.$SYSTEM.$c")
           done
 
-          # Explicitly build the RPi host *toplevel*. The bare
+          # Explicitly build the RPi host *toplevels*. The bare
           # `--flake .#nixosConfigurations` above does NOT materialize host
-          # system closures, so the custom linux-rpi kernel — which is not on
-          # cache.nixos.org — was never built or pushed to Attic. Every Pi
-          # deploy then had to compile it on-device (~45min). Building core-pi's
-          # toplevel here builds + caches the current linux-rpi kernel (shared by
-          # all RPi5 hosts via rpi5-node.nix) plus the closure, so deploys
-          # substitute instead of build.
-          #
-          # core-pi (not hass-pi) because hass-pi currently pins its kernel to an
-          # older nixpkgs (hosts/hass-pi/default.nix) — building it here would
-          # compile the redundant pinned kernel. Once this cache lands the current
-          # kernel, drop hass-pi's pin and it substitutes from here. Orin excluded:
-          # its jetpack/l4t kernel builds on-device (colmena buildOnTarget).
+          # system closures, so the custom linux-rpi kernel — absent from
+          # cache.nixos.org — was never built or pushed to Attic, forcing a
+          # ~45min on-device compile on every Pi deploy. Build each RPi host's
+          # toplevel so the kernel AND each host's specific kernel-modules
+          # derivation (the module set differs per host) land in Attic, making
+          # deploys fully substitute instead of build. Orin excluded: its
+          # jetpack/l4t kernel builds on-device (colmena buildOnTarget).
           if [ "$SYSTEM" = "aarch64-linux" ]; then
-            ARGS+=("--flake" ".#nixosConfigurations.core-pi.config.system.build.toplevel")
+            for h in hass-pi core-pi; do
+              ARGS+=("--flake" ".#nixosConfigurations.$h.config.system.build.toplevel")
+            done
           fi
 
           # If pushing to cache, tell nix-fast-build to use Attic directly

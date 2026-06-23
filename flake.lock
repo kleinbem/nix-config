@@ -6132,12 +6132,12 @@
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1782169146,
-        "narHash": "sha256-WPYY0BWkT8GgrHd96a6G5oAin7JG2vIHi0mo7Ah0SrE=",
-        "rev": "ccdb265d3bf6665d312fb4a8878dac7382f0e7b4",
-        "revCount": 33,
-        "type": "git",
-        "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-secrets"
+        "lastModified": 1782205178,
+        "narHash": "sha256-hVH6JgUqjpBaPyY5dpOJdKlGP0XIVn+oNSUi9yCaGjY=",
+        "owner": "kleinbem",
+        "repo": "nix-secrets",
+        "rev": "4db7889285a172c35ad371bd39a101a0647727a9",
+        "type": "github"
       },
       "original": {
         "owner": "kleinbem",
@@ -7677,22 +7677,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-rpi-kernel": {
-      "locked": {
-        "lastModified": 1780243769,
-        "narHash": "sha256-x5UQuRsH3MqI0U9afaXSNqzTPSeZlRLvFAav2Ux1pNw=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "331800de5053fcebacf6813adb5db9c9dca22a0c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "331800de5053fcebacf6813adb5db9c9dca22a0c",
-        "type": "github"
-      }
-    },
     "nixpkgs-src": {
       "flake": false,
       "locked": {
@@ -9087,7 +9071,6 @@
         "nixos-generators": "nixos-generators_7",
         "nixpkgs": "nixpkgs_44",
         "nixpkgs-master": "nixpkgs-master_7",
-        "nixpkgs-rpi-kernel": "nixpkgs-rpi-kernel",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixvim": "nixvim",
         "nur": "nur",
