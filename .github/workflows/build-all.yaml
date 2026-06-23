@@ -90,6 +90,9 @@ jobs:
             "--skip-cached"
             "--eval-workers" "2"
             "--systems" "$SYSTEM"
+            # Retry failed builds twice — the Attic push rides NetBird, so a
+            # transient network/SSH hiccup retries instead of failing the target.
+            "--retries" "2"
           )
           # If pushing to cache, tell nix-fast-build to use Attic directly.
           if [ "${{ steps.cache.outputs.push_cache }}" == "true" ]; then
