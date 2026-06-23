@@ -102,13 +102,21 @@ jobs:
           # under-populated (only `.#devShells` ever built). So we invoke
           # nix-fast-build ONCE PER target.
           #
-          # We build .#packages / .#devShells / non-VM .#checks, plus the RPi
-          # host *toplevels* explicitly — the bare `.#nixosConfigurations` does
-          # NOT materialize host system closures, so the custom linux-rpi kernel
-          # (absent from cache.nixos.org) and each host's distinct kernel-modules
-          # never reached Attic, forcing a ~45min on-device compile per Pi deploy.
-          # Orin is excluded: its jetpack/l4t kernel builds on-device.
-          TARGETS=( ".#packages" ".#devShells" )
+          # Build only what hosts actually DEPLOY: their system toplevels (native
+          # arch) + devShells + non-VM checks. We deliberately do NOT build
+          # `.#packages` — it exposes cross-arch install IMAGES (e.g.
+          # router-1-image, an aarch64 image that gets cross-built on the x86_64
+          # runner) and standalone packages that no host deploys. Everything a
+          # host actually uses is already in its toplevel closure, so building
+          # toplevels caches it natively without the cross-build waste.
+          #
+          # The bare `.#nixosConfigurations` does NOT materialize host toplevels,
+          # so name them explicitly. Each host builds on its native-arch runner
+          # (matrix), so no emulation. RPi5 hosts carry the custom linux-rpi
+          # kernel (absent from cache.nixos.org). Excluded: Orin (jetpack/l4t
+          # builds on-device via colmena buildOnTarget) and the routers (bespoke
+          # Banana Pi R4 kernel) — add once they're confirmed to build in CI.
+          TARGETS=( ".#devShells" )
           for c in "${CI_CHECKS[@]}"; do
             TARGETS+=(".#checks.$SYSTEM.$c")
           done
