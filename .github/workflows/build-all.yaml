@@ -85,37 +85,44 @@ jobs:
             | nix run nixpkgs#jq -- -r --arg sys "$SYSTEM" \
                 '.checks[$sys] | keys[] | select(test("(caddy|code-server|mobile-link|recovery)-test") | not)')
 
-          ARGS=(
+          COMMON=(
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "2"
             "--systems" "$SYSTEM"
-            "--flake" ".#nixosConfigurations"
-            "--flake" ".#packages"
-            "--flake" ".#devShells"
           )
-          for c in "${CI_CHECKS[@]}"; do
-            ARGS+=("--flake" ".#checks.$SYSTEM.$c")
-          done
-
-          # Explicitly build the RPi host *toplevels*. The bare
-          # `--flake .#nixosConfigurations` above does NOT materialize host
-          # system closures, so the custom linux-rpi kernel — absent from
-          # cache.nixos.org — was never built or pushed to Attic, forcing a
-          # ~45min on-device compile on every Pi deploy. Build each RPi host's
-          # toplevel so the kernel AND each host's specific kernel-modules
-          # derivation (the module set differs per host) land in Attic, making
-          # deploys fully substitute instead of build. Orin excluded: its
-          # jetpack/l4t kernel builds on-device (colmena buildOnTarget).
-          if [ "$SYSTEM" = "aarch64-linux" ]; then
-            for h in hass-pi core-pi; do
-              ARGS+=("--flake" ".#nixosConfigurations.$h.config.system.build.toplevel")
-            done
-          fi
-
-          # If pushing to cache, tell nix-fast-build to use Attic directly
+          # If pushing to cache, tell nix-fast-build to use Attic directly.
           if [ "${{ steps.cache.outputs.push_cache }}" == "true" ]; then
-            ARGS+=("--attic-cache" "system")
+            COMMON+=("--attic-cache" "system")
           fi
 
-          nix run github:Mic92/nix-fast-build -- "${ARGS[@]}" $NIX_OVERRIDES
+          # IMPORTANT: nix-fast-build's `--flake` is SINGLE-VALUED (argparse
+          # store — the LAST one wins). Passing multiple `--flake` silently
+          # builds only the last target, which is why the cache was badly
+          # under-populated (only `.#devShells` ever built). So we invoke
+          # nix-fast-build ONCE PER target.
+          #
+          # We build .#packages / .#devShells / non-VM .#checks, plus the RPi
+          # host *toplevels* explicitly — the bare `.#nixosConfigurations` does
+          # NOT materialize host system closures, so the custom linux-rpi kernel
+          # (absent from cache.nixos.org) and each host's distinct kernel-modules
+          # never reached Attic, forcing a ~45min on-device compile per Pi deploy.
+          # Orin is excluded: its jetpack/l4t kernel builds on-device.
+          TARGETS=( ".#packages" ".#devShells" )
+          for c in "${CI_CHECKS[@]}"; do
+            TARGETS+=(".#checks.$SYSTEM.$c")
+          done
+          if [ "$SYSTEM" = "aarch64-linux" ]; then
+            TARGETS+=(
+              ".#nixosConfigurations.hass-pi.config.system.build.toplevel"
+              ".#nixosConfigurations.core-pi.config.system.build.toplevel"
+            )
+          fi
+
+          rc=0
+          for t in "${TARGETS[@]}"; do
+            echo "::group::nix-fast-build $t"
+            nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" --flake "$t" $NIX_OVERRIDES || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
