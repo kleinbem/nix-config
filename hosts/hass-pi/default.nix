@@ -23,6 +23,19 @@
   # /dev/sda (e.g. a USB stick). Pin it here.
   _module.args.device = lib.mkForce "/dev/nvme0n1";
 
+  # Pin the RPi kernel to a cached nixpkgs rev (nixpkgs-rpi-kernel in flake.nix)
+  # so deploys reuse the kernel + modules already on the box instead of compiling
+  # them (~30min) on the Pi. The kernel IMAGE now caches in Attic, but hass-pi's
+  # linux-rpi-modules derivation isn't built by CI yet, so without this pin an
+  # unpinned deploy still compiles the modules. TEMPORARY — remove once CI caches
+  # the per-host modules (project_rpi_kernel_caching).
+  boot.kernelPackages =
+    lib.mkForce
+      (import inputs.nixpkgs-rpi-kernel {
+        system = "aarch64-linux";
+        config.allowUnfree = true;
+      }).linuxPackages_rpi4;
+
   my = {
     deploy.autoUpgrade.enable = true;
 
