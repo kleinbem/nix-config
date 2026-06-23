@@ -30,6 +30,14 @@
     defaultSopsFormat = "yaml";
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
+    # Don't fail the *build* validating secret presence against the sops file.
+    # CI builds this host's toplevel with dummy `{}` secrets (--override-input
+    # nix-secrets /tmp/dummy-secrets), so sops-install-secrets' build-time
+    # manifest check ("key 'attic_pull_token' cannot be found") would abort the
+    # whole toplevel — the documented sops-nix CI workaround. Real decryption at
+    # activation is unaffected (it uses the real secrets.yaml on the host).
+    validateSopsFiles = false;
+
     secrets = {
       # Consumed by modules/nixos/networking.nix → netbird-autojoin oneshot,
       # which runs `netbird up --setup-key` when the daemon reports NeedsLogin.

@@ -116,10 +116,16 @@ jobs:
           # kernel (absent from cache.nixos.org). Excluded: Orin (jetpack/l4t
           # builds on-device via colmena buildOnTarget) and the routers (bespoke
           # Banana Pi R4 kernel) — add once they're confirmed to build in CI.
-          TARGETS=( ".#devShells" )
+          TARGETS=()
           for c in "${CI_CHECKS[@]}"; do
             TARGETS+=(".#checks.$SYSTEM.$c")
           done
+          # devShells are for DEVELOPMENT on the x86_64 workstation. Edge
+          # (aarch64) hosts are headless and never run `nix develop`, so don't
+          # waste a runner building them there.
+          if [ "$SYSTEM" = "x86_64-linux" ]; then
+            TARGETS+=( ".#devShells" )
+          fi
           if [ "$SYSTEM" = "aarch64-linux" ]; then
             TARGETS+=(
               ".#nixosConfigurations.hass-pi.config.system.build.toplevel"
