@@ -23,6 +23,19 @@
   # /dev/sda (e.g. a USB stick). Pin it here.
   _module.args.device = lib.mkForce "/dev/nvme0n1";
 
+  # Pin the RPi kernel to the nixpkgs hass-pi already runs (see nixpkgs-rpi-kernel
+  # in flake.nix). The current nixpkgs re-hashes linux-rpi-6.12.75 to an aarch64
+  # path that's in no binary cache, forcing a ~45min on-Pi compile. Sourcing it
+  # from the pinned rev reuses the kernel already in the local store → no build.
+  # Userspace still tracks the current nixpkgs (those aarch64 paths ARE on
+  # cache.nixos.org). TEMPORARY — remove once the kernel is cached in Attic.
+  boot.kernelPackages =
+    lib.mkForce
+      (import inputs.nixpkgs-rpi-kernel {
+        system = "aarch64-linux";
+        config.allowUnfree = true;
+      }).linuxPackages_rpi4;
+
   my = {
     deploy.autoUpgrade.enable = true;
 
@@ -71,12 +84,14 @@
     directories = [
       "/var/lib/home-assistant"
       "/var/lib/homarr"
-      # Native Services
-      "/var/lib/AdGuardHome"
+      # Native Services. DynamicUser services keep real state in
+      # /var/lib/private/<name> (systemd makes /var/lib/<name> a symlink to it),
+      # so we must persist the private path — bind-mounting onto the symlink
+      # fails with "mount path not canonical" (see AdGuardHome/matter-server).
       "/var/lib/private/AdGuardHome"
       "/var/lib/node-red"
       "/var/lib/private/esphome"
-      "/var/lib/matter-server"
+      "/var/lib/private/matter-server"
       "/var/lib/wyoming"
     ];
   };

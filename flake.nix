@@ -6,6 +6,14 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
+    # Pinned solely to source hass-pi's RPi kernel from the same nixpkgs the box
+    # already runs (rev 331800d → linux-rpi-6.12.75 hash r9ndv…, cached on-device).
+    # The current nixpkgs re-hashes the same kernel version to an uncached aarch64
+    # path → a ~45min on-Pi build. Pinning the kernel here keeps deploys build-free.
+    # TEMPORARY: drop this once the aarch64 RPi kernel is built+pushed to Attic
+    # (then hass-pi can track the current kernel again). linux-rpi is also slated
+    # for removal upstream in favour of nixos-hardware.
+    nixpkgs-rpi-kernel.url = "github:NixOS/nixpkgs/331800de5053fcebacf6813adb5db9c9dca22a0c";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 

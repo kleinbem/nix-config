@@ -28,7 +28,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 - **Modules:** `modules/nixos/rpi5-node.nix`
 - **Presets:** `nix-presets:home-assistant`
-- **Local:** `./disko.nix`
+- **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `nasbook`
 
@@ -86,7 +86,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./hardware-configuration.nix` ← nasbook
 - `./hardware.nix` ← orin-nano
 - `./network.nix` ← nixos-nvme, orin-nano
-- `./secrets.nix` ← nasbook, nixos-nvme, orin-nano
+- `./secrets.nix` ← hass-pi, nasbook, nixos-nvme, orin-nano
 - `./services.nix` ← orin-nano
 - `./specialisations.nix` ← nixos-nvme
 - `disko:disko` ← nixos-nvme, orin-nano, orin-nano-bootstrap

@@ -7,7 +7,7 @@
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
 **Declarations indexed:** 49  
-**Consumer files scanned:** 13
+**Consumer files scanned:** 14
 
 ---
 
@@ -244,9 +244,9 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.autoUpgrade`
 
-- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:7`
+- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:12`
 - **Sub-options:** `allowReboot`, `dates`, `enable`, `flakeRef`, `hostName`, `randomizedDelaySec`
-- **Consumed by:** `host:nixos-nvme`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
 
 ## `my.desktop`
 
