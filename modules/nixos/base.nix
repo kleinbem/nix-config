@@ -42,6 +42,7 @@
     # Core services / system-wide concerns
     ./networking.nix
     ./network-routing.nix # inter-host routes generated from inventory
+    ./attic-pull.nix # authenticated + NetBird-routed reads of the private Attic cache (gated on attic_pull_token)
     ./pki.nix
     ./virtualisation.nix
     ./zero-trust.nix
