@@ -48,6 +48,7 @@
       url = "github:kleinbem/nix-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.jetpack-nixos.follows = "jetpack-nixos";
+      inputs.nix-devshells.follows = "nix-devshells";
     };
     nix-devshells = {
       url = "github:kleinbem/nix-devshells";
@@ -56,14 +57,18 @@
     nix-presets = {
       url = "github:kleinbem/nix-presets";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nix-devshells.follows = "nix-devshells";
+      inputs.nix-packages.follows = "nix-packages";
     };
     nix-packages = {
       url = "github:kleinbem/nix-packages";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nix-devshells.follows = "nix-devshells";
     };
     nix-templates = {
       url = "github:kleinbem/nix-templates";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nix-devshells.follows = "nix-devshells";
     };
 
     treefmt-nix = {
