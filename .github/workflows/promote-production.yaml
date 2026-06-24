@@ -31,9 +31,89 @@ permissions:
   contents: write
 
 jobs:
+  # Device-faithful completeness gate. A host that opts into
+  # my.deploy.autoUpgrade pulls the `production` tag and switches — and MUST
+  # never compile on-device (RPi hosts carry the custom linux-rpi kernel, which
+  # is absent from cache.nixos.org). build-all already builds + pushes those
+  # toplevels, but a push can be partial (network blip mid-NAR, a path
+  # nix-fast-build didn't push, Attic GC racing). This job proves, from a clean
+  # store using EXACTLY the substituters a device trusts (cache.nixos.org +
+  # cachix mirrors + private Attic), that every deployed closure is fully
+  # fetchable. If anything "will be built", we refuse to advance the tag — hosts
+  # keep running the last fully-cached revision instead of risking an on-device
+  # build. This is what makes the setup-only Attic push (skip-push) safe: Attic
+  # holds only non-upstream paths, and this gate verifies the union still covers
+  # the whole closure.
+  verify-cache:
+    name: "Verify closures are fully cached"
+    # Run natively on aarch64 — the pull-deploy edge hosts are all aarch64, so a
+    # native runner sidesteps any cross-arch dry-run eval quirks.
+    runs-on: ubuntu-24.04-arm
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout promotion-candidate SHA
+        uses: actions/checkout@v6.0.2
+        with:
+          # Check the exact commit build-all built, not whatever main is now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Nix fleet setup (pull-only)
+        # enable-cache wires up NetBird + Attic as a SUBSTITUTER with the pull
+        # token (skip-push keeps it read-only) and sets NIX_OVERRIDES to the same
+        # github: sibling refs build-all used — so the closure we evaluate here
+        # matches the one that was cached.
+        uses: ./.github/actions/nix-fleet-setup
+        with:
+          enable-cache: 'true'
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
+          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
+          netbird: 'true'
+          free-disk-space: 'false'
+
+      - name: Assert no deployed host would build
+        run: |
+          set -euo pipefail
+          # The hosts that pull `production` via my.deploy.autoUpgrade and must
+          # never build on-device. Mirrors build-all's aarch64 toplevel targets.
+          # Excluded (deliberately, same as build-all): nixos-nvme (IS the cache
+          # host — builds locally, never pulls), orin-nano + routers (build
+          # on-device by design). Edit this list as hosts opt into pull-deploy.
+          HOSTS=(hass-pi core-pi)
+          fail=0
+          for h in "${HOSTS[@]}"; do
+            echo "::group::dry-run $h"
+            target=".#nixosConfigurations.$h.config.system.build.toplevel"
+            # `nix build --dry-run` NEVER builds; it queries every substituter
+            # for each closure path and classifies it as "to fetch" (cached) or
+            # "to build" (missing everywhere we trust). The runner's store is
+            # clean, so this faithfully simulates a fresh device.
+            if ! out="$(nix build --dry-run "$target" $NIX_OVERRIDES 2>&1)"; then
+              echo "$out"
+              echo "::error::$h: dry-run eval failed — cannot verify cache, refusing to promote."
+              fail=1
+              echo "::endgroup::"
+              continue
+            fi
+            echo "$out"
+            if echo "$out" | grep -qiE 'will be built'; then
+              echo "::error::$h closure is NOT fully cached — a device would compile on-device. Blocking promotion."
+              fail=1
+            else
+              echo "✅ $h: fully cached (fetch-only)."
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
   promote:
     name: "Move production tag → main"
     runs-on: ubuntu-latest
+    # Only promote once the closure-completeness gate passes. `needs` makes this
+    # job skip if verify-cache fails — hosts stay on the last good revision.
+    needs: verify-cache
     # workflow_run fires regardless of conclusion; gate to success only.
     # workflow_dispatch always runs.
     if: >-

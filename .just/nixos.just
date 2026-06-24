@@ -185,3 +185,53 @@ attic-ci-token sub="github-ci" cache="system" validity="1y":
       "$ATTICADM" -f "$CONFIG" make-token \
         --sub "{{ sub }}" --validity "{{ validity }}" --pull "{{ cache }}" --push "{{ cache }}"
     '
+
+# Run a one-shot Attic garbage-collection sweep in the cache container.
+#
+# Attic has NO per-path/per-generation delete — retention + GC is the ONLY
+# reclaim mechanism (see nix-presets/containers/attic.nix). This fires a single
+# sweep on demand, equivalent to `atticd --mode garbage-collector-once`.
+#
+# What it reclaims:
+#   • ALWAYS — orphaned chunks/NARs no longer referenced by any cache entry
+#     (e.g. after an entry was overwritten). Safe regardless of retention.
+#   • AGE-BASED — entries whose created_at AND last_accessed_at are both older
+#     than the cache's retention window. Steady-state config sets this to
+#     90 days (nix-presets/containers/attic.nix), and the container's own 12h
+#     timer already applies it — so this recipe is mostly a way to force that
+#     sweep NOW (e.g. right after lowering the window) rather than wait for the
+#     timer. Actively-pulled paths renew last_accessed and survive; an evicted
+#     non-upstream path is refilled by the next build-all and gated by
+#     promote-production's verify-cache, so this never causes a device build.
+#
+# To reclaim harder on demand WITHOUT a rebuild (e.g. disk pressure): lower the
+# retention temporarily, sweep, then restore. Do it only after a confirmed
+# full-fleet rebuild so everything live is fresh and can't be evicted:
+#   TOKEN=$(just nixos::attic-token | grep '^eyJ')
+#   attic login kleinbem https://cache.kleinbem.dev "$TOKEN"   # needs mesh/Caddy reachable
+#   attic cache configure system --retention-period 30d
+#   just nixos::attic-gc
+#   attic cache configure system --retention-period 90d        # restore steady-state
+#
+# CAUTION: this spawns a second atticd process against the same DB as the
+# running server. Fine for Postgres; on SQLite a busy server can briefly report
+# "database is locked" — just re-run, or `sudo machinectl stop attic` for a cold
+# sweep and restart after. UNVERIFIED against the live container — confirm the
+# binary/config globs resolve on first run.
+[group("System")]
+attic-gc:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🧹 Running one-shot Attic GC sweep in the cache container…"
+    sudo nixos-container run attic -- sh -c '
+      set -a; . /etc/atticd-env
+      [ -z "${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}" ] && \
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="$ATTIC_SERVER_TOKEN_RS256_SECRET"
+      ATTICD=$(ls -1 /nix/store/*-attic-*/bin/atticd | head -n 1)
+      CONFIG=$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
+      echo "── storage BEFORE ──"; du -sh /var/lib/atticd/storage 2>/dev/null || true
+      echo "▶ $ATTICD --mode garbage-collector-once -f $CONFIG"
+      "$ATTICD" --mode garbage-collector-once -f "$CONFIG"
+      echo "── storage AFTER ──";  du -sh /var/lib/atticd/storage 2>/dev/null || true
+    '
+    echo "✅ Attic GC sweep complete."
