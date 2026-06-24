@@ -6,13 +6,6 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
-    # Pins hass-pi's RPi kernel to a cached nixpkgs rev (see hosts/hass-pi).
-    # TEMPORARY: the kernel IMAGE now caches in Attic, but each RPi host's
-    # linux-rpi-MODULES derivation isn't built by CI yet (build-all's
-    # nix-fast-build doesn't materialize hass-pi's toplevel), so an unpinned
-    # deploy would compile hass-pi's modules (~30min) on the Pi. Drop this once
-    # CI caches them — see project_rpi_kernel_caching.
-    nixpkgs-rpi-kernel.url = "github:NixOS/nixpkgs/331800de5053fcebacf6813adb5db9c9dca22a0c";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
