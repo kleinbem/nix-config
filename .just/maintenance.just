@@ -134,7 +134,11 @@ apply *flags="":
 sync-agent:
     @echo "🤖 Syncing system context for Antigravity..."
     @./scripts/sync-agent-context.sh
-    @if ! jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; then \
+    @timeout 30 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; rc=$?; \
+    if [ "$rc" -eq 124 ]; then \
+        echo "  ⏱️  jj diff timed out after 30s — skipping doc-change check (apply not blocked)."; \
+        echo "     (jj likely deadlocked on the working-copy lock; re-run sync-agent later.)"; \
+    elif [ "$rc" -ne 0 ]; then \
         echo "  📝 Reference docs updated — already in jj working copy (@)."; \
         echo "     Commit when convenient: jj describe -m 'docs: auto-update AI reference docs'"; \
     fi

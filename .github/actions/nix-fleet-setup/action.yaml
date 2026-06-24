@@ -147,3 +147,16 @@ runs:
         endpoint: https://cache.kleinbem.dev/
         cache: system
         token: ${{ inputs.attic-token }}
+        # Setup-ONLY: configure Attic as a substituter + auth, but do NOT run
+        # the action's default post-job push. That push uploads the whole store
+        # diff — including every path Nix *substituted* from cache.nixos.org to
+        # assemble the closure — re-mirroring upstream into our private cache for
+        # no benefit (devices already get those from cache.nixos.org) and bloating
+        # it over time. The real push is done by `nix-fast-build --attic-cache
+        # system --skip-cached` in build-all.yaml, which pushes ONLY the paths it
+        # actually built (the non-upstream ones: custom kernels, custom packages,
+        # host-specific config). Net: Attic holds exactly what cache.nixos.org
+        # can't, and the two together cover every closure. The promote-production
+        # "verify-cache" gate proves that union is complete before any host is
+        # told to upgrade, so leaning Attic out here can't cause a device to build.
+        skip-push: 'true'
