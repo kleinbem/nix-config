@@ -239,6 +239,21 @@ in
             --loader '\EFI\systemd\systemd-bootx64.efi' \
             --unicode || true
         fi
+
+        # Enforce boot ORDER. The re-create above front-loads a freshly created
+        # entry, but if Windows left the "Linux Boot Manager" entry intact and
+        # merely reordered it behind "Windows Boot Manager", the machine still
+        # boots Windows by default. Put Linux Boot Manager first whenever it
+        # isn't already.
+        LBM=$(efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)\*\? Linux Boot Manager$/\1/p' | head -1)
+        if [ -n "$LBM" ]; then
+          ORDER=$(efibootmgr | sed -n 's/^BootOrder: //p')
+          if [ "''${ORDER%%,*}" != "$LBM" ]; then
+            echo "efi-boot-guard: Linux Boot Manager ($LBM) not first in BootOrder; fixing"
+            REST=$(printf '%s' "$ORDER" | tr ',' '\n' | grep -vix "$LBM" | paste -sd,)
+            efibootmgr -o "$LBM''${REST:+,$REST}" || true
+          fi
+        fi
       '';
     };
   };
