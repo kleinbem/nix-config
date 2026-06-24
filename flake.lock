@@ -2606,22 +2606,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-rpi-kernel": {
-      "locked": {
-        "lastModified": 1780243769,
-        "narHash": "sha256-x5UQuRsH3MqI0U9afaXSNqzTPSeZlRLvFAav2Ux1pNw=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "331800de5053fcebacf6813adb5db9c9dca22a0c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "331800de5053fcebacf6813adb5db9c9dca22a0c",
-        "type": "github"
-      }
-    },
     "nixpkgs-src": {
       "flake": false,
       "locked": {
@@ -3132,7 +3116,6 @@
         "nixos-generators": "nixos-generators_2",
         "nixpkgs": "nixpkgs_14",
         "nixpkgs-master": "nixpkgs-master_2",
-        "nixpkgs-rpi-kernel": "nixpkgs-rpi-kernel",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixvim": "nixvim",
         "nur": "nur",
