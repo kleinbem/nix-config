@@ -71,6 +71,27 @@
             };
           };
 
+          # Reproducibility guard: the committed flake.lock must pin every input
+          # to a fetchable source (github:, …), never a local file:///home path.
+          # Those creep in when local `nix` evals dirty the lock (the OVERRIDES
+          # dev flow) and someone commits it, or when sibling `inputs.follows`
+          # get stripped from flake.nix and a re-lock resolves siblings
+          # independently. Unlike a pre-commit hook scoped to `flake.lock$` (which
+          # only fires when the lock is in the changeset), this is a flake check —
+          # build-all builds it on EVERY PR, so committed drift can never sneak in
+          # via a PR that doesn't happen to touch the lock.
+          flake-lock-no-file-url =
+            inputs.nixpkgs.legacyPackages.${system}.runCommand "flake-lock-no-file-url" { }
+              ''
+                if grep -n 'file://' ${../../flake.lock}; then
+                  echo "ERROR: flake.lock pins local file:// inputs (lines above) — non-reproducible." >&2
+                  echo "Fix: re-resolve the sibling to github (nix flake update <sib>, same rev) and" >&2
+                  echo "restore its inputs.<sib>.follows dedup in flake.nix, then re-lock." >&2
+                  exit 1
+                fi
+                touch "$out"
+              '';
+
           code-server-test = import ../../tests/code-server.nix {
             pkgs = inputs.nixpkgs.legacyPackages.${system};
             inherit inputs;
