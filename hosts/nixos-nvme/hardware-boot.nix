@@ -208,8 +208,11 @@ in
       };
       path = with pkgs; [
         coreutils
+        diffutils # cmp
+        gnugrep # grep
+        gnused # sed (BootOrder parsing)
         efibootmgr
-        util-linux
+        util-linux # findmnt, lsblk
       ];
       script = ''
         SYSTEMD_BOOT="/boot/EFI/systemd/systemd-bootx64.efi"

@@ -117,56 +117,10 @@
   home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
   home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
 
-  # Windows (dual-boot on this NVMe — needed natively for locked-down exam
-  # browsers) overwrites \EFI\BOOT\BOOTX64.EFI and can drop the "Linux Boot
-  # Manager" NVRAM entry on a Windows session, making NixOS invisible in the
-  # firmware boot menu. Re-assert both after each successful NixOS boot so the
-  # system stays reachable regardless of what Windows did.
-  systemd.services.efi-boot-guard = {
-    description = "Restore EFI fallback path and NVRAM entry after Windows rewrites them";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "local-fs.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    path = with pkgs; [
-      coreutils
-      diffutils # cmp
-      gnugrep # grep
-      efibootmgr
-      util-linux # findmnt, lsblk
-    ];
-    script = ''
-      SYSTEMD_BOOT="/boot/EFI/systemd/systemd-bootx64.efi"
-      FALLBACK="/boot/EFI/BOOT/BOOTX64.EFI"
-
-      # UEFI firmware always tries \EFI\BOOT\BOOTX64.EFI even with no NVRAM
-      # entry, so keeping that fallback pointed at systemd-boot guarantees
-      # NixOS is reachable after Windows clobbers it.
-      if [ -f "$SYSTEMD_BOOT" ]; then
-        if ! cmp -s "$SYSTEMD_BOOT" "$FALLBACK" 2>/dev/null; then
-          echo "efi-boot-guard: restoring EFI fallback path to systemd-boot"
-          mkdir -p "$(dirname "$FALLBACK")"
-          cp "$SYSTEMD_BOOT" "$FALLBACK"
-        fi
-      fi
-
-      # Re-register the NVRAM entry if Windows removed it.
-      if ! efibootmgr | grep -q "Linux Boot Manager"; then
-        echo "efi-boot-guard: NVRAM entry missing, re-registering..."
-        ESP_DEV=$(findmnt -n -o SOURCE /boot)
-        DISK=$(lsblk -dnpo PKNAME "$ESP_DEV")
-        PART_NUM=$(lsblk -no PARTN "$ESP_DEV")
-        efibootmgr --create \
-          --disk "$DISK" \
-          --part "$PART_NUM" \
-          --label "Linux Boot Manager" \
-          --loader '\EFI\systemd\systemd-bootx64.efi' \
-          --unicode || true
-      fi
-    '';
-  };
+  # NOTE: the efi-boot-guard service lives in ./hardware-boot.nix (it also
+  # enforces BootOrder). Don't redefine it here — systemd.services.<n>.script
+  # is types.lines, so a second definition silently concatenates rather than
+  # erroring, duplicating the restore/NVRAM logic.
 
   # Shorten the boot menu label so specialisation names are visible in systemd-boot.
   system.nixos.label = lib.trivial.release;
