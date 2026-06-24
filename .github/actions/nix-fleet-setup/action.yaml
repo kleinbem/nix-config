@@ -141,7 +141,17 @@ runs:
         echo "NIX_SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt" >> "$GITHUB_ENV"
 
     - name: Setup Attic Cache
-      if: inputs.enable-cache == 'true'
+      # Run whenever a token is available — NOT only when pushing. PR builds
+      # (enable-cache=false) still need Attic as a READ substituter: the custom
+      # linux-rpi kernel/modules are absent from cache.nixos.org, so without
+      # Attic configured, nix-fast-build --skip-cached treats them as uncached
+      # and recompiles the modules from source (~2h45m) on every PR. As a read
+      # substituter this is resolved over the public Cloudflare tunnel (no
+      # NetBird): --skip-cached's narinfo queries are tiny, so a PR that doesn't
+      # change a host closure finds the toplevel cached and skips it entirely.
+      # NetBird + push stay gated on enable-cache (non-PR) below. (Empty token on
+      # fork PRs → step skips → falls back to building, same as before.)
+      if: inputs.attic-token != ''
       uses: ryanccn/attic-action@v0
       with:
         endpoint: https://cache.kleinbem.dev/
