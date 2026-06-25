@@ -75,11 +75,11 @@ jobs:
           # before the build step produces any output (visible as the
           # "hosted runner lost communication" error). Same issue hits meta's
           # build-all; this is the conservative first-pass fix.
-          # VM-based NixOS tests (caddy/code-server/mobile-link/recovery)
-          # require {kvm,nixos-test} features. Hosted GitHub runners don't
-          # expose /dev/kvm, so we enumerate .#checks and build only the
-          # non-VM ones explicitly. They stay in .#checks for local runs
-          # where KVM is available.
+          # VM-based NixOS tests (caddy/code-server/mobile-link/recovery) run
+          # in the dedicated vm-tests.yaml workflow — ubuntu-latest DOES expose
+          # /dev/kvm (it just needs a udev rule to make it writable). We exclude
+          # them from this build/cache job to avoid duplicating that
+          # ~3min-per-test work; they remain in .#checks for local runs.
           SYSTEM="${{ matrix.system }}"
           mapfile -t CI_CHECKS < <(nix flake show --json $NIX_OVERRIDES 2>/dev/null \
             | nix run nixpkgs#jq -- -r --arg sys "$SYSTEM" \
