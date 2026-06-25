@@ -24,7 +24,13 @@
   _module.args.device = lib.mkForce "/dev/nvme0n1";
 
   my = {
-    deploy.autoUpgrade.enable = true;
+    # Pull-deploy; this Pi only ever substitutes from Attic (over NetBird) and
+    # must never fall back to compiling locally — gate the nightly run on cache
+    # reachability and cap its runtime. See modules/nixos/auto-upgrade.nix.
+    deploy.autoUpgrade = {
+      enable = true;
+      requireCache = true;
+    };
 
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
