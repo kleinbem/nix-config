@@ -72,6 +72,21 @@
     };
   };
 
+  # ─── Direct LAN access to Home Assistant ────────────────────
+  # The HA container lives on the private cbr0 bridge (10.85.49.10) and is
+  # normally reached via Caddy (home.kleinbem.dev). Until the new router/DNS
+  # is set up, also forward the Pi's LAN port straight to the container so it's
+  # reachable by IP at **http://10.0.0.21:8123** (HTTP, not HTTPS). Safe to drop
+  # once DNS/Caddy is the only path again.
+  containers.home-assistant.forwardPorts = [
+    {
+      hostPort = 8123;
+      containerPort = 8123;
+      protocol = "tcp";
+    }
+  ];
+  networking.firewall.allowedTCPPorts = [ 8123 ];
+
   # ─── Persistence ─────────────────────────────────────────────
   environment.persistence."/nix/persist" = {
     directories = [
