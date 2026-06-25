@@ -1,0 +1,61 @@
+name: "VM Tests (KVM)"
+
+# NixOS VM integration tests on GitHub-hosted ubuntu-latest, which DOES expose
+# /dev/kvm (verified 2026-06-24 — ARM runners don't). One test per runner
+# (matrix) for parallelism. The test set is the same one build-all.yaml
+# excludes from its non-VM build.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/**'
+      - 'modules/**'
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/vm-tests.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vm-test:
+    name: "VM: ${{ matrix.test }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - caddy-test
+          - code-server-test
+          - mobile-link-test
+          - recovery-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Enable KVM for the nix builder
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -la /dev/kvm
+
+      - uses: ./.github/actions/nix-fleet-setup
+        with:
+          enable-cache: 'true'
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
+          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
+          free-disk-space: 'true'
+          configure-auto-gc: 'true'
+
+      - name: "Run VM test: ${{ matrix.test }}"
+        run: |
+          set -o pipefail
+          nix build --no-link --print-build-logs \
+            --system-features 'kvm nixos-test benchmark big-parallel' \
+            $NIX_OVERRIDES \
+            ".#checks.x86_64-linux.${{ matrix.test }}"
