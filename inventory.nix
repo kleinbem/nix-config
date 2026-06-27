@@ -193,6 +193,24 @@
           description = "Nix binary cache server.";
         };
       };
+      garage = {
+        ip = "10.85.46.1"; # host-native service on the cbr0 bridge IP (NOT a container)
+        port = 3900;
+        externalPort = 443;
+        domain = "s3.kleinbem.dev";
+        # No SSO/mTLS: S3 clients authenticate with their own SigV4 access keys
+        # (like the cache — must NOT be Authelia-gated, that breaks SDK clients).
+        # NOTE: large objects (backups) should route over NetBird to bypass
+        # Cloudflare's 100 MiB upload cap, same as Attic — this tunnel vhost is
+        # for general/small-object + admin access.
+        auth = false;
+        meta = {
+          name = "Garage S3";
+          category = "Infrastructure";
+          icon = "🗄️";
+          description = "Self-hosted S3 object storage (backups, cache, tofu-state).";
+        };
+      };
       n8n = {
         ip = "10.85.46.99";
         port = 5678;

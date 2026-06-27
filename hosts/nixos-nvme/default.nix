@@ -63,6 +63,7 @@
     ./hardware-boot.nix
     ./network.nix
     ./containers.nix
+    ./garage.nix
   ];
 
   environment = {
