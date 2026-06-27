@@ -47,7 +47,9 @@ jobs:
       - uses: ./.github/actions/nix-fleet-setup
         with:
           enable-cache: 'true'
-          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
+          # Prefer the ephemeral key (auto-expiring runner peers); fall back to
+          # the persistent key until the ephemeral secret is distributed.
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL || secrets.NETBIRD_SETUP_KEY }}
           attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
           free-disk-space: 'true'
           configure-auto-gc: 'true'
