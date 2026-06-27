@@ -80,6 +80,7 @@
 
 ### nixos-nvme
 
+- 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.46.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:18]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.46.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
