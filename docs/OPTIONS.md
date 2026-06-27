@@ -62,7 +62,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.authentik`
 
-- **Declared:** `nix-presets/containers/authentik.nix:14`
+- **Declared:** `nix-presets/containers/authentik.nix:13`
 - **Sub-options:** `bootstrapAdminPasswordFile`, `bootstrapApiTokenFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `postgresPasswordFile`, `secretKeyFile`
 - **Consumed by:** _(no opt-ins detected)_
 
@@ -244,8 +244,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.autoUpgrade`
 
-- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:12`
-- **Sub-options:** `allowReboot`, `dates`, `enable`, `flakeRef`, `hostName`, `randomizedDelaySec`
+- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
+- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `randomizedDelaySec`, `requireCache`
 - **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
 
 ## `my.desktop`
@@ -258,7 +258,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop.claude`
 
-- **Declared:** `nix-presets/nixosModules/claude.nix:8`
+- **Declared:** `nix-presets/nixosModules/claude.nix:15`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
 

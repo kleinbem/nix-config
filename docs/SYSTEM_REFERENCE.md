@@ -95,8 +95,9 @@
 ### Declared but not currently enabled on any host
 
 - `alertmanager` — Alertmanager
-- `authentik` _[src: nix-presets/containers/authentik.nix:14]_
+- `authentik` _[src: nix-presets/containers/authentik.nix:13]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
+- `garage` — Garage S3
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
 - `odoo` _[src: nix-presets/containers/odoo.nix:14]_
 - `ollama-orin` — Ollama Orin Nano
