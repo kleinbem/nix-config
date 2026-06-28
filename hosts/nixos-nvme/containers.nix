@@ -185,7 +185,8 @@
       };
 
       backup = {
-        enable = true;
+        enable = false; # TEMP: toggle false→apply→true→apply to force NixOS to
+        # cleanly tear down + recreate the container (its system was stuck stale).
         ip = "10.85.46.128/24";
         # Literal paths (not config.sops.secrets.*.path) on purpose: the sops
         # attribute evaluated to null inside the container's separate module
