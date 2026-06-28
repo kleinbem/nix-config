@@ -187,9 +187,14 @@
       backup = {
         enable = true;
         ip = "10.85.46.128/24";
-        passwordFile = config.sops.secrets.restic_password.path;
-        systemPasswordFile = config.sops.secrets.restic_system_password.path;
-        rcloneConfigFile = config.sops.secrets.rclone_config.path;
+        # Literal paths (not config.sops.secrets.*.path) on purpose: the sops
+        # attribute evaluated to null inside the container's separate module
+        # eval (mkContainer), which silently flipped restic to the /run/secrets/dummy
+        # fallback. These are exactly what sops renders on the host, so the
+        # read-only bind-mounts still point at the real secrets. See restic backup debug.
+        passwordFile = "/run/secrets/restic_password";
+        systemPasswordFile = "/run/secrets/restic_system_password";
+        rcloneConfigFile = "/run/secrets/rclone_config";
         targets = {
           "/home" = config.my.home;
           "/var/lib/images/n8n" = "/var/lib/images/n8n";
