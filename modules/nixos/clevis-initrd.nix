@@ -130,7 +130,7 @@ in
           };
         };
 
-        storePaths = [ 
+        storePaths = [
           waitForTang
           "${pkgs.systemd}/lib/systemd/systemd-reply-password"
         ];

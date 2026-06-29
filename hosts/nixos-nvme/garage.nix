@@ -21,15 +21,17 @@
   # --- Secrets (add to nix-secrets/secrets.yaml, then `sops updatekeys`) -------
   #   garage_rpc_secret   : `openssl rand -hex 32`  (32-byte hex, REQUIRED format)
   #   garage_admin_token  : `openssl rand -base64 32` (any opaque string)
-  sops.secrets.garage_rpc_secret = { };
-  sops.secrets.garage_admin_token = { };
+  sops = {
+    secrets.garage_rpc_secret = { };
+    secrets.garage_admin_token = { };
 
-  # Rendered env file injected into the service (keeps secrets OUT of the
-  # world-readable /etc/garage.toml in the Nix store). Garage reads these env vars.
-  sops.templates."garage.env".content = ''
-    GARAGE_RPC_SECRET=${config.sops.placeholder.garage_rpc_secret}
-    GARAGE_ADMIN_TOKEN=${config.sops.placeholder.garage_admin_token}
-  '';
+    # Rendered env file injected into the service (keeps secrets OUT of the
+    # world-readable /etc/garage.toml in the Nix store). Garage reads these env vars.
+    templates."garage.env".content = ''
+      GARAGE_RPC_SECRET=${config.sops.placeholder.garage_rpc_secret}
+      GARAGE_ADMIN_TOKEN=${config.sops.placeholder.garage_admin_token}
+    '';
+  };
 
   # --- Storage dirs on /mnt/data, owned by a static garage user ---------------
   # (Static user instead of the module's default DynamicUser, so a fixed
