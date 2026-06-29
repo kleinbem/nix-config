@@ -22,9 +22,11 @@ let
     while [ "$carrier_check" -lt 30 ]; do
       for pattern in ${cfg.networkInterface}; do
         for dev in /sys/class/net/$pattern; do
-          if [ -e "$dev" ] && [ -f "$dev/carrier" ] && [ "$(cat "$dev/carrier")" = "1" ]; then
-            has_carrier=true
-            break 2
+          if [ -e "$dev" ] && [ -f "$dev/carrier" ]; then
+            if [ "$(cat "$dev/carrier" 2>/dev/null)" = "1" ]; then
+              has_carrier=true
+              break 2
+            fi
           fi
         done
       done
@@ -195,9 +197,9 @@ in
                     esac
                   done < "$question"
 
-                  if [ "$device_id" = "${cfg.luksDevice}" ] && [ -n "$socket" ] && [ -S "$socket" ]; then
-                    echo "clevis-jwe-unlock: Found password query for ${cfg.luksDevice}. Sending decrypted passphrase..."
-                    if printf '%s' "$PASSPHRASE" | ${pkgs.systemd}/lib/systemd/systemd-reply-password 1 "$socket"; then
+                  if [ -n "$device_id" ] && [ -n "$socket" ] && [ -S "$socket" ]; then
+                    echo "clevis-jwe-unlock: Found password query (Id: $device_id). Sending decrypted passphrase..."
+                    if printf '%s' "$PASSPHRASE" | systemd-reply-password 1 "$socket"; then
                       echo "clevis-jwe-unlock: Successfully unlocked ${cfg.luksDevice} via systemd ask-password."
                       exit 0
                     else
