@@ -130,7 +130,10 @@ in
           };
         };
 
-        storePaths = [ waitForTang ];
+        storePaths = [ 
+          waitForTang
+          "${pkgs.systemd}/lib/systemd/systemd-reply-password"
+        ];
 
         services.wait-for-tang = {
           description = "Wait for Tang reachability before clevis LUKS unlock";
@@ -199,7 +202,7 @@ in
 
                   if [ -n "$device_id" ] && [ -n "$socket" ] && [ -S "$socket" ]; then
                     echo "clevis-jwe-unlock: Found password query (Id: $device_id). Sending decrypted passphrase..."
-                    if printf '%s' "$PASSPHRASE" | systemd-reply-password 1 "$socket"; then
+                    if printf '%s' "$PASSPHRASE" | ${pkgs.systemd}/lib/systemd/systemd-reply-password 1 "$socket"; then
                       echo "clevis-jwe-unlock: Successfully unlocked ${cfg.luksDevice} via systemd ask-password."
                       exit 0
                     else
