@@ -19,7 +19,7 @@ let
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
     has_carrier=false
     carrier_check=0
-    while [ "$carrier_check" -lt 5 ]; do
+    while [ "$carrier_check" -lt 30 ]; do
       for pattern in ${cfg.networkInterface}; do
         for dev in /sys/class/net/$pattern; do
           if [ -e "$dev" ] && [ -f "$dev/carrier" ] && [ "$(cat "$dev/carrier")" = "1" ]; then
@@ -46,7 +46,7 @@ let
     TANG_SERVERS=(
       ${lib.concatMapStringsSep "\n      " (s: "\"${s}\"") remoteTangServers}
     )
-    while [ "$i" -lt 30 ]; do
+    while [ "$i" -lt 60 ]; do
       for server in "''${TANG_SERVERS[@]}"; do
         if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$server/adv"; then
           echo "wait-for-tang: Tang server $server reachable after $i retry(ies)"

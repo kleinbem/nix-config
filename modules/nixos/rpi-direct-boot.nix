@@ -95,18 +95,23 @@ in
                 echo "DTB:     $FDT_PATH"
                 echo "Cmdline: $APPEND_TEXT"
 
+                echo "Copying boot files to short names to bypass 98-char config.txt limit..."
+                cp "$ESP/$KERNEL_PATH" "$ESP/kernel.img"
+                cp "$ESP/$INITRD_PATH" "$ESP/initrd.img"
+                cp "$ESP/$FDT_PATH" "$ESP/pi.dtb"
+
                 # Update cmdline.txt
                 echo "$APPEND_TEXT" > "$ESP/cmdline.txt"
 
                 # Update config.txt
                 cat > "$ESP/config.txt" <<EOF
         [all]
-        kernel=$KERNEL_PATH
-        initramfs $INITRD_PATH followkernel
+        kernel=kernel.img
+        initramfs initrd.img followkernel
         cmdline=cmdline.txt
         arm_64bit=1
         upstream_kernel=1
-        device_tree=$FDT_PATH
+        device_tree=pi.dtb
         dtparam=pciex1_gen=3
         os_check=0
         disable_splash=1
