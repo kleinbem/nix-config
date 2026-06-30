@@ -2,6 +2,7 @@
 {
   inputs,
   self,
+  lib,
   myInventory,
   pkgs,
   ...
@@ -22,8 +23,13 @@
 
   networking.hostName = "core-pi";
 
+  _module.args.device = lib.mkForce "/dev/nvme0n1";
+
   my = {
-    deploy.autoUpgrade.enable = true;
+    deploy.autoUpgrade = {
+      enable = true;
+      requireCache = true;
+    };
 
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
@@ -41,11 +47,14 @@
     };
 
     virtualisation = {
-      podman.enable = false;
+      podman.enable = true;
       lxc.enable = false;
     };
 
-    services.rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
+    services = {
+      rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
+      netbird.allowServerSsh = true;
+    };
 
     # ─── Containers ──────────────────────────────────────────────
     containers = {
