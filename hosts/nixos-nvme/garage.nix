@@ -89,7 +89,7 @@
       # crash-fragility (replacement planned); btrfs CoW under the data dir +
       # the R2 offsite copy are the mitigations. Switch to "sqlite" here if you
       # want to prioritise crash-resilience over raw speed on this single node.
-      db_engine = "lmdb";
+      db_engine = "sqlite";
 
       replication_factor = 1; # single node (interim). Raise + add nodes later.
 
