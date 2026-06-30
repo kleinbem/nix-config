@@ -137,16 +137,6 @@ in
         # window. Stage everything in parallel (no restarts → attic keeps
         # serving). Then activate non-attic in parallel. Then attic last.
         # ----------------------------------------------------------------
-        timers."update-containers" = lib.mkIf (cfg.containers != [ ]) {
-          description = "Nightly update of standalone NixOS containers";
-          wantedBy = [ "timers.target" ];
-          timerConfig = {
-            OnCalendar = "*-*-* 03:00:00";
-            Persistent = true;
-            RandomizedDelaySec = "30m";
-          };
-        };
-
         "update-containers" = lib.mkIf (cfg.containers != [ ]) {
           description = "Smart bulk update of standalone NixOS containers (stage all → activate non-attic → activate attic last)";
 
@@ -186,6 +176,16 @@ in
 
             echo "Bulk update complete."
           '';
+        };
+      };
+
+      timers."update-containers" = lib.mkIf (cfg.containers != [ ]) {
+        description = "Nightly update of standalone NixOS containers";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "*-*-* 03:00:00";
+          Persistent = true;
+          RandomizedDelaySec = "30m";
         };
       };
 
