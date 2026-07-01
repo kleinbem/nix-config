@@ -55,7 +55,7 @@ in
         keys.cachix.devenv
         keys.cachix.cuda-maintainers
         keys.cachix.anduril
-        "system:EVrT+UgMV5xzRZSNKPEFflQwGc5qqgMro6PA5lzD05U="
+        "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU="
       ];
       download-buffer-size = 1073741824;
 
