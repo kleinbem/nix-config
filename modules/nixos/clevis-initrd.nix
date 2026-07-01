@@ -172,10 +172,13 @@ in
               exit 0
             fi
 
-            # Attempt to decrypt the JWE file using clevis
             # Limit the time for clevis decrypt to 10 seconds to prevent hanging the boot
+            # Write to a file instead of using $() because timeout doesn't kill orphaned curl processes,
+            # which would keep the pipe open and hang the $() command substitution indefinitely.
             echo "clevis-jwe-unlock: Attempting to decrypt JWE secret..."
-            PASSPHRASE=$(${pkgs.coreutils}/bin/timeout 10 ${pkgs.clevis}/bin/clevis decrypt < "$JWE_FILE" 2>/dev/null || true)
+            ${pkgs.coreutils}/bin/timeout 10 ${pkgs.clevis}/bin/clevis decrypt < "$JWE_FILE" > /tmp/jwe_passphrase 2>/dev/null || true
+            PASSPHRASE=$(cat /tmp/jwe_passphrase 2>/dev/null)
+            rm -f /tmp/jwe_passphrase
 
             if [ -z "$PASSPHRASE" ]; then
               echo "clevis-jwe-unlock: Decryption failed or timed out (Tang offline/unreachable). Let fallback handle unlocking."
