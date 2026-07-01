@@ -445,7 +445,7 @@ pi-install-usb host device="/dev/sdc":
     
     # Extract only the derivations that will be built, ignoring fast-builds or aliases
     build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}')
-    heavy_builds=$(echo "$build_list" | grep -vE '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
+    heavy_builds=$(echo "$build_list" | grep -vE -- '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
 
     if [ -n "$heavy_builds" ]; then
         echo "❌ Cache miss detected! Heavy compilations required:"
@@ -493,6 +493,13 @@ pi-install-usb host device="/dev/sdc":
         --argstr device {{device}} \
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
+
+    # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
+    if pgrep -f "nix build .#nixosConfigurations.{{host}}" >/dev/null; then
+        echo "🧹 Terminating stale background builds for {{host}} to free store locks..."
+        pkill -f "nix build .#nixosConfigurations.{{host}}" || true
+        sleep 1
+    fi
 
     echo "🏗️ Building {{host}} closure (using local emulation for small derivations)..."
     nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
@@ -590,7 +597,7 @@ pi-update-usb host device="/dev/sdc":
     
     # Extract only the derivations that will be built, ignoring fast-builds or aliases
     build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}')
-    heavy_builds=$(echo "$build_list" | grep -vE '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
+    heavy_builds=$(echo "$build_list" | grep -vE -- '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
 
     if [ -n "$heavy_builds" ]; then
         echo "❌ Cache miss detected! Heavy compilations required:"
@@ -628,6 +635,13 @@ pi-update-usb host device="/dev/sdc":
         --argstr device {{device}} \
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
+
+    # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
+    if pgrep -f "nix build .#nixosConfigurations.{{host}}" >/dev/null; then
+        echo "🧹 Terminating stale background builds for {{host}} to free store locks..."
+        pkill -f "nix build .#nixosConfigurations.{{host}}" || true
+        sleep 1
+    fi
 
     echo "🏗️ Building {{host}} closure (using local emulation for small derivations)..."
     nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
