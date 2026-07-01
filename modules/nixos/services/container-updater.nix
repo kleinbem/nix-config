@@ -12,7 +12,7 @@ in
     enable = lib.mkEnableOption "Automated container closures updater via Nix Profiles";
     flakeURI = lib.mkOption {
       type = lib.types.str;
-      default = "github:kleinbem/nix";
+      default = "github:kleinbem/nix-config";
       description = "The flake URI to pull container configurations from.";
     };
     containers = lib.mkOption {
