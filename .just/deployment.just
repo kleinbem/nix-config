@@ -442,10 +442,14 @@ pi-install-usb host device="/dev/sdc":
 
     echo "🔍 Pre-flight check: verifying cache coverage for {{host}}..."
     output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
-    if echo "$output" | grep -qE "will be built"; then
-        echo "❌ Cache miss detected! The closure is not fully cached in Attic."
-        echo "⚠️ These derivations would build locally:"
-        echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
+    
+    # Extract only the derivations that will be built, ignoring fast-builds or aliases
+    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}')
+    heavy_builds=$(echo "$build_list" | grep -vE '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
+
+    if [ -n "$heavy_builds" ]; then
+        echo "❌ Cache miss detected! Heavy compilations required:"
+        echo "$heavy_builds" | sed 's/^/  /'
         echo ""
         echo "💡 To fix this and ensure a 0-build deployment:"
         echo "   1. Commit any local changes to your git tree (dirty trees change hashes!)."
@@ -490,9 +494,10 @@ pi-install-usb host device="/dev/sdc":
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
 
-    echo "🏗️ Building {{host}} closure (natively via remote builder)..."
+    echo "🏗️ Building {{host}} closure (using local emulation for small derivations)..."
     nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
         --option sandbox false \
+        --option builders "" \
         --out-link /tmp/{{host}}-system
 
     SYSTEM="$(readlink /tmp/{{host}}-system)"
@@ -582,10 +587,14 @@ pi-update-usb host device="/dev/sdc":
 
     echo "🔍 Pre-flight check: verifying cache coverage for {{host}}..."
     output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
-    if echo "$output" | grep -qE "will be built"; then
-        echo "❌ Cache miss detected! The closure is not fully cached in Attic."
-        echo "⚠️ These derivations would build locally:"
-        echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
+    
+    # Extract only the derivations that will be built, ignoring fast-builds or aliases
+    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}')
+    heavy_builds=$(echo "$build_list" | grep -vE '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
+
+    if [ -n "$heavy_builds" ]; then
+        echo "❌ Cache miss detected! Heavy compilations required:"
+        echo "$heavy_builds" | sed 's/^/  /'
         echo ""
         echo "💡 To fix this and ensure a 0-build deployment:"
         echo "   1. Commit any local changes to your git tree (dirty trees change hashes!)."
@@ -620,9 +629,10 @@ pi-update-usb host device="/dev/sdc":
         --root-mountpoint "$MNT" \
         ./hosts/{{host}}/disko.nix
 
-    echo "🏗️ Building {{host}} closure (natively via remote builder)..."
+    echo "🏗️ Building {{host}} closure (using local emulation for small derivations)..."
     nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
         --option sandbox false \
+        --option builders "" \
         --out-link /tmp/{{host}}-system
 
     SYSTEM="$(readlink /tmp/{{host}}-system)"
