@@ -425,6 +425,9 @@ pi-install-usb host device="/dev/sdc":
         exit 1
     fi
 
+    echo "🔄 Syncing with origin to ensure closure hashes match the CI cache..."
+    just -f ../justfile jj::pull-all
+
     if [ ! -b "{{device}}" ]; then
         echo "❌ Error: Target {{device}} is not a valid block device! Please check lsblk."
         exit 1
@@ -436,6 +439,22 @@ pi-install-usb host device="/dev/sdc":
     CRYPT_NAME="{{host}}"
     CRYPT_NAME="${CRYPT_NAME%-pi}_crypt"
     MNT="/mnt/{{host}}"
+
+    echo "🔍 Pre-flight check: verifying cache coverage for {{host}}..."
+    output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
+    if echo "$output" | grep -qE "will be built"; then
+        echo "❌ Cache miss detected! The closure is not fully cached in Attic."
+        echo "⚠️ These derivations would build locally:"
+        echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
+        echo ""
+        echo "💡 To fix this and ensure a 0-build deployment:"
+        echo "   1. Commit any local changes to your git tree (dirty trees change hashes!)."
+        echo "   2. Push to GitHub so CI can build and push to Attic."
+        echo "   3. Run 'just jj::pull-all' to sync to the exact cached commit."
+        echo "   4. Retry this deployment script."
+        exit 1
+    fi
+    echo "✓ Closure fully covered by Attic! Proceeding with deployment."
 
     echo "🧹 Cleaning up existing mounts and LUKS mappings on {{device}}..."
     for mp in $(awk '$2 ~ "^'"$MNT"'" {print $2}' /proc/mounts | sort -r); do
@@ -546,6 +565,9 @@ pi-update-usb host device="/dev/sdc":
         exit 1
     fi
 
+    echo "🔄 Syncing with origin to ensure closure hashes match the CI cache..."
+    just -f ../justfile jj::pull-all
+
     if [ ! -b "{{device}}" ]; then
         echo "❌ Error: Target {{device}} is not a valid block device! Please check lsblk."
         exit 1
@@ -557,6 +579,22 @@ pi-update-usb host device="/dev/sdc":
     CRYPT_NAME="{{host}}"
     CRYPT_NAME="${CRYPT_NAME%-pi}_crypt"
     MNT="/mnt/{{host}}"
+
+    echo "🔍 Pre-flight check: verifying cache coverage for {{host}}..."
+    output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
+    if echo "$output" | grep -qE "will be built"; then
+        echo "❌ Cache miss detected! The closure is not fully cached in Attic."
+        echo "⚠️ These derivations would build locally:"
+        echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
+        echo ""
+        echo "💡 To fix this and ensure a 0-build deployment:"
+        echo "   1. Commit any local changes to your git tree (dirty trees change hashes!)."
+        echo "   2. Push to GitHub so CI can build and push to Attic."
+        echo "   3. Run 'just jj::pull-all' to sync to the exact cached commit."
+        echo "   4. Retry this deployment script."
+        exit 1
+    fi
+    echo "✓ Closure fully covered by Attic! Proceeding with deployment."
 
     echo "🧹 Cleaning up existing mounts and LUKS mappings before mounting..."
     for mp in $(awk '$2 ~ "^'"$MNT"'" {print $2}' /proc/mounts | sort -r); do
