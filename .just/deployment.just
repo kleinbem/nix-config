@@ -8,18 +8,43 @@ set working-directory := ".."
 [confirm("🚀 Deploy configuration to the ENTIRE FLEET via Colmena?")]
 deploy-fleet:
     @echo "🚀 Deploying to entire fleet via Colmena..."
-    colmena -f ./flake.nix apply --impure --show-trace
+    env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --show-trace
 
 [group("Fleet")]
 [doc("Deploy one host by name via Colmena. Nodes: nixos-nvme, router-1, router-2, orin-nano, core-pi, hass-pi, nasbook. ARM/Pi nodes build on-target and substitute from Attic.")]
 deploy host:
-    @echo "🚀 Deploying to {{host}} via Colmena..."
-    colmena -f ./flake.nix apply --impure --on {{host}}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    echo "🚀 Deploying to {{host}} via Colmena..."
+    
+    # Pre-flight check: Prevent deploying to a node that is booted from an SD card
+    if [[ "{{host}}" == "core-pi" || "{{host}}" == "hass-pi" ]]; then
+        echo "🔍 Checking boot medium for {{host}}..."
+        # We check /nix because / is tmpfs due to impermanence
+        if env SSH_AUTH_SOCK="" ssh -o ConnectTimeout=5 "{{host}}" "lsblk -s -n -o NAME \$(findmnt -n -o SOURCE /nix) | grep -q mmcblk0" 2>/dev/null; then
+            echo "❌ ERROR: {{host}} is booted from the SD card (/dev/mmcblk0)!"
+            echo "   Deploying now would write the bootloader to the SD card, not the SSD."
+            echo "   To update the offline SSD, plug it into your laptop and run:"
+            echo "       just deployment::pi-update-usb {{host}}"
+            echo "   Or, remove the SD card and boot from the SSD before running deploy."
+            exit 1
+        fi
+        echo "✅ Host is booted from the SSD."
+    fi
+
+    env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on {{host}}
+
+    # Post-flight sync: Ensure the boot files are fully copied before we report success
+    if [[ "{{host}}" == "core-pi" || "{{host}}" == "hass-pi" ]]; then
+        echo "⏳ Forcing Raspberry Pi bootloader sync..."
+        env SSH_AUTH_SOCK="" ssh -o ConnectTimeout=5 "{{host}}" "sudo systemctl restart sync-rpi-boot.service" || echo "⚠️ Warning: Could not force bootloader sync, it may run in the background."
+    fi
 
 [group("Fleet")]
 deploy-orin:
     @echo "🟢 Deploying to Orin Nano..."
-    colmena -f ./flake.nix apply --impure --on orin-nano
+    env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on orin-nano
 
 [group("Provisioning")]
 [confirm("💿 Re-install full orin-nano config onto the bootstrapped Orin? Builds natively on the device (no cross-compilation). This reformats the SSD.")]
@@ -46,7 +71,7 @@ orin-promote-nokexec host="root@orin-nano-bootstrap.local":
 [group("Fleet")]
 deploy-edge:
     @echo "📡 Deploying to AI Edge (Orin + Raspberry Pi)..."
-    colmena -f ./flake.nix apply --impure --on orin-nano,core-pi,hass-pi
+    env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on orin-nano,core-pi,hass-pi
 
 
 # Note: SSH-based diagnostic recipes (ping/tegrastats/logs/shell) live in
@@ -63,6 +88,10 @@ orin-seal:
 orin-install-bootstrap device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Prompt for sudo upfront and keep it alive in the background
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
     echo "🔍 Ensuring clean state before install..."
     sudo umount -R /mnt/orin-bootstrap 2>/dev/null || true
     sudo vgchange -an vg_orin 2>/dev/null || true
@@ -130,6 +159,10 @@ orin-install-bootstrap device="/dev/sdb":
 orin-install-usb device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Prompt for sudo upfront and keep it alive in the background
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
     _cleanup_dm() {
         # Deactivate LVM VG, close any LUKS mapped from partitions of this disk, then
@@ -369,6 +402,10 @@ orin-install-usb device="/dev/sdb":
 orin-update-usb device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Prompt for sudo upfront and keep it alive in the background
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
     echo "🔓 Mounting existing SSD via disko (enter the Orin LUKS passphrase when prompted)..."
     sudo nix run github:nix-community/disko -- \
@@ -419,6 +456,10 @@ orin-update-usb device="/dev/sdb":
 pi-install-usb host device="/dev/sdc":
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Prompt for sudo upfront and keep it alive in the background
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
     if [[ "{{host}}" != "core-pi" && "{{host}}" != "hass-pi" ]]; then
         echo "❌ Invalid host: {{host}}. Must be core-pi or hass-pi."
@@ -571,6 +612,10 @@ pi-install-usb host device="/dev/sdc":
 pi-update-usb host device="/dev/sdc":
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Prompt for sudo upfront and keep it alive in the background
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
     if [[ "{{host}}" != "core-pi" && "{{host}}" != "hass-pi" ]]; then
         echo "❌ Invalid host: {{host}}. Must be core-pi or hass-pi."
@@ -715,6 +760,10 @@ router-provision:
 core-rebind-tang device="/dev/sdf":
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Prompt for sudo upfront and keep it alive in the background
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
     
     echo "🔓 Mounting existing SSD via disko (enter the Pi LUKS passphrase when prompted)..."
     sudo nix run github:nix-community/disko -- \

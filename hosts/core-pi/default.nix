@@ -59,30 +59,34 @@
     # ─── Containers ──────────────────────────────────────────────
     containers = {
       open-webui = {
-        enable = false; # Temporarily disabled for fast USB bootstrap
+        enable = true;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/open-webui";
         memoryLimit = "2G";
       };
 
       openclaw = {
-        enable = false; # Temporarily disabled for fast USB bootstrap
+        enable = true;
         ip = "${myInventory.network.nodes.openclaw.ip}/24";
         hostDataDir = "/var/lib/openclaw";
         memoryLimit = "1G";
       };
 
       agent-zero = {
-        enable = false; # Temporarily disabled for fast USB bootstrap
+        enable = true;
         ip = "${myInventory.network.nodes.agent-zero.ip}/24";
         hostDataDir = "/var/lib/agent-zero";
         memoryLimit = "1G";
       };
 
-      ollama.enable = false;
+      ollama = {
+        enable = true;
+        ip = "${myInventory.network.nodes.ollama-rpi.ip}/24";
+        hostDataDir = "/var/lib/ollama";
+      };
 
       anythingllm = {
-        enable = false; # Temporarily disabled for fast USB bootstrap
+        enable = true;
         ip = "${myInventory.network.nodes.anythingllm.ip}/24";
         hostDataDir = "/var/lib/anythingllm";
         llmUrl = "https://litellm.internal";

@@ -28,6 +28,8 @@ in
     # 3. Systemd Service that parses extlinux.conf and writes config.txt
     systemd.services.sync-rpi-boot = {
       description = "Sync Raspberry Pi config.txt with extlinux.conf";
+      before = [ "shutdown.target" ];
+      conflicts = [ "shutdown.target" ];
 
       path = [
         pkgs.gawk
