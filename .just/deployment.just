@@ -345,7 +345,7 @@ orin-install-usb device="/dev/sdb":
     if [ -n "$LUKS_DEV" ]; then
         echo "Will prompt for LUKS password to authorize Tang binding..."
         # Note: Binds to nixos-nvme (10.0.0.5), hass-pi (10.0.0.21), and orin-nano (10.0.0.12) using the local advertisement files.
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "nix-config/hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "nix-config/hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "nix-config/hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
+        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
     else
         echo "⚠️ Could not find mapped device orin_crypt for Tang binding."
     fi
@@ -444,7 +444,7 @@ pi-install-usb host device="/dev/sdc":
     output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
     
     # Extract only the derivations that will be built, ignoring fast-builds or aliases
-    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}')
+    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
     heavy_builds=$(echo "$build_list" | grep -vE -- '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
 
     if [ -n "$heavy_builds" ]; then
@@ -553,7 +553,7 @@ pi-install-usb host device="/dev/sdc":
     LUKS_DEV=$(sudo cryptsetup status "$CRYPT_NAME" | awk '/device:/ {print $2}')
     if [ -n "$LUKS_DEV" ]; then
         echo "Will prompt for LUKS password to authorize Tang binding..."
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "nix-config/hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "nix-config/hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "nix-config/hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
+        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
     else
         echo "⚠️ Could not find mapped device $CRYPT_NAME for Tang binding."
     fi
@@ -596,7 +596,7 @@ pi-update-usb host device="/dev/sdc":
     output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
     
     # Extract only the derivations that will be built, ignoring fast-builds or aliases
-    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}')
+    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
     heavy_builds=$(echo "$build_list" | grep -vE -- '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
 
     if [ -n "$heavy_builds" ]; then
@@ -729,7 +729,7 @@ core-rebind-tang device="/dev/sdf":
         sudo clevis luks unbind -d "$LUKS_DEV" -s 1 || echo "No old key in slot 1 or failed to unbind."
         echo "🔗 Binding LUKS partition to Tang CLUSTER for silent boot..."
         echo "Will prompt for LUKS password to authorize Tang cluster binding..."
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "nix-config/hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "nix-config/hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "nix-config/hosts/orin-nano/tang-adv.jws"}]}}'
+        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}'
     else
         echo "⚠️ Could not find mapped device core_crypt for Tang binding."
     fi
