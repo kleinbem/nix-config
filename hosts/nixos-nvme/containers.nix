@@ -76,7 +76,7 @@
       };
 
       dashboard = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = myInventory.hosts.nixos-nvme.ip;
         memoryLimit = "1G";
@@ -156,7 +156,7 @@
       };
 
       cups = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.cups.ip}/24";
       };
 
