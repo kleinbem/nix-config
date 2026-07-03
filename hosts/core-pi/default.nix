@@ -27,6 +27,8 @@
 
   networking.hostName = "core-pi";
 
+  services.fwupd.enable = lib.mkForce false; # Fails to cross-compile for aarch64 (ld.bfd missing)
+
   _module.args.device = lib.mkForce "/dev/nvme0n1";
 
   my = {
@@ -56,7 +58,6 @@
     };
 
     services = {
-      fwupd.enable = lib.mkForce false; # Fails to cross-compile for aarch64 (ld.bfd missing)
       rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
       netbird.allowServerSsh = true;
     };
