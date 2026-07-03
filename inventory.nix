@@ -182,7 +182,7 @@
         };
       };
       attic = {
-        ip = "10.85.46.120";
+        ip = "10.85.48.120";
         port = 8080;
         externalPort = 443;
         domain = "cache.kleinbem.dev";
@@ -407,7 +407,7 @@
         };
       };
       authelia = {
-        ip = "10.85.46.123";
+        ip = "10.85.48.123";
         port = 9091;
         externalPort = 9091;
         meta = {

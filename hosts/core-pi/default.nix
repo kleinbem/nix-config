@@ -1,5 +1,6 @@
 # core-pi — Raspberry Pi 5 (AI & Infrastructure Services)
 {
+  config,
   inputs,
   self,
   lib,
@@ -11,6 +12,7 @@
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
     ./disko.nix
+    ./secrets.nix
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.openclaw
@@ -113,6 +115,20 @@
         ip = "${myInventory.network.nodes.github-runner.ip}/24"; # Need to ensure this doesn't conflict if nvme also runs one
         hostDataDir = "/var/lib/github-runner";
         # secretsFile = config.sops.secrets.github_runner_pat.path;
+      };
+
+      authelia = {
+        enable = true;
+        ip = "${myInventory.network.nodes.authelia.ip}/24";
+        hostDataDir = "/var/lib/images/authelia";
+        domain = "local";
+      };
+
+      attic = {
+        enable = true;
+        ip = "${myInventory.network.nodes.attic.ip}/24";
+        hostDataDir = "/var/lib/images/attic";
+        secretsFile = config.sops.templates."attic.env".path;
       };
     };
   };
