@@ -120,32 +120,24 @@ in
 
   nix = {
     # Distributed Builds: Offload aarch64 compilation to remote ARM nodes
-    distributedBuilds = true;
-    buildMachines = [
-      {
-        hostName = "10.0.0.21"; # hass-pi static IP
-        system = "aarch64-linux";
-        protocol = "ssh-ng";
-        maxJobs = 4;
-        speedFactor = 2;
-        supportedFeatures = [
-          "nixos-test"
-          "benchmark"
-          "big-parallel"
-          "kvm"
-        ];
-        mandatoryFeatures = [ ];
-        sshKey = "/root/.ssh/id_ed25519"; # Daemon needs a non-Yubikey SSH key to connect silently
-      }
-      # {
-      #   hostName = "10.0.0.22"; # core-pi static IP
-      #   system = "aarch64-linux";
-      #   protocol = "ssh-ng";
-      #   maxJobs = 4;
-      #   speedFactor = 2;
-      #   supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
-      # }
-    ];
+    distributedBuilds = false;
+    # buildMachines = [
+    #   {
+    #     hostName = "10.0.0.21"; # hass-pi static IP
+    #     system = "aarch64-linux";
+    #     protocol = "ssh-ng";
+    #     maxJobs = 4;
+    #     speedFactor = 2;
+    #     supportedFeatures = [
+    #       "nixos-test"
+    #       "benchmark"
+    #       "big-parallel"
+    #       "kvm"
+    #     ];
+    #     mandatoryFeatures = [ ];
+    #     sshKey = "/root/.ssh/id_ed25519"; # Daemon needs a non-Yubikey SSH key to connect silently
+    #   }
+    # ];
     settings.extra-sandbox-paths = [ "/run/binfmt" ];
   };
 
