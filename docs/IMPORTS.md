@@ -21,8 +21,8 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `core-pi`
 
 - **Modules:** `modules/nixos/rpi5-node.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`
-- **Local:** `./disko.nix`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`
+- **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `hass-pi`
 
@@ -87,7 +87,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./hardware-configuration.nix` ← nasbook
 - `./hardware.nix` ← orin-nano
 - `./network.nix` ← nixos-nvme, orin-nano
-- `./secrets.nix` ← hass-pi, nasbook, nixos-nvme, orin-nano
+- `./secrets.nix` ← core-pi, hass-pi, nasbook, nixos-nvme, orin-nano
 - `./services.nix` ← orin-nano
 - `./specialisations.nix` ← nixos-nvme
 - `disko:disko` ← nixos-nvme, orin-nano, orin-nano-bootstrap
@@ -120,8 +120,8 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:agent-team` ← container-factory, nasbook, nixos-nvme
 - `nix-presets:agent-zero` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:anythingllm` ← container-factory, core-pi
-- `nix-presets:attic` ← container-factory, nixos-nvme
-- `nix-presets:authelia` ← container-factory, nixos-nvme
+- `nix-presets:attic` ← container-factory, core-pi, nixos-nvme
+- `nix-presets:authelia` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:backup` ← container-factory, nasbook, nixos-nvme
 - `nix-presets:caddy` ← container-factory, nixos-nvme
 - `nix-presets:claude` ← nixos-nvme

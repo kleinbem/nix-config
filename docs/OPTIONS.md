@@ -52,13 +52,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/attic.nix:13`
 - **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`
-- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.authelia`
 
 - **Declared:** `nix-presets/containers/authelia.nix:14`
 - **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`
-- **Consumed by:** `host:container-factory`, `host:nixos-nvme`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.authentik`
 

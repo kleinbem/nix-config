@@ -31,7 +31,7 @@
 - 🕵️ **Agent Zero** (`agent-zero`) `10.85.48.113:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
 - 🧠 **AnythingLLM** (`anythingllm`) `10.85.48.132:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
 - 📦 **Attic Binary Cache** (`attic`) `10.85.46.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:13]_
-- 🔐 **Authelia SSO** (`authelia`) `10.85.46.123:9091` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
+- 🔐 **Authelia SSO** (`authelia`) `10.85.48.123:9091` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.46.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:18]_
 - 💻 **Code Server** (`code-server`) `10.85.46.101:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
@@ -61,8 +61,15 @@
 
 ### core-pi
 
+- 🕵️ **Agent Zero** (`agent-zero`) `10.85.48.113:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
+- 🧠 **AnythingLLM** (`anythingllm`) `10.85.48.132:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
+- 📦 **Attic Binary Cache** (`attic`) `10.85.46.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:13]_
+- 🔐 **Authelia SSO** (`authelia`) `10.85.48.123:9091` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.46.103:80` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
+- 🦙 **Ollama** (`ollama`) `10.85.46.125:11434` — Native Ollama Inference Engine. _[src: nix-presets/containers/ollama.nix:13]_
+- 🤖 **Open WebUI** (`open-webui`) `10.85.48.102:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
+- 🐾 **OpenClaw** (`openclaw`) `10.85.48.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
 ### hass-pi
 
@@ -80,10 +87,9 @@
 
 ### nixos-nvme
 
+- 📦 **Attic Binary Cache** (`attic`) `10.85.46.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:13]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.46.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:18]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.46.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
-- 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
-- 🏠 **Dashboard** (`dashboard`) `10.85.46.103:80` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
 - 📊 **Monitoring** (`monitoring`) `10.85.47.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
