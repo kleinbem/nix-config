@@ -131,7 +131,7 @@
       };
 
       attic = {
-        enable = false; # Handled by specialisations
+        enable = true; # Temp enabled to unblock core-pi deployment
         ip = "${myInventory.network.nodes.attic.ip}/24";
         hostDataDir = "/var/lib/images/attic";
         secretsFile = config.sops.templates."attic.env".path;
