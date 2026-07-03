@@ -198,7 +198,7 @@ in
     pciutils
 
     # Modern CLI Tools
-    gh
+    # gh # Removed temporarily to fix aarch64 cross-compilation failure (unrecognized option '-m64' via CGO)
     just
     jq
     ripgrep
