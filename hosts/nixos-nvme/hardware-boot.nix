@@ -138,12 +138,12 @@ in
     #     sshKey = "/root/.ssh/id_ed25519"; # Daemon needs a non-Yubikey SSH key to connect silently
     #   }
     # ];
-    settings.extra-sandbox-paths = [ "/run/binfmt" ];
+    # settings.extra-sandbox-paths = [ "/run/binfmt" ];
   };
 
   # Cross-compilation: fallback to emulation if Orin is offline
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
-  boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
+  # boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
 
   hardware = {
     cpu.intel.updateMicrocode = true;
