@@ -146,6 +146,23 @@ in
           IdentityFile = "~/.ssh/id_ed25519_sk";
           IdentityAgent = "none";
         };
+        "core-pi" = {
+          Hostname = "10.0.0.22";
+          User = "martin";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/cm-%r@%h:%p";
+          ControlPersist = "1h";
+        };
+        # initrd LUKS-unlock stage for core-pi
+        "core-pi-initrd" = {
+          Hostname = "10.0.0.22";
+          Port = 2222;
+          User = "root";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+        };
       };
     };
   };
