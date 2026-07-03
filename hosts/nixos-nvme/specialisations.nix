@@ -9,9 +9,9 @@ let
   workProfile = {
     my.containers = {
       code-server.enable = lib.mkForce true;
-      authelia.enable = lib.mkForce true;
+      authelia.enable = lib.mkForce false;
       github-runner.enable = lib.mkForce false;
-      attic.enable = lib.mkForce true;
+      attic.enable = lib.mkForce false;
     };
   };
 
@@ -30,7 +30,7 @@ let
       #   ip = lib.mkForce "10.85.46.114/24";
       # };
       # netdata.enable = lib.mkForce true;
-      authelia.enable = lib.mkForce true;
+      authelia.enable = lib.mkForce false;
       # litellm.enable = lib.mkForce true;
       # playground.enable = lib.mkForce true;
       # comfyui.enable = lib.mkForce true;

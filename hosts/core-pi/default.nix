@@ -19,6 +19,8 @@
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.github-runner
+    inputs.nix-presets.nixosModules.authelia
+    inputs.nix-presets.nixosModules.attic
   ];
 
   networking.hostName = "core-pi";
