@@ -209,6 +209,11 @@ in
     fstrim.enable = true;
   };
 
+  # ─── Extra Packages ─────────────────────────────────────────
+  environment.systemPackages = with pkgs; [
+    bind.dnsutils
+  ];
+
   nix = {
     # distributedBuilds disabled because Orin Nano is offline
     settings = {

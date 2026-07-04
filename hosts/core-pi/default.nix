@@ -33,7 +33,6 @@
       luksDevice = "core_crypt";
       hostIp = "10.0.0.22";
       secretFile = "${./cryptroot.jwe}";
-      fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
 
     # ─── Container Network ──────────────────────────────────────
@@ -115,10 +114,7 @@
     };
   };
 
-  # ─── Extra Packages ─────────────────────────────────────────
-  environment.systemPackages = with pkgs; [
-    bind.dnsutils
-  ];
+
 
   # ─── Persistence ─────────────────────────────────────────────
   environment.persistence."/nix/persist" = {
