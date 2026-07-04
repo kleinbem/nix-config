@@ -38,7 +38,7 @@ deploy host:
     # Post-flight sync: Ensure the boot files are fully copied before we report success
     if [[ "{{host}}" == "core-pi" || "{{host}}" == "hass-pi" ]]; then
         echo "⏳ Forcing Raspberry Pi bootloader sync..."
-        colmena exec --on "{{host}}" -- systemctl restart sync-rpi-boot.service || echo "⚠️ Warning: Could not force bootloader sync, it may run in the background."
+        colmena exec -f ./flake.nix --impure --on "{{host}}" -- systemctl restart sync-rpi-boot.service || echo "⚠️ Warning: Could not force bootloader sync, it may run in the background."
     fi
 
 [group("Fleet")]

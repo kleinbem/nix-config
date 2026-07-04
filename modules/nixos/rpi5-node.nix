@@ -128,9 +128,15 @@ in
     };
   };
 
-  # ─── Disko (SSD over USB boots as /dev/sda on the Pi) ───────
-  disko.devices.disk.main.device = lib.mkDefault "/dev/sda";
-  _module.args.device = "/dev/sda";
+  # ─── Disko (Raspberry Pi NVMe SSD via PCIe HAT) ─────────────
+  # We assume the nodes boot from a native NVMe drive, not a USB-SSD enclosure.
+  # Mounts are unaffected since disko uses stable by-partlabel paths, but setting
+  # this ensures a re-provision targets the real disk instead of an arbitrary USB.
+  disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1";
+  _module.args.device = "/dev/nvme0n1";
+
+  # Fails to cross-compile for aarch64 (ld.bfd missing), disable fleet-wide for RPi5s
+  services.fwupd.enable = lib.mkForce false;
 
   # ─── Networking ──────────────────────────────────────────────
   networking = {
@@ -175,9 +181,26 @@ in
     services.rpi-eeprom.enable = true;
     monitoring.node.enable = true;
 
+    # Pull-deploy; these Pis only ever substitute from Attic (over NetBird) and
+    # must never fall back to compiling locally — gate the nightly run on cache
+    # reachability and cap its runtime. See modules/nixos/auto-upgrade.nix.
+    deploy.autoUpgrade = {
+      enable = true;
+      requireCache = true;
+    };
+
     virtualisation = {
       enable = true;
       libvirtd.enable = false;
+      podman.enable = true;
+      lxc.enable = false;
+    };
+
+    services = {
+      # Run NetBird's built-in SSH server so YubiKey-less devices can reach this
+      # headless node via `netbird ssh <host>` (auth = NetBird peer identity).
+      # Scope access to your own devices with a NetBird SSH policy in the console.
+      netbird.allowServerSsh = true;
     };
 
     network.externalInterface = "end0";

@@ -3,7 +3,6 @@
   config,
   inputs,
   self,
-  lib,
   myInventory,
   pkgs,
   ...
@@ -27,16 +26,7 @@
 
   networking.hostName = "core-pi";
 
-  services.fwupd.enable = lib.mkForce false; # Fails to cross-compile for aarch64 (ld.bfd missing)
-
-  _module.args.device = lib.mkForce "/dev/nvme0n1";
-
   my = {
-    deploy.autoUpgrade = {
-      enable = true;
-      requireCache = true;
-    };
-
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
       enable = true;
@@ -50,16 +40,6 @@
     network = {
       subnet = "10.85.48.0/24";
       hostAddress = "10.85.48.1";
-    };
-
-    virtualisation = {
-      podman.enable = true;
-      lxc.enable = false;
-    };
-
-    services = {
-      rpi-eeprom.enable = true; # Auto-apply Pi bootloader EEPROM updates (weekly)
-      netbird.allowServerSsh = true;
     };
 
     # ─── Containers ──────────────────────────────────────────────
