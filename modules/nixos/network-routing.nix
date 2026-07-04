@@ -45,7 +45,9 @@ in
     script = ''
       ${lib.concatMapStringsSep "\n" (
         route:
-        "${config.boot.kernelPackages.iproute2 or pkgs.iproute2}/bin/ip route replace ${route.address}/${toString route.prefixLength} via ${route.via} dev ${config.my.network.externalInterface} onlink || true"
+        "${
+          config.boot.kernelPackages.iproute2 or pkgs.iproute2
+        }/bin/ip route replace ${route.address}/${toString route.prefixLength} via ${route.via} dev ${config.my.network.externalInterface} onlink || true"
       ) routes}
     '';
   };
