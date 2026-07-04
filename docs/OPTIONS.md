@@ -52,7 +52,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/attic.nix:13`
 - **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`
-- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:container-factory`, `host:core-pi`
 
 ### `my.containers.authelia`
 
@@ -246,7 +246,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
+- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
 
 ## `my.desktop`
 
@@ -304,7 +304,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/rpi-eeprom.nix:13`
 - **Sub-options:** `autoApply`, `enable`, `schedule`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`
+- **Consumed by:** _(no opt-ins detected)_
 
 ### `my.services.tang`
 
@@ -326,5 +326,5 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
 - **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
-- **Explicit overrides:** `host:core-pi`, `host:hass-pi`, `host:nixos-nvme`
+- **Explicit overrides:** `host:nixos-nvme`
 

@@ -39,7 +39,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `nixos-nvme`
 
 - **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/snapper.nix`, `modules/nixos/workstation.nix`
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:caddy`, `nix-presets:claude`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:container-common`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:syncthing`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:caddy`, `nix-presets:claude`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:container-common`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
 - **Other inputs:** `disko:disko`
@@ -120,7 +120,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:agent-team` ← container-factory, nasbook, nixos-nvme
 - `nix-presets:agent-zero` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:anythingllm` ← container-factory, core-pi
-- `nix-presets:attic` ← container-factory, core-pi, nixos-nvme
+- `nix-presets:attic` ← container-factory, core-pi
 - `nix-presets:authelia` ← container-factory, core-pi, nixos-nvme
 - `nix-presets:backup` ← container-factory, nasbook, nixos-nvme
 - `nix-presets:caddy` ← container-factory, nixos-nvme

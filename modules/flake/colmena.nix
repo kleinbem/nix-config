@@ -73,7 +73,7 @@ in
       deployment = {
         targetHost = hostMeta.hass-pi.ip;
         targetUser = "martin";
-        buildOnTarget = true;
+        buildOnTarget = false;
         inherit (hostMeta.hass-pi) tags;
       };
       imports = [ ../../hosts/hass-pi/default.nix ];
