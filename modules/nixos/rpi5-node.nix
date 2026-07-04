@@ -89,7 +89,6 @@ in
     kernelParams = [
       "ip=${hostIp}::10.0.0.1:255.255.0.0:${hostName}::off"
     ];
-    kernelPackages = pkgs.linuxPackages_latest;
     initrd = {
       availableKernelModules = [
         "usb_storage"
