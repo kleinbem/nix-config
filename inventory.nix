@@ -182,7 +182,7 @@
         };
       };
       attic = {
-        ip = "10.85.46.120";
+        ip = "10.85.48.120";
         port = 8080;
         externalPort = 443;
         domain = "cache.kleinbem.dev";
