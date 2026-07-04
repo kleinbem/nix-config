@@ -4,7 +4,6 @@
   inputs,
   self,
   myInventory,
-  pkgs,
   ...
 }:
 {
@@ -113,8 +112,6 @@
       };
     };
   };
-
-
 
   # ─── Persistence ─────────────────────────────────────────────
   environment.persistence."/nix/persist" = {
