@@ -130,7 +130,6 @@
         memoryLimit = "512M";
       };
 
-
       crowdsec = {
         enable = true;
         ip = "${myInventory.network.nodes.crowdsec.ip}/24";

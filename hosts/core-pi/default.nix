@@ -15,12 +15,12 @@
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.anythingllm
-    inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
+    inputs.nix-presets.nixosModules.monitoring
   ];
 
   networking.hostName = "core-pi";
@@ -61,12 +61,6 @@
         ip = "${myInventory.network.nodes.agent-zero.ip}/24";
         hostDataDir = "/var/lib/agent-zero";
         memoryLimit = "1G";
-      };
-
-      ollama = {
-        enable = true;
-        ip = "${myInventory.network.nodes.ollama-rpi.ip}/24";
-        hostDataDir = "/var/lib/ollama";
       };
 
       anythingllm = {
@@ -110,6 +104,20 @@
         hostDataDir = "/var/lib/images/attic";
         secretsFile = config.sops.templates."attic.env".path;
       };
+
+      monitoring = {
+        enable = true;
+        ip = "10.85.48.114/24";
+        hostDataDir = "/var/lib/monitoring";
+        nodeTargets = [
+          myInventory.hosts.nixos-nvme.ip
+          myInventory.hosts.router-1.ip
+          myInventory.hosts.router-2.ip
+          myInventory.hosts.core-pi.ip
+          myInventory.hosts.hass-pi.ip
+        ];
+        githubMetrics.enable = false;
+      };
     };
   };
 
@@ -120,6 +128,7 @@
       "/var/lib/openclaw"
       "/var/lib/agent-zero"
       "/var/lib/anythingllm"
+      "/var/lib/monitoring"
     ];
   };
 }
