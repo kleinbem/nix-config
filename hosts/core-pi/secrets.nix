@@ -1,18 +1,18 @@
-{ pkgs, inputs, config, ... }:
+{ inputs, config, ... }:
 {
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
     defaultSopsFormat = "yaml";
-    
+
     secrets = {
       # Identity (Authelia)
       authelia_session_secret = { };
       authelia_jwt_secret = { };
       authelia_storage_encryption_key = { };
-      
+
       # Attic Binary Cache
       attic_server_token_rs256 = { };
-      
+
       # GitHub Runner (optional)
       github_runner_pat = {
         mode = "0440";
