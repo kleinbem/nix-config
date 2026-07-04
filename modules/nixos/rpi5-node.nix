@@ -7,6 +7,7 @@
   self,
   config,
   lib,
+  pkgs,
   ...
 }:
 let
