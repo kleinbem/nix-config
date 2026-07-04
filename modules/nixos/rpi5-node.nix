@@ -135,9 +135,6 @@ in
   disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1";
   _module.args.device = "/dev/nvme0n1";
 
-  # Fails to cross-compile for aarch64 (ld.bfd missing), disable fleet-wide for RPi5s
-  services.fwupd.enable = lib.mkForce false;
-
   # ─── Networking ──────────────────────────────────────────────
   networking = {
     useDHCP = false;
