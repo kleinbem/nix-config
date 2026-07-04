@@ -63,12 +63,11 @@ in
       deployment = {
         targetHost = hostMeta.core-pi.ip;
         targetUser = "martin";
-        buildOnTarget = false; # Temporarily false to push prebuilt kernel from workstation
+        buildOnTarget = false; # Evaluates on workstation, fetches from Attic, pushes via SSH
         inherit (hostMeta.core-pi) tags;
       };
       imports = [ ../../hosts/core-pi/default.nix ];
       nixpkgs.hostPlatform = hostMeta.core-pi.system;
-      nixpkgs.buildPlatform = "x86_64-linux";
     };
     hass-pi = {
       deployment = {
