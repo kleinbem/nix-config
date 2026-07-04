@@ -3,6 +3,7 @@
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
     defaultSopsFormat = "yaml";
+    validateSopsFiles = false;
 
     secrets = {
       # Identity (Authelia)
