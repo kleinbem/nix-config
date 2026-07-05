@@ -182,7 +182,13 @@ in
     # --- High-Performance Scheduling (Official Nixpkgs) ---
     scx = {
       enable = true;
-      scheduler = "scx_rusty"; # High-performance rust-based scheduler (successor to BORE)
+      # lavd over rusty on this box: rusty's load balancing is built around
+      # AMD CCX/NUMA domains and treats all cores as equal; lavd is
+      # latency-criticality aware WITH hybrid-core (P/E) support — on the
+      # i3-1315U (2P+4E) it keeps interactive tasks on P-cores while builds
+      # and containers ride the E-cores. If a BPF scheduler ever misbehaves,
+      # the kernel auto-evicts it and falls back to EEVDF (safe to experiment).
+      scheduler = "scx_lavd";
     };
   };
 
