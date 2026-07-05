@@ -89,6 +89,48 @@ in
     kernelParams = [
       "ip=${hostIp}::10.0.0.1:255.255.0.0:${hostName}::off"
     ];
+    # Shared across every RPi5 node ON PURPOSE: an identical kernel config means
+    # a single ~113 MiB kernel derivation both Pis substitute from Attic. Keep
+    # all COMPILE-time tuning here; express role-specific tuning as runtime
+    # sysctls (below) so it never forks the cached kernel build.
+    kernelPatches = [
+      {
+        name = "rpi5-server-tuning";
+        patch = null;
+        extraStructuredConfig = with lib.kernel; {
+          # ── Scheduling / timers ───────────────────────────────
+          # Server throughput over desktop responsiveness, but voluntary (not
+          # PREEMPT_NONE) so hass-pi's Zigbee/voice paths stay responsive.
+          PREEMPT = no;
+          PREEMPT_VOLUNTARY = yes;
+          HZ_1000 = no;
+          HZ_250 = yes;
+          HZ = freeform "250";
+          # These nodes are mostly idle — omit ticks on idle CPUs to cut
+          # wakeups/jitter and save a little power.
+          NO_HZ_IDLE = yes;
+
+          # ── Networking throughput ─────────────────────────────
+          # BBR + fq pacing (fq selected via net.core.default_qdisc sysctl).
+          TCP_CONG_BBR = yes;
+          DEFAULT_BBR = yes;
+          NET_SCH_FQ = yes;
+          NET_SCH_FQ_CODEL = yes;
+          # In-kernel WireGuard so NetBird uses the kernel data path instead of
+          # userspace wireguard-go — lower CPU + higher throughput for the
+          # Attic-cache-over-NetBird pulls that keep these nodes build-free.
+          WIREGUARD = module;
+
+          # ── Containers (podman + nixos-containers) ────────────
+          MEMCG = yes;
+          MEMCG_SWAP = yes;
+
+          # ── Trim debug overhead (we pay the build cost anyway) ─
+          DEBUG_KERNEL = no;
+          DEBUG_INFO = no;
+        };
+      }
+    ];
     initrd = {
       availableKernelModules = [
         "usb_storage"
@@ -229,6 +271,20 @@ in
   systemd.tmpfiles.rules = [
     "d /nix/persist/tmp/nix-builds 1777 root root 7d"
   ];
+
+  # ─── Kernel runtime tuning (sysctl) ─────────────────────────
+  # Free to diverge per host if ever needed — sysctls don't fork the cached
+  # kernel build the way structuredExtraConfig does.
+  boot.kernel.sysctl = {
+    # Pair fq pacing with the BBR congestion control compiled in above.
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+    # zram (zstd, see nix-hardware/rpi5.nix) tuning for RAM-limited Pis:
+    # compressing a page is cheap, so prefer swapping to zram over evicting
+    # page-cache, and disable swap readahead (zram is random-access).
+    "vm.swappiness" = 180;
+    "vm.page-cluster" = 0;
+  };
 
   # ─── Storage & Memory ───────────────────────────────────────
   # Swap is now natively handled by disko via a dedicated randomly-encrypted swap partition.
