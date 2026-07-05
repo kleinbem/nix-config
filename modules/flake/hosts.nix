@@ -23,11 +23,7 @@ let
               allowUnfreePredicate = _: true;
               android_sdk.accept_license = true;
               permittedInsecurePackages = [
-                # nixpkgs github-runner 2.334.0 still bundles Node 20 internally;
-                # remove once nixpkgs upgrades it to Node 22.
-                "nodejs-20.20.2"
-                "nodejs-slim-20.20.2"
-                "openclaw-2026.5.12"
+                "openclaw-2026.6.5"
               ];
             };
           };
