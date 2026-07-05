@@ -12,33 +12,40 @@
 #      `Authorization: Bearer <token>` header, which is what Attic expects. The
 #      token is rendered by sops to /run/secrets (tmpfs) — never the nix store.
 #
-#   2. TRANSPORT — resolve cache.kleinbem.dev to the attic host's NetBird IP so
+#   2. TRANSPORT — resolve cache.kleinbem.dev to the cache entrypoint's IP so
 #      pulls traverse the WireGuard mesh (wt0) instead of the public Cloudflare
 #      tunnel, whose 100 MiB per-NAR cap 413s on big closures like the kernel.
+#      The entrypoint is the caddy container on nixos-nvme, which terminates
+#      TLS for cache.kleinbem.dev and proxies to the attic container on core-pi
+#      (10.85.48.120:8080) over the static container-subnet routes
+#      (network-routing.nix). nixos-nvme itself overrides cacheHostIp to the
+#      caddy container's local address — traffic to its own NetBird IP would
+#      miss the PREROUTING port-forward.
 #
 # Security model (deliberately private, not public): the cache stays access-
 # controlled, so even if a secret ever accidentally lands in a cached store
 # path it is not exposed to the internet — only to authenticated mesh peers.
 #
-# Inert unless the host declares the attic_pull_token secret (so nixos-nvme,
-# the cache's entrypoint, is unaffected).
+# Inert unless the host declares the attic_pull_token secret.
 { config, lib, ... }:
 
-let
-  # nixos-nvme's NetBird IP — the cache ENTRYPOINT, not the cache itself: the
-  # caddy container on nixos-nvme terminates TLS for cache.kleinbem.dev and
-  # proxies to the attic container on core-pi (10.85.48.120:8080) over the
-  # static container-subnet routes (network-routing.nix). Mirrors the
-  # /etc/hosts override the CI nix-fleet-setup action applies.
-  atticHostNetbirdIp = "100.117.212.232";
-in
-lib.mkIf (config.sops.secrets ? attic_pull_token) {
-  sops.templates."attic-netrc".content = ''
-    machine cache.kleinbem.dev
-    password ${config.sops.placeholder.attic_pull_token}
-  '';
+{
+  options.my.atticPull.cacheHostIp = lib.mkOption {
+    type = lib.types.str;
+    # nixos-nvme's NetBird IP (the cache entrypoint). Mirrors the /etc/hosts
+    # override the CI nix-fleet-setup action applies.
+    default = "100.117.212.232";
+    description = "IP that cache.kleinbem.dev resolves to for authenticated NetBird-routed pulls.";
+  };
 
-  nix.settings.netrc-file = config.sops.templates."attic-netrc".path;
+  config = lib.mkIf (config.sops.secrets ? attic_pull_token) {
+    sops.templates."attic-netrc".content = ''
+      machine cache.kleinbem.dev
+      password ${config.sops.placeholder.attic_pull_token}
+    '';
 
-  networking.hosts.${atticHostNetbirdIp} = [ "cache.kleinbem.dev" ];
+    nix.settings.netrc-file = config.sops.templates."attic-netrc".path;
+
+    networking.hosts.${config.my.atticPull.cacheHostIp} = [ "cache.kleinbem.dev" ];
+  };
 }

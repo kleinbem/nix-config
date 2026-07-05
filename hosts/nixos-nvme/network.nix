@@ -6,6 +6,12 @@
 }:
 
 {
+  # cache.kleinbem.dev must resolve to the LOCAL caddy container here — this
+  # host's own NetBird IP (the module default) would miss the PREROUTING
+  # port-forward for locally-originated traffic. attic-pull.nix owns the
+  # /etc/hosts entry.
+  my.atticPull.cacheHostIp = "10.85.46.107";
+
   networking = {
     hostName = "nixos-nvme";
     # TODO: remove once OpenWrt router is enrolled in NetBird and pushes DNS nameserver rules.
@@ -13,9 +19,6 @@
     hosts."100.117.61.169" = [
       "orin-nano.netbird.cloud"
       "orin-nano"
-    ];
-    hosts."10.85.46.107" = [
-      "cache.kleinbem.dev"
     ];
     networkmanager = {
       enable = true;

@@ -25,6 +25,13 @@
     # --- Secret Declarations ---
     secrets = {
       netbird_setup_key = { };
+      # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so
+      # the daemon can substitute from the private cache instead of 401-ing and
+      # rebuilding everything CI already pushed. nixos-nvme is only the cache's
+      # TLS entrypoint (caddy → attic on core-pi), NOT the cache itself, so it
+      # needs pull credentials like every other host. cacheHostIp is overridden
+      # in network.nix to the local caddy container.
+      attic_pull_token = { };
       rclone_config = {
         owner = "martin";
         group = "wheel";
