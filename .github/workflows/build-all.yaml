@@ -145,21 +145,41 @@ jobs:
             nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" --flake "$t" $NIX_OVERRIDES || rc=1
             echo "::endgroup::"
           done
-
-          # Workstation (nixos-nvme) toplevel: CI is the main builder, so warm
-          # the cache for the workstation too — `just apply` and its nightly
-          # autoUpgrade then substitute instead of compiling locally.
-          # BEST-EFFORT for now: this eval peaks near the runner's memory
-          # ceiling (~8.6 GiB observed on-host vs the 7 GiB runner), so a
-          # failure emits a warning instead of blocking `Promote → production`
-          # (which gates the whole fleet). Harden to `|| rc=1` once it has
-          # been green for a full cycle. Skipped on PRs: without a cache push
-          # the artifacts are thrown away.
-          if [ "$SYSTEM" = "x86_64-linux" ] && [ "${{ steps.cache.outputs.push_cache }}" = "true" ]; then
-            t=".#nixosConfigurations.nixos-nvme.config.system.build.toplevel"
-            echo "::group::nix-fast-build $t (best-effort)"
-            nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" --flake "$t" $NIX_OVERRIDES \
-              || echo "::warning::nixos-nvme toplevel failed (best-effort — not blocking promotion yet)"
-            echo "::endgroup::"
-          fi
           exit $rc
+
+      # Workstation (nixos-nvme) toplevel: CI is the main builder, so warm the
+      # cache for the workstation too — `just apply` and its nightly autoUpgrade
+      # then substitute instead of compiling locally.
+      #
+      # Own step with continue-on-error (NOT `|| true` inside the main script):
+      # the eval peaks ~8.6 GiB and first attempt (run 28756798387) got
+      # SIGTERM'd (exit 143) by the runner under memory pressure — a kill that
+      # no shell-level guard can catch but step-level continue-on-error can.
+      # Swap below is the actual fix; the isolation keeps a regression from
+      # blocking `Promote → production` (which gates the whole fleet).
+      # Harden into the main target list once green for a full cycle.
+      # Skipped on PRs: without a cache push the artifacts are thrown away.
+      - name: Add swap for workstation eval
+        if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
+        run: |
+          sudo fallocate -l 12G /swapfile-ci
+          sudo chmod 600 /swapfile-ci
+          sudo mkswap /swapfile-ci
+          sudo swapon /swapfile-ci
+          free -h
+
+      - name: Build nixos-nvme toplevel (best-effort)
+        if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "1"
+            "--systems" "${{ matrix.system }}"
+            "--retries" "2"
+            "--attic-cache" "system"
+          )
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake ".#nixosConfigurations.nixos-nvme.config.system.build.toplevel" $NIX_OVERRIDES
