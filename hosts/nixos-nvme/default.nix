@@ -51,7 +51,6 @@
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"
-    "${self}/modules/nixos/snapper.nix"
     "${self}/modules/nixos/disko.nix"
     "${self}/modules/nixos/data-disk.nix"
     inputs.disko.nixosModules.disko
@@ -94,8 +93,10 @@
     monitoring.node.enable = true;
     services.tang.enable = true;
     deploy.autoUpgrade.enable = true;
-    desktop.gnome.enable = true;
-    desktop.claude.enable = true;
+    desktop = {
+      gnome.enable = true;
+      claude.enable = true;
+    };
     audio.jabra.preferred = true;
     virtualisation = {
       enable = true;
