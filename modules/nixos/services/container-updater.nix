@@ -7,6 +7,11 @@
 let
   cfg = config.my.services.container-updater;
   hostSystem = pkgs.stdenv.hostPlatform.system;
+  # Guard: only real nspawn containers can be staged. Hosts auto-derive their
+  # list from `my.containers` enables, which also covers OCI/podman services
+  # (comfyui, vllm, langflow) that have no nspawn closure and thus no manifest
+  # entry — intersecting with `config.containers` filters those out.
+  registered = lib.filter (c: builtins.hasAttr c config.containers) cfg.containers;
 in
 {
   options.my.services.container-updater = {
@@ -172,7 +177,7 @@ in
         # restarted — an unchanged container (e.g. home-assistant between
         # releases) is left untouched instead of blipping nightly.
         # ----------------------------------------------------------------
-        "update-containers" = lib.mkIf (cfg.containers != [ ]) {
+        "update-containers" = lib.mkIf (registered != [ ]) {
           description = "Smart bulk update of standalone NixOS containers (stage all → activate changed non-attic → activate attic last)";
 
           path = with pkgs; [ systemd ];
@@ -184,7 +189,7 @@ in
 
           script = ''
             set -e
-            CONTAINERS="${lib.concatStringsSep " " cfg.containers}"
+            CONTAINERS="${lib.concatStringsSep " " registered}"
 
             echo "=== Phase 1: staging updates for all containers in parallel ==="
             for c in $CONTAINERS; do
@@ -229,7 +234,7 @@ in
         # staged. Don't wait for the 03:00 timer — stage + start any
         # registered container whose symlink is missing, right at boot.
         # ----------------------------------------------------------------
-        "container-updater-bootstrap" = lib.mkIf (cfg.containers != [ ]) {
+        "container-updater-bootstrap" = lib.mkIf (registered != [ ]) {
           description = "Bootstrap standalone containers that have never been staged";
           after = [ "network-online.target" ];
           wants = [ "network-online.target" ];
@@ -243,7 +248,7 @@ in
           };
 
           script = ''
-            CONTAINERS="${lib.concatStringsSep " " cfg.containers}"
+            CONTAINERS="${lib.concatStringsSep " " registered}"
             for c in $CONTAINERS; do
               if [ ! -e "/var/lib/machines/$c/current" ]; then
                 echo "Container $c has no staged closure — bootstrapping..."
@@ -255,7 +260,7 @@ in
         };
       };
 
-      timers."update-containers" = lib.mkIf (cfg.containers != [ ]) {
+      timers."update-containers" = lib.mkIf (registered != [ ]) {
         description = "Nightly update of standalone NixOS containers";
         wantedBy = [ "timers.target" ];
         timerConfig = {

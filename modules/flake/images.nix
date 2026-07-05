@@ -1,7 +1,7 @@
 { self, inputs, ... }:
 {
   perSystem =
-    { system, ... }:
+    { system, lib, ... }:
     {
       packages = {
         router-1-image =
@@ -28,17 +28,20 @@
           };
       }
       // (
-        if system == "x86_64-linux" then
-          let
-            containers = self.nixosConfigurations.container-factory.config.containers;
-          in
-          {
-            container-caddy = containers.caddy.path;
-            container-n8n = containers.n8n.path;
-            container-code-server = containers."code-server".path;
-          }
-        else
-          { }
+        # Expose whatever the arch's factory actually builds as
+        # `container-<name>` packages. The factory set is deployment-driven
+        # (ADR 002), so this tracks reality instead of a hardcoded list.
+        let
+          factory =
+            {
+              x86_64-linux = self.nixosConfigurations.container-factory or null;
+              aarch64-linux = self.nixosConfigurations.container-factory-aarch64 or null;
+            }
+            .${system} or null;
+        in
+        lib.optionalAttrs (factory != null) (
+          lib.mapAttrs' (name: c: lib.nameValuePair "container-${name}" c.path) factory.config.containers
+        )
       );
     };
 }
