@@ -19,6 +19,14 @@
       # on-device until RuntimeMaxSec kills it.
       attic_pull_token = { };
 
+      # NetBird — consumed by modules/nixos/networking.nix → netbird-autojoin
+      # oneshot (`netbird up --setup-key` when the daemon reports NeedsLogin).
+      # Safety net for FRESH enrollments only (reinstall / wiped
+      # /var/lib/netbird): an already-registered peer whose SSO login expired
+      # REFUSES setup-key re-auth (verified 2026-07-05). That case is prevented
+      # instead by infra/netbird/peers.tf disabling login expiration for core-pi.
+      netbird_setup_key = { };
+
       # GitHub Runner (optional)
       github_runner_pat = {
         mode = "0440";

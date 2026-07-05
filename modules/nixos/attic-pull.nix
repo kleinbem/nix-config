@@ -21,12 +21,15 @@
 # path it is not exposed to the internet — only to authenticated mesh peers.
 #
 # Inert unless the host declares the attic_pull_token secret (so nixos-nvme,
-# which IS the cache and reads it locally, is unaffected).
+# the cache's entrypoint, is unaffected).
 { config, lib, ... }:
 
 let
-  # nixos-nvme's NetBird IP (the attic host). Mirrors the /etc/hosts override
-  # the CI nix-fleet-setup action applies.
+  # nixos-nvme's NetBird IP — the cache ENTRYPOINT, not the cache itself: the
+  # caddy container on nixos-nvme terminates TLS for cache.kleinbem.dev and
+  # proxies to the attic container on core-pi (10.85.48.120:8080) over the
+  # static container-subnet routes (network-routing.nix). Mirrors the
+  # /etc/hosts override the CI nix-fleet-setup action applies.
   atticHostNetbirdIp = "100.117.212.232";
 in
 lib.mkIf (config.sops.secrets ? attic_pull_token) {

@@ -31,8 +31,12 @@ in
 {
   networking.interfaces."${config.my.network.externalInterface}".ipv4.routes = routes;
 
-  # NetworkManager often drops interface-defined static routes when managing interfaces.
-  # This oneshot service enforces the routes dynamically via iproute2.
+  # NetworkManager often drops interface-defined static routes when managing
+  # interfaces — including ones this service already installed (observed
+  # 2026-07-05 on nixos-nvme: routes gone ~15h after the boot-time run, taking
+  # cache.kleinbem.dev down with a 502). So the oneshot runs at boot AND on a
+  # timer: `ip route replace` is idempotent, and RemainAfterExit must stay off
+  # or the timer can never re-trigger the "still active" unit.
   systemd.services.enforce-container-routes = lib.mkIf (routes != [ ]) {
     description = "Enforce static routes to other container networks";
     after = [ "network-online.target" ];
@@ -40,7 +44,6 @@ in
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
-      RemainAfterExit = true;
     };
     script = ''
       ${lib.concatMapStringsSep "\n" (
@@ -50,6 +53,14 @@ in
         }/bin/ip route replace ${route.address}/${toString route.prefixLength} via ${route.via} dev ${config.my.network.externalInterface} onlink || true"
       ) routes}
     '';
+  };
+
+  systemd.timers.enforce-container-routes = lib.mkIf (routes != [ ]) {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "2min";
+      OnUnitActiveSec = "5min";
+    };
   };
 
   # Ensure IP forwarding is enabled if this host acts as a gateway for its containers
