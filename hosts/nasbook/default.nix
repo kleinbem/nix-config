@@ -31,7 +31,12 @@
   networking.hostName = "nasbook";
 
   my = {
-    deploy.autoUpgrade.enable = true;
+    # Pull-deploy; substitute-only — this laptop is too weak for long builds.
+    # Gate the nightly run on cache reachability and cap its runtime.
+    deploy.autoUpgrade = {
+      enable = true;
+      requireCache = true;
+    };
 
     network = {
       subnet = "10.85.47.0/24";

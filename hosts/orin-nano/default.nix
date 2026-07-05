@@ -50,7 +50,12 @@ in
 
   networking.hostName = "orin-nano";
 
-  my.deploy.autoUpgrade.enable = true;
+  # Pull-deploy; substitute-only — jetpack/l4t must never compile on-device.
+  # Gate the nightly run on cache reachability and cap its runtime.
+  my.deploy.autoUpgrade = {
+    enable = true;
+    requireCache = true;
+  };
 
   nixpkgs = {
     hostPlatform = "aarch64-linux";
