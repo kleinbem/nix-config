@@ -17,34 +17,10 @@
     "${self}/users/martin/nixos.nix"
     "${self}/users/dhirujaan/nixos.nix"
 
-    inputs.nix-presets.nixosModules.container-common
-    inputs.nix-presets.nixosModules.n8n
-    inputs.nix-presets.nixosModules.code-server
-    inputs.nix-presets.nixosModules.open-webui
-    inputs.nix-presets.nixosModules.dashboard
-    inputs.nix-presets.nixosModules.qdrant
-    inputs.nix-presets.nixosModules.playground
-    inputs.nix-presets.nixosModules.caddy
-    inputs.nix-presets.nixosModules.comfyui
-    inputs.nix-presets.nixosModules.langfuse
-    inputs.nix-presets.nixosModules.langflow
-    inputs.nix-presets.nixosModules.monitoring
-    inputs.nix-presets.nixosModules.monitoring-node
-    inputs.nix-presets.nixosModules.litellm
-    inputs.nix-presets.nixosModules.loki
-    inputs.nix-presets.nixosModules.crowdsec
-    inputs.nix-presets.nixosModules.netdata
-    inputs.nix-presets.nixosModules.authelia
-    inputs.nix-presets.nixosModules.openclaw
-    inputs.nix-presets.nixosModules.agent-zero
-    inputs.nix-presets.nixosModules.agent-team
-    inputs.nix-presets.nixosModules.cups
-    inputs.nix-presets.nixosModules.github-runner
-    inputs.nix-presets.nixosModules.ollama
-    inputs.nix-presets.nixosModules.syncthing
-    inputs.nix-presets.nixosModules.backup
-    inputs.nix-presets.nixosModules.paperless
-    inputs.nix-presets.nixosModules.claude
+    # Whole preset catalogue (Switchboard: everything defaults off; the
+    # my.* enables below and in containers.nix/ai.nix pick what runs).
+    # Edge hosts keep selective imports — they eval their own config nightly.
+    inputs.nix-presets.nixosModules.all
 
     "${self}/modules/nixos/services/github-runner.nix"
     "${self}/modules/nixos/services/cloudflare-tunnel.nix"

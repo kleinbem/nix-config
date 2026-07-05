@@ -160,7 +160,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/monitoring.nix:13`
 - **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `hostDataDir`, `ip`, `nodeTargets`, `ollamaTargets`, `vllmTargets`
-- **Consumed by:** `host:container-factory`, `host:nasbook`, `host:nixos-nvme`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.n8n`
 
@@ -190,7 +190,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/ollama.nix:13`
 - **Sub-options:** `acceleration`, `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`
-- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:container-factory`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.containers.open-webui`
 

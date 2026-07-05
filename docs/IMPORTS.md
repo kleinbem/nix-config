@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 75
+**Distinct imports:** 73
 
 ---
 
@@ -21,7 +21,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `core-pi`
 
 - **Modules:** `modules/nixos/rpi5-node.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:open-webui`, `nix-presets:openclaw`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `hass-pi`
@@ -38,8 +38,8 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/snapper.nix`, `modules/nixos/workstation.nix`
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:caddy`, `nix-presets:claude`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:container-common`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:syncthing`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/workstation.nix`
+- **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
 - **Other inputs:** `disko:disko`
@@ -110,46 +110,44 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/services/cloudflare-tunnel.nix` ← nixos-nvme
 - `modules/nixos/services/container-updater.nix` ← nixos-nvme
 - `modules/nixos/services/github-runner.nix` ← nixos-nvme
-- `modules/nixos/snapper.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano
 - `modules/nixos/workstation.nix` ← nixos-nvme
 - `nix-hardware:intel-compute` ← nixos-nvme
 - `nix-hardware:lxc-guest` ← router-1, router-2
 - `nix-hardware:nixos-nvme` ← nixos-nvme
 - `nix-hardware:orin-nano` ← orin-nano, orin-nano-bootstrap
-- `nix-presets:agent-team` ← container-factory, nasbook, nixos-nvme
-- `nix-presets:agent-zero` ← container-factory, core-pi, nixos-nvme
+- `nix-presets:agent-team` ← container-factory, nasbook
+- `nix-presets:agent-zero` ← container-factory, core-pi
+- `nix-presets:all` ← nixos-nvme
 - `nix-presets:anythingllm` ← container-factory, core-pi
 - `nix-presets:attic` ← container-factory, core-pi
-- `nix-presets:authelia` ← container-factory, core-pi, nixos-nvme
-- `nix-presets:backup` ← container-factory, nasbook, nixos-nvme
-- `nix-presets:caddy` ← container-factory, nixos-nvme
-- `nix-presets:claude` ← nixos-nvme
-- `nix-presets:code-server` ← container-factory, nixos-nvme
-- `nix-presets:comfyui` ← container-factory, nixos-nvme
-- `nix-presets:container-common` ← nixos-nvme
-- `nix-presets:crowdsec` ← container-factory, nixos-nvme
-- `nix-presets:cups` ← container-factory, core-pi, nixos-nvme
-- `nix-presets:dashboard` ← container-factory, core-pi, nixos-nvme
+- `nix-presets:authelia` ← container-factory, core-pi
+- `nix-presets:backup` ← container-factory, nasbook
+- `nix-presets:caddy` ← container-factory
+- `nix-presets:code-server` ← container-factory
+- `nix-presets:comfyui` ← container-factory
+- `nix-presets:crowdsec` ← container-factory
+- `nix-presets:cups` ← container-factory, core-pi
+- `nix-presets:dashboard` ← container-factory, core-pi
 - `nix-presets:frigate` ← container-factory, orin-nano
-- `nix-presets:github-runner` ← container-factory, core-pi, nixos-nvme
+- `nix-presets:github-runner` ← container-factory, core-pi
 - `nix-presets:home-assistant` ← container-factory, hass-pi
-- `nix-presets:langflow` ← container-factory, nixos-nvme
-- `nix-presets:langfuse` ← container-factory, nixos-nvme
-- `nix-presets:litellm` ← container-factory, nixos-nvme
+- `nix-presets:langflow` ← container-factory
+- `nix-presets:langfuse` ← container-factory
+- `nix-presets:litellm` ← container-factory
 - `nix-presets:llama-cpp` ← container-factory, orin-nano
-- `nix-presets:loki` ← container-factory, nasbook, nixos-nvme
-- `nix-presets:monitoring` ← container-factory, nasbook, nixos-nvme
-- `nix-presets:monitoring-node` ← nixos-nvme, orin-nano, router-1, router-2
-- `nix-presets:n8n` ← container-factory, nixos-nvme
-- `nix-presets:netdata` ← container-factory, nixos-nvme
-- `nix-presets:ollama` ← container-factory, core-pi, nixos-nvme, orin-nano
-- `nix-presets:open-webui` ← container-factory, core-pi, nixos-nvme
-- `nix-presets:openclaw` ← container-factory, core-pi, nixos-nvme
-- `nix-presets:paperless` ← container-factory, nasbook, nixos-nvme
-- `nix-presets:playground` ← container-factory, nixos-nvme
-- `nix-presets:qdrant` ← container-factory, nasbook, nixos-nvme
-- `nix-presets:syncthing` ← container-factory, nasbook, nixos-nvme, orin-nano
+- `nix-presets:loki` ← container-factory, nasbook
+- `nix-presets:monitoring` ← container-factory, core-pi, nasbook
+- `nix-presets:monitoring-node` ← orin-nano, router-1, router-2
+- `nix-presets:n8n` ← container-factory
+- `nix-presets:netdata` ← container-factory
+- `nix-presets:ollama` ← container-factory, orin-nano
+- `nix-presets:open-webui` ← container-factory, core-pi
+- `nix-presets:openclaw` ← container-factory, core-pi
+- `nix-presets:paperless` ← container-factory, nasbook
+- `nix-presets:playground` ← container-factory
+- `nix-presets:qdrant` ← container-factory, nasbook
+- `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
 - `nix-presets:vllm` ← container-factory
 - `user:dhirujaan` ← nixos-nvme
 - `user:martin` ← nixos-nvme, orin-nano

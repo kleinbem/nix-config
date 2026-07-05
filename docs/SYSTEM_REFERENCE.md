@@ -67,7 +67,7 @@
 - 🔐 **Authelia SSO** (`authelia`) `10.85.48.123:9091` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.46.103:80` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
-- 🦙 **Ollama** (`ollama`) `10.85.46.125:11434` — Native Ollama Inference Engine. _[src: nix-presets/containers/ollama.nix:13]_
+- 📊 **Monitoring** (`monitoring`) `10.85.47.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.48.102:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
 - 🐾 **OpenClaw** (`openclaw`) `10.85.48.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
