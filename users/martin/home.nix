@@ -23,6 +23,7 @@ in
     opencode.enable = true;
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet
+    workspace-guardian.enable = true;
   };
 
   # User Details

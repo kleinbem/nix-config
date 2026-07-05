@@ -12,6 +12,7 @@
     ./secrets.nix
     ./syncthing.nix
     ./service-launchers.nix
+    ./workspace-guardian.nix
     inputs.nix-presets.homeManagerModules.firefox-browser
     inputs.nix-presets.homeManagerModules.opencode
     inputs.nix-presets.homeManagerModules.dx
