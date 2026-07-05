@@ -12,8 +12,12 @@ in
     enable = lib.mkEnableOption "Automated container closures updater via Nix Profiles";
     flakeURI = lib.mkOption {
       type = lib.types.str;
-      default = "github:kleinbem/nix-config";
-      description = "The flake URI to pull container configurations from.";
+      default = "github:kleinbem/nix-config?ref=production";
+      description = ''
+        The flake URI to pull container configurations from. Defaults to the
+        CI-gated `production` tag — same gate as host autoUpgrade — so
+        containers never pull a main commit that hasn't passed build-all.
+      '';
     };
     containers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -51,7 +55,9 @@ in
             TARGET="${cfg.flakeURI}#nixosConfigurations.container-factory.config.containers.$CONTAINER.path"
 
             echo "Building/Fetching $TARGET..."
-            STORE_PATH=$(nix build --print-out-paths --no-link --accept-flake-config "$TARGET")
+            # --refresh: `production` is a moving tag; skip the flake tarball
+            # cache so we always resolve the current tag target.
+            STORE_PATH=$(nix build --print-out-paths --no-link --accept-flake-config --refresh "$TARGET")
 
             if [ -z "$STORE_PATH" ]; then
               echo "Failed to build or fetch $TARGET"
