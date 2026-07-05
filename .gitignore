@@ -1,3 +1,11 @@
+# One-off debug artifacts (build logs, applied patches, scratch evals) —
+# root-anchored so intentional patches in subdirectories stay trackable.
+/*.log
+/*.patch
+/*.diff
+/test-*.nix
+/test.txt
+
 # Nix / Direnv
 result
 result-*
