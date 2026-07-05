@@ -1,5 +1,7 @@
 # hass-pi — Raspberry Pi 5 (Smart Home & Automation)
 {
+  config,
+  lib,
   inputs,
   self,
   myInventory,
@@ -8,6 +10,7 @@
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
+    "${self}/modules/nixos/services/container-updater.nix"
     ./disko.nix
     ./secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
@@ -40,6 +43,20 @@
         enableBluetooth = true; # For BLE sensors
         memoryLimit = "4G";
       };
+    };
+
+    # ─── Standalone container auto-update (ADR 002) ─────────────
+    # HA is decoupled from the host generation and refreshed nightly from
+    # the CI-published manifest — eval-free on the Pi. Unchanged closures
+    # are NOT restarted, so HA only blips when there is an actual update.
+    services.container-updater = {
+      enable = true;
+      containers =
+        let
+          excludeFromUpdater = [ ];
+          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+        in
+        lib.subtractLists excludeFromUpdater allEnabled;
     };
   };
 

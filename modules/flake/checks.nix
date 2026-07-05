@@ -42,7 +42,8 @@
         let
           # Filter hosts that match the current system (excluding non-bootable helpers)
           systemHosts = lib.filterAttrs (
-            name: host: name != "container-factory" && host.pkgs.stdenv.hostPlatform.system == system
+            name: host:
+            !(lib.hasPrefix "container-factory" name) && host.pkgs.stdenv.hostPlatform.system == system
           ) self.nixosConfigurations;
 
           # Create a check derivation for each matching host

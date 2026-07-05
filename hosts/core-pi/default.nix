@@ -1,6 +1,7 @@
 # core-pi — Raspberry Pi 5 (AI & Infrastructure Services)
 {
   config,
+  lib,
   inputs,
   self,
   myInventory,
@@ -9,6 +10,7 @@
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
+    "${self}/modules/nixos/services/container-updater.nix"
     ./disko.nix
     ./secrets.nix
     inputs.nix-presets.nixosModules.open-webui
@@ -118,6 +120,21 @@
         ];
         githubMetrics.enable = false;
       };
+    };
+
+    # ─── Standalone container auto-update (ADR 002) ─────────────
+    # Same model as nixos-nvme: containers are decoupled from the host
+    # generation and refreshed nightly from the CI-published manifest —
+    # eval-free on the Pi. The bulk updater stages everything first and
+    # activates attic LAST so the cache keeps serving mid-update.
+    services.container-updater = {
+      enable = true;
+      containers =
+        let
+          excludeFromUpdater = [ ];
+          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+        in
+        lib.subtractLists excludeFromUpdater allEnabled;
     };
   };
 

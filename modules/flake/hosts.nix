@@ -66,6 +66,13 @@ in
         system = "x86_64-linux";
         modules = [ ../../hosts/container-factory/default.nix ];
       };
+      # aarch64 twin: same container set minus x86-only heavies (see arm.nix),
+      # so edge hosts (core-pi, hass-pi) can run standalone containers from the
+      # same CI-published manifest as the workstation.
+      container-factory-aarch64 = mkHost "nixos-nvme" {
+        system = "aarch64-linux";
+        modules = [ ../../hosts/container-factory/arm.nix ];
+      };
     };
 
     diskoConfigurations = {

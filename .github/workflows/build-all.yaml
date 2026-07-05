@@ -159,8 +159,10 @@ jobs:
       # blocking `Promote → production` (which gates the whole fleet).
       # Harden into the main target list once green for a full cycle.
       # Skipped on PRs: without a cache push the artifacts are thrown away.
-      - name: Add swap for workstation eval
-        if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
+      - name: Add swap for heavy evals
+        # Workstation + container-factory evals run near the hosted runner's
+        # memory ceiling; spill to the SSD instead of getting SIGTERM'd.
+        if: steps.cache.outputs.push_cache == 'true'
         run: |
           sudo fallocate -l 12G /swapfile-ci
           sudo chmod 600 /swapfile-ci
@@ -183,3 +185,32 @@ jobs:
           )
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake ".#nixosConfigurations.nixos-nvme.config.system.build.toplevel" $NIX_OVERRIDES
+
+      # Container factory toplevel: ONE build materializes every standalone
+      # container closure for this arch (they are NOT part of any host closure
+      # anymore — standalone containers boot from a profile symlink, so nothing
+      # else would ever push them to Attic). The promote workflow evals the
+      # same factories to publish the container manifest devices consume.
+      # BEST-EFFORT: a red factory must not block host promotion; the manifest
+      # gate in promote-production refuses to publish a manifest whose paths
+      # aren't fully cached, so a failed factory build just means "manifest
+      # stays at the previous rev" — devices keep serving the old closures.
+      - name: Build container-factory toplevel (best-effort)
+        if: steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          FACTORY="container-factory"
+          if [ "${{ matrix.system }}" = "aarch64-linux" ]; then
+            FACTORY="container-factory-aarch64"
+          fi
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "1"
+            "--systems" "${{ matrix.system }}"
+            "--retries" "2"
+            "--attic-cache" "system"
+          )
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake ".#nixosConfigurations.$FACTORY.config.system.build.toplevel" $NIX_OVERRIDES
