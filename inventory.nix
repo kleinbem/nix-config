@@ -350,7 +350,7 @@
       };
       monitoring = {
         enabled = true;
-        ip = "10.85.47.114"; # NASbook
+        ip = "10.85.48.114"; # Core-Pi
         port = 3000;
         externalPort = 3001;
         auth = true; # Protected by Authelia

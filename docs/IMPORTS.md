@@ -20,13 +20,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `core-pi`
 
-- **Modules:** `modules/nixos/rpi5-node.nix`
+- **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:open-webui`, `nix-presets:openclaw`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `hass-pi`
 
-- **Modules:** `modules/nixos/rpi5-node.nix`
+- **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:home-assistant`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
@@ -108,7 +108,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← nixos-nvme
-- `modules/nixos/services/container-updater.nix` ← nixos-nvme
+- `modules/nixos/services/container-updater.nix` ← core-pi, hass-pi, nixos-nvme
 - `modules/nixos/services/github-runner.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano
 - `modules/nixos/workstation.nix` ← nixos-nvme

@@ -60,7 +60,7 @@
       };
 
       monitoring = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.monitoring.ip}/24";
         hostDataDir = "/var/lib/images/monitoring";
         # Automatically scrape the host and important infrastructure nodes
