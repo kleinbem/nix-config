@@ -147,9 +147,18 @@
     # activates attic LAST so the cache keeps serving mid-update.
     services.container-updater = {
       enable = true;
+      # Exclude critical infrastructure from the nightly decoupled updates.
+      # core-pi uses impermanence, so /var/lib/machines is wiped on reboot.
+      # If attic/caddy are decoupled, they must be downloaded from the cache
+      # at boot, but the cache IS attic/caddy, creating a bootstrap deadlock.
+      # By excluding them, they are built into the host closure and start reliably.
       containers =
         let
-          excludeFromUpdater = [ ];
+          excludeFromUpdater = [
+            "attic"
+            "caddy"
+            "crowdsec"
+          ];
           allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
         in
         lib.subtractLists excludeFromUpdater allEnabled;

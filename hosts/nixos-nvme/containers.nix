@@ -226,5 +226,4 @@
     "d /var/lib/images/syncthing 0755 root root - -"
   ];
 
-
 }
