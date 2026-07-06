@@ -16,7 +16,8 @@
   # ─── Managed Hosts ──────────────────────────────────────────
   hosts = {
     nixos-nvme = {
-      ip = "10.85.46.1";
+      ip = "10.85.46.1"; # Container bridge IP
+      physicalIp = "10.0.0.5"; # LAN IP for routing
       system = "x86_64-linux";
       deployType = "local"; # Deployed via apply-local
       tags = [
@@ -143,11 +144,11 @@
     globalMaintenance = false;
     subnet = "10.85.46.0/24";
     bridge = "cbr0";
-    hostIP = "10.85.46.107"; # Caddy Entry Point
+    hostIP = "10.85.48.107"; # Caddy Entry Point
     nodes = {
       # Infrastructure
       caddy = {
-        ip = "10.85.46.107";
+        ip = "10.85.48.107";
         meta = {
           name = "Caddy Proxy";
           category = "Infrastructure";
@@ -156,7 +157,7 @@
         };
       };
       crowdsec = {
-        ip = "10.85.46.119";
+        ip = "10.85.48.119";
         port = 8080;
         meta = {
           name = "CrowdSec LAPI";

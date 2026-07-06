@@ -23,6 +23,9 @@
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.monitoring
+    inputs.nix-presets.nixosModules.caddy
+    inputs.nix-presets.nixosModules.crowdsec
+    "${self}/modules/nixos/services/cloudflare-tunnel.nix"
   ];
 
   networking.hostName = "core-pi";
@@ -42,8 +45,23 @@
       hostAddress = "10.85.48.1";
     };
 
+    services.tang.enable = true;
+
     # ─── Containers ──────────────────────────────────────────────
     containers = {
+      caddy = {
+        enable = lib.mkForce true;
+        ip = "${myInventory.network.nodes.caddy.ip}/24";
+        hostDataDir = "/var/lib/caddy";
+        memoryLimit = "512M";
+      };
+
+      crowdsec = {
+        enable = true;
+        ip = "${myInventory.network.nodes.crowdsec.ip}/24";
+        hostDataDir = "/var/lib/images/crowdsec";
+      };
+
       open-webui = {
         enable = true;
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
@@ -147,5 +165,69 @@
       "/var/lib/anythingllm"
       "/var/lib/monitoring"
     ];
+  };
+
+  # ─── Firewall and NAT for Caddy ──────────────────────────────
+  networking.nftables = {
+    enable = true;
+    tables.netbird-nat = {
+      family = "inet";
+      content = ''
+        chain prerouting {
+          type nat hook prerouting priority dstnat; policy accept;
+          iifname "wt0" tcp dport { 80, 443 } dnat ip to ${myInventory.network.nodes.caddy.ip}
+        }
+      '';
+    };
+  };
+
+  networking.firewall = {
+    # Open all ports that Caddy is proxying to allow external access
+    allowedTCPPorts = lib.mapAttrsToList (_: node: node.externalPort) (
+      lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
+    );
+    interfaces."wt0".allowedTCPPorts = [
+      22 # SSH
+      443 # Caddy HTTPS (access all services via reverse proxy)
+    ];
+    interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
+    extraForwardRules = ''
+      # Allow NetBird traffic that was NAT'd to reach the Caddy container
+      iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { 80, 443 } accept
+    '';
+  };
+
+  services.crowdsec-firewall-bouncer = {
+    enable = true;
+    secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
+    settings = {
+      api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
+      api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
+    };
+  };
+
+  systemd.services = {
+    "container@caddy".postStart = ''
+      SRC_CERT="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+      if [ -f "$SRC_CERT" ]; then
+        mkdir -p /home/${config.my.username}/.pki
+        cp -f "$SRC_CERT" /home/${config.my.username}/.pki/caddy-root.crt
+        chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
+        
+        cat /etc/ssl/certs/ca-certificates.crt "$SRC_CERT" > /var/lib/caddy/ca-bundle.crt
+        chmod 644 /var/lib/caddy/ca-bundle.crt
+        echo "✅ Caddy Root CA copied and combined bundle generated."
+      else
+        echo "⚠️ Caddy Root CA not found at $SRC_CERT. Skipping copy."
+      fi
+    '';
+
+    "container@crowdsec".preStart = ''
+      mkdir -p /var/lib/images/crowdsec
+      if [ ! -f /var/lib/images/crowdsec/bouncer-key ]; then
+        tr -dc A-Za-z0-9 </dev/urandom | head -c 32 > /var/lib/images/crowdsec/bouncer-key
+        chmod 600 /var/lib/images/crowdsec/bouncer-key
+      fi
+    '';
   };
 }

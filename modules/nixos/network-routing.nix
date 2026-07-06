@@ -17,11 +17,10 @@ let
     hass-pi = "10.85.49.0/24";
   };
 
-  # Generate routes to other hosts' container subnets
   routes = lib.mapAttrsToList (name: host: {
     address = lib.head (lib.splitString "/" subnets.${name});
     prefixLength = 24;
-    via = host.ip;
+    via = host.physicalIp or host.ip;
     options = {
       onlink = "";
     };

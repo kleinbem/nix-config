@@ -32,6 +32,11 @@
         mode = "0440";
         group = "wheel";
       };
+
+      # Cloudflare Tunnel
+      cloudflare_account_id = { };
+      cloudflare_tunnel_id = { };
+      cloudflare_tunnel_secret = { };
     };
 
     templates = {
@@ -39,6 +44,17 @@
         mode = "0444";
         content = ''
           ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="${config.sops.placeholder.attic_server_token_rs256}"
+        '';
+      };
+      "cloudflare-tunnel-credentials.json" = {
+        mode = "0444";
+        content = ''
+          {
+            "AccountTag": "${config.sops.placeholder.cloudflare_account_id}",
+            "TunnelID": "${config.sops.placeholder.cloudflare_tunnel_id}",
+            "TunnelName": "nixos-nvme",
+            "TunnelSecret": "${config.sops.placeholder.cloudflare_tunnel_secret}"
+          }
         '';
       };
     };

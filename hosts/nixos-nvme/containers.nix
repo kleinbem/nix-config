@@ -123,19 +123,6 @@
         hostDataDir = "/var/lib/images/openclaw";
       };
 
-      caddy = {
-        enable = lib.mkForce true;
-        ip = "${myInventory.network.nodes.caddy.ip}/24";
-        hostDataDir = "/var/lib/caddy";
-        memoryLimit = "512M";
-      };
-
-      crowdsec = {
-        enable = true;
-        ip = "${myInventory.network.nodes.crowdsec.ip}/24";
-        hostDataDir = "/var/lib/images/crowdsec";
-      };
-
       netdata = {
         enable = false;
         ip = "${myInventory.network.nodes.netdata.ip}/24";
@@ -239,32 +226,5 @@
     "d /var/lib/images/syncthing 0755 root root - -"
   ];
 
-  systemd.services = {
-    # Caddy PKI: Copy the root CA cert to the user's home for Firefox trust
-    # This runs on the host and is fail-safe to prevent restart loops.
-    "container@caddy".postStart = ''
-      SRC_CERT="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
-      if [ -f "$SRC_CERT" ]; then
-        mkdir -p /home/${config.my.username}/.pki
-        cp -f "$SRC_CERT" /home/${config.my.username}/.pki/caddy-root.crt
-        chown ${config.my.username}:users /home/${config.my.username}/.pki/caddy-root.crt
-        
-        # Generate combined bundle for other services (e.g. github-runner) to trust local CA
-        cat /etc/ssl/certs/ca-certificates.crt "$SRC_CERT" > /var/lib/caddy/ca-bundle.crt
-        chmod 644 /var/lib/caddy/ca-bundle.crt
-        
-        echo "✅ Caddy Root CA copied and combined bundle generated."
-      else
-        echo "⚠️ Caddy Root CA not found at $SRC_CERT. Skipping copy."
-      fi
-    '';
 
-    "container@crowdsec".preStart = ''
-      mkdir -p /var/lib/images/crowdsec
-      if [ ! -f /var/lib/images/crowdsec/bouncer-key ]; then
-        tr -dc A-Za-z0-9 </dev/urandom | head -c 32 > /var/lib/images/crowdsec/bouncer-key
-        chmod 600 /var/lib/images/crowdsec/bouncer-key
-      fi
-    '';
-  };
 }

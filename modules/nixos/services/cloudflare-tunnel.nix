@@ -1,5 +1,6 @@
 {
   config,
+  myInventory,
   ...
 }:
 
@@ -13,11 +14,11 @@
           noTLSVerify = true;
         };
         ingress = {
-          "home.kleinbem.dev" = "https://10.85.46.107:443";
-          "chat.kleinbem.dev" = "https://10.85.46.107:443";
-          "code.kleinbem.dev" = "https://10.85.46.107:443";
-          "n8n.kleinbem.dev" = "https://10.85.46.107:443";
-          "cache.kleinbem.dev" = "https://10.85.46.107:443";
+          "home.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "chat.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "code.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "n8n.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "cache.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
         default = "http_status:404";
       };

@@ -6,11 +6,6 @@
 }:
 
 {
-  # cache.kleinbem.dev must resolve to the LOCAL caddy container here — this
-  # host's own NetBird IP (the module default) would miss the PREROUTING
-  # port-forward for locally-originated traffic. attic-pull.nix owns the
-  # /etc/hosts entry.
-  my.atticPull.cacheHostIp = "10.85.46.107";
 
   networking = {
     hostName = "nixos-nvme";
@@ -43,16 +38,11 @@
     ];
     firewall = {
       enable = true;
-      # Open all ports that Caddy is proxying to allow external access
-      allowedTCPPorts = lib.mapAttrsToList (_: node: node.externalPort) (
-        lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
-      );
 
       # Zero Trust: NetBird is NOT blanket-trusted.
       # Only specific ports are open over the tunnel.
       interfaces."wt0".allowedTCPPorts = [
         22 # SSH
-        443 # Caddy HTTPS (access all services via reverse proxy)
       ];
       # Tang (LUKS auto-unlock for orin-nano) on the LAN/Wi-Fi interface only
       interfaces."wlo1".allowedTCPPorts = [ 7654 ];
@@ -68,20 +58,6 @@
           to = 1764;
         } # KDE Connect (GSConnect)
       ];
-      extraForwardRules = ''
-        # Allow NetBird traffic that was NAT'd to reach the Caddy container
-        iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { 80, 443 } accept
-      '';
-    };
-    nftables.enable = true;
-    nftables.tables.netbird-nat = {
-      family = "inet";
-      content = ''
-        chain prerouting {
-          type nat hook prerouting priority dstnat; policy accept;
-          iifname "wt0" tcp dport { 80, 443 } dnat ip to ${myInventory.network.nodes.caddy.ip}
-        }
-      '';
     };
   };
 
@@ -91,15 +67,6 @@
       ui.enable = true; # Adds the NetBird GUI/Tray Icon
     };
 
-    # Host-level CrowdSec Firewall Bouncer
-    crowdsec-firewall-bouncer = {
-      enable = false;
-      secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
-      settings = {
-        api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
-        api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
-      };
-    };
   };
 
   systemd.services = {

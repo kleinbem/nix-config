@@ -110,24 +110,10 @@
       paperless_password = {
         neededForUsers = true;
       };
-      cloudflare_account_id = { };
-      cloudflare_tunnel_id = { };
-      cloudflare_tunnel_secret = { };
     };
 
     # --- Templated Env Files ---
     templates = {
-      "cloudflare-tunnel-credentials.json" = {
-        mode = "0444";
-        content = ''
-          {
-            "AccountTag": "${config.sops.placeholder.cloudflare_account_id}",
-            "TunnelID": "${config.sops.placeholder.cloudflare_tunnel_id}",
-            "TunnelName": "nixos-nvme",
-            "TunnelSecret": "${config.sops.placeholder.cloudflare_tunnel_secret}"
-          }
-        '';
-      };
       "homepage.env" = {
         mode = "0444";
         content = ''
