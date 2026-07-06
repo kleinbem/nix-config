@@ -206,7 +206,7 @@ jobs:
           fi
           COMMON=(
             "--no-nom"
-            "--eval-workers" "1"
+            "--skip-cached"
             "--eval-workers" "1"
             "--systems" "${{ matrix.system }}"
             "--retries" "2"
