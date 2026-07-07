@@ -172,7 +172,7 @@
 
       # App Containers
       dashboard = {
-        ip = "10.85.46.103";
+        ip = "10.85.48.103";
         port = 80;
         externalPort = 443; # Default HTTPS
         domain = "home.kleinbem.dev";

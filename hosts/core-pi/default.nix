@@ -8,6 +8,16 @@
   myInventory,
   ...
 }:
+let
+  caddyPortsList = [
+    80
+    443
+  ]
+  ++ (lib.mapAttrsToList (_: node: node.externalPort) (
+    lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
+  ));
+  caddyPortsStr = lib.concatMapStringsSep ", " toString (lib.unique caddyPortsList);
+in
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
@@ -95,7 +105,7 @@
 
       dashboard = {
         enable = true;
-        ip = "10.85.48.103/24";
+        ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.0.0.22"; # core-pi IP
         memoryLimit = "512M";
       };
@@ -190,7 +200,7 @@
       content = ''
         chain prerouting {
           type nat hook prerouting priority dstnat; policy accept;
-          iifname "wt0" tcp dport { 80, 443 } dnat ip to ${myInventory.network.nodes.caddy.ip}
+          iifname "wt0" tcp dport { ${caddyPortsStr} } dnat ip to ${myInventory.network.nodes.caddy.ip}
         }
       '';
     };
@@ -198,17 +208,12 @@
 
   networking.firewall = {
     # Open all ports that Caddy is proxying to allow external access
-    allowedTCPPorts = lib.mapAttrsToList (_: node: node.externalPort) (
-      lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
-    );
-    interfaces."wt0".allowedTCPPorts = [
-      22 # SSH
-      443 # Caddy HTTPS (access all services via reverse proxy)
-    ];
+    allowedTCPPorts = lib.unique caddyPortsList;
+    interfaces."wt0".allowedTCPPorts = [ 22 ] ++ lib.unique caddyPortsList;
     interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
     extraForwardRules = ''
       # Allow NetBird traffic that was NAT'd to reach the Caddy container
-      iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { 80, 443 } accept
+      iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { ${caddyPortsStr} } accept
     '';
   };
 

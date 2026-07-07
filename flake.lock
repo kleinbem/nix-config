@@ -1973,14 +1973,15 @@
       "locked": {
         "lastModified": 1783435051,
         "narHash": "sha256-Rzfb7BjO6s2u+ZZZ3Jcz3nEv6T0MSy0IQsSRlYsj6tI=",
-        "rev": "c7a6e320d9b62b2be2acd47fbb590d8be68df985",
-        "revCount": 252,
-        "type": "git",
-        "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
+        "owner": "kleinbem",
+        "repo": "nix-presets",
+        "rev": "d3716552e709f9eb0d01a613a4cc5dfe0acd1617",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
+        "owner": "kleinbem",
+        "repo": "nix-presets",
+        "type": "github"
       }
     },
     "nix-secrets": {

@@ -11,6 +11,13 @@ deploy-fleet:
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --show-trace
 
 [group("Fleet")]
+[doc("Manually trigger the system.autoUpgrade service on a host to pull the latest production release immediately.")]
+update host:
+    @echo "🚀 Manually triggering nixos-upgrade.service on {{host}}..."
+    ssh "{{host}}" "sudo systemctl start nixos-upgrade.service"
+    @echo "✅ Upgrade triggered! To watch progress, run: ssh {{host}} 'sudo journalctl -u nixos-upgrade.service -f'"
+
+[group("Fleet")]
 [doc("Deploy one host by name via Colmena. Nodes: nixos-nvme, router-1, router-2, orin-nano, core-pi, hass-pi, nasbook. ARM/Pi nodes build on-target and substitute from Attic.")]
 deploy host:
     #!/usr/bin/env bash
