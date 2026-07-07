@@ -139,7 +139,7 @@ jobs:
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
               attr=".#nixosConfigurations.$factory.config.containers.\"$name\".path"
-              if out=$(nix build --dry-run "$attr" $NIX_OVERRIDES 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
+              if out=$(nix build --dry-run "$attr" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
                 jq --arg n "$name" --arg p "$path" '. + {($n): $p}' "/tmp/ok-$sys.json" > /tmp/ok.tmp && mv /tmp/ok.tmp "/tmp/ok-$sys.json"
               else
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
