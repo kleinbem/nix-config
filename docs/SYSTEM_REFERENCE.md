@@ -15,7 +15,7 @@
 - **hass-pi** (`10.0.0.21`, aarch64-linux, ssh) — raspberry-pi, home-assistant
 - **mesh-node** (`192.168.1.2`, openwrt) — physical, mesh, ap, lxc-host
 - **mesh-node-2** (`192.168.1.6`, openwrt) — physical, mesh
-- **nasbook** (`192.168.1.30`, x86_64-linux, ssh) — nas, storage, hub
+- **nasbook** (`10.0.0.30`, x86_64-linux, ssh) — nas, storage, hub
 - **net-brain** (`192.168.1.5`, aarch64-linux, ssh) — router, lxc, brain
 - **nixos-nvme** (`10.85.46.1`, x86_64-linux, local) — workstation, desktop
 - **orin-nano** (`10.0.0.12`, aarch64-linux, ssh) — edge, ai, jetson
