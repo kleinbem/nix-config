@@ -118,12 +118,27 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        echo "100.117.146.201 cache.kleinbem.dev" | sudo tee -a /etc/hosts
+        # Resolution: prefer the NetBird DNS zone (infra/netbird/dns.tf — one
+        # tofu-managed pointer instead of an IP baked into this file; the
+        # runner's systemd-resolved learns NetBird's resolver from `netbird
+        # up`). A mesh IP (100.117.0.0/16) proves the zone answered. Anything
+        # else (public DNS returns the Cloudflare tunnel edge, whose 100 MiB
+        # NAR cap breaks pushes) falls back to a static /etc/hosts pin — warn
+        # so we notice the DNS path regressing, but don't fail the build.
+        dns_answer="$(getent ahostsv4 cache.kleinbem.dev | awk '{print $1; exit}' || true)"
+        if [[ "$dns_answer" == 100.117.* ]]; then
+          resolved="$dns_answer"
+          echo "cache.kleinbem.dev resolves via NetBird DNS: $resolved"
+        else
+          resolved="100.117.146.201"
+          echo "::warning::cache.kleinbem.dev did not resolve to a mesh IP (got '${dns_answer:-nothing}') — pinning $resolved in /etc/hosts. NetBird DNS zone may be broken."
+          echo "$resolved cache.kleinbem.dev" | sudo tee -a /etc/hosts
+        fi
         # Verify the route to the Attic IP actually goes through NetBird's
         # `wt0` interface. Without this check, a silently-failed `netbird up`
         # would let DNS fall back to Cloudflare and the attic push would 413
         # on big NARs. Cheaper to fail here, before the build.
-        route="$(ip route get 100.117.146.201)"
+        route="$(ip route get "$resolved")"
         echo "$route"
         if ! echo "$route" | grep -q 'dev wt0'; then
           echo "::error::NetBird route to cache.kleinbem.dev is not via wt0 — bailing before the build."
@@ -134,7 +149,7 @@ runs:
         echo "Waiting for NetBird peer connectivity to cache.kleinbem.dev..."
         connected=false
         for i in {1..15}; do
-          if ping -c 1 -W 1 100.117.146.201 &>/dev/null; then
+          if ping -c 1 -W 1 "$resolved" &>/dev/null; then
             echo "Connectivity established."
             connected=true
             break

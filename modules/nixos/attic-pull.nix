@@ -30,13 +30,28 @@
 # Inert unless the host declares the attic_pull_token secret.
 { config, lib, ... }:
 
+let
+  inv = import ../../inventory.nix;
+in
 {
-  options.my.atticPull.cacheHostIp = lib.mkOption {
-    type = lib.types.str;
-    # core-pi's NetBird IP (the cache entrypoint). Mirrors the /etc/hosts
-    # override the CI nix-fleet-setup action applies.
-    default = "100.117.146.201";
-    description = "IP that cache.kleinbem.dev resolves to for authenticated NetBird-routed pulls.";
+  options.my.atticPull = {
+    cacheHostIp = lib.mkOption {
+      type = lib.types.str;
+      # core-pi's NetBird IP (the cache entrypoint), single-sourced from
+      # inventory.nix. Mirrors the fallback the CI nix-fleet-setup action uses.
+      default = inv.hosts.core-pi.netbirdIp;
+      description = "IP that cache.kleinbem.dev resolves to for authenticated NetBird-routed pulls.";
+    };
+    manageHostsEntry = lib.mkOption {
+      type = lib.types.bool;
+      # The static /etc/hosts pin is the fallback resolution path. Hosts whose
+      # resolver consults NetBird DNS (the tofu-managed zone in
+      # infra/netbird/dns.tf) set this to false — see the dnsmasq forward in
+      # ai-hardening.nix — and then follow the mesh record instead of a baked
+      # IP that goes stale on the next entrypoint move.
+      default = true;
+      description = "Pin cache.kleinbem.dev in /etc/hosts (fallback for hosts without NetBird-aware DNS).";
+    };
   };
 
   config = lib.mkIf (config.sops.secrets ? attic_pull_token) {
@@ -47,6 +62,8 @@
 
     nix.settings.netrc-file = config.sops.templates."attic-netrc".path;
 
-    networking.hosts.${config.my.atticPull.cacheHostIp} = [ "cache.kleinbem.dev" ];
+    networking.hosts = lib.mkIf config.my.atticPull.manageHostsEntry {
+      ${config.my.atticPull.cacheHostIp} = [ "cache.kleinbem.dev" ];
+    };
   };
 }

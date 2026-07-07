@@ -18,6 +18,7 @@
     nixos-nvme = {
       ip = "10.85.46.1"; # Container bridge IP
       physicalIp = "10.0.0.5"; # LAN IP for routing
+      netbirdIp = "100.117.212.232"; # Mesh IP (stable per enrollment; re-enrolling mints a new one)
       system = "x86_64-linux";
       deployType = "local"; # Deployed via apply-local
       tags = [
@@ -92,6 +93,7 @@
     };
     core-pi = {
       ip = "10.0.0.22";
+      netbirdIp = "100.117.146.201"; # Mesh IP — THE cache entrypoint (caddy/attic); attic-pull.nix + infra/netbird/dns.tf point here
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -101,6 +103,7 @@
     };
     hass-pi = {
       ip = "10.0.0.21"; # Raspberry Pi — not yet active
+      netbirdIp = "100.117.163.227"; # Mesh IP (stable per enrollment)
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [

@@ -7,6 +7,14 @@
 let
   cfg = config.my.security.ai-hardening;
   net = config.my.network;
+  inv = import ../../inventory.nix;
+  # This host's own NetBird mesh IP (null when not enrolled, e.g. orin-nano).
+  # The NetBird agent runs an embedded DNS server bound to exactly this
+  # address — the forward below sends cache.kleinbem.dev there so the
+  # tofu-managed mesh record (infra/netbird/dns.tf) is authoritative instead
+  # of a static /etc/hosts pin.
+  hostNetbirdIp = (inv.hosts.${config.networking.hostName} or { }).netbirdIp or null;
+  cacheViaNetbirdDns = cfg.strictEgress && hostNetbirdIp != null;
 in
 {
   options.my.security.ai-hardening = {
@@ -78,9 +86,20 @@ in
             "1.1.1.1" # Cloudflare
             "8.8.8.8" # Google
             "9.9.9.9" # Quad9
-          ];
+          ]
+          # Cache entrypoint resolves via this host's own NetBird agent so the
+          # mesh record is authoritative (public DNS answers with Cloudflare
+          # tunnel IPs, whose 100 MiB NAR cap breaks big pulls). Note dnsmasq
+          # does NOT fall back to the general upstreams for a /domain/-scoped
+          # server: if the agent is down this name SERVFAILs — acceptable, the
+          # WireGuard path is unreachable without the agent anyway.
+          ++ lib.optional cacheViaNetbirdDns "/cache.kleinbem.dev/${hostNetbirdIp}";
         };
       };
+
+    # The dnsmasq forward above replaces the static /etc/hosts pin from
+    # attic-pull.nix on this host.
+    my.atticPull.manageHostsEntry = lib.mkIf cacheViaNetbirdDns false;
 
     # Ensure dnsmasq waits for the bridge to be ready
     systemd.services.dnsmasq = lib.mkIf config.services.dnsmasq.enable {
