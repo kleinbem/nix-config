@@ -1973,24 +1973,25 @@
       "locked": {
         "lastModified": 1783455004,
         "narHash": "sha256-K8gTxxHcR97nGiUtysHAUOiFOQtmBIdI6SB9IArkdeQ=",
-        "rev": "039fa50bb042ac7603c26477c5c845f09b673c83",
-        "revCount": 260,
-        "type": "git",
-        "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
+        "owner": "kleinbem",
+        "repo": "nix-presets",
+        "rev": "c7d97182ccb363b345bef9c6e4d796cb83f196c7",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets"
+        "owner": "kleinbem",
+        "repo": "nix-presets",
+        "type": "github"
       }
     },
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1783108876,
-        "narHash": "sha256-Bvr/P7C5kW3qW4WaWPmuGvzIAbZOC7XNYYfV+xcY+gM=",
+        "lastModified": 1783463277,
+        "narHash": "sha256-7z3BUeYHyhuCaQIOaYVW91QPGYFRROxR0z8mfd9tssY=",
         "owner": "kleinbem",
         "repo": "nix-secrets",
-        "rev": "a9ee544aacaac9002fb141d9b2dee77dd45d61d1",
+        "rev": "5ad6cd6fee151428574a2b6ecbebb80aa86d4fc1",
         "type": "github"
       },
       "original": {

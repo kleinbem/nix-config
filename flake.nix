@@ -50,7 +50,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-presets = {
-      url = "git+file:///home/martin/Develop/github.com/kleinbem/nix/nix-presets";
+      url = "github:kleinbem/nix-presets";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         nix-devshells.follows = "nix-devshells";
