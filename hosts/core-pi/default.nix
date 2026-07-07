@@ -140,6 +140,11 @@
       };
     };
 
+    # This host IS the cache entrypoint: its own pulls must go straight to the
+    # local caddy container — traffic to its own NetBird IP never traverses the
+    # wt0 PREROUTING DNAT (see modules/nixos/attic-pull.nix).
+    atticPull.cacheHostIp = myInventory.network.nodes.caddy.ip;
+
     # ─── Standalone container auto-update (ADR 002) ─────────────
     # Same model as nixos-nvme: containers are decoupled from the host
     # generation and refreshed nightly from the CI-published manifest —

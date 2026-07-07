@@ -15,12 +15,13 @@
 #   2. TRANSPORT — resolve cache.kleinbem.dev to the cache entrypoint's IP so
 #      pulls traverse the WireGuard mesh (wt0) instead of the public Cloudflare
 #      tunnel, whose 100 MiB per-NAR cap 413s on big closures like the kernel.
-#      The entrypoint is the caddy container on nixos-nvme, which terminates
-#      TLS for cache.kleinbem.dev and proxies to the attic container on core-pi
-#      (10.85.48.120:8080) over the static container-subnet routes
-#      (network-routing.nix). nixos-nvme itself overrides cacheHostIp to the
-#      caddy container's local address — traffic to its own NetBird IP would
-#      miss the PREROUTING port-forward.
+#      The entrypoint is the caddy container on core-pi (moved off nixos-nvme
+#      2026-07-06), which terminates TLS for cache.kleinbem.dev and proxies to
+#      the attic container (10.85.48.120:8080) on the same host. core-pi's
+#      netbird-nat nftables table DNATs wt0:{80,443} to the caddy container.
+#      core-pi itself overrides cacheHostIp to the caddy container's local
+#      address — its own traffic to its own NetBird IP would miss the
+#      PREROUTING port-forward.
 #
 # Security model (deliberately private, not public): the cache stays access-
 # controlled, so even if a secret ever accidentally lands in a cached store
@@ -32,9 +33,9 @@
 {
   options.my.atticPull.cacheHostIp = lib.mkOption {
     type = lib.types.str;
-    # nixos-nvme's NetBird IP (the cache entrypoint). Mirrors the /etc/hosts
+    # core-pi's NetBird IP (the cache entrypoint). Mirrors the /etc/hosts
     # override the CI nix-fleet-setup action applies.
-    default = "100.117.212.232";
+    default = "100.117.146.201";
     description = "IP that cache.kleinbem.dev resolves to for authenticated NetBird-routed pulls.";
   };
 

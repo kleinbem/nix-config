@@ -93,21 +93,14 @@ in
   # ==========================================
   # PKI CERTIFICATES (Fleet Trust Chain)
   # ==========================================
-  security.pki.certificateFiles = [
-    (pkgs.writeText "caddy-local-ca.crt" ''
-      -----BEGIN CERTIFICATE-----
-      MIIBpTCCAUqgAwIBAgIRALxQmzl2VPMTVn+VlRkHDZgwCgYIKoZIzj0EAwIwMDEu
-      MCwGA1UEAxMlQ2FkZHkgTG9jYWwgQXV0aG9yaXR5IC0gMjAyNiBFQ0MgUm9vdDAe
-      Fw0yNjA1MDMxMjUxMDlaFw0zNjAzMTExMjUxMDlaMDAxLjAsBgNVBAMTJUNhZGR5
-      IExvY2FsIEF1dGhvcml0eSAtIDIwMjYgRUNDIFJvb3QwWTATBgcqhkjOPQIBBggq
-      hkjOPQMBBwNCAASJFpKowZV2j55pcwXzETHaqYH5QNGVg9PBtp3krqTPAlLtZ0zw
-      acN2fnqAjfhDhpbTfp9SKToSnssomEZPmVBZo0UwQzAOBgNVHQ8BAf8EBAMCAQYw
-      EgYDVR0TAQH/BAgwBgEB/wIBATAdBgNVHQ4EFgQUFjpeQR+f9pRtwPOHU1hVypTW
-      xVIwCgYIKoZIzj0EAwIDSQAwRgIhANAOPOljXeM6ya774ubB374ZcMgPTTA6A9lx
-      bGXyGFMGAiEAhGYXtAh/N7sA8V4ry3b1InUi0djDIciwBU3ghPOxxzg=
-      -----END CERTIFICATE-----
-    '')
-  ];
+  # Root CA of the caddy container that terminates TLS for cache.kleinbem.dev
+  # (on core-pi). SINGLE SOURCE OF TRUTH: the same file CI trusts
+  # (.github/actions/nix-fleet-setup). If the caddy container is ever recreated
+  # or moved, Caddy mints a NEW local CA — refresh this file from
+  # /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt on the
+  # host that runs it, or the whole fleet fails cert verification against the
+  # cache (2026-07-07 outage).
+  security.pki.certificateFiles = [ ../../pki/caddy-root.crt ];
 
   services = {
     xserver.xkb.layout = "gb";

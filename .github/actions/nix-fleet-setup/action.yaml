@@ -118,12 +118,12 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        echo "100.117.212.232 cache.kleinbem.dev" | sudo tee -a /etc/hosts
+        echo "100.117.146.201 cache.kleinbem.dev" | sudo tee -a /etc/hosts
         # Verify the route to the Attic IP actually goes through NetBird's
         # `wt0` interface. Without this check, a silently-failed `netbird up`
         # would let DNS fall back to Cloudflare and the attic push would 413
         # on big NARs. Cheaper to fail here, before the build.
-        route="$(ip route get 100.117.212.232)"
+        route="$(ip route get 100.117.146.201)"
         echo "$route"
         if ! echo "$route" | grep -q 'dev wt0'; then
           echo "::error::NetBird route to cache.kleinbem.dev is not via wt0 — bailing before the build."
@@ -134,7 +134,7 @@ runs:
         echo "Waiting for NetBird peer connectivity to cache.kleinbem.dev..."
         connected=false
         for i in {1..15}; do
-          if ping -c 1 -W 1 100.117.212.232 &>/dev/null; then
+          if ping -c 1 -W 1 100.117.146.201 &>/dev/null; then
             echo "Connectivity established."
             connected=true
             break
