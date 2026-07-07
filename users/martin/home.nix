@@ -34,6 +34,9 @@ in
     sessionVariables = {
       DEFAULT_BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
       BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
+      # mkForce: the neovim wrapper module also sets EDITOR (nvim); nano wins
+      # so sops/git/etc. open a friendlier editor.
+      EDITOR = lib.mkForce "nano";
     };
 
     # Personal System Control Center — `os <ns>::<recipe>`. The `os`
