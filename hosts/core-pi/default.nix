@@ -2,6 +2,7 @@
 {
   config,
   lib,
+  pkgs,
   inputs,
   self,
   myInventory,
@@ -218,6 +219,17 @@
       api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
       api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
     };
+  };
+
+  systemd.services.crowdsec-firewall-bouncer = {
+    after = [ "container@crowdsec.service" ];
+    wants = [ "container@crowdsec.service" ];
+    preStart = ''
+      until ${pkgs.curl}/bin/curl -s http://${myInventory.network.nodes.crowdsec.ip}:8080/ > /dev/null; do
+        echo "Waiting for CrowdSec LAPI..."
+        sleep 2
+      done
+    '';
   };
 
   systemd.services = {
