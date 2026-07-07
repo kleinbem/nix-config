@@ -109,7 +109,7 @@ apply *args="":
     # 3. Eval check + cache coverage (skipped with --fast)
     if [ "$FAST" -eq 0 ]; then
         if [ "$TARGET_HOST" = "$(hostname)" ]; then
-            just maintenance::check
+            just dev::check
         else
             echo "✅ Verifying NixOS configuration for $TARGET_HOST..."
             {{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations."$TARGET_HOST".config.system.build.toplevel {{OVERRIDES}} --impure
@@ -131,4 +131,47 @@ apply *args="":
     fi
 
     # 5. Regenerate Antigravity reference docs
-    just maintenance::sync-agent
+    just dev::sync-agent
+
+[group("Development")]
+check:
+    @echo "✅ Verifying NixOS configuration..."
+    @{{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations.nixos-nvme.config.system.build.toplevel {{OVERRIDES}} --impure
+
+[group("Development")]
+check-hosts *args="--impure":
+    @echo "🏗️  Verifying all Host Configurations (Evaluation & Build)..."
+    @{{LOCK_CMD}} {{TIMER}} nix flake check . {{OVERRIDES}} {{args}}
+
+[group("Development")]
+sync-agent:
+    @echo "🤖 Syncing system context for Antigravity..."
+    @./scripts/sync-agent-context.sh
+    @timeout 30 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; rc=$?; \
+    if [ "$rc" -eq 124 ]; then \
+        echo "  ⏱️  jj diff timed out after 30s — skipping doc-change check (apply not blocked)."; \
+        echo "     (jj likely deadlocked on the working-copy lock; re-run sync-agent later.)"; \
+    elif [ "$rc" -ne 0 ]; then \
+        echo "  📝 Reference docs updated — already in jj working copy (@)."; \
+        echo "     Commit when convenient: jj describe -m 'docs: auto-update AI reference docs'"; \
+    fi
+
+[group("Development")]
+impact *args="--git":
+    @python3 ./scripts/impact.py {{args}}
+
+[group("Development")]
+lint-conventions *args="":
+    @python3 ./scripts/lint-conventions.py {{args}}
+
+[group("Development")]
+test-python *args="":
+    @nix shell nixpkgs#python3Packages.pytest --command pytest ./scripts/tests/ {{args}}
+
+[group("Development")]
+lint-python *args="":
+    @nix shell nixpkgs#ruff --command ruff check ./scripts/ {{args}}
+
+[group("Development")]
+fmt-python *args="":
+    @nix shell nixpkgs#ruff --command ruff format ./scripts/ {{args}}
