@@ -102,7 +102,14 @@ let
     frigate.ip = ip 39;
     home-assistant.ip = ip 40;
     paperless.ip = ip 41;
-    authelia.hostDataDir = dataDir "authelia";
+    authelia = {
+      hostDataDir = dataDir "authelia";
+      # Host-level bind mounts; not in closure. The factory has no sops-nix,
+      # so the preset's `config.sops.secrets.*` defaults would fail to eval.
+      jwtSecretFile = "/run/secrets/factory-dummy";
+      sessionSecretFile = "/run/secrets/factory-dummy";
+      storageEncryptionKeyFile = "/run/secrets/factory-dummy";
+    };
     github-runner = {
       ip = ip 42;
       hostDataDir = dataDir "github-runner";

@@ -162,7 +162,8 @@ jobs:
       - name: Add swap for heavy evals
         # Workstation + container-factory evals run near the hosted runner's
         # memory ceiling; spill to the SSD instead of getting SIGTERM'd.
-        if: steps.cache.outputs.push_cache == 'true'
+        # Unconditional (PRs included) because the blocking factory eval below
+        # runs on PRs too.
         run: |
           sudo fallocate -l 12G /swapfile-ci
           sudo chmod 600 /swapfile-ci
@@ -186,24 +187,42 @@ jobs:
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake ".#nixosConfigurations.nixos-nvme.config.system.build.toplevel" $NIX_OVERRIDES
 
-      # Container factory toplevel: ONE build materializes every standalone
-      # container closure for this arch (they are NOT part of any host closure
-      # anymore — standalone containers boot from a profile symlink, so nothing
-      # else would ever push them to Attic). The promote workflow evals the
-      # same factories to publish the container manifest devices consume.
-      # BEST-EFFORT: a red factory must not block host promotion; the manifest
-      # gate in promote-production refuses to publish a manifest whose paths
-      # aren't fully cached, so a failed factory build just means "manifest
-      # stays at the previous rev" — devices keep serving the old closures.
-      - name: Build container-factory toplevel (best-effort)
-        if: steps.cache.outputs.push_cache == 'true'
-        continue-on-error: true
+      # Container factory eval is BLOCKING (and runs on PRs, unlike the build
+      # below): if the factory toplevel doesn't evaluate, nix-fast-build reports
+      # "0 successes", NOTHING is built or pushed, and the container manifest
+      # can never converge — new/changed container closures silently drop out
+      # of it cycle after cycle. That exact failure hid inside the best-effort
+      # build step for a day (nix-presets 61352e5 hardcoded a sops path the
+      # factory can't eval; core-pi's monitoring container couldn't stage).
+      # Eval breakage is a code bug that must fail CI loudly at PR time;
+      # build/push flakiness (the reason the BUILD is best-effort) is not.
+      - name: Eval container-factory toplevel (blocking)
         run: |
           set -o pipefail
           FACTORY="container-factory"
           if [ "${{ matrix.system }}" = "aarch64-linux" ]; then
             FACTORY="container-factory-aarch64"
           fi
+          echo "FACTORY=$FACTORY" >> "$GITHUB_ENV"
+          nix eval --raw \
+            ".#nixosConfigurations.$FACTORY.config.system.build.toplevel.drvPath" \
+            $NIX_OVERRIDES
+
+      # Container factory toplevel: ONE build materializes every standalone
+      # container closure for this arch (they are NOT part of any host closure
+      # anymore — standalone containers boot from a profile symlink, so nothing
+      # else would ever push them to Attic). The promote workflow evals the
+      # same factories to publish the container manifest devices consume.
+      # BEST-EFFORT: a red factory BUILD must not block host promotion; the
+      # manifest gate in promote-production refuses to publish a manifest whose
+      # paths aren't fully cached, so a failed factory build just means
+      # "manifest stays at the previous rev" — devices keep serving the old
+      # closures. Eval correctness is enforced by the blocking step above.
+      - name: Build container-factory toplevel (best-effort)
+        if: steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
           COMMON=(
             "--no-nom"
             "--skip-cached"
@@ -212,5 +231,6 @@ jobs:
             "--retries" "2"
             "--attic-cache" "system"
           )
+          # $FACTORY is exported by the blocking eval step above.
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake ".#nixosConfigurations.$FACTORY.config.system.build.toplevel" $NIX_OVERRIDES
