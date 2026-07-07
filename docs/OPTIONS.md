@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 49  
-**Consumer files scanned:** 16
+**Declarations indexed:** 50  
+**Consumer files scanned:** 15
 
 ---
 
@@ -18,6 +18,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
+
+## `my.atticPull`
+
+### `my.atticPull`
+
+- **Declared:** `nix-config/modules/nixos/attic-pull.nix:37`
+- **Sub-options:** `cacheHostIp`, `manageHostsEntry`
+- **Consumed by:** `host:core-pi`
 
 ## `my.audio`
 
@@ -57,7 +65,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.authelia`
 
 - **Declared:** `nix-presets/containers/authelia.nix:14`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `sessionSecretFile`, `storageEncryptionKeyFile`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.authentik`
@@ -76,7 +84,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/caddy/default.nix:18`
 - **Sub-options:** `enable`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `staticSites`
-- **Consumed by:** `host:nixos-nvme`
+- **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.code-server`
 
@@ -94,7 +102,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/crowdsec.nix:13`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`
-- **Consumed by:** `host:nixos-nvme`
+- **Consumed by:** `host:core-pi`
 
 ### `my.containers.cups`
 
@@ -282,7 +290,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.security.ai-hardening`
 
-- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:12`
+- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:20`
 - **Sub-options:** `airlockIPs`, `enable`, `strictEgress`, `whitelistDomains`
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
@@ -310,7 +318,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/tang.nix:11`
 - **Sub-options:** `enable`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.timesync`
 

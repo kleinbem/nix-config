@@ -125,13 +125,26 @@ runs:
         # else (public DNS returns the Cloudflare tunnel edge, whose 100 MiB
         # NAR cap breaks pushes) falls back to a static /etc/hosts pin — warn
         # so we notice the DNS path regressing, but don't fail the build.
-        dns_answer="$(getent ahostsv4 cache.kleinbem.dev | awk '{print $1; exit}' || true)"
-        if [[ "$dns_answer" == 100.117.* ]]; then
-          resolved="$dns_answer"
-          echo "cache.kleinbem.dev resolves via NetBird DNS: $resolved"
-        else
+        # The zone reaches a freshly-joined peer via the network-map sync, which
+        # can lag `netbird up` by several seconds — retry before falling back
+        # (first observed run: fallback fired 8s after join with the public IP).
+        resolved=""
+        for i in {1..6}; do
+          dns_answer="$(getent ahostsv4 cache.kleinbem.dev | awk '{print $1; exit}' || true)"
+          if [[ "$dns_answer" == 100.117.* ]]; then
+            resolved="$dns_answer"
+            echo "cache.kleinbem.dev resolves via NetBird DNS: $resolved (attempt $i)"
+            break
+          fi
+          sleep 5
+        done
+        if [ -z "$resolved" ]; then
           resolved="100.117.146.201"
-          echo "::warning::cache.kleinbem.dev did not resolve to a mesh IP (got '${dns_answer:-nothing}') — pinning $resolved in /etc/hosts. NetBird DNS zone may be broken."
+          echo "::warning::cache.kleinbem.dev did not resolve to a mesh IP after 30s (last answer: '${dns_answer:-nothing}') — pinning $resolved in /etc/hosts. NetBird DNS zone may be broken or not reaching runner peers."
+          # Diagnostics for the retirement decision — what DID the runner's
+          # resolver think, and did NetBird register its DNS at all?
+          resolvectl status 2>/dev/null | grep -iA2 "netbird\|wt0" | head -10 || true
+          resolvectl query cache.kleinbem.dev 2>&1 | head -3 || true
           echo "$resolved cache.kleinbem.dev" | sudo tee -a /etc/hosts
         fi
         # Verify the route to the Attic IP actually goes through NetBird's

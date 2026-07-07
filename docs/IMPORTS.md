@@ -20,8 +20,8 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `core-pi`
 
-- **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:open-webui`, `nix-presets:openclaw`
+- **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:open-webui`, `nix-presets:openclaw`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `hass-pi`
@@ -38,7 +38,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/workstation.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
@@ -107,7 +107,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/persistence.nix` ← nixos-nvme, orin-nano
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
-- `modules/nixos/services/cloudflare-tunnel.nix` ← nixos-nvme
+- `modules/nixos/services/cloudflare-tunnel.nix` ← core-pi
 - `modules/nixos/services/container-updater.nix` ← core-pi, hass-pi, nixos-nvme
 - `modules/nixos/services/github-runner.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano
@@ -123,10 +123,10 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:attic` ← container-factory, core-pi
 - `nix-presets:authelia` ← container-factory, core-pi
 - `nix-presets:backup` ← container-factory, nasbook
-- `nix-presets:caddy` ← container-factory
+- `nix-presets:caddy` ← container-factory, core-pi
 - `nix-presets:code-server` ← container-factory
 - `nix-presets:comfyui` ← container-factory
-- `nix-presets:crowdsec` ← container-factory
+- `nix-presets:crowdsec` ← container-factory, core-pi
 - `nix-presets:cups` ← container-factory, core-pi
 - `nix-presets:dashboard` ← container-factory, core-pi
 - `nix-presets:frigate` ← container-factory, orin-nano
