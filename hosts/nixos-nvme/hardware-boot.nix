@@ -41,7 +41,7 @@ in
   my.boot.clevis-initrd = {
     enable = true;
     luksDevice = "cryptroot";
-    secretFile = "${./cryptroot.jwe}";
+    secretFile = "${inputs.nix-secrets}/initrd/cryptroot_nixos-nvme.jwe";
     fallbackMessage = "Tang still unreachable; continuing (FIDO2 or passphrase fallback)";
   };
 

@@ -24,7 +24,7 @@
       enable = true;
       luksDevice = "hass_crypt";
       hostIp = "10.0.0.21";
-      secretFile = "${./cryptroot.jwe}";
+      secretFile = "${inputs.nix-secrets}/initrd/cryptroot_hass-pi.jwe";
     };
 
     # ─── Container Network ──────────────────────────────────────

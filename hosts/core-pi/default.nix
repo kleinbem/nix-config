@@ -47,7 +47,7 @@ in
       enable = true;
       luksDevice = "core_crypt";
       hostIp = "10.0.0.22";
-      secretFile = "${./cryptroot.jwe}";
+      secretFile = "${inputs.nix-secrets}/initrd/cryptroot_core-pi.jwe";
     };
 
     # ─── Container Network ──────────────────────────────────────

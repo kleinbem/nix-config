@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   myInventory,
   ...
 }:
@@ -21,7 +22,11 @@
       enable = true;
       luksDevice = "orin_crypt";
       hostIp = "10.0.0.12";
-      secretFile = pkgs.writeText "cryptroot.jwe" (builtins.readFile ./cryptroot.jwe);
+      # JWE lives in nix-secrets (private): Tang-wrapped LUKS key material
+      # must not sit in this public repo.
+      secretFile = pkgs.writeText "cryptroot.jwe" (
+        builtins.readFile "${inputs.nix-secrets}/initrd/cryptroot_orin-nano.jwe"
+      );
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
     services.tang.enable = true;
