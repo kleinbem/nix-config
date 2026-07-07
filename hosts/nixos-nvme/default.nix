@@ -63,6 +63,10 @@
     ];
   };
 
+  security.pki.certificateFiles = [
+    ../../pki/caddy-root.crt
+  ];
+
   my = {
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
