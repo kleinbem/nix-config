@@ -63,11 +63,18 @@
           };
 
           # --- Sample Camera Configuration ---
+          # Cameras live in the cameras VLAN (10.0.30.0/24, NO WAN — see the
+          # openwrt NETWORK_PLAN). orin is in infra, which the firewall matrix
+          # lets reach cameras, so Frigate can pull the stream. Credentials use
+          # Frigate's {FRIGATE_RTSP_*} env substitution — the real values come
+          # from a sops secret injected into the container env (nix-secrets),
+          # NEVER inline here. Pin the camera to 10.0.30.100 via a DHCP
+          # reservation (MAC) in openwrt-secrets ansible-vars.yaml.
           cameras = {
             front_door = {
               ffmpeg.inputs = [
                 {
-                  path = "rtsp://admin:password@192.168.1.100:554/stream1";
+                  path = "rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.0.30.100:554/stream1";
                   roles = [
                     "detect"
                     "record"
