@@ -27,9 +27,7 @@ jobs:
           access-tokens = github.com=${{ steps.app-token.outputs.token }}
 
     - name: Set up dummy secrets
-      run: |
-        mkdir -p /tmp/dummy-secrets
-        echo "{}" > /tmp/dummy-secrets/secrets.yaml
+      run: ./.github/scripts/setup-dummy-secrets.sh
 
     - name: Set Nix input overrides
       run: |
