@@ -753,11 +753,11 @@ pi-update-usb host device="/dev/sdc":
 deploy-router-lxc host="router-1":
     @echo "🏗️ Building LXC image for {{host}}..."
     nix build ".#{{host}}-image" --out-link result-{{host}}
-    @echo "📦 Uploading to Router B (192.168.1.2)..."
+    @echo "📦 Uploading to Router B (10.0.0.2)..."
     # nixos-generators LXC format produces a tarball in result/tarball/
-    scp result-{{host}}/tarball/*.tar.xz root@192.168.1.2:/srv/lxc/nixos-{{host}}.tar.xz
+    scp result-{{host}}/tarball/*.tar.xz root@10.0.0.2:/srv/lxc/nixos-{{host}}.tar.xz
     @echo "🚀 Activating container on router..."
-    ssh root@192.168.1.2 "lxc-stop -n {{host}} || true; mkdir -p /srv/lxc/{{host}}/rootfs; tar -xf /srv/lxc/nixos-{{host}}.tar.xz -C /srv/lxc/{{host}}/rootfs; lxc-start -n {{host}}"
+    ssh root@10.0.0.2 "lxc-stop -n {{host}} || true; mkdir -p /srv/lxc/{{host}}/rootfs; tar -xf /srv/lxc/nixos-{{host}}.tar.xz -C /srv/lxc/{{host}}/rootfs; lxc-start -n {{host}}"
     @echo "✅ Deployment of {{host}} complete."
 
 [group("Router")]

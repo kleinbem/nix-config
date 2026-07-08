@@ -112,7 +112,7 @@ in
           # Container Bridge
           iifname "${config.my.network.bridge}" oifname "${config.my.network.externalInterface}" accept
           iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ct state { established, related } accept
-          iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ip saddr { 10.0.0.5, 10.0.0.22, 10.0.0.12, 10.0.0.21, 10.0.0.30, 192.168.1.1, 192.168.1.2, 192.168.1.3, 192.168.1.4, 192.168.1.5, 192.168.1.6 } accept
+          iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ip saddr { 10.0.0.5, 10.0.0.22, 10.0.0.12, 10.0.0.21, 10.0.0.30, 10.0.0.1, 10.0.0.2, 10.0.0.3, 10.0.0.4, 10.0.0.7, 10.0.0.6 } accept
         ''
         + lib.optionalString cfg.libvirtd.enable ''
 

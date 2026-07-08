@@ -27,7 +27,7 @@
       ];
     };
     net-brain = {
-      ip = "192.168.1.5"; # LXC Container on Router B
+      ip = "10.0.0.7"; # LXC on Router B (infra). NOT .5 — that's nixos-nvme/Tang
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -37,7 +37,7 @@
       ];
     };
     core-gateway = {
-      ip = "192.168.1.1"; # Physical BPI-R4 (Main Gateway - Downstairs)
+      ip = "10.0.0.1"; # Physical BPI-R4 (Main Gateway - Downstairs) — infra VLAN gateway
       type = "openwrt";
       tags = [
         "physical"
@@ -46,7 +46,7 @@
       ];
     };
     mesh-node = {
-      ip = "192.168.1.2"; # Physical BPI-R4 (Mesh Access Point - Upstairs)
+      ip = "10.0.0.2"; # Physical BPI-R4 (Mesh Access Point - Upstairs)
       type = "openwrt";
       tags = [
         "physical"
@@ -56,7 +56,7 @@
       ];
     };
     mesh-node-2 = {
-      ip = "192.168.1.6"; # Second BPI-R4 — not yet active
+      ip = "10.0.0.6"; # Second BPI-R4 — not yet active
       type = "openwrt";
       tags = [
         "physical"
@@ -64,7 +64,7 @@
       ];
     };
     router-1 = {
-      ip = "192.168.1.3";
+      ip = "10.0.0.3";
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -73,7 +73,7 @@
       ];
     };
     router-2 = {
-      ip = "192.168.1.4";
+      ip = "10.0.0.4";
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
