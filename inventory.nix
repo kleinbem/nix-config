@@ -197,6 +197,24 @@
           description = "Nix binary cache server.";
         };
       };
+      ntfy = {
+        ip = "10.85.46.131";
+        port = 2586;
+        externalPort = 443;
+        domain = "ntfy.kleinbem.dev";
+        # No SSO: CI publishes the fleet-deploy signal with a plain curl and
+        # devices long-poll anonymously — Authelia would break both. Access
+        # control is the unguessable topic name (sops: ntfy_deploy_topic),
+        # and the only subscriber action is "start nixos-upgrade.service",
+        # which pulls the CI-gated production tag anyway.
+        auth = false;
+        meta = {
+          name = "ntfy Push";
+          category = "Infrastructure";
+          icon = "📣";
+          description = "Pub/sub notifications — fleet deploy signal from CI.";
+        };
+      };
       garage = {
         ip = "10.85.46.1"; # host-native service on the cbr0 bridge IP (NOT a container)
         port = 3900;

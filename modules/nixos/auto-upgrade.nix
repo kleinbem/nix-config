@@ -143,6 +143,46 @@ in
         a slow link.
       '';
     };
+
+    ntfy = {
+      enable = lib.mkEnableOption ''
+        ntfy-triggered early upgrades. promote-production publishes a
+        message to a secret ntfy topic after advancing the tag; this
+        listener long-polls that topic and starts `nixos-upgrade.service`
+        when a message arrives. The signal is purely advisory — the
+        nightly timer remains the catch-up path (offline hosts, dropped
+        connections), and the upgrade itself still pulls the CI-gated
+        `production` tag, so a spoofed message can at worst trigger an
+        early pull of an already-validated revision.
+      '';
+
+      url = lib.mkOption {
+        type = lib.types.str;
+        default = "https://ntfy.kleinbem.dev";
+        description = "Base URL of the ntfy server.";
+      };
+
+      topicFile = lib.mkOption {
+        type = lib.types.str;
+        default = "/run/secrets/ntfy_deploy_topic";
+        description = ''
+          File containing the secret topic name (sops-provisioned; the
+          unguessable name is the access control on the public vhost).
+          The listener is inert (ConditionPathExists) until it exists.
+        '';
+      };
+
+      debounceSec = lib.mkOption {
+        type = lib.types.int;
+        default = 600;
+        description = ''
+          Minimum seconds between triggered upgrade starts. Bounds the
+          damage of message spam to one upgrade attempt per window —
+          and `nixos-upgrade` itself is further gated by `requireCache`
+          and `RuntimeMaxSec` on cache-dependent hosts.
+        '';
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -169,6 +209,49 @@ in
         ExecStartPre = [ "${cacheProbe}" ];
         RuntimeMaxSec = cfg.maxRuntime;
       };
+    };
+
+    # Push-triggered early upgrade: long-poll the secret ntfy topic and start
+    # nixos-upgrade.service on any message. Message CONTENT is deliberately
+    # ignored — the only trusted input is the production tag the upgrade unit
+    # pulls itself. Reconnects forever (Restart=always); curl's --max-time
+    # bounds each poll so half-dead connections through the tunnel recover.
+    systemd.services.nixos-upgrade-listener = lib.mkIf cfg.ntfy.enable {
+      description = "Start nixos-upgrade on fleet-deploy ntfy signal";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      unitConfig.ConditionPathExists = cfg.ntfy.topicFile;
+      serviceConfig = {
+        Restart = "always";
+        RestartSec = "30s";
+      };
+      path = [
+        pkgs.curl
+        pkgs.jq
+        pkgs.coreutils
+        pkgs.systemd
+      ];
+      script = ''
+        topic="$(cat ${cfg.ntfy.topicFile})"
+        stamp=/run/nixos-upgrade-listener.last
+        curl -fsN --max-time 3600 "${cfg.ntfy.url}/$topic/json?since=30s" \
+        | while IFS= read -r line; do
+            [ "$(printf '%s' "$line" | jq -r '.event // empty')" = "message" ] || continue
+            now=$(date +%s)
+            last=$(cat "$stamp" 2>/dev/null || echo 0)
+            if [ $((now - last)) -lt ${toString cfg.ntfy.debounceSec} ]; then
+              echo "deploy signal received but debounced ($((now - last))s < ${toString cfg.ntfy.debounceSec}s)"
+              continue
+            fi
+            echo "$now" > "$stamp"
+            echo "deploy signal received — starting nixos-upgrade.service"
+            systemctl start --no-block nixos-upgrade.service
+          done
+        # curl exiting (timeout/disconnect) is the normal loop tick; Restart
+        # brings us back. Exit 0 so the unit doesn't count as failed.
+        exit 0
+      '';
     };
 
     # Structured journald log post-switch, so Loki+Grafana can render

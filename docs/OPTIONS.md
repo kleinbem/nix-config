@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 50  
+**Declarations indexed:** 51  
 **Consumer files scanned:** 15
 
 ---
@@ -188,6 +188,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `adminPasswordFile`, `dbPasswordFile`, `domain`, `enable`, `enabledApps`, `hostDataDir`, `ip`, `memoryLimit`, `oidcUpstream`
 - **Consumed by:** _(no opt-ins detected)_
 
+### `my.containers.ntfy`
+
+- **Declared:** `nix-presets/containers/ntfy.nix:13`
+- **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`
+- **Consumed by:** `host:nixos-nvme`
+
 ### `my.containers.odoo`
 
 - **Declared:** `nix-presets/containers/odoo.nix:14`
@@ -253,7 +259,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.deploy.autoUpgrade`
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
-- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `randomizedDelaySec`, `requireCache`
+- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
 
 ## `my.desktop`

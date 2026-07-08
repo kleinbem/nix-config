@@ -123,6 +123,7 @@ let
       ip = ip 44;
       hostBridgeIp = "10.85.46.1";
     };
+    ntfy.ip = ip 45;
     agent-team = { };
     netdata = { };
     syncthing = { };
@@ -147,6 +148,7 @@ in
     inputs.nix-presets.nixosModules.code-server
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.qdrant
+    inputs.nix-presets.nixosModules.ntfy
     inputs.nix-presets.nixosModules.playground
     inputs.nix-presets.nixosModules.caddy
     inputs.nix-presets.nixosModules.comfyui
