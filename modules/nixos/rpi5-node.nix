@@ -227,6 +227,11 @@ in
     deploy.autoUpgrade = {
       enable = true;
       requireCache = true;
+      # Upgrade the moment promote-production publishes to the secret ntfy
+      # topic instead of waiting for the 04:00 timer (which stays as the
+      # catch-up path). Requires the host to declare the ntfy_deploy_topic
+      # sops secret — the listener is inert until its path exists.
+      ntfy.enable = true;
     };
 
     virtualisation = {

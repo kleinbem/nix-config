@@ -46,6 +46,10 @@
       # (netrc Bearer auth + NetBird routing) so hass-pi can substitute from the
       # private cache instead of compiling (e.g. the linux-rpi kernel).
       attic_pull_token = { };
+      # Secret ntfy topic — arms the nixos-upgrade-listener (rpi5-node.nix
+      # enables it; ConditionPathExists on this secret's path keeps it inert
+      # until the key materialises at activation).
+      ntfy_deploy_topic = { };
     };
   };
 }

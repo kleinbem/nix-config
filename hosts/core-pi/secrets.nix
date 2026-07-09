@@ -19,6 +19,11 @@
       # on-device until RuntimeMaxSec kills it.
       attic_pull_token = { };
 
+      # Secret ntfy topic — arms the nixos-upgrade-listener (rpi5-node.nix
+      # enables it; ConditionPathExists on this secret's path keeps it inert
+      # until the key materialises at activation).
+      ntfy_deploy_topic = { };
+
       # NetBird — consumed by modules/nixos/networking.nix → netbird-autojoin
       # oneshot (`netbird up --setup-key` when the daemon reports NeedsLogin).
       # Safety net for FRESH enrollments only (reinstall / wiped
