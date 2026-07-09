@@ -1987,11 +1987,11 @@
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1783463277,
-        "narHash": "sha256-7z3BUeYHyhuCaQIOaYVW91QPGYFRROxR0z8mfd9tssY=",
+        "lastModified": 1783625246,
+        "narHash": "sha256-E08bCJirgZ73jW2iyZzXpwYP+JUAIJgxgADPDbzZkKw=",
         "owner": "kleinbem",
         "repo": "nix-secrets",
-        "rev": "5ad6cd6fee151428574a2b6ecbebb80aa86d4fc1",
+        "rev": "65e4272459cb261e0719c4b9ad69a9f3789ad197",
         "type": "github"
       },
       "original": {
