@@ -198,7 +198,7 @@
         };
       };
       ntfy = {
-        ip = "10.85.46.131";
+        ip = "10.85.48.131"; # Core-Pi — deploy signal must not depend on the workstation being on
         port = 2586;
         externalPort = 443;
         domain = "ntfy.kleinbem.dev";

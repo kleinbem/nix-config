@@ -33,6 +33,7 @@ in
     inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
+    inputs.nix-presets.nixosModules.ntfy
     inputs.nix-presets.nixosModules.monitoring
     inputs.nix-presets.nixosModules.caddy
     inputs.nix-presets.nixosModules.crowdsec
@@ -71,6 +72,14 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.crowdsec.ip}/24";
         hostDataDir = "/var/lib/images/crowdsec";
+      };
+
+      # Fleet-deploy signal (promote-production → nixos-upgrade-listener).
+      # Lives here, not on the workstation: core-pi already fronts the public
+      # path (cloudflared + caddy) and is always on.
+      ntfy = {
+        enable = true;
+        ip = "${myInventory.network.nodes.ntfy.ip}/24";
       };
 
       open-webui = {

@@ -95,11 +95,6 @@
         };
       };
 
-      ntfy = {
-        enable = true;
-        ip = "${myInventory.network.nodes.ntfy.ip}/24";
-      };
-
       loki = {
         enable = false;
         ip = "${myInventory.network.nodes.loki.ip}/24";
