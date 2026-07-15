@@ -16,7 +16,13 @@
     inputs.nix-presets.nixosModules.home-assistant
   ];
 
-  networking.hostName = "hass-pi";
+  networking = {
+    hostName = "hass-pi";
+    firewall = {
+      allowedTCPPorts = [ 8123 ]; # direct LAN access to HA — see forwardPorts note below
+      interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
+    };
+  };
 
   my = {
     # ─── Clevis LUKS & Network Identity ─────────────────────────
@@ -75,8 +81,6 @@
       protocol = "tcp";
     }
   ];
-  networking.firewall.allowedTCPPorts = [ 8123 ];
-  networking.firewall.interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
 
   # ─── Persistence ─────────────────────────────────────────────
   environment.persistence."/nix/persist" = {

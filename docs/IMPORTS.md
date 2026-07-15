@@ -21,7 +21,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `core-pi`
 
 - **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:open-webui`, `nix-presets:openclaw`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:ntfy`, `nix-presets:open-webui`, `nix-presets:openclaw`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `hass-pi`
@@ -141,7 +141,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:monitoring-node` ← orin-nano, router-1, router-2
 - `nix-presets:n8n` ← container-factory
 - `nix-presets:netdata` ← container-factory
-- `nix-presets:ntfy` ← container-factory
+- `nix-presets:ntfy` ← container-factory, core-pi
 - `nix-presets:ollama` ← container-factory, orin-nano
 - `nix-presets:open-webui` ← container-factory, core-pi
 - `nix-presets:openclaw` ← container-factory, core-pi

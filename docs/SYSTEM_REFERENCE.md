@@ -36,6 +36,7 @@
 - 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:80` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
 - 📊 **Monitoring** (`monitoring`) `10.85.48.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
+- 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.48.102:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
 - 🐾 **OpenClaw** (`openclaw`) `10.85.48.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
@@ -55,7 +56,6 @@
 ### nixos-nvme
 
 - 📊 **Monitoring** (`monitoring`) `10.85.48.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
-- 📣 **ntfy Push** (`ntfy`) `10.85.46.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### orin-nano

@@ -45,8 +45,8 @@ in
   };
 
   # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
+  # (the initrd half lives in boot.initrd.systemd below)
   security.tpm2.enable = lib.mkForce false;
-  boot.initrd.systemd.tpm2.enable = lib.mkForce false;
 
   # ─── SSH Authentication ──────────────────────────────────────
   users.users.martin.openssh.authorizedKeys.keys = [
@@ -167,7 +167,25 @@ in
         "/etc/ssh/ssh_host_ed25519_key_${hostName}" = lib.mkForce initrdSshKey;
       };
 
-      systemd.enable = true;
+      systemd = {
+        enable = true;
+        # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
+        tpm2.enable = lib.mkForce false;
+      };
+    };
+
+    # ─── Kernel runtime tuning (sysctl) ───────────────────────
+    # Free to diverge per host if ever needed — sysctls don't fork the cached
+    # kernel build the way structuredExtraConfig does.
+    kernel.sysctl = {
+      # Pair fq pacing with the BBR congestion control compiled in above.
+      "net.core.default_qdisc" = "fq";
+      "net.ipv4.tcp_congestion_control" = "bbr";
+      # zram (zstd, see nix-hardware/rpi5.nix) tuning for RAM-limited Pis:
+      # compressing a page is cheap, so prefer swapping to zram over evicting
+      # page-cache, and disable swap readahead (zram is random-access).
+      "vm.swappiness" = 180;
+      "vm.page-cluster" = 0;
     };
   };
 
@@ -217,9 +235,16 @@ in
   # ─── Common my.* Settings ───────────────────────────────────
   my = {
     hardware.rpi-direct-boot.enable = true;
-    services.tang.enable = true;
-    services.rpi-eeprom.enable = true;
     monitoring.node.enable = true;
+
+    services = {
+      tang.enable = true;
+      rpi-eeprom.enable = true;
+      # Run NetBird's built-in SSH server so YubiKey-less devices can reach this
+      # headless node via `netbird ssh <host>` (auth = NetBird peer identity).
+      # Scope access to your own devices with a NetBird SSH policy in the console.
+      netbird.allowServerSsh = true;
+    };
 
     # Pull-deploy; these Pis only ever substitute from Attic (over NetBird) and
     # must never fall back to compiling locally — gate the nightly run on cache
@@ -239,13 +264,6 @@ in
       libvirtd.enable = false;
       podman.enable = true;
       lxc.enable = false;
-    };
-
-    services = {
-      # Run NetBird's built-in SSH server so YubiKey-less devices can reach this
-      # headless node via `netbird ssh <host>` (auth = NetBird peer identity).
-      # Scope access to your own devices with a NetBird SSH policy in the console.
-      netbird.allowServerSsh = true;
     };
 
     network.externalInterface = "end0";
@@ -272,23 +290,11 @@ in
 
   # Redirect nix builds to the persistent SSD to avoid filling the 2GB tmpfs root.
   # Kernel compilation requires ~15GB of temporary space.
-  systemd.services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
-  systemd.tmpfiles.rules = [
-    "d /nix/persist/tmp/nix-builds 1777 root root 7d"
-  ];
-
-  # ─── Kernel runtime tuning (sysctl) ─────────────────────────
-  # Free to diverge per host if ever needed — sysctls don't fork the cached
-  # kernel build the way structuredExtraConfig does.
-  boot.kernel.sysctl = {
-    # Pair fq pacing with the BBR congestion control compiled in above.
-    "net.core.default_qdisc" = "fq";
-    "net.ipv4.tcp_congestion_control" = "bbr";
-    # zram (zstd, see nix-hardware/rpi5.nix) tuning for RAM-limited Pis:
-    # compressing a page is cheap, so prefer swapping to zram over evicting
-    # page-cache, and disable swap readahead (zram is random-access).
-    "vm.swappiness" = 180;
-    "vm.page-cluster" = 0;
+  systemd = {
+    services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
+    tmpfiles.rules = [
+      "d /nix/persist/tmp/nix-builds 1777 root root 7d"
+    ];
   };
 
   # ─── Storage & Memory ───────────────────────────────────────

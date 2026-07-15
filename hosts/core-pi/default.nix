@@ -40,7 +40,34 @@ in
     "${self}/modules/nixos/services/cloudflare-tunnel.nix"
   ];
 
-  networking.hostName = "core-pi";
+  networking = {
+    hostName = "core-pi";
+
+    # ─── Firewall and NAT for Caddy ──────────────────────────────
+    nftables = {
+      enable = true;
+      tables.netbird-nat = {
+        family = "inet";
+        content = ''
+          chain prerouting {
+            type nat hook prerouting priority dstnat; policy accept;
+            iifname "wt0" tcp dport { ${caddyPortsStr} } dnat ip to ${myInventory.network.nodes.caddy.ip}
+          }
+        '';
+      };
+    };
+
+    firewall = {
+      # Open all ports that Caddy is proxying to allow external access
+      allowedTCPPorts = lib.unique caddyPortsList;
+      interfaces."wt0".allowedTCPPorts = [ 22 ] ++ lib.unique caddyPortsList;
+      interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
+      extraForwardRules = ''
+        # Allow NetBird traffic that was NAT'd to reach the Caddy container
+        iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { ${caddyPortsStr} } accept
+      '';
+    };
+  };
 
   my = {
     # ─── Clevis LUKS & Network Identity ─────────────────────────
@@ -201,31 +228,6 @@ in
     ];
   };
 
-  # ─── Firewall and NAT for Caddy ──────────────────────────────
-  networking.nftables = {
-    enable = true;
-    tables.netbird-nat = {
-      family = "inet";
-      content = ''
-        chain prerouting {
-          type nat hook prerouting priority dstnat; policy accept;
-          iifname "wt0" tcp dport { ${caddyPortsStr} } dnat ip to ${myInventory.network.nodes.caddy.ip}
-        }
-      '';
-    };
-  };
-
-  networking.firewall = {
-    # Open all ports that Caddy is proxying to allow external access
-    allowedTCPPorts = lib.unique caddyPortsList;
-    interfaces."wt0".allowedTCPPorts = [ 22 ] ++ lib.unique caddyPortsList;
-    interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
-    extraForwardRules = ''
-      # Allow NetBird traffic that was NAT'd to reach the Caddy container
-      iifname "wt0" oifname "${myInventory.network.bridge}" ip daddr ${myInventory.network.nodes.caddy.ip} tcp dport { ${caddyPortsStr} } accept
-    '';
-  };
-
   services.crowdsec-firewall-bouncer = {
     enable = true;
     secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
@@ -235,18 +237,18 @@ in
     };
   };
 
-  systemd.services.crowdsec-firewall-bouncer = {
-    after = [ "container@crowdsec.service" ];
-    wants = [ "container@crowdsec.service" ];
-    preStart = ''
-      until ${pkgs.curl}/bin/curl -s http://${myInventory.network.nodes.crowdsec.ip}:8080/ > /dev/null; do
-        echo "Waiting for CrowdSec LAPI..."
-        sleep 2
-      done
-    '';
-  };
-
   systemd.services = {
+    crowdsec-firewall-bouncer = {
+      after = [ "container@crowdsec.service" ];
+      wants = [ "container@crowdsec.service" ];
+      preStart = ''
+        until ${pkgs.curl}/bin/curl -s http://${myInventory.network.nodes.crowdsec.ip}:8080/ > /dev/null; do
+          echo "Waiting for CrowdSec LAPI..."
+          sleep 2
+        done
+      '';
+    };
+
     "container@caddy".postStart = ''
       SRC_CERT="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
       if [ -f "$SRC_CERT" ]; then

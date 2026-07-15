@@ -192,7 +192,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/ntfy.nix:13`
 - **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`
-- **Consumed by:** `host:nixos-nvme`
+- **Consumed by:** `host:core-pi`
 
 ### `my.containers.odoo`
 
