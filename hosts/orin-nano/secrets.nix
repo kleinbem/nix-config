@@ -32,6 +32,9 @@
       github_app_id = {
         owner = "martin";
       };
+      github_app_installation_id = {
+        owner = "martin";
+      };
 
       github_app_private_key = {
         owner = "martin";

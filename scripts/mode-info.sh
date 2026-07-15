@@ -43,7 +43,7 @@ get_profile_tags() {
   n8n | code-server | authelia | github-runner)
     tags="${GREEN}WORK${NC}, ${MAGENTA}AI${NC}"
     ;;
-  ollama | open-webui | comfyui | langflow | langfuse | litellm | agent-team | agent-zero | qdrant | playground | openclaw | vllm* | falco* | netdata | loki | monitoring)
+  ollama | open-webui | comfyui | langflow | langfuse | litellm | agent-team | agent-zero | qdrant | playground | openclaw | vllm* | netdata | loki | monitoring)
     tags="${MAGENTA}AI${NC}"
     ;;
   android*)
@@ -133,7 +133,7 @@ UNITS=$( (
   grep -vE "@\.service|kube@|cups|github-runner|podman-network-cbr0|auto-update|clean-transient|restart|prune|caddy|dashboard")
 
 # Known services fallback
-KNOWN_SERVICES="n8n code-server authelia ollama open-webui comfyui langflow langfuse litellm agent-team agent-zero qdrant monitoring falco netdata loki openclaw playground libvirtd"
+KNOWN_SERVICES="n8n code-server authelia ollama open-webui comfyui langflow langfuse litellm agent-team agent-zero qdrant monitoring netdata loki openclaw playground libvirtd"
 
 for srv in $KNOWN_SERVICES; do
   if ! echo "$UNITS" | grep -q "$srv"; then
