@@ -25,12 +25,13 @@ let
               allowUnfree = true;
               allowUnfreePredicate = _: true;
               android_sdk.accept_license = true;
-              permittedInsecurePackages = [
-                # Advisory marking (prompt injection by design), not a CVE; we
-                # run it inside a nixos-container, not with host access.
-                # Version-pinned on purpose: every bump forces this re-ack.
-                "openclaw-2026.6.11"
-              ];
+              # NO permittedInsecurePackages here: insecure re-acks belong next
+              # to the thing that needs them, not blanket-applied to every
+              # host's pkgs. openclaw's ack lives in nix-presets lib/factory.nix
+              # (the container's own nixpkgs instance — the only place that
+              # evaluates it); a host-level entry would let a direct
+              # `pkgs.openclaw` reference eval silently instead of tripping
+              # the per-version checkpoint.
             };
           };
         }
