@@ -215,7 +215,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.openclaw`
 
 - **Declared:** `nix-presets/containers/openclaw.nix:14`
-- **Sub-options:** `enable`, `enableAudio`, `enableUSB`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `vllmUrl`
+- **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `enableAudio`, `enableUSB`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `vllmUrl`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.paperless`
