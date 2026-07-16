@@ -70,6 +70,11 @@ jobs:
           }
           for system in x86_64-linux aarch64-linux; do
             for check in $(attr_names ".#checks.$system"); do
+              # host-phone (nix-on-droid) can never eval purely: upstream pins
+              # its cross-compiled proot-static as a raw /nix/store string,
+              # which types.package coerces via builtins.storePath — rejected
+              # in pure eval (nix-on-droid requires --impure + its cachix).
+              [ "$check" = "host-phone" ] && continue
               eval_drv ".#checks.$system.\"$check\".drvPath"
             done
           done
