@@ -26,7 +26,10 @@ let
               allowUnfreePredicate = _: true;
               android_sdk.accept_license = true;
               permittedInsecurePackages = [
-                "openclaw-2026.6.5"
+                # Advisory marking (prompt injection by design), not a CVE; we
+                # run it inside a nixos-container, not with host access.
+                # Version-pinned on purpose: every bump forces this re-ack.
+                "openclaw-2026.6.11"
               ];
             };
           };
