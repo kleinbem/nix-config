@@ -78,15 +78,35 @@ jobs:
           # before the build step produces any output (visible as the
           # "hosted runner lost communication" error). Same issue hits meta's
           # build-all; this is the conservative first-pass fix.
-          # VM-based NixOS tests (caddy/code-server/mobile-link/recovery) run
-          # in the dedicated vm-tests.yaml workflow — ubuntu-latest DOES expose
-          # /dev/kvm (it just needs a udev rule to make it writable). We exclude
-          # them from this build/cache job to avoid duplicating that
-          # ~3min-per-test work; they remain in .#checks for local runs.
+          # Check enumeration via `nix eval` + attrNames, NOT `nix flake show`:
+          # flake show evaluates every output of every system just to list
+          # names, and on the CI (Determinate) Nix it emitted `"checks": null`
+          # instead of failing — with stderr discarded, CI_CHECKS was silently
+          # EMPTY and this job built zero checks for months (run 29467089940
+          # and earlier). Hence also the emptiness guard: an empty list is
+          # always an enumeration bug, never a real state, so fail loud.
+          #
+          # Exclusions:
+          # - VM-based NixOS tests (caddy/code-server/mobile-link/recovery) run
+          #   in the dedicated vm-tests.yaml workflow; they remain in .#checks
+          #   for local runs.
+          # - host-* checks: hosts are targeted EXPLICITLY below (hass-pi +
+          #   core-pi hardcoded native, nixos-nvme in its own best-effort step
+          #   because its ~8.6 GiB eval needs swap + isolation; Orin/routers
+          #   deliberately never build in CI — jetpack/bespoke kernels).
+          #   Enumerating them here would re-add those giant builds blocking.
+          # What this restores is the real checks — pre-commit-check and the
+          # flake-lock-no-file-url reproducibility guard, which must gate
+          # every PR.
           SYSTEM="${{ matrix.system }}"
-          mapfile -t CI_CHECKS < <(nix flake show --json $NIX_OVERRIDES 2>/dev/null \
-            | nix run nixpkgs#jq -- -r --arg sys "$SYSTEM" \
-                '.checks[$sys] | keys[] | select(test("(caddy|code-server|mobile-link|recovery)-test") | not)')
+          mapfile -t CI_CHECKS < <(nix eval ".#checks.$SYSTEM" \
+              --apply builtins.attrNames --json $NIX_OVERRIDES \
+            | jq -r '.[] | select(test("(caddy|code-server|mobile-link|recovery)-test|^host-") | not)')
+          if [ "${#CI_CHECKS[@]}" -eq 0 ]; then
+            echo "::error::.#checks.$SYSTEM enumeration came back empty — enumeration is broken (it can never legitimately be empty)."
+            exit 1
+          fi
+          echo "CI checks to build: ${CI_CHECKS[*]}"
 
           COMMON=(
             "--no-nom"
