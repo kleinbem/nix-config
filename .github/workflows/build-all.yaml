@@ -217,6 +217,7 @@ jobs:
       # Eval breakage is a code bug that must fail CI loudly at PR time;
       # build/push flakiness (the reason the BUILD is best-effort) is not.
       - name: Eval container-factory toplevel (blocking)
+        id: factory-eval
         run: |
           set -o pipefail
           FACTORY="container-factory"
@@ -227,6 +228,32 @@ jobs:
           nix eval --raw \
             ".#nixosConfigurations.$FACTORY.config.system.build.toplevel.drvPath" \
             $NIX_OVERRIDES
+
+      # Turn a red factory eval into a phone notification instead of a red run
+      # someone has to go diagnose. The most common cause is a nixpkgs bump
+      # moving an insecure-marked package (openclaw) past its pinned re-ack in
+      # nix-presets lib/factory.nix — a deliberate checkpoint, fixed by bumping
+      # one version string there. Best-effort: no secret / unreachable ntfy
+      # never affects the job result. NTFY_ALERT_TOPIC is separate from
+      # NTFY_DEPLOY_TOPIC on purpose — the deploy topic is machine-consumed
+      # (any message triggers host upgrade polls); this one is for humans.
+      - name: Alert factory eval failure via ntfy (best-effort)
+        if: failure() && steps.factory-eval.outcome == 'failure'
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_ALERT_TOPIC secret not set — skipping alert."
+            exit 0
+          fi
+          curl -fsS --max-time 15 \
+            -H "Title: container-factory eval failed (${{ matrix.system }})" \
+            -H "Tags: rotating_light" \
+            -H "Priority: high" \
+            -d "Blocking factory eval is red on ${{ matrix.system }}. Likely an insecure re-ack (openclaw version bump → update the pin in nix-presets lib/factory.nix) or a preset regression. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       # Container factory toplevel: ONE build materializes every standalone
       # container closure for this arch (they are NOT part of any host closure
