@@ -8,7 +8,7 @@
   services.cloudflared = {
     enable = true;
     tunnels = {
-      "nixos-nvme" = {
+      "core-pi" = {
         credentialsFile = config.sops.templates."cloudflare-tunnel-credentials.json".path;
         originRequest = {
           noTLSVerify = true;

@@ -57,7 +57,7 @@
           {
             "AccountTag": "${config.sops.placeholder.cloudflare_account_id}",
             "TunnelID": "${config.sops.placeholder.cloudflare_tunnel_id}",
-            "TunnelName": "nixos-nvme",
+            "TunnelName": "core-pi",
             "TunnelSecret": "${config.sops.placeholder.cloudflare_tunnel_secret}"
           }
         '';
