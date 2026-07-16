@@ -51,10 +51,14 @@
             name: host: lib.nameValuePair "host-${name}" host.config.system.build.toplevel
           ) systemHosts;
 
-          # Add Nix-on-Droid check if it matches the current system
-          droidChecks = lib.optionalAttrs (system == "aarch64-linux") {
-            host-phone = self.nixOnDroidConfigurations.phone.activationPackage;
-          };
+          # NO host-phone check: nix-on-droid can never be evaluated purely —
+          # upstream pins its cross-compiled proot-static as a context-free
+          # /nix/store string, which types.package coerces via
+          # builtins.storePath (rejected in pure eval; --impure additionally
+          # needs nix-on-droid.cachix.org to substitute the path). It builds
+          # on-device only (nix-on-droid switch runs --impure by design), so a
+          # checks entry just breaks `nix flake check` for every consumer.
+          # The config stays exposed as nixOnDroidConfigurations.phone.
 
           # Specialisation Checks (for complex hosts)
           specChecks = lib.optionalAttrs (system == "x86_64-linux" && (systemHosts ? "nixos-nvme")) {
@@ -114,7 +118,6 @@
           };
         }
         // hostChecks
-        // droidChecks
         // specChecks;
     };
 }
