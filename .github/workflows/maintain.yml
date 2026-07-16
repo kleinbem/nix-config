@@ -48,13 +48,34 @@ jobs:
           nix flake update $inputs
 
       - name: Validate flake (eval-only — blocks a bad lock from landing)
+        # Not `nix flake check --no-build`: devenv's task runner (inside the
+        # devShell re-exported from nix-devshells) is fetched via IFD, and
+        # --no-build refuses to realize that drv ("path …-source.drv is not
+        # valid"). Plain eval may realize IFD, so eval every check and devShell
+        # drvPath instead — checks include every host toplevel (host-*), so a
+        # bad lock still can't land.
         run: |
           # nix-secrets is private and CI has no PAT in nix access-tokens, so
           # substitute the shared dummy stub (see .github/scripts/).
           ./nix-config/.github/scripts/setup-dummy-secrets.sh
           cd nix-config
-          nix flake check --no-build \
-            --override-input nix-secrets /tmp/dummy-secrets
+          eval_drv() {
+            echo "eval $1"
+            nix eval "$1" \
+              --override-input nix-secrets /tmp/dummy-secrets > /dev/null
+          }
+          attr_names() {
+            nix eval "$1" --apply builtins.attrNames --json \
+              --override-input nix-secrets /tmp/dummy-secrets | jq -r '.[]'
+          }
+          for system in x86_64-linux aarch64-linux; do
+            for check in $(attr_names ".#checks.$system"); do
+              eval_drv ".#checks.$system.\"$check\".drvPath"
+            done
+          done
+          for shell in $(attr_names ".#devShells.x86_64-linux"); do
+            eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
+          done
 
       - name: Commit lockfile changes via GitHub API (verified signature)
         if: github.ref == 'refs/heads/main'
