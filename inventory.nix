@@ -27,7 +27,7 @@
       ];
     };
     net-brain = {
-      ip = "10.0.0.7"; # LXC on Router B (infra). NOT .5 — that's nixos-nvme/Tang
+      ip = "10.0.0.7"; # LXC on ap-upstairs (infra). NOT .5 — that's nixos-nvme/Tang
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -45,22 +45,16 @@
         "core"
       ];
     };
-    mesh-node = {
-      ip = "10.0.0.2"; # Physical BPI-R4 (Mesh Access Point - Upstairs)
+    # Router fleet naming: role + location (ap-<location>); the single
+    # gateway is core-gateway. Future extenders: ap-garden, ap-barn, …
+    # (.6 in the .1–.9 network-layer range stays free for the next unit).
+    ap-upstairs = {
+      ip = "10.0.0.2"; # Physical BPI-R4 (wired-trunk AP — Upstairs)
       type = "openwrt";
       tags = [
         "physical"
-        "mesh"
         "ap"
         "lxc-host"
-      ];
-    };
-    mesh-node-2 = {
-      ip = "10.0.0.6"; # Second BPI-R4 — not yet active
-      type = "openwrt";
-      tags = [
-        "physical"
-        "mesh"
       ];
     };
     router-1 = {

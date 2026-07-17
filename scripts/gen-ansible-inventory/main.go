@@ -42,6 +42,7 @@ func parseAndFormat(data []byte) (string, error) {
 		"routers":       {},
 		"gateways":      {},
 		"access_points": {},
+		"lxc_hosts":     {},
 		"brains":        {},
 	}
 
@@ -69,8 +70,11 @@ func parseAndFormat(data []byte) (string, error) {
 			if hasTag("gateway") {
 				groups["gateways"] = append(groups["gateways"], name)
 			}
-			if hasTag("lxc-host") {
+			if hasTag("ap") {
 				groups["access_points"] = append(groups["access_points"], name)
+			}
+			if hasTag("lxc-host") {
+				groups["lxc_hosts"] = append(groups["lxc_hosts"], name)
 			}
 		}
 
@@ -89,7 +93,7 @@ func parseAndFormat(data []byte) (string, error) {
 		"lan_iface=eth0",
 	}
 
-	order := []string{"mediatek", "routers", "gateways", "access_points", "brains"}
+	order := []string{"mediatek", "routers", "gateways", "access_points", "lxc_hosts", "brains"}
 	for _, groupName := range order {
 		members := groups[groupName]
 		if len(members) == 0 {
