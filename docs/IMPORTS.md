@@ -6,8 +6,8 @@
 
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
-**Hosts indexed:** 10  
-**Distinct imports:** 74
+**Hosts indexed:** 8  
+**Distinct imports:** 73
 
 ---
 
@@ -64,18 +64,6 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 - **Modules:** `modules/nix-on-droid/dashboard.nix`
 
-### `router-1`
-
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
-- **Presets:** `nix-presets:monitoring-node`
-- **Hardware:** `nix-hardware:lxc-guest`
-
-### `router-2`
-
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
-- **Presets:** `nix-presets:monitoring-node`
-- **Hardware:** `nix-hardware:lxc-guest`
-
 ## Reverse index — import → hosts
 
 - `../../modules/nixos/options.nix` ← container-factory
@@ -96,13 +84,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/ananicy.nix` ← orin-nano
 - `modules/nixos/apps.nix` ← nixos-nvme
 - `modules/nixos/audit.nix` ← orin-nano
-- `modules/nixos/base.nix` ← nasbook, orin-nano, router-1, router-2
+- `modules/nixos/base.nix` ← nasbook, orin-nano
 - `modules/nixos/clevis-initrd.nix` ← orin-nano
 - `modules/nixos/data-disk.nix` ← nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/disko.nix` ← nixos-nvme
-- `modules/nixos/headless.nix` ← nasbook, orin-nano, router-1, router-2
-- `modules/nixos/hosts.nix` ← nasbook, nixos-nvme, orin-nano, router-1, router-2
+- `modules/nixos/headless.nix` ← nasbook, orin-nano
+- `modules/nixos/hosts.nix` ← nasbook, nixos-nvme, orin-nano
 - `modules/nixos/kernel.nix` ← orin-nano
 - `modules/nixos/persistence.nix` ← nixos-nvme, orin-nano
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
@@ -113,7 +101,6 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/users.nix` ← orin-nano
 - `modules/nixos/workstation.nix` ← nixos-nvme
 - `nix-hardware:intel-compute` ← nixos-nvme
-- `nix-hardware:lxc-guest` ← router-1, router-2
 - `nix-hardware:nixos-nvme` ← nixos-nvme
 - `nix-hardware:orin-nano` ← orin-nano, orin-nano-bootstrap
 - `nix-presets:agent-team` ← container-factory, nasbook
@@ -138,7 +125,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:llama-cpp` ← container-factory, orin-nano
 - `nix-presets:loki` ← container-factory, nasbook
 - `nix-presets:monitoring` ← container-factory, core-pi, nasbook
-- `nix-presets:monitoring-node` ← orin-nano, router-1, router-2
+- `nix-presets:monitoring-node` ← orin-nano
 - `nix-presets:n8n` ← container-factory
 - `nix-presets:netdata` ← container-factory
 - `nix-presets:ntfy` ← container-factory, core-pi

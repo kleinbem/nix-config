@@ -22,30 +22,6 @@ in
       nixpkgs.hostPlatform = hostMeta.nixos-nvme.system;
     };
 
-    # OpenWrt routers (NixOS in LXC)
-    router-1 = {
-      deployment = {
-        targetHost = hostMeta.router-1.ip;
-        targetUser = "root";
-        buildOnTarget = false;
-        inherit (hostMeta.router-1) tags;
-      };
-      imports = [ ../../hosts/router-1/default.nix ];
-      nixpkgs.hostPlatform = hostMeta.router-1.system;
-      nixpkgs.buildPlatform = "x86_64-linux";
-    };
-    router-2 = {
-      deployment = {
-        targetHost = hostMeta.router-2.ip;
-        targetUser = "root";
-        buildOnTarget = false;
-        inherit (hostMeta.router-2) tags;
-      };
-      imports = [ ../../hosts/router-2/default.nix ];
-      nixpkgs.hostPlatform = hostMeta.router-2.system;
-      nixpkgs.buildPlatform = "x86_64-linux";
-    };
-
     # NVIDIA Jetson Orin Nano
     orin-nano = {
       deployment = {

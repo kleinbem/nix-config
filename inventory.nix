@@ -26,16 +26,10 @@
         "desktop"
       ];
     };
-    net-brain = {
-      ip = "10.0.0.7"; # LXC on ap-upstairs (infra). NOT .5 — that's nixos-nvme/Tang
-      system = "aarch64-linux";
-      deployType = "ssh";
-      tags = [
-        "router"
-        "lxc"
-        "brain"
-      ];
-    };
+    # (LXC "brain" containers router-1/.3, router-2/.4, net-brain/.7 removed
+    # 2026-07-18 — never deployed; every planned tenant lives on the fleet.
+    # ap-upstairs keeps the lxc-host capability if a network-layer need
+    # ever materializes. .3/.4/.7 are free.)
     core-gateway = {
       ip = "10.0.0.1"; # Physical BPI-R4 (Main Gateway - Downstairs) — infra VLAN gateway
       type = "openwrt";
@@ -55,24 +49,6 @@
         "physical"
         "ap"
         "lxc-host"
-      ];
-    };
-    router-1 = {
-      ip = "10.0.0.3";
-      system = "aarch64-linux";
-      deployType = "ssh";
-      tags = [
-        "router"
-        "lxc"
-      ];
-    };
-    router-2 = {
-      ip = "10.0.0.4";
-      system = "aarch64-linux";
-      deployType = "ssh";
-      tags = [
-        "router"
-        "lxc"
       ];
     };
     orin-nano = {

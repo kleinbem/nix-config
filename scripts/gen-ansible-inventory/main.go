@@ -43,7 +43,6 @@ func parseAndFormat(data []byte) (string, error) {
 		"gateways":      {},
 		"access_points": {},
 		"lxc_hosts":     {},
-		"brains":        {},
 	}
 
 	// Sort host names to ensure deterministic output
@@ -77,10 +76,6 @@ func parseAndFormat(data []byte) (string, error) {
 				groups["lxc_hosts"] = append(groups["lxc_hosts"], name)
 			}
 		}
-
-		if hasTag("brain") {
-			groups["brains"] = append(groups["brains"], fmt.Sprintf("%s ansible_host=%s ansible_user=root", name, data.IP))
-		}
 	}
 
 	var sb strings.Builder
@@ -93,7 +88,7 @@ func parseAndFormat(data []byte) (string, error) {
 		"lan_iface=eth0",
 	}
 
-	order := []string{"mediatek", "routers", "gateways", "access_points", "lxc_hosts", "brains"}
+	order := []string{"mediatek", "routers", "gateways", "access_points", "lxc_hosts"}
 	for _, groupName := range order {
 		members := groups[groupName]
 		if len(members) == 0 {

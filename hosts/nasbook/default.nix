@@ -66,8 +66,8 @@
         # Automatically scrape the host and important infrastructure nodes
         nodeTargets = [
           myInventory.hosts.nixos-nvme.ip
-          myInventory.hosts.router-1.ip
-          myInventory.hosts.router-2.ip
+          myInventory.hosts.core-gateway.ip
+          myInventory.hosts.ap-upstairs.ip
         ];
       };
 

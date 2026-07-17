@@ -15,12 +15,9 @@
 - **core-pi** (`10.0.0.22`, aarch64-linux, ssh) — raspberry-pi, central
 - **hass-pi** (`10.0.0.21`, aarch64-linux, ssh) — raspberry-pi, home-assistant
 - **nasbook** (`10.0.0.30`, x86_64-linux, ssh) — nas, storage, hub
-- **net-brain** (`10.0.0.7`, aarch64-linux, ssh) — router, lxc, brain
 - **nixos-nvme** (`10.85.46.1`, x86_64-linux, local) — workstation, desktop
 - **orin-nano** (`10.0.0.12`, aarch64-linux, ssh) — edge, ai, jetson
 - **phone** (`no-ip`, aarch64-linux, local) — mobile, android
-- **router-1** (`10.0.0.3`, aarch64-linux, ssh) — router, lxc
-- **router-2** (`10.0.0.4`, aarch64-linux, ssh) — router, lxc
 
 ## 📡 Network Services (by host)
 
@@ -54,7 +51,6 @@
 
 ### nixos-nvme
 
-- 📊 **Monitoring** (`monitoring`) `10.85.48.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### orin-nano

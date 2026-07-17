@@ -80,12 +80,6 @@ in
       nixos-nvme = mkHost "nixos-nvme" {
         modules = [ ../../hosts/nixos-nvme/default.nix ];
       };
-      router-1 = mkHost "router-1" {
-        modules = [ ../../hosts/router-1/default.nix ];
-      };
-      router-2 = mkHost "router-2" {
-        modules = [ ../../hosts/router-2/default.nix ];
-      };
       orin-nano = mkHost "orin-nano" {
         modules = [ ../../hosts/orin-nano/default.nix ];
       };

@@ -7,7 +7,7 @@
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
 **Declarations indexed:** 51  
-**Consumer files scanned:** 15
+**Consumer files scanned:** 13
 
 ---
 
@@ -260,7 +260,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
+- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.desktop`
 
@@ -290,7 +290,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/nixosModules/monitoring-node.nix:6`
 - **Sub-options:** `enable`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
+- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.security`
 
@@ -330,8 +330,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/timesync.nix:11`
 - **Sub-options:** `enable`
-- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
-- **Explicit overrides:** `host:router-1`, `host:router-2`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.virtualisation`
 
@@ -339,6 +338,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
 - **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
-- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `host:router-1`, `host:router-2`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 - **Explicit overrides:** `host:nixos-nvme`
 
