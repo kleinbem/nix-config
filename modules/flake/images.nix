@@ -3,7 +3,8 @@
   perSystem =
     { system, lib, ... }:
     {
-      packages = let
+      packages =
+        let
           factory =
             {
               x86_64-linux = self.nixosConfigurations.container-factory or null;
