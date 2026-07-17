@@ -9,6 +9,10 @@ let
   keys = import ./keys.nix;
 in
 {
+  # Wraps nix-index/nix-locate with the prebuilt weekly database, so the
+  # command-not-found hook works without ever running `nix-index` locally.
+  imports = [ inputs.nix-index-database.nixosModules.default ];
+
   # ==========================================
   # NIX SETTINGS & CORE
   # ==========================================
@@ -105,8 +109,10 @@ in
   services = {
     xserver.xkb.layout = "gb";
 
-    # Prevent /var/log/journal from growing indefinitely
-    journald.extraConfig = "SystemMaxUse=1G";
+    # Prevent /var/log/journal from growing indefinitely. 1G rotated out in
+    # under a day on the workstation (runners + fluent-bit churn), leaving
+    # incidents un-diagnosable; headless.nix overrides tighter for RPi nodes.
+    journald.extraConfig = "SystemMaxUse=4G";
 
     # = hardware monitoring =
     smartd.enable = true;

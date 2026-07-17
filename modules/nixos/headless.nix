@@ -50,8 +50,8 @@
       };
     };
 
-    # ─── Journal (tighter than core.nix's 1G default) ───────────
-    # core.nix sets SystemMaxUse=1G for workstations. RPi nodes / routers
+    # ─── Journal (tighter than core.nix's 4G default) ───────────
+    # core.nix sets SystemMaxUse=4G for workstations. RPi nodes / routers
     # have tighter storage, so we override with a smaller cap. types.lines
     # concatenates, and journald takes the last duplicate key, so our value
     # wins on hosts that load both.

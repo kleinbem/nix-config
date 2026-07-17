@@ -108,6 +108,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Prebuilt weekly nix-index database (command-not-found + nix-locate)
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";

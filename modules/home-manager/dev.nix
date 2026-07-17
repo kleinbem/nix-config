@@ -20,9 +20,12 @@
       xclip # System clipboard support
       wl-clipboard
 
+      # -- Daily-driver AI CLI (needed in every repo, devshell or not) --
+      claude-code
+
       # -- Volatile AI & Pentesting tools moved to DevShells --
       # Run: just pentest   (Wireshark, Metasploit, Burp, etc.)
-      # Run: just ai-dev    (claude-code, copilot-cli, gemini-cli, fabric-ai, llm)
+      # Run: just ai-dev    (copilot-cli, gemini-cli, fabric-ai, llm)
     ];
 
     # Automatically install pre-commit hooks when entering the shell
