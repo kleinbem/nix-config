@@ -158,18 +158,23 @@ runs:
         fi
         
         echo "Waiting for NetBird peer connectivity to cache.kleinbem.dev..."
+        # TCP/443, NOT ping: since the mesh default All->All policy was
+        # deleted (zero-trust, 2026-07-17), ci-runners may reach cache on
+        # TCP/443 ONLY — ICMP is dropped by policy, so a ping probe fails
+        # even when the path we actually need is fine. Probe what the
+        # policy permits and the build will use.
         connected=false
         for i in {1..15}; do
-          if ping -c 1 -W 1 "$resolved" &>/dev/null; then
-            echo "Connectivity established."
+          if timeout 2 bash -c "exec 3<>/dev/tcp/$resolved/443" 2>/dev/null; then
+            echo "Connectivity established (TCP 443)."
             connected=true
             break
           fi
           sleep 2
         done
-        
+
         if [ "$connected" = "false" ]; then
-          echo "::error::Could not ping cache.kleinbem.dev via NetBird after 30 seconds."
+          echo "::error::Could not reach cache.kleinbem.dev:443 via NetBird after 30 seconds (note: ICMP is policy-blocked; this probe is TCP)."
           sudo netbird status || true
           exit 1
         fi
