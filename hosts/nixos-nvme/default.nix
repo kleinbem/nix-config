@@ -85,9 +85,11 @@
   };
 
   services = {
+    # 4G, matching core.nix: 500M rotated out in hours on this host (runner +
+    # fluent-bit churn), which made the 2026-07-15 freeze un-diagnosable.
     journald.extraConfig = ''
-      SystemMaxUse=500M
-      SystemMaxFileSize=50M
+      SystemMaxUse=4G
+      SystemMaxFileSize=128M
       MaxRetentionSec=1month
     '';
     pcscd.enable = true;
