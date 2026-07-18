@@ -20,6 +20,12 @@ in
     # DESKTOP (GNOME 50)
     # ==========================================
     (lib.mkIf cfg.gnome.enable {
+      # Per-version insecure re-ack, co-located with its consumer and gated to
+      # the desktop host (never blanket host-level — see modules/flake/hosts.nix).
+      # bitwarden-desktop pins electron_39; when it bumps, eval trips here and
+      # forces a conscious re-ack rather than silently carrying an old Electron.
+      nixpkgs.config.permittedInsecurePackages = [ "electron-39.8.10" ];
+
       services = {
         displayManager.gdm = {
           enable = true;
@@ -112,6 +118,14 @@ in
         gnome-font-viewer
         gnome-logs
         smile # Modern Emoji Picker
+
+        # Password Management
+        # Installed as a plain package (NOT firejail-wrapped): the launcher,
+        # app-grid entry, icons, the biometric-unlock polkit policy
+        # (share/polkit-1/actions/com.bitwarden.Bitwarden.policy) and the
+        # libexec/desktop_proxy native-messaging bridge all need to land in the
+        # system profile. Firefox integration is wired in nix-presets/firefox.nix.
+        bitwarden-desktop
       ];
 
       fonts.packages = with pkgs; [
