@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - main
-      - master
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -192,6 +191,7 @@ jobs:
           free -h
 
       - name: Build nixos-nvme toplevel (best-effort)
+        id: nvme-build
         if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
         continue-on-error: true
         run: |
@@ -266,6 +266,7 @@ jobs:
       # "manifest stays at the previous rev" — devices keep serving the old
       # closures. Eval correctness is enforced by the blocking step above.
       - name: Build container-factory toplevel (best-effort)
+        id: factory-build
         if: steps.cache.outputs.push_cache == 'true'
         continue-on-error: true
         run: |
@@ -281,3 +282,32 @@ jobs:
           # $FACTORY is exported by the blocking eval step above.
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake ".#nixosConfigurations.$FACTORY.config.system.build.toplevel" $NIX_OVERRIDES
+
+      # The two builds above are continue-on-error so a from-source break (a
+      # nixpkgs test regression, a sops manifest drift) never blocks promotion.
+      # But that also means such a break is INVISIBLE — the run stays green while
+      # the cache silently goes cold and hosts fall back to compiling locally.
+      # This step turns a red best-effort build into a phone alert instead: it
+      # reads the steps' `outcome` (which records the real failure even though
+      # continue-on-error sets `conclusion` to success) and pings the human topic.
+      # Itself best-effort — a missing/unreachable ntfy never affects the result.
+      - name: Alert best-effort toplevel build failure via ntfy
+        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure')
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_ALERT_TOPIC secret not set — skipping alert."
+            exit 0
+          fi
+          failed=""
+          [ "${{ steps.nvme-build.outcome }}" = "failure" ] && failed="nixos-nvme"
+          [ "${{ steps.factory-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }container-factory"
+          curl -fsS --max-time 15 \
+            -H "Title: best-effort toplevel build failed (${{ matrix.system }})" \
+            -H "Tags: warning" \
+            -H "Priority: default" \
+            -d "Run stayed green but these toplevels failed to build from source on ${{ matrix.system }}: $failed. Cache is not being warmed for them — hosts will compile locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
