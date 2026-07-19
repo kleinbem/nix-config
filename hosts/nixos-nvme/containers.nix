@@ -22,7 +22,7 @@
           in
           lib.subtractLists excludeFromUpdater allEnabled;
       };
-      printing.enable = false; # Handled by the cups container
+      printing.enable = true; # Re-enabled to restore local printer drivers
     };
 
     containers = {
