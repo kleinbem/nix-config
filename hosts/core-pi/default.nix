@@ -29,6 +29,7 @@ in
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.dashboard
+    inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.authelia
@@ -139,6 +140,12 @@ in
         memoryLimit = "2G";
       };
 
+      ente = {
+        enable = true;
+        ip = "${myInventory.network.nodes.ente.ip}/24";
+        hostDataDir = "/var/lib/ente";
+      };
+
       dashboard = {
         enable = true;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
@@ -224,6 +231,7 @@ in
       "/var/lib/openclaw"
       "/var/lib/agent-zero"
       "/var/lib/anythingllm"
+      "/var/lib/ente"
       "/var/lib/monitoring"
     ];
   };

@@ -525,6 +525,19 @@
           description = "All-in-one AI workspace and document orchestrator.";
         };
       };
+      ente = {
+        ip = "10.85.48.133";
+        port = 8080;
+        externalPort = 443;
+        domain = "auth.kleinbem.dev";
+        auth = false;
+        meta = {
+          name = "Ente Auth";
+          category = "Identity";
+          icon = "🔐";
+          description = "E2E Encrypted 2FA & Authenticator Server.";
+        };
+      };
     };
   };
 }
