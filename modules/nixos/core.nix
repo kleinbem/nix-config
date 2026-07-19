@@ -133,7 +133,7 @@ in
         "-s"
         "10"
         "--prefer"
-        "^(firefox|chrome|chromium)$"
+        "^(firefox|chrome|chromium|antigravity.*)$"
         "--ignore"
         "^(gnome-shell|Xwayland|bash|zsh)$"
       ];

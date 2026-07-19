@@ -311,3 +311,14 @@ jobs:
             -H "Priority: default" \
             -d "Run stayed green but these toplevels failed to build from source on ${{ matrix.system }}: $failed. Cache is not being warmed for them — hosts will compile locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
+
+      - name: Report Best-Effort Failures to GitHub Summary
+        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure')
+        continue-on-error: true
+        run: |
+          echo "## ⚠️ Best-Effort Builds Failed" >> $GITHUB_STEP_SUMMARY
+          echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. These packages were **not pushed to the cache** and your hosts will build them locally:" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.nvme-build.outcome }}" = "failure" ] && echo "- \`nixos-nvme\` toplevel" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the detailed logs of the failed steps above to see exactly which package (e.g., Electron) ran out of memory or failed to compile." >> $GITHUB_STEP_SUMMARY
