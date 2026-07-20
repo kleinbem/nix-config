@@ -1,5 +1,6 @@
 # orin-nano — NVIDIA Jetson Orin Nano (aarch64)
 {
+  config,
   lib,
   pkgs,
   inputs,
@@ -36,6 +37,7 @@ in
     inputs.nix-presets.nixosModules.frigate
     inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.monitoring-node
+    inputs.nix-presets.nixosModules.attic-push
     # Disko configuration
     inputs.disko.nixosModules.disko
     ./disko.nix
@@ -55,6 +57,11 @@ in
   my.deploy.autoUpgrade = {
     enable = true;
     requireCache = true;
+  };
+
+  my.attic-push = {
+    enable = true;
+    tokenFile = config.sops.secrets.attic_push_token.path;
   };
 
   nixpkgs = {
