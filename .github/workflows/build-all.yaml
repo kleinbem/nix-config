@@ -148,19 +148,14 @@ jobs:
           # (aarch64) hosts are headless and never run `nix develop`, so don't
           # waste a runner building them there.
           if [ "$SYSTEM" = "x86_64-linux" ]; then
-            TARGETS+=( 
-              ".#devShells" 
-              ".#nixosConfigurations.nasbook.config.system.build.toplevel"
+            TARGETS+=(
+              ".#devShells"
             )
           fi
           if [ "$SYSTEM" = "aarch64-linux" ]; then
             TARGETS+=(
               ".#nixosConfigurations.hass-pi.config.system.build.toplevel"
               ".#nixosConfigurations.core-pi.config.system.build.toplevel"
-              # Orin-nano uses Jetpack kernels which cause massive issues in CI (unfree/disk space).
-              # But we can still cache 99% of its userspace by building its path and etc trees!
-              ".#nixosConfigurations.orin-nano.config.system.build.etc"
-              ".#nixosConfigurations.orin-nano.config.system.path"
             )
           fi
 
