@@ -19,6 +19,7 @@ deploy-fleet:
     fi
     
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --show-trace
+    just deployment::push-cache all
 
 [group("Fleet")]
 [doc("Manually trigger the system.autoUpgrade service on a host to pull the latest production release immediately.")]
@@ -60,6 +61,7 @@ deploy host:
     fi
 
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on {{host}}
+    just deployment::push-cache {{host}}
 
     # Post-flight sync: Ensure the boot files are fully copied before we report success
     if [[ "{{host}}" == "core-pi" || "{{host}}" == "hass-pi" ]]; then
@@ -71,6 +73,7 @@ deploy host:
 deploy-orin:
     @echo "🟢 Deploying to Orin Nano..."
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on orin-nano
+    just deployment::push-cache orin-nano
 
 [group("Provisioning")]
 [confirm("💿 Re-install full orin-nano config onto the bootstrapped Orin? Builds natively on the device (no cross-compilation). This reformats the SSD.")]
@@ -98,7 +101,30 @@ orin-promote-nokexec host="root@orin-nano-bootstrap.local":
 deploy-edge:
     @echo "📡 Deploying to AI Edge (Orin + Raspberry Pi)..."
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on orin-nano,core-pi,hass-pi
+    just deployment::push-cache orin-nano core-pi hass-pi
 
+
+[group("Fleet")]
+[doc("Push built closure(s) to Attic cache. E.g. 'just deployment::push-cache core-pi' or 'just deployment::push-cache all'")]
+push-cache +hosts:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for h in {{hosts}}; do
+        if [ "$h" = "all" ]; then
+            echo "☁️ Pushing all Colmena nodes to Attic cache..."
+            HOSTLIST=$(env SSH_AUTH_SOCK="" colmena -f ./flake.nix eval -E '{ nodes, ... }: builtins.attrNames nodes' 2>/dev/null | tail -n1 | jq -r '.[]')
+            for node in $HOSTLIST; do
+                echo "  Pushing $node..."
+                OUT_PATH=$(nix build .#nixosConfigurations.$node.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null)
+                nix run nixpkgs#attic-client -- push system "$OUT_PATH" || echo "⚠️ Warning: Failed to push $node to Attic"
+            done
+        else
+            echo "☁️ Pushing $h to Attic cache..."
+            OUT_PATH=$(nix build .#nixosConfigurations.$h.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null)
+            nix run nixpkgs#attic-client -- push system "$OUT_PATH" || echo "⚠️ Warning: Failed to push $h to Attic"
+        fi
+    done
+    echo "✅ Cache push complete."
 
 # Note: SSH-based diagnostic recipes (ping/tegrastats/logs/shell) live in
 # `orin.just` alongside the on-device ones. Run `just --list orin` to see them.
