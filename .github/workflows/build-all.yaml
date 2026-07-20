@@ -157,7 +157,10 @@ jobs:
             TARGETS+=(
               ".#nixosConfigurations.hass-pi.config.system.build.toplevel"
               ".#nixosConfigurations.core-pi.config.system.build.toplevel"
-              ".#nixosConfigurations.orin-nano.config.system.build.toplevel"
+              # Orin-nano uses Jetpack kernels which cause massive issues in CI (unfree/disk space).
+              # But we can still cache 99% of its userspace by building its path and etc trees!
+              ".#nixosConfigurations.orin-nano.config.system.build.etc"
+              ".#nixosConfigurations.orin-nano.config.system.path"
             )
           fi
 

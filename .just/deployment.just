@@ -5,9 +5,19 @@ set working-directory := ".."
 # --- Deployment ---
 
 [group("Fleet")]
-[confirm("🚀 Deploy configuration to the ENTIRE FLEET via Colmena?")]
 deploy-fleet:
-    @echo "🚀 Deploying to entire fleet via Colmena..."
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    echo "🚀 Deploying to entire fleet via Colmena..."
+    if ! git diff-index --quiet HEAD -- || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+        echo "❌ ERROR: Your git tree is dirty!"
+        echo "   Colmena evaluates your local dirty tree. Since dirty changes haven't been pushed,"
+        echo "   CI hasn't built them, and you will suffer massive local cross-compilation times."
+        echo "   Please commit and push your changes (just jj::ship), wait for CI to finish, and try again."
+        exit 1
+    fi
+    
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --show-trace
 
 [group("Fleet")]
