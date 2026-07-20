@@ -106,13 +106,13 @@ deploy-edge:
 
 [group("Fleet")]
 [doc("Push built closure(s) to Attic cache. E.g. 'just deployment::push-cache core-pi' or 'just deployment::push-cache --remote orin-nano'")]
-push-cache *args:
+push-cache +args:
     #!/usr/bin/env bash
     set -euo pipefail
     
     IS_REMOTE=0
     HOSTS=()
-    for arg in "$@"; do
+    for arg in {{args}}; do
         if [ "$arg" = "--remote" ]; then
             IS_REMOTE=1
         else
