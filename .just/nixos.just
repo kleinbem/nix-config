@@ -24,11 +24,13 @@ switch auth="" mode="" *args="":
     else
         {{LOCK_CMD}} {{TIMER}} nh os switch . -- {{OVERRIDES}} {{args}}
     fi
+    just deployment::push-cache "$(hostname)"
 
 [group("System")]
 build *args="":
     @echo "🔨 Building System Configuration..."
     @{{LOCK_CMD}} {{TIMER}} nh os build . -- {{OVERRIDES}} {{args}}
+    @just deployment::push-cache "$(hostname)"
 
 [group("Development")]
 dry-run *args="":
@@ -39,6 +41,7 @@ dry-run *args="":
 test *args="":
     @echo "🚦 Testing System Configuration (Activation Only)..."
     @{{LOCK_CMD}} {{TIMER}} nh os test . -- {{OVERRIDES}} {{args}}
+    @just deployment::push-cache "$(hostname)"
 
 [group("System")]
 [confirm("👢 This will make the current configuration the DEFAULT at boot. Proceed?")]
@@ -52,6 +55,7 @@ switch-boot auth="":
     fi
     echo "👢 Building and setting as boot default..."
     {{LOCK_CMD}} nh os boot . -- {{OVERRIDES}}
+    just deployment::push-cache "$(hostname)"
 
 [group("Debugging")]
 switch-debug auth="" mode="" *args="":
@@ -73,6 +77,7 @@ switch-debug auth="" mode="" *args="":
     else
         {{LOCK_CMD}} nh os switch . -- --show-trace --verbose {{OVERRIDES}} {{args}}
     fi
+    just deployment::push-cache "$(hostname)"
 
 [group("Debugging")]
 switch-boot-debug auth="":
@@ -85,6 +90,7 @@ switch-boot-debug auth="":
     fi
     echo "👢 Debugging bootloader generation..."
     {{LOCK_CMD}} nh os boot . -- --show-trace --verbose {{OVERRIDES}}
+    just deployment::push-cache "$(hostname)"
 
 [group("Development")]
 sys-plan:
@@ -133,6 +139,7 @@ mode name:
 [group("Modes")]
 reset-mode *args="":
     @{{LOCK_CMD}} nh os switch . -- {{OVERRIDES}} {{args}}
+    @just deployment::push-cache "$(hostname)"
 
 [group("Debugging")]
 verify-caddy:

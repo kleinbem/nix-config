@@ -128,6 +128,7 @@ apply *args="":
         debug_flag=""
         [ "$DEBUG" -eq 1 ] && debug_flag="--show-trace"
         nixos-rebuild "$MODE" --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --use-remote-sudo --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag
+        just deployment::push-cache --remote "$TARGET_HOST"
     fi
 
     # 5. Regenerate Antigravity reference docs

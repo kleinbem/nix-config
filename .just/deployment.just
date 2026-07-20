@@ -105,11 +105,27 @@ deploy-edge:
 
 
 [group("Fleet")]
-[doc("Push built closure(s) to Attic cache. E.g. 'just deployment::push-cache core-pi' or 'just deployment::push-cache all'")]
-push-cache +hosts:
+[doc("Push built closure(s) to Attic cache. E.g. 'just deployment::push-cache core-pi' or 'just deployment::push-cache --remote orin-nano'")]
+push-cache *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    for h in {{hosts}}; do
+    
+    IS_REMOTE=0
+    HOSTS=()
+    for arg in "$@"; do
+        if [ "$arg" = "--remote" ]; then
+            IS_REMOTE=1
+        else
+            HOSTS+=("$arg")
+        fi
+    done
+    
+    if [ ${#HOSTS[@]} -eq 0 ]; then
+        echo "Usage: push-cache [--remote] <host...>"
+        exit 1
+    fi
+
+    for h in "${HOSTS[@]}"; do
         if [ "$h" = "all" ]; then
             echo "☁️ Pushing all Colmena nodes to Attic cache..."
             HOSTLIST=$(env SSH_AUTH_SOCK="" colmena -f ./flake.nix eval -E '{ nodes, ... }: builtins.attrNames nodes' 2>/dev/null | tail -n1 | jq -r '.[]')
@@ -120,7 +136,20 @@ push-cache +hosts:
             done
         else
             echo "☁️ Pushing $h to Attic cache..."
-            OUT_PATH=$(nix build .#nixosConfigurations.$h.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null)
+            OUT_PATH=$(nix eval .#nixosConfigurations.$h.config.system.build.toplevel --impure --raw 2>/dev/null || true)
+            if [ -z "$OUT_PATH" ]; then
+                echo "⚠️ Warning: Could not evaluate closure path for $h"
+                continue
+            fi
+            
+            if [ "$IS_REMOTE" -eq 1 ]; then
+                echo "  Fetching closure from remote $h (nix copy)..."
+                nix copy --from "ssh://$h" "$OUT_PATH" || echo "⚠️ Warning: Failed to fetch closure from $h"
+            else
+                # Ensure it is realized locally if not remote
+                nix build .#nixosConfigurations.$h.config.system.build.toplevel --impure --no-link >/dev/null 2>&1 || true
+            fi
+            
             nix run nixpkgs#attic-client -- push system "$OUT_PATH" || echo "⚠️ Warning: Failed to push $h to Attic"
         fi
     done
