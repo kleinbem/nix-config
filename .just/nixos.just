@@ -161,16 +161,16 @@ topology:
 attic-token:
     @echo "🔑 Generating new Attic Admin Token (Valid for 1y)..."
     #!/usr/bin/env bash
-    sudo nixos-container run attic -- sh -c ' \
-      set -a; \
-      . /etc/atticd-env; \
-      if [ -z "$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64" ]; then \
-        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="$ATTIC_SERVER_TOKEN_RS256_SECRET"; \
-      fi; \
-      ATTICADM=$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1); \
-      CONFIG=$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1); \
-      $ATTICADM -f $CONFIG make-token --sub "admin" --validity "1y" --pull "*" --push "*" --create-cache "*" --configure-cache "*" --configure-cache-retention "*" --destroy-cache "*" \
-    '
+    ssh core-pi "sudo nixos-container run attic -- sh -c ' \\
+      set -a; \\
+      . /etc/atticd-env; \\
+      if [ -z \"\$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64\" ]; then \\
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"; \\
+      fi; \\
+      ATTICADM=\$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1); \\
+      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1); \\
+      \$ATTICADM -f \$CONFIG make-token --sub \"admin\" --validity \"1y\" --pull \"*\" --push \"*\" --create-cache \"*\" --configure-cache \"*\" --configure-cache-retention \"*\" --destroy-cache \"*\" \\
+    '"
 
 # Mint a LEAST-PRIVILEGE Attic token for CI (push/pull on one cache only — no
 # create/configure/destroy). Use this for the ATTIC_PUSH_TOKEN stored in CI,
@@ -183,15 +183,15 @@ attic-token:
 attic-ci-token sub="github-ci" cache="system" validity="1y":
     #!/usr/bin/env bash
     set -euo pipefail
-    sudo nixos-container run attic -- sh -c '
+    ssh core-pi "sudo nixos-container run attic -- sh -c '
       set -a; . /etc/atticd-env
-      [ -z "${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}" ] && \
-        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="$ATTIC_SERVER_TOKEN_RS256_SECRET"
-      ATTICADM=$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1)
-      CONFIG=$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
-      "$ATTICADM" -f "$CONFIG" make-token \
-        --sub "{{ sub }}" --validity "{{ validity }}" --pull "{{ cache }}" --push "{{ cache }}"
-    '
+      [ -z \"\${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}\" ] && \
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"
+      ATTICADM=\$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1)
+      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
+      \"\$ATTICADM\" -f \"\$CONFIG\" make-token \
+        --sub \"{{ sub }}\" --validity \"{{ validity }}\" --pull \"{{ cache }}\" --push \"{{ cache }}\"
+    '"
 
 # Run a one-shot Attic garbage-collection sweep in the cache container.
 #
@@ -230,15 +230,15 @@ attic-gc:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "🧹 Running one-shot Attic GC sweep in the cache container…"
-    sudo nixos-container run attic -- sh -c '
+    ssh core-pi "sudo nixos-container run attic -- sh -c '
       set -a; . /etc/atticd-env
-      [ -z "${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}" ] && \
-        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="$ATTIC_SERVER_TOKEN_RS256_SECRET"
-      ATTICD=$(ls -1 /nix/store/*-attic-*/bin/atticd | head -n 1)
-      CONFIG=$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
-      echo "── storage BEFORE ──"; du -sh /var/lib/atticd/storage 2>/dev/null || true
-      echo "▶ $ATTICD --mode garbage-collector-once -f $CONFIG"
-      "$ATTICD" --mode garbage-collector-once -f "$CONFIG"
-      echo "── storage AFTER ──";  du -sh /var/lib/atticd/storage 2>/dev/null || true
-    '
+      [ -z \"\${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}\" ] && \
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"
+      ATTICD=\$(ls -1 /nix/store/*-attic-*/bin/atticd | head -n 1)
+      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
+      echo \"── storage BEFORE ──\"; du -sh /var/lib/atticd/storage 2>/dev/null || true
+      echo \"▶ \$ATTICD --mode garbage-collector-once -f \$CONFIG\"
+      \"\$ATTICD\" --mode garbage-collector-once -f \"\$CONFIG\"
+      echo \"── storage AFTER ──\";  du -sh /var/lib/atticd/storage 2>/dev/null || true
+    '"
     echo "✅ Attic GC sweep complete."
