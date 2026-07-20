@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 51  
+**Declarations indexed:** 52  
 **Consumer files scanned:** 13
 
 ---
@@ -115,6 +115,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/dashboard/options.nix:6`
 - **Sub-options:** `enable`, `hostBridgeIp`, `ip`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
+
+### `my.containers.ente`
+
+- **Declared:** `nix-presets/containers/ente.nix:13`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`
+- **Consumed by:** `host:core-pi`
 
 ### `my.containers.frigate`
 

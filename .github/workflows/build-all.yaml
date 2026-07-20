@@ -138,8 +138,7 @@ jobs:
           # The bare `.#nixosConfigurations` does NOT materialize host toplevels,
           # so name them explicitly. Each host builds on its native-arch runner
           # (matrix), so no emulation. RPi5 hosts carry the custom linux-rpi
-          # kernel (absent from cache.nixos.org). Excluded: Orin (jetpack/l4t
-          # builds on-device via colmena buildOnTarget) and the routers (bespoke
+          # kernel (absent from cache.nixos.org). Excluded: routers (bespoke
           # Banana Pi R4 kernel) — add once they're confirmed to build in CI.
           TARGETS=()
           for c in "${CI_CHECKS[@]}"; do
@@ -149,12 +148,16 @@ jobs:
           # (aarch64) hosts are headless and never run `nix develop`, so don't
           # waste a runner building them there.
           if [ "$SYSTEM" = "x86_64-linux" ]; then
-            TARGETS+=( ".#devShells" )
+            TARGETS+=( 
+              ".#devShells" 
+              ".#nixosConfigurations.nasbook.config.system.build.toplevel"
+            )
           fi
           if [ "$SYSTEM" = "aarch64-linux" ]; then
             TARGETS+=(
               ".#nixosConfigurations.hass-pi.config.system.build.toplevel"
               ".#nixosConfigurations.core-pi.config.system.build.toplevel"
+              ".#nixosConfigurations.orin-nano.config.system.build.toplevel"
             )
           fi
 

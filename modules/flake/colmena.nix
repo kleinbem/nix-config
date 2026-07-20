@@ -27,7 +27,7 @@ in
       deployment = {
         targetHost = hostMeta.orin-nano.ip;
         targetUser = "martin";
-        buildOnTarget = true; # l4t kernel modules can't cross-compile from x86_64
+        buildOnTarget = false; # Evaluates on workstation, fetches from Attic, pushes via SSH
         inherit (hostMeta.orin-nano) tags;
       };
       imports = [ ../../hosts/orin-nano/default.nix ];
