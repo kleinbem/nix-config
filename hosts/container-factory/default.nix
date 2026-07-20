@@ -123,6 +123,10 @@ let
       ip = ip 44;
       hostBridgeIp = "10.85.46.1";
     };
+    ente = {
+      ip = ip 46;
+      hostDataDir = dataDir "ente";
+    };
     ntfy.ip = ip 45;
     agent-team = { };
     netdata = { };
@@ -175,6 +179,7 @@ in
     inputs.nix-presets.nixosModules.home-assistant
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.dashboard
+    inputs.nix-presets.nixosModules.ente
     # NOTE: dashboard-homer / dashboard-homepage are alternate frontends that
     # re-declare the same `my.containers.dashboard` option slot, so they cannot
     # coexist with `dashboard` in one host. Their closures are near-identical
