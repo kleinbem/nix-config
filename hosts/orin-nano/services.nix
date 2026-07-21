@@ -21,7 +21,7 @@
     boot.clevis-initrd = {
       enable = true;
       luksDevice = "orin_crypt";
-      hostIp = "10.0.0.12";
+      hostIp = "10.0.0.15";
       # JWE lives in nix-secrets (private): Tang-wrapped LUKS key material
       # must not sit in this public repo.
       secretFile = pkgs.writeText "cryptroot.jwe" (
@@ -49,7 +49,7 @@
         memoryLimit = "5G";
       };
       frigate = {
-        enable = true;
+        enable = false; # Temporarily disabled for USB provisioning build
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "tensorrt";
         mediaDir = "/mnt/data/frigate";

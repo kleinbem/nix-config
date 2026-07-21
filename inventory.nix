@@ -7,7 +7,7 @@
   # server to respond. A host's own Tang is not up during its own initrd unlock.
   tangServers = [
     "http://10.0.0.5:7654" # nixos-nvme (LAN interface)
-    "http://10.0.0.12:7654" # orin-nano
+    "http://10.0.0.15:7654" # orin-nano
     "http://10.0.0.22:7654" # core-pi
     "http://10.0.0.30:7654" # nasbook
     "http://10.0.0.21:7654" # hass-pi (planned, not yet active)
@@ -52,7 +52,7 @@
       ];
     };
     orin-nano = {
-      ip = "10.0.0.12"; # LAN DHCP IP — assign static or use NetBird for production
+      ip = "10.0.0.15"; # LAN DHCP IP — assign static or use NetBird for production
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [

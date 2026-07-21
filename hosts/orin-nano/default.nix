@@ -133,5 +133,8 @@ in
   # Local debug is text-mode TTY on HDMI (agetty on tty1); remote work is SSH.
   # Need a remote Wayland app occasionally? `waypipe` it from your workstation.
 
+  # Override headless.nix silent boot to keep HDMI output visible
+  boot.kernelParams = lib.mkForce [ "console=tty0" ];
+
   system.stateVersion = "25.11";
 }

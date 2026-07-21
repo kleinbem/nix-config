@@ -16,7 +16,7 @@
 - **hass-pi** (`10.0.0.21`, aarch64-linux, ssh) — raspberry-pi, home-assistant
 - **nasbook** (`10.0.0.30`, x86_64-linux, ssh) — nas, storage, hub
 - **nixos-nvme** (`10.85.46.1`, x86_64-linux, local) — workstation, desktop
-- **orin-nano** (`10.0.0.12`, aarch64-linux, ssh) — edge, ai, jetson
+- **orin-nano** (`10.0.0.15`, aarch64-linux, ssh) — edge, ai, jetson
 - **phone** (`no-ip`, aarch64-linux, local) — mobile, android
 
 ## 📡 Network Services (by host)

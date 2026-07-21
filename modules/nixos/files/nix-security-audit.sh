@@ -33,12 +33,11 @@ REPORT_HOST="$REPORT_DIR/security-report-host.txt"
 REPORT_CONT="$REPORT_DIR/security-report-containers.txt"
 REPORT_SECRETS="$REPORT_DIR/security-report-secrets.json"
 REPORT_LYNIS="$REPORT_DIR/lynis-report.txt"
-VULNIX_WHITELIST="${VULNIX_WHITELIST:-/etc/nixos/nix-config/modules/nixos/vulnix.whitelist}"
 TRIVY_IGNORE="${TRIVY_IGNORE:-/etc/nixos/nix-config/modules/nixos/.trivyignore}"
 WORKSPACE_PATH="/home/martin/Develop/github.com/kleinbem/nix"
 
 # Check for required tools
-for tool in vulnix trivy gitleaks lynis; do
+for tool in trivy gitleaks lynis; do
   if ! command -v "$tool" &>/dev/null; then
     log_error "Required tool '$tool' not found in PATH."
   fi
@@ -49,11 +48,7 @@ done
 scan_host() {
   log_step "Scanning NixOS Host Closure..."
 
-  # 1. Vulnix (Nix native)
-  log_info "Running Vulnix analysis..."
-  vulnix --system -w "$VULNIX_WHITELIST" >"$REPORT_HOST" 2>&1 || true
-
-  # 2. Trivy FS (CVE database)
+  # 1. Trivy FS (CVE database)
   log_info "Running Trivy Host FS scan..."
   trivy fs /run/current-system \
     --severity HIGH,CRITICAL \
@@ -142,19 +137,6 @@ show_summary() {
   set +o pipefail
 
   if [ -f "$REPORT_HOST" ]; then
-    echo -e "\n${CYAN}--- Host Vulnerabilities (Nix) ---${RESET}"
-    # Check for Vulnix results
-    if grep -q "derivations with active advisories" "$REPORT_HOST"; then
-      local VULN_COUNT
-      VULN_COUNT=$(grep "derivations with active advisories" "$REPORT_HOST" | awk '{print $1}')
-      if [[ -n $VULN_COUNT ]] && [[ $VULN_COUNT -gt 0 ]]; then
-        echo -e "${RED}Total: $VULN_COUNT nix derivations with advisories${RESET}"
-        grep -E "CVE|CVSSv3|https://nvd" "$REPORT_HOST" | head -n 20 || true
-      else
-        echo -e "${GREEN}Host (Vulnix): No active advisories detected.${RESET}"
-      fi
-    fi
-
     # Check for Trivy FS results (if any)
     if grep -q "Total: " "$REPORT_HOST"; then
       echo -e "\n${CYAN}--- Host FS Vulnerabilities (Trivy) ---${RESET}"

@@ -17,12 +17,12 @@ if [ ! -d "$HOST_DIR" ]; then
 fi
 
 echo "🔑 Generating new cryptroot.jwe for $HOST using 3-server Tang cluster..."
-echo "Servers: nixos-nvme (10.0.0.5), hass-pi (10.0.0.21), orin-nano (10.0.0.12)"
+echo "Servers: nixos-nvme (10.0.0.5), hass-pi (10.0.0.21), orin-nano (10.0.0.15)"
 
 read -r -s -p "Enter LUKS passphrase for $HOST: " PASSPHRASE
 echo ""
 
-echo -n "$PASSPHRASE" | clevis encrypt sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' >"$JWE_FILE.new"
+echo -n "$PASSPHRASE" | clevis encrypt sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' >"$JWE_FILE.new"
 
 mv "$JWE_FILE.new" "$JWE_FILE"
 echo "✅ Successfully updated $JWE_FILE"

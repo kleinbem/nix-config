@@ -31,6 +31,9 @@
 
     # --- AI Tools ---
     "github.copilot.inlineSuggest.enable" = false;
+
+    # --- Browser ---
+    "browser.customChromeBinaryPath" = "/etc/profiles/per-user/martin/bin/google-chrome";
   };
 
   keybindings = [

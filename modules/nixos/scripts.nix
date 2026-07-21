@@ -84,7 +84,6 @@
         runtimeInputs = with final; [
           coreutils
           gnugrep
-          vulnix
           trivy
           gitleaks
           lynis
@@ -95,7 +94,6 @@
         ];
         text = ''
           # Inject whitelists paths as environment variables
-          export VULNIX_WHITELIST="${./vulnix.whitelist.yaml}"
           export TRIVY_IGNORE="${./.trivyignore}"
           ${builtins.readFile ./files/nix-security-audit.sh}
         '';

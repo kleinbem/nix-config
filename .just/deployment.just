@@ -458,8 +458,8 @@ orin-install-usb device="/dev/sdb":
     LUKS_DEV=$(sudo cryptsetup status orin_crypt | awk '/device:/ {print $2}')
     if [ -n "$LUKS_DEV" ]; then
         echo "Will prompt for LUKS password to authorize Tang binding..."
-        # Note: Binds to nixos-nvme (10.0.0.5), hass-pi (10.0.0.21), and orin-nano (10.0.0.12) using the local advertisement files.
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
+        # Note: Binds to nixos-nvme (10.0.0.5), hass-pi (10.0.0.21), and orin-nano (10.0.0.15) using the local advertisement files.
+        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
     else
         echo "⚠️ Could not find mapped device orin_crypt for Tang binding."
     fi
@@ -675,7 +675,7 @@ pi-install-usb host device="/dev/sdc":
     LUKS_DEV=$(sudo cryptsetup status "$CRYPT_NAME" | awk '/device:/ {print $2}')
     if [ -n "$LUKS_DEV" ]; then
         echo "Will prompt for LUKS password to authorize Tang binding..."
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
+        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
     else
         echo "⚠️ Could not find mapped device $CRYPT_NAME for Tang binding."
     fi
@@ -849,7 +849,7 @@ core-rebind-tang device="/dev/sdf":
         sudo clevis luks unbind -d "$LUKS_DEV" -s 1 || echo "No old key in slot 1 or failed to unbind."
         echo "🔗 Binding LUKS partition to Tang CLUSTER for silent boot..."
         echo "Will prompt for LUKS password to authorize Tang cluster binding..."
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.12:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}'
+        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}'
     else
         echo "⚠️ Could not find mapped device core_crypt for Tang binding."
     fi
