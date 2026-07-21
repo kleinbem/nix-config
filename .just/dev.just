@@ -63,19 +63,21 @@ apply *args="":
     }
 
     # Parse arguments
-    for arg in "$@"; do
-        case "$arg" in
+    while [ $# -gt 0 ]; do
+        case "$1" in
             -h|--help) show_help; exit 0 ;;
-            --fast) FAST=1 ;;
-            --debug) DEBUG=1 ;;
-            --boot) MODE="boot" ;;
-            --rollback) ROLLBACK=1 ;;
-            --auth=*) AUTH="${arg#--auth=}" ;;
-            -*) echo "❌ Unknown flag: $arg" >&2; echo "Try: just dev::apply --help" >&2; exit 2 ;;
-            *) 
-                # If we haven't seen a flag, it's the target host. 
+            --fast) FAST=1; shift ;;
+            --debug) DEBUG=1; shift ;;
+            --boot) MODE="boot"; shift ;;
+            --rollback) ROLLBACK=1; shift ;;
+            --auth) AUTH="$2"; shift 2 ;;
+            --auth=*) AUTH="${1#--auth=}"; shift ;;
+            -*) echo "❌ Unknown flag: $1" >&2; echo "Try: just dev::apply --help" >&2; exit 2 ;;
+            *)
+                # If we haven't seen a flag, it's the target host.
                 # If it's `sudo`, it might be an auth argument passed strangely, but we support --auth=sudo.
-                if [ "$arg" = "sudo" ]; then AUTH="sudo"; else TARGET_HOST="$arg"; fi
+                if [ "$1" = "sudo" ]; then AUTH="sudo"; else TARGET_HOST="$1"; fi
+                shift
                 ;;
         esac
     done
