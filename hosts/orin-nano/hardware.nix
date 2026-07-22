@@ -15,9 +15,13 @@ in
   hardware = {
     graphics.enable = true;
     enableRedistributableFirmware = true;
-    # Enable automatic firmware synchronization for future updates
+    # Firmware auto-update disabled: jetpack-nixos rev 441616c builds edk2/OP-TEE
+    # capsules, and edk2-pytool-extensions dies on `import pkg_resources`
+    # (removed in setuptools 81+). Not cached anywhere (Orin excluded from CI),
+    # so it's a hard local build failure. Device firmware is already flashed;
+    # re-enable once jetpack-nixos/nixpkgs restores pkg_resources.
     nvidia-jetpack = {
-      firmware.autoUpdate = true;
+      firmware.autoUpdate = false;
       super = true; # Enable 25W "Super Mode" for Orin Nano Plus
       maxClock = true; # Always run at maximum clock speed
     };
@@ -38,7 +42,13 @@ in
 
   boot = {
     loader = {
-      systemd-boot.enable = lib.mkForce true;
+      systemd-boot = {
+        enable = lib.mkForce true;
+        # Cap ESP boot entries. The 1 GiB ESP filled with ~30 stale
+        # per-generation kernels/initrds because old entries weren't pruned,
+        # which eventually orphaned the loader. Bound it so it can't refill.
+        configurationLimit = 10;
+      };
       generic-extlinux-compatible.enable = lib.mkForce false;
     };
     tmp.useTmpfs = true;

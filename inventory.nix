@@ -48,7 +48,6 @@
       tags = [
         "physical"
         "ap"
-        "lxc-host"
       ];
     };
     orin-nano = {

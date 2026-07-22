@@ -132,7 +132,7 @@ push-cache +args:
             for node in $HOSTLIST; do
                 echo "  Pushing $node..."
                 OUT_PATH=$(nix build .#nixosConfigurations.$node.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null)
-                nix run nixpkgs#attic-client -- push system "$OUT_PATH" || echo "⚠️ Warning: Failed to push $node to Attic"
+                nix run nixpkgs#attic-client -- push system "$OUT_PATH" -j 2 || echo "⚠️ Warning: Failed to push $node to Attic"
             done
         else
             echo "☁️ Pushing $h to Attic cache..."
@@ -150,7 +150,7 @@ push-cache +args:
                 nix build .#nixosConfigurations.$h.config.system.build.toplevel --impure --no-link >/dev/null 2>&1 || true
             fi
             
-            nix run nixpkgs#attic-client -- push system "$OUT_PATH" || echo "⚠️ Warning: Failed to push $h to Attic"
+            nix run nixpkgs#attic-client -- push system "$OUT_PATH" -j 2 || echo "⚠️ Warning: Failed to push $h to Attic"
         fi
     done
     echo "✅ Cache push complete."
@@ -240,242 +240,96 @@ orin-install-bootstrap device="/dev/sdb":
 orin-install-usb device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
-    
-    # Prompt for sudo upfront and keep it alive in the background
-    sudo -v
-    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+    source .just/lib/provision-common.sh
 
-    _cleanup_dm() {
-        # Deactivate LVM VG, close any LUKS mapped from partitions of this disk, then
-        # force-remove residual device-mapper entries.  A lingering orin_crypt (from a
-        # previous failed run) causes disko to skip luksOpen and pvcreate to see stale
-        # LVM signatures; a 0-sector orin_crypt left after a --persistent dm-table
-        # reload causes pvcreate to report "device is not in a usable state".
-        # Tear down strictly top-down: unmount -> remove LV dm devices -> close LUKS.
-        # A previous run can leave vg_orin LVs *active and mounted* on top of orin_crypt
-        # while a later pvcreate has already overwritten the on-disk PV metadata.  In
-        # that state `vgchange -an`/`vgremove` are no-ops (LVM no longer recognises the
-        # VG), yet the kernel dm devices and the /dev/vg_orin node persist and block the
-        # next vgcreate with "/dev/vg_orin already exists in filesystem".
-        # A real (non-lazy) unmount is required: lazy unmount leaves the LVs held open,
-        # so dmsetup only defers removal and /dev/vg_orin stays alive.  A plain
-        # `umount -R` fails "busy" when a stray process (or a half-finished installer)
-        # still has the LV open, so kill holders with fuser before unmounting each
-        # mountpoint, deepest first.
-        for mp in $(awk '$2 ~ "^/mnt/orin" {print $2}' /proc/mounts | sort -r); do
-            sudo fuser -km "$mp" 2>/dev/null || true
-            sudo umount "$mp" 2>/dev/null || sudo umount -l "$mp" 2>/dev/null || true
-        done
-        sudo sync
-        sudo vgchange -an vg_orin 2>/dev/null || true
-        # Force-remove every vg_orin LV dm device (works even when LVM has lost the VG)
-        for dm in $(sudo dmsetup ls 2>/dev/null | awk '{print $1}' | grep -E '^vg_orin'); do
-            sudo dmsetup remove -f --retry "$dm" 2>/dev/null || true
-        done
-        sudo vgremove -f vg_orin 2>/dev/null || true
-        # Nothing sits on orin_crypt now — close the LUKS container and any crypt on this disk
-        local disk_name
-        disk_name=$(basename {{device}})
-        for part in /sys/class/block/${disk_name}*/holders/*; do
-            [ -e "$part" ] && sudo cryptsetup close "$(basename "$(readlink "$part")")" 2>/dev/null || true
-        done
-        sudo cryptsetup close orin_crypt 2>/dev/null || true
-        sudo dmsetup remove -f --retry orin_crypt 2>/dev/null || true
-        # Remove LVM backup/archive so udev can't auto-restore vg_orin after pvcreate
-        sudo rm -f /etc/lvm/backup/vg_orin 2>/dev/null || true
-        sudo rm -f /etc/lvm/archive/vg_orin_*.vg 2>/dev/null || true
-        # Remove stale /dev/vg_orin node (left when LVs were force-removed while mounted)
-        sudo rm -rf /dev/vg_orin 2>/dev/null || true
-        sudo udevadm settle 2>/dev/null || true
-    }
-
-    _wipe_disk() {
-        # Wipe first 1200 MiB: clears GPT, the 1 GiB ESP, and the LUKS header at the
-        # start of partition 2.  Avoid wiping individual partition nodes — the kernel
-        # may already have removed them after the GPT was zeroed, and running wipefs on
-        # stale sdb1/sdb2 nodes can confuse the USB controller's partition-size cache.
-        echo "💿 Wiping {{device}}..."
-        sudo dd if=/dev/zero of={{device}} bs=1M count=1200 status=none
-        sudo sync
-        sudo wipefs -a {{device}} 2>/dev/null || true
-        sudo blockdev --rereadpt {{device}} 2>/dev/null || sudo partprobe {{device}} 2>/dev/null || true
-        sudo udevadm settle 2>/dev/null || true
-    }
+    DEV="{{device}}"; MNT="/mnt/orin"; CRYPT="orin_crypt"; VG="vg_orin"
+    pc_sudo_keepalive
+    pc_require_block_device "$DEV"
+    pc_assert_safe_target "$DEV"
+    # jetpack/l4t + the tegra kernel are large and not always in Attic; allow those
+    # to build locally but still catch an unexpected miss (PC_ALLOW_BUILD=1 skips).
+    # Dry-run WITH the overrides so it evaluates the closure we actually build.
+    pc_cache_preflight orin-nano 'l4t-.*|.*-tegra.*|.*-jetson.*|.*[Oo]rin.*' {{OVERRIDES}}
 
     _run_disko() {
         sudo nix run github:nix-community/disko -- \
             --mode destroy,format,mount \
-            --argstr device {{device}} \
-            --arg secondDiskDevice null \
-            --root-mountpoint /mnt/orin \
-            ./hosts/orin-nano/disko.nix
+            --argstr device "$DEV" --arg secondDiskDevice null \
+            --root-mountpoint "$MNT" ./hosts/orin-nano/disko.nix
     }
 
     echo "🔍 Ensuring clean state before install..."
-    _cleanup_dm
-    _wipe_disk
+    pc_cleanup "$MNT" "$DEV" "$CRYPT" "$VG"
+    pc_wipe "$DEV" 1200
 
-    # disko can fail on USB-NVMe enclosures in two recoverable ways:
-    #   1. 0-sector dm-crypt: disko's luksOpen uses --allow-discards --persistent,
-    #      which writes back to the raw LUKS header.  On UAS enclosures this can
-    #      trigger a command abort that momentarily presents orin_crypt with 0
-    #      sectors, so pvcreate fails with "device is not in a usable state".
-    #   2. Stale /dev/vg_orin node: udev leaves the directory node behind from a
-    #      prior attempt's brief auto-activation.  LVM has no such VG (vgdisplay
-    #      fails), yet vgcreate refuses because the /dev node already exists.
-    # Both are fixed by a clean wipe + one full retry — no reboot required.
+    # disko can fail on USB-NVMe enclosures two recoverable ways: (1) a 0-sector
+    # dm-crypt when the --persistent luksOpen writeback races UAS re-enumeration;
+    # (2) a stale /dev/vg_orin node from a prior auto-activation. Clean + one retry.
     if ! _run_disko; then
         crypt_size=$(sudo blockdev --getsize64 /dev/mapper/orin_crypt 2>/dev/null || echo 0)
         if [ "$crypt_size" = "0" ]; then
-            echo "🔄 disko failed: 0-sector dm-crypt device (USB re-enumeration race)."
+            echo "🔄 disko failed: 0-sector dm-crypt (USB re-enumeration race)."
         elif [ -d /dev/vg_orin ] && ! sudo vgdisplay vg_orin >/dev/null 2>&1; then
-            echo "🔄 disko failed: stale /dev/vg_orin node with no backing VG (udev leftover)."
+            echo "🔄 disko failed: stale /dev/vg_orin node (udev leftover)."
         else
-            echo "❌ disko failed for an unrecognized reason (orin_crypt size: ${crypt_size}).  Aborting."
-            exit 1
+            echo "❌ disko failed for an unrecognized reason (orin_crypt size: ${crypt_size}). Aborting."; exit 1
         fi
-        echo "🔄 Retrying full disko install from scratch..."
-        _cleanup_dm
-        _wipe_disk
+        echo "🔄 Retrying disko from scratch..."
+        pc_cleanup "$MNT" "$DEV" "$CRYPT" "$VG"; pc_wipe "$DEV" 1200
         if ! _run_disko; then
-            echo "❌ disko failed again after recovery — manual intervention needed."
-            echo "   Try: sudo cryptsetup close orin_crypt; sudo rm -rf /dev/vg_orin; sudo udevadm settle"
-            exit 1
+            echo "❌ disko failed again — manual intervention needed."
+            echo "   Try: sudo cryptsetup close orin_crypt; sudo rm -rf /dev/vg_orin; sudo udevadm settle"; exit 1
         fi
     fi
 
-    _setup_host_identity() {
-        # Generates SSH host keys and the sops age key into the persist volume while
-        # the SSD is still mounted, then wires the public age key into .sops.yaml and
-        # re-encrypts secrets.  This means the first boot has all secrets available
-        # without any post-boot manual steps.
-        local persist="/mnt/orin/nix/persist"
-        echo "🔑 Setting up host identity..."
+    # Guard: /mnt/orin/boot MUST be the target's ESP, not the workstation's.
+    pc_assert_esp_on_target "$MNT" "$DEV"
 
-        sudo mkdir -p "${persist}/etc/ssh" "${persist}/var/lib/sops/age"
-        sudo chmod 700 "${persist}/var/lib/sops/age"
+    SYSTEM="$(pc_build_toplevel orin-nano {{OVERRIDES}})"
+    [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ orin-nano closure build failed."; exit 1; }
+    pc_install_closure "$MNT" "$SYSTEM"
 
-        # Generate persistent SSH host keys (stored in /nix/persist via impermanence)
-        if [ ! -f "${persist}/etc/ssh/ssh_host_ed25519_key" ]; then
-            sudo ssh-keygen -t ed25519 -f "${persist}/etc/ssh/ssh_host_ed25519_key" -N "" -C "orin-nano" -q
-            sudo ssh-keygen -t rsa -b 4096 -f "${persist}/etc/ssh/ssh_host_rsa_key" -N "" -C "orin-nano" -q
-            sudo chmod 600 "${persist}/etc/ssh/ssh_host_ed25519_key" "${persist}/etc/ssh/ssh_host_rsa_key"
-            sudo chmod 644 "${persist}/etc/ssh/ssh_host_ed25519_key.pub" "${persist}/etc/ssh/ssh_host_rsa_key.pub"
-        fi
-
-        # Derive age keys from the SSH ed25519 host key.
-        # Run ssh-to-age as the current user (it reads from stdin to avoid sudo PATH issues).
-        local age_pubkey
-        age_pubkey=$(sudo cat "${persist}/etc/ssh/ssh_host_ed25519_key.pub" | ssh-to-age)
-        sudo cat "${persist}/etc/ssh/ssh_host_ed25519_key" \
-            | ssh-to-age --private-key \
-            | sudo tee "${persist}/var/lib/sops/age/host.txt" > /dev/null
-        sudo chmod 600 "${persist}/var/lib/sops/age/host.txt"
-
-        # Stable machine-id for journald / systemd (persisted via impermanence)
-        if [ ! -f "${persist}/etc/machine-id" ]; then
-            systemd-id128 new | sudo tee "${persist}/etc/machine-id" > /dev/null
-            sudo chmod 444 "${persist}/etc/machine-id"
-        fi
-
-        echo "📋 orin-nano age public key: ${age_pubkey}"
-
-        # Add the age public key to .sops.yaml and re-encrypt secrets so that
-        # the Orin can decrypt them on first boot without any further intervention.
-        local sops_yaml="../nix-secrets/.sops.yaml"
-        if grep -qF "${age_pubkey}" "${sops_yaml}"; then
-            echo "   Age key already in .sops.yaml — skipping re-encryption."
-            return
-        fi
-
-        # Insert after the last age key line using awk (preserves comments)
-        awk -v key="${age_pubkey}" '
-            /^[[:space:]]*- "age1/ { last = NR }
-            { lines[NR] = $0 }
-            END {
-                for (i = 1; i <= NR; i++) {
-                    print lines[i]
-                    if (i == last) {
-                        print "          # Host Key (orin-nano)"
-                        print "          - \"" key "\""
-                    }
-                }
-            }
-        ' "${sops_yaml}" > /tmp/sops_updated.yaml && mv /tmp/sops_updated.yaml "${sops_yaml}"
-
-        echo "🔐 Re-encrypting secrets (YubiKey touch may be required)..."
-        # Run from inside nix-secrets: sops resolves .sops.yaml relative to the CWD,
-        # so invoking it from the repo root fails with "config file not found".
-        ( cd ./nix-secrets && sops updatekeys --yes secrets.yaml )
-        echo "✅ Secrets updated."
-        echo ""
-        echo "   Commit nix-secrets + nix-config before deploying:"
-        echo "   just jj::save-all 'feat: add orin-nano host key and re-encrypt secrets'"
-    }
-
-    echo "🏗️ Installing NixOS closure to {{device}} mounted at /mnt/orin..."
-    nix build .#nixosConfigurations.orin-nano.config.system.build.toplevel \
-        --option sandbox false \
-        --option builders "" \
-        {{OVERRIDES}} \
-        --out-link /tmp/orin-system
-    # --no-bootloader: nixos-install's bootloader step chroots into aarch64 binaries via
-    # QEMU, but QEMU's uname() returns x86_64, so bootctl bails with exit 255.  The ESP
-    # files are static copies, installed host-side below (mirrors orin-install-bootstrap).
-    sudo nixos-install --root /mnt/orin --system "$(readlink /tmp/orin-system)" --no-root-passwd --no-bootloader
-
-    echo "💾 Installing systemd-boot to ESP (host-side, no aarch64 execution required)..."
-    SYSTEM="$(readlink /tmp/orin-system)"
-    ESP="/mnt/orin/boot"
-
-    BOOT_EFI="$(find /mnt/orin/nix/store -maxdepth 6 -name "systemd-bootaa64.efi" 2>/dev/null | head -1)"
+    echo "💾 Installing systemd-boot to the ESP (host-side; bootctl can't run under QEMU)..."
+    pc_assert_esp_on_target "$MNT" "$DEV"   # re-verify right before writing
+    ESP="$MNT/boot"
+    BOOT_EFI="$(find "$MNT/nix/store" -maxdepth 6 -name systemd-bootaa64.efi 2>/dev/null | head -1)"
     [ -n "$BOOT_EFI" ] || { echo "❌ systemd-bootaa64.efi not found in store" >&2; exit 1; }
-
     KERNEL_SRC="$(realpath "${SYSTEM}/kernel")"
     INITRD_SRC="$(realpath "${SYSTEM}/initrd")"
     KERNEL_PARAMS="$(cat "${SYSTEM}/kernel-params")"
     SYS_STORE_PATH="/nix/store/$(basename "${SYSTEM}")"
-
     sudo mkdir -p "${ESP}/EFI/systemd" "${ESP}/EFI/BOOT" "${ESP}/EFI/nixos" "${ESP}/loader/entries"
     sudo cp "${BOOT_EFI}" "${ESP}/EFI/systemd/systemd-bootaa64.efi"
     sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTAA64.EFI"
     sudo cp "${KERNEL_SRC}" "${ESP}/EFI/nixos/kernel"
     sudo cp "${INITRD_SRC}" "${ESP}/EFI/nixos/initrd"
-
+    # CRITICAL: embed boot.initrd.secrets (clevis JWE + initrd-sshd host key) into
+    # the ESP initrd. nixos-install --no-bootloader skipped this; without it the
+    # first boot fails copy-secrets + sshd and drops to EMERGENCY MODE.
+    pc_append_initrd_secrets orin-nano "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
     printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
-
     ENTRY="$(mktemp)"
     printf 'title NixOS\nlinux /EFI/nixos/kernel\ninitrd /EFI/nixos/initrd\noptions init=%s/init %s\n' \
         "${SYS_STORE_PATH}" "${KERNEL_PARAMS}" > "${ENTRY}"
-    sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"
-    rm "${ENTRY}"
+    sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
+    rm -f /tmp/orin-nano-system
 
-    rm -f /tmp/orin-system
+    AGE_PUB="$(pc_host_identity "$MNT" orin-nano)"
+    echo "📋 orin-nano age public key: ${AGE_PUB}"
+    pc_sops_add_and_reencrypt "$AGE_PUB" orin-nano
 
-    _setup_host_identity
+    pc_clevis_bind_tang "$CRYPT"
 
-    echo "🔗 Binding LUKS partition to Tang server for silent boot..."
-    LUKS_DEV=$(sudo cryptsetup status orin_crypt | awk '/device:/ {print $2}')
-    if [ -n "$LUKS_DEV" ]; then
-        echo "Will prompt for LUKS password to authorize Tang binding..."
-        # Note: Binds to nixos-nvme (10.0.0.5), hass-pi (10.0.0.21), and orin-nano (10.0.0.15) using the local advertisement files.
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
-    else
-        echo "⚠️ Could not find mapped device orin_crypt for Tang binding."
-    fi
-
-    echo "🔌 Cleaning up and unmounting..."
-    sudo umount -R /mnt/orin || true
-    sudo vgchange -an vg_orin || true
-    sudo cryptsetup close orin_crypt || true
+    echo "🔌 Unmounting..."
+    sudo umount -R "$MNT" || true
+    sudo vgchange -an "$VG" || true
+    sudo cryptsetup close "$CRYPT" || true
     echo ""
     echo "✅ Orin Nano SSD installation complete!"
-    echo "   Next steps:"
     echo "   1. Commit: just jj::save-all 'feat: orin-nano install'"
     echo "   2. Plug SSD into the Jetson and boot"
     echo "   3. Deploy config: just deployment::deploy-orin"
     echo "   4. Seal TPM2: just deployment::orin-seal"
-
 
 [group("Provisioning")]
 [confirm("🔄 Re-install orin-nano config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS/LVM, rebuilds, and refreshes the closure + bootloader.")]
@@ -483,7 +337,8 @@ orin-install-usb device="/dev/sdb":
 orin-update-usb device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
-    
+    source .just/lib/provision-common.sh
+
     # Prompt for sudo upfront and keep it alive in the background
     sudo -v
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
@@ -517,6 +372,8 @@ orin-update-usb device="/dev/sdb":
     sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTAA64.EFI"
     sudo cp "$(realpath "${SYSTEM}/kernel")" "${ESP}/EFI/nixos/kernel"
     sudo cp "$(realpath "${SYSTEM}/initrd")" "${ESP}/EFI/nixos/initrd"
+    # CRITICAL: embed boot.initrd.secrets or the boot drops to emergency mode.
+    pc_append_initrd_secrets orin-nano "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
     printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
     ENTRY="$(mktemp)"
     printf 'title NixOS\nlinux /EFI/nixos/kernel\ninitrd /EFI/nixos/initrd\noptions init=%s/init %s\n' \
@@ -537,154 +394,78 @@ orin-update-usb device="/dev/sdb":
 pi-install-usb host device="/dev/sdc":
     #!/usr/bin/env bash
     set -euo pipefail
-    
-    # Prompt for sudo upfront and keep it alive in the background
-    sudo -v
-    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+    source .just/lib/provision-common.sh
 
     if [[ "{{host}}" != "core-pi" && "{{host}}" != "hass-pi" ]]; then
-        echo "❌ Invalid host: {{host}}. Must be core-pi or hass-pi."
-        exit 1
+        echo "❌ Invalid host: {{host}}. Must be core-pi or hass-pi."; exit 1
     fi
+    DEV="{{device}}"; HOST="{{host}}"; MNT="/mnt/{{host}}"
+    CRYPT="{{host}}"; CRYPT="${CRYPT%-pi}_crypt"
 
-    echo "🔄 Syncing with origin to ensure closure hashes match the CI cache..."
+    pc_sudo_keepalive
+
+    echo "🔄 Syncing with origin so closure hashes match the CI cache..."
     just -f ../justfile jj::pull-all
 
-    if [ ! -b "{{device}}" ]; then
-        echo "❌ Error: Target {{device}} is not a valid block device! Please check lsblk."
-        exit 1
-    fi
-    echo "📊 Target Device Info ({{device}}):"
-    lsblk "{{device}}" || true
-    echo "----------------------------------------"
+    pc_require_block_device "$DEV"
+    pc_assert_safe_target "$DEV"
+    pc_cache_preflight "$HOST" 'linux-rpi.*-modules'
 
-    CRYPT_NAME="{{host}}"
-    CRYPT_NAME="${CRYPT_NAME%-pi}_crypt"
-    MNT="/mnt/{{host}}"
+    pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
+    pc_wipe "$DEV" 100
 
-    echo "🔍 Pre-flight check: verifying cache coverage for {{host}}..."
-    output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
-    
-    # Extract only the derivations that will be built, ignoring fast-builds or aliases
-    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
-    heavy_builds=$(echo "$build_list" | grep -vE -- '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
-
-    if [ -n "$heavy_builds" ]; then
-        echo "❌ Cache miss detected! Heavy compilations required:"
-        echo "$heavy_builds" | sed 's/^/  /'
-        echo ""
-        echo "💡 To fix this and ensure a 0-build deployment:"
-        echo "   1. Commit any local changes to your git tree (dirty trees change hashes!)."
-        echo "   2. Push to GitHub so CI can build and push to Attic."
-        echo "   3. Run 'just jj::pull-all' to sync to the exact cached commit."
-        echo "   4. Retry this deployment script."
-        exit 1
-    fi
-    echo "✓ Closure fully covered by Attic! Proceeding with deployment."
-
-    echo "🧹 Cleaning up existing mounts and LUKS mappings on {{device}}..."
-    for mp in $(awk '$2 ~ "^'"$MNT"'" {print $2}' /proc/mounts | sort -r); do
-        sudo fuser -km "$mp" 2>/dev/null || true
-        sudo umount "$mp" 2>/dev/null || sudo umount -l "$mp" 2>/dev/null || true
-    done
-    disk_name=$(basename {{device}})
-    for part in /sys/class/block/${disk_name}*/holders/*; do
-        [ -e "$part" ] && sudo cryptsetup close "$(basename "$(readlink "$part")")" 2>/dev/null || true
-    done
-    sudo cryptsetup close "$CRYPT_NAME" 2>/dev/null || true
-    sudo dmsetup remove -f "$CRYPT_NAME" 2>/dev/null || true
-
-    # Forcefully unmount any auto-mounted partitions from the host OS
-    for mp in $(lsblk -rn -o MOUNTPOINT {{device}} | awk 'NF'); do
-        sudo umount "$mp" 2>/dev/null || sudo umount -l "$mp" 2>/dev/null || true
-    done
-
-    # Aggressive wipe of GPT and all partition signatures
-    sudo dd if=/dev/zero of={{device}} bs=1M count=100 status=none || true
-    sudo sgdisk --zap-all {{device}} 2>/dev/null || true
-    for part in $(ls {{device}}* 2>/dev/null | grep -v "^{{device}}$"); do
-        sudo wipefs -a "$part" 2>/dev/null || true
-    done
-    sudo wipefs -a {{device}} 2>/dev/null || true
-    sudo partprobe {{device}} 2>/dev/null || true
-    sudo udevadm settle 2>/dev/null || true
-
-    echo "💿 Wiping and formatting existing SSD via disko (will prompt for NEW LUKS passphrase)..."
+    echo "💿 Formatting via disko (will prompt for a NEW LUKS passphrase)..."
     sudo nix run github:nix-community/disko -- \
         --mode destroy,format,mount \
-        --argstr device {{device}} \
-        --root-mountpoint "$MNT" \
-        ./hosts/{{host}}/disko.nix
+        --argstr device "$DEV" \
+        --root-mountpoint "$MNT" ./hosts/{{host}}/disko.nix
 
-    # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
-    if pgrep -f "nix build .#nixosConfigurations.{{host}}" >/dev/null; then
-        echo "🧹 Terminating stale background builds for {{host}} to free store locks..."
-        pkill -f "nix build .#nixosConfigurations.{{host}}" || true
-        sleep 1
-    fi
+    # Guard: <mnt>/boot MUST be on the target disk, not the workstation's ESP.
+    pc_assert_esp_on_target "$MNT" "$DEV"
 
-    echo "🏗️ Building {{host}} closure (using local emulation for small derivations)..."
-    nix build .#nixosConfigurations.{{host}}.config.system.build.toplevel \
-        --option sandbox false \
-        --option builders "" \
-        --out-link /tmp/{{host}}-system
-
-    SYSTEM="$(readlink /tmp/{{host}}-system)"
-
-    echo "💿 Installing closure (skipping bootloader — done host-side below)..."
-    sudo nixos-install --root "$MNT" --system "${SYSTEM}" --no-root-passwd --no-bootloader
+    SYSTEM="$(pc_build_toplevel "$HOST")"
+    [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ $HOST closure build failed."; exit 1; }
+    pc_install_closure "$MNT" "$SYSTEM"
 
     echo "💾 Installing Pi 5 firmware config to ESP (direct kernel boot)..."
+    pc_assert_esp_on_target "$MNT" "$DEV"   # re-verify right before writing
     ESP="$MNT/boot"
     sudo mkdir -p "${ESP}/nixos"
-    
     KERNEL="$(realpath "${SYSTEM}/kernel")"
     INITRD="$(realpath "${SYSTEM}/initrd")"
     DTBS="$(realpath "${SYSTEM}/dtbs")"
-    
     K_DEST="nixos/$(basename "$KERNEL")"
     I_DEST="nixos/$(basename "$INITRD")"
     D_DEST="nixos/$(basename "$DTBS")-bcm2712-rpi-5-b.dtb"
-    
     sudo cp -fL "$KERNEL" "${ESP}/$K_DEST"
     sudo cp -fL "$INITRD" "${ESP}/$I_DEST"
     sudo cp -fL "$DTBS/broadcom/bcm2712-rpi-5-b.dtb" "${ESP}/$D_DEST"
-    
+    # CRITICAL: embed boot.initrd.secrets (clevis JWE, initrd-sshd key) or the
+    # first boot fails copy-secrets/sshd and drops to emergency mode.
+    pc_append_initrd_secrets "$HOST" "${ESP}/$I_DEST"
     PARAMS="$(cat "${SYSTEM}/kernel-params")"
     echo "init=${SYSTEM}/init $PARAMS" | sudo tee "${ESP}/cmdline.txt" > /dev/null
-    
     printf "[all]\nkernel=%s\ninitramfs %s followkernel\ncmdline=cmdline.txt\narm_64bit=1\nupstream_kernel=1\ndevice_tree=%s\ndtparam=pciex1_gen=3\ndisable_splash=1\nhdmi_force_hotplug=1\nos_check=0\n" \
         "$K_DEST" "$I_DEST" "$D_DEST" | sudo tee "${ESP}/config.txt" > /dev/null
-
     rm -f /tmp/{{host}}-system
-    
-    echo "🔑 Setting up host identity (SSH Keys)..."
+
+    # Host identity: SSH host keys only (Pi's original behavior; no sops re-encrypt here).
+    echo "🔑 Setting up host identity (SSH keys)..."
     persist="$MNT/nix/persist"
     sudo mkdir -p "${persist}/etc/ssh" "${persist}/var/lib/sops/age"
     sudo chmod 700 "${persist}/var/lib/sops/age"
-    
-    # Generate persistent SSH host keys
     if [ ! -f "${persist}/etc/ssh/ssh_host_ed25519_key" ]; then
-        sudo ssh-keygen -t ed25519 -f "${persist}/etc/ssh/ssh_host_ed25519_key" -N "" -C "{{host}}" -q
-        sudo ssh-keygen -t rsa -b 4096 -f "${persist}/etc/ssh/ssh_host_rsa_key" -N "" -C "{{host}}" -q
+        sudo ssh-keygen -t ed25519 -f "${persist}/etc/ssh/ssh_host_ed25519_key" -N "" -C "$HOST" -q
+        sudo ssh-keygen -t rsa -b 4096 -f "${persist}/etc/ssh/ssh_host_rsa_key" -N "" -C "$HOST" -q
         sudo chmod 600 "${persist}/etc/ssh/ssh_host_ed25519_key" "${persist}/etc/ssh/ssh_host_rsa_key"
         sudo chmod 644 "${persist}/etc/ssh/ssh_host_ed25519_key.pub" "${persist}/etc/ssh/ssh_host_rsa_key.pub"
     fi
 
-    echo "🔗 Binding LUKS partition to Tang server for silent boot..."
-    LUKS_DEV=$(sudo cryptsetup status "$CRYPT_NAME" | awk '/device:/ {print $2}')
-    if [ -n "$LUKS_DEV" ]; then
-        echo "Will prompt for LUKS password to authorize Tang binding..."
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}' || echo "⚠️ Failed to bind Tang key! You may need to enter passphrase on boot."
-    else
-        echo "⚠️ Could not find mapped device $CRYPT_NAME for Tang binding."
-    fi
+    pc_clevis_bind_tang "$CRYPT"
 
     echo "🔌 Unmounting..."
-    sudo umount -l "$MNT/boot" 2>/dev/null || true
-    sudo umount -l "$MNT/nix/persist" 2>/dev/null || true
-    sudo umount -l "$MNT/nix" 2>/dev/null || true
-    sudo cryptsetup close "$CRYPT_NAME" || true
+    sudo umount -R "$MNT" 2>/dev/null || true
+    sudo cryptsetup close "$CRYPT" || true
     echo "✅ Installation complete — put the SSD in the Pi and boot."
 
 [group("Provisioning")]
@@ -693,7 +474,8 @@ pi-install-usb host device="/dev/sdc":
 pi-update-usb host device="/dev/sdc":
     #!/usr/bin/env bash
     set -euo pipefail
-    
+    source .just/lib/provision-common.sh
+
     # Prompt for sudo upfront and keep it alive in the background
     sudo -v
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
@@ -795,7 +577,9 @@ pi-update-usb host device="/dev/sdc":
     sudo cp -fL "$KERNEL" "${ESP}/$K_DEST"
     sudo cp -fL "$INITRD" "${ESP}/$I_DEST"
     sudo cp -fL "$DTBS/broadcom/bcm2712-rpi-5-b.dtb" "${ESP}/$D_DEST"
-    
+    # CRITICAL: embed boot.initrd.secrets or the boot drops to emergency mode.
+    pc_append_initrd_secrets "{{host}}" "${ESP}/$I_DEST"
+
     PARAMS="$(cat "${SYSTEM}/kernel-params")"
     echo "init=${SYSTEM}/init $PARAMS" | sudo tee "${ESP}/cmdline.txt" > /dev/null
     

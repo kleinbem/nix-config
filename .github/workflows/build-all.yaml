@@ -208,6 +208,39 @@ jobs:
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake ".#nixosConfigurations.nixos-nvme.config.system.build.toplevel" $NIX_OVERRIDES
 
+      # Orin Nano (Jetson) toplevel: warm the cache so the workstation's
+      # `just apply` / nightly autoUpgrade SUBSTITUTE the jetpack/L4T kernel
+      # instead of emulating an hours-long aarch64 build under qemu locally.
+      # Runs on the NATIVE ubuntu-24.04-arm runner (no emulation), same as the
+      # hass-pi / core-pi toplevels above. BEST-EFFORT for the same reason as
+      # nvme/factory: a jetpack/nixpkgs breakage must warn, never block
+      # `Promote → production`.
+      #
+      # This stays green only while hardware.nvidia-jetpack.firmware.autoUpdate
+      # = false — with firmware ON, the edk2/OP-TEE capsule chain fails to build
+      # (edk2-pytool-extensions → `import pkg_resources`, removed in setuptools
+      # 81+) and fails the toplevel. The KERNEL is a separate derivation, so
+      # even a red toplevel still warms it here (nix-fast-build builds the DAG
+      # node-by-node and pushes each success); add an explicit
+      # `.config.system.build.kernel` target if you want a green kernel signal
+      # independent of firmware state.
+      - name: Build orin-nano toplevel (best-effort)
+        id: orin-build
+        if: matrix.system == 'aarch64-linux' && steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "1"
+            "--systems" "${{ matrix.system }}"
+            "--retries" "2"
+            "--attic-cache" "system"
+          )
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake ".#nixosConfigurations.orin-nano.config.system.build.toplevel" $NIX_OVERRIDES
+
       # Container factory eval is BLOCKING (and runs on PRs, unlike the build
       # below): if the factory toplevel doesn't evaluate, nix-fast-build reports
       # "0 successes", NOTHING is built or pushed, and the container manifest
@@ -293,7 +326,7 @@ jobs:
       # continue-on-error sets `conclusion` to success) and pings the human topic.
       # Itself best-effort — a missing/unreachable ntfy never affects the result.
       - name: Alert best-effort toplevel build failure via ntfy
-        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure')
+        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure' || steps.orin-build.outcome == 'failure')
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
@@ -306,6 +339,7 @@ jobs:
           failed=""
           [ "${{ steps.nvme-build.outcome }}" = "failure" ] && failed="nixos-nvme"
           [ "${{ steps.factory-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }container-factory"
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }orin-nano"
           curl -fsS --max-time 15 \
             -H "Title: best-effort toplevel build failed (${{ matrix.system }})" \
             -H "Tags: warning" \
@@ -314,12 +348,13 @@ jobs:
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       - name: Report Best-Effort Failures to GitHub Summary
-        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure')
+        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure' || steps.orin-build.outcome == 'failure')
         continue-on-error: true
         run: |
           echo "## ⚠️ Best-Effort Builds Failed" >> $GITHUB_STEP_SUMMARY
           echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. These packages were **not pushed to the cache** and your hosts will build them locally:" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.nvme-build.outcome }}" = "failure" ] && echo "- \`nixos-nvme\` toplevel" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel (jetpack/L4T kernel — check firmware.autoUpdate is false)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the detailed logs of the failed steps above to see exactly which package (e.g., Electron) ran out of memory or failed to compile." >> $GITHUB_STEP_SUMMARY

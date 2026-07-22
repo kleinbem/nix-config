@@ -52,11 +52,11 @@ in
 
   networking.hostName = "orin-nano";
 
-  # Pull-deploy; substitute-only — jetpack/l4t must never compile on-device.
-  # Gate the nightly run on cache reachability and cap its runtime.
+  # Orin Nano needs to compile its own kernel/L4T locally.
+  # We do NOT set requireCache = true here, so there is no 30-minute timeout
+  # to brutally kill the build. It will take as long as it needs.
   my.deploy.autoUpgrade = {
     enable = true;
-    requireCache = true;
   };
 
   my.attic-push = {
@@ -133,8 +133,19 @@ in
   # Local debug is text-mode TTY on HDMI (agetty on tty1); remote work is SSH.
   # Need a remote Wayland app occasionally? `waypipe` it from your workstation.
 
-  # Override headless.nix silent boot to keep HDMI output visible
-  boot.kernelParams = lib.mkForce [ "console=tty0" ];
+  # Override headless.nix silent boot to keep console output visible.
+  # HDMI (tty0) is BLACK during initrd on Jetson — the Tegra display driver
+  # (nvidia-drm) only loads AFTER the LUKS unlock, so the passphrase prompt has
+  # no framebuffer to render on. The Tegra debug UART (ttyTCU0, micro-USB debug
+  # port) IS live from firmware, so list it LAST → it becomes the primary
+  # /dev/console: the initrd/LUKS prompt is then visible AND enterable over
+  # serial, while HDMI still shows everything once the system is up. Do NOT drop
+  # ttyTCU0 again (an HDMI-only console makes a stale-JWE unlock failure an
+  # invisible black-screen hang). See docs/ + the clevis-initrd setup.
+  boot.kernelParams = lib.mkForce [
+    "console=tty0"
+    "console=ttyTCU0,115200"
+  ];
 
   system.stateVersion = "25.11";
 }

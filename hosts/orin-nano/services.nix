@@ -49,9 +49,13 @@
         memoryLimit = "5G";
       };
       frigate = {
-        enable = false; # Temporarily disabled for USB provisioning build
+        # Phase-1 scaffold (GPU TensorRT detection + CPU decode). Keep OFF
+        # until the SSD is provisioned AND the Tegra device list + on-device
+        # TensorRT engine are validated on the real Orin (see frigate.nix).
+        enable = false;
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "tensorrt";
+        jetson = true; # Tegra device passthrough; no desktop DRI node / VAAPI
         mediaDir = "/mnt/data/frigate";
         hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
         memoryLimit = "3G"; # leave room for llama-cpp + syncthing + system on 8GB host
@@ -83,8 +87,9 @@
               ];
               detect.enabled = true;
               record.enabled = true;
-              # Hardware acceleration for stream decoding
-              ffmpeg.hwaccel_args = "preset-nvidia-h264";
+              # Phase 1: CPU decode (no hwaccel_args). Do NOT use preset-nvidia-*
+              # (discrete-GPU/nvcodec path) on Tegra. Phase 2 will add a
+              # jetson decode preset once an L4T (nvmpi) ffmpeg is packaged.
             };
           };
 
