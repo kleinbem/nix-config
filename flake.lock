@@ -1439,7 +1439,7 @@
         "narHash": "sha256-juXmeo4O8mUhEzl7IDdQ0XfcTnTngBLqo96wFKRz/IA=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "5e1a5eb499774f62a84a681165f5ffc6039c13be",
+        "rev": "0666319fa11b5e8fb81b9c9ee8321b5c46020f6e",
         "type": "github"
       },
       "original": {
