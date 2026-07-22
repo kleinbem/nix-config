@@ -63,9 +63,9 @@
 
       # Fix pygount build failure in nix-hardware (strict chardet bound)
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
-        (python-final: python-prev: {
+        (_python-final: python-prev: {
           pygount = python-prev.pygount.overrideAttrs (old: {
-            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ python-prev.pythonRelaxDepsHook ];
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ python-prev.pythonRelaxDepsHook ];
             pythonRelaxDeps = [ "chardet" ];
           });
         })
