@@ -95,10 +95,16 @@
         };
       };
 
+      # Local log sink. Kept enabled so fluent-bit (audit.nix) always has a
+      # reachable Loki: with it disabled and central Loki (nasbook) off the
+      # mesh, fluent-bit shipped into a black hole and flooded 1M+ errors +
+      # 135G of journal writes over the days preceding the 2026-07-22 freeze.
+      # memoryLimit bounds it on this memory-constrained workstation.
       loki = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.loki.ip}/24";
         hostDataDir = "/var/lib/images/loki";
+        memoryLimit = "2G";
       };
 
       monitoring = {

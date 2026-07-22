@@ -96,6 +96,55 @@
     fprintd.enable = true;
   };
 
+  # ── Memory-creep logger ───────────────────────────────────────────
+  # The 2026-07-15 and 2026-07-22 freezes were both slow anonymous-memory
+  # creep filling swap over days. journald backlogs and dies once thrashing
+  # starts, so the offender is invisible after the fact. This samples the top
+  # swap/RSS consumers every 10 min at idle priority and logs them to the
+  # journal (tag `mem-creep`), so the next creep is attributable to a process.
+  # Retire once the leaker is identified and fixed.
+  systemd.services.mem-creep-logger = {
+    description = "Log top memory/swap consumers for leak diagnosis";
+    serviceConfig = {
+      Type = "oneshot";
+      Nice = 19;
+      IOSchedulingClass = "idle";
+      SyslogIdentifier = "mem-creep";
+    };
+    path = [
+      pkgs.gawk
+      pkgs.gnugrep
+      pkgs.coreutils
+    ];
+    script = ''
+      grep -E 'MemTotal|MemAvailable|SwapTotal|SwapFree' /proc/meminfo \
+        | tr '\n' ' '
+      echo
+      # Per-process VmSwap + VmRSS from /proc/<pid>/status, top 15 by swap.
+      gawk '
+        FNR == 1 { name = ""; rss = 0; swap = 0 }
+        /^Name:/   { name = $2 }
+        /^VmRSS:/  { rss  = $2 }
+        /^VmSwap:/ { swap = $2 }
+        ENDFILE {
+          if (swap > 0) {
+            pid = FILENAME; gsub(/[^0-9]/, "", pid)
+            printf "%9d KiB swap  %9d KiB rss  %-20s (pid %s)\n", swap, rss, name, pid
+          }
+        }
+      ' /proc/[0-9]*/status 2>/dev/null | sort -rn | head -15
+    '';
+  };
+  systemd.timers.mem-creep-logger = {
+    description = "Sample top memory/swap consumers every 10 minutes";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "5min";
+      OnUnitActiveSec = "10min";
+      AccuracySec = "1min";
+    };
+  };
+
   home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
   home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
 

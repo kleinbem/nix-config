@@ -121,15 +121,23 @@ in
     # Mobile Device Support
     gvfs.enable = true; # MTP/PTP support for file transfer
 
-    # Mitigate kernel panics under extreme memory pressure (AI workloads)
+    # Mitigate kernel panics under extreme memory pressure (AI workloads).
+    #
+    # earlyoom is the *RAM* guard: it kills only when mem-avail AND swap-free
+    # are BOTH below threshold. That AND is why it could NOT save the host from
+    # the 2026-07-22 freeze — swap crept to 0% over ~2.5 days while mem-avail
+    # floated at ~21% (zram makes MemAvailable look healthy), so the condition
+    # never fired and the box thrashed to death. Swap exhaustion is now owned by
+    # systemd-oomd below; earlyoom stays as the fast RAM backstop, bumped to
+    # m=10 so it engages a little sooner once RAM itself is genuinely low.
     earlyoom = {
       enable = true;
-      # m=5: kill at 5% free memory, s=10: kill at 10% free swap
+      # m=10: kill at 10% free memory, s=10: kill at 10% free swap
       # --prefer: browser sub-processes (safe to restart)
       # --ignore: GUI and shell (keep system interactive)
       extraArgs = [
         "-m"
-        "5"
+        "10"
         "-s"
         "10"
         "--prefer"
@@ -138,6 +146,20 @@ in
         "^(gnome-shell|Xwayland|bash|zsh)$"
       ];
     };
+  };
+
+  # systemd-oomd is the *swap* guard, and the real fix for the 2026-07-22
+  # freeze. It was already running but monitored ZERO cgroups (empty
+  # `Swap Monitored CGroups`), so its 90%-swap-used rule had nothing to act on.
+  # Enabling the slices below arms `ManagedOOMSwap=kill` on system + user +
+  # root cgroups: when system swap passes 90% used, oomd kills the single
+  # cgroup hogging the most swap — stopping the multi-day creep long before it
+  # can wedge the machine, regardless of how healthy MemAvailable looks.
+  systemd.oomd = {
+    enable = true;
+    enableRootSlice = true;
+    enableSystemSlice = true;
+    enableUserSlices = true;
   };
 
   # Generic Boot Preferences

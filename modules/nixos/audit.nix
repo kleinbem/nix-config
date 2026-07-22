@@ -29,8 +29,27 @@ in
       "-w /etc/sudoers.d -p wa -k identity"
 
       # --- System Operations ---
-      "-a always,exit -F arch=b64 -S mount -k mounts"
-      "-a always,exit -F arch=b64 -S setsockopt -k nftables_changes" # Simplified for stability
+      # The blanket `-S mount` and `-S setsockopt` forms these replace produced
+      # ~99.8% of all audit volume on this container host (57k mount + 35k
+      # setsockopt records/boot) and captured nothing actionable — 71% of the
+      # setsockopt events were fluent-bit's own socket churn. That flood fed the
+      # journal + fluent-bit pressure behind the 2026-07-22 freeze.
+
+      # Mounts performed by a logged-in user (auid set), not the container /
+      # namespace plumbing (podman overlay mounts, systemd PrivateTmp) that runs
+      # with auid=unset. CIS-standard filter.
+      "-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=unset -k mounts"
+
+      # Firewall changes = opening a netfilter netlink socket (AF_NETLINK=16,
+      # NETLINK_NETFILTER=12) — the mechanism nft / iptables-nft actually use to
+      # alter rules — NOT the blanket setsockopt() call every networked process
+      # makes. The firewall here is iptables-nft (`iptables` -> xtables-nft-multi,
+      # the nf_tables backend) even though networking.nftables.enable=false, so
+      # rule edits go over netlink — this is the correct signal and catches both
+      # the CLI and programmatic changes. It also records
+      # podman/fail2ban rule updates (genuine firewall changes); append
+      # `-F auid>=1000 -F auid!=unset` if you want operator-initiated only.
+      "-a always,exit -F arch=b64 -S socket -F a0=16 -F a2=12 -k nftables_changes"
 
       # --- Runtime Behavioral Monitoring (Worm & Malware Detection) ---
       # 1. Execution from Temporary / Shared Memory Directories
@@ -238,14 +257,27 @@ in
     ];
   };
 
-  # Fluent Bit: Lightweight log shipping to centralized Loki
+  # Fluent Bit: Lightweight log shipping to centralized Loki.
+  #
+  # Hardened after the 2026-07-22 freeze: with the Loki sink unreachable for
+  # days, the systemd input read the whole journal (including fluent-bit's own
+  # failure lines) and buffered unshippable chunks, producing 1M+ error lines
+  # and constant journald memory pressure. The guards below make an unreachable
+  # sink harmless:
+  #   - mem_buf_limit: bound the systemd input; apply backpressure instead of
+  #     growing RAM without limit when Loki is down.
+  #   - grep filter: drop fluent-bit's own unit so its errors are never
+  #     re-ingested and amplified (breaks the self-feeding loop).
+  #   - retry_limit: discard chunks after a few failed flushes rather than
+  #     hoarding them.
+  #   - log_level=error: stop the per-retry warn spam during a sink outage.
   services.fluent-bit = lib.mkForce {
     enable = true;
     settings = {
       service = {
         flush = 1;
         daemon = "off";
-        log_level = "info";
+        log_level = "error";
         http_server = "on";
         http_listen = "0.0.0.0";
         http_port = 2020;
@@ -273,6 +305,16 @@ in
             tag = "systemd_journal";
             read_from_tail = "on";
             strip_underscores = "on";
+            mem_buf_limit = "32M";
+          }
+        ];
+        filters = [
+          {
+            # Break the self-feeding loop: never ship fluent-bit's own logs, so
+            # a dead sink can't amplify its failure lines back into the pipeline.
+            name = "grep";
+            match = "systemd_journal";
+            exclude = "SYSTEMD_UNIT fluent-bit\\.service";
           }
         ];
         outputs = [
@@ -281,6 +323,7 @@ in
             match = "security_audits";
             host = lokiHost;
             port = 3100;
+            retry_limit = "5";
             labels = "job=security-audits, host=${config.networking.hostName}";
             line_format = "json";
           }
@@ -289,6 +332,7 @@ in
             match = "auditd_logs";
             host = lokiHost;
             port = 3100;
+            retry_limit = "5";
             labels = "job=auditd, host=${config.networking.hostName}";
             line_format = "json";
           }
@@ -297,6 +341,7 @@ in
             match = "secret_scans";
             host = lokiHost;
             port = 3100;
+            retry_limit = "5";
             labels = "job=secret-scans, host=${config.networking.hostName}";
             line_format = "json";
           }
@@ -305,6 +350,7 @@ in
             match = "systemd_journal";
             host = lokiHost;
             port = 3100;
+            retry_limit = "5";
             labels = "job=systemd-journal, host=${config.networking.hostName}";
             line_format = "json";
             remove_keys = "SYSLOG_IDENTIFIER,_HOSTNAME";
