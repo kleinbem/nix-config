@@ -301,18 +301,27 @@ pc_host_identity() {
 }
 
 # Add a host age key to nix-secrets/.sops.yaml (after the last age key) and
-# re-encrypt. $1=age-public-key  $2=comment-label
+# re-encrypt. Any prior "# Host Key (<label>)" block for the SAME host is removed
+# first, so re-installing a host replaces its key instead of stacking a dead
+# recipient (a wiped disk's private key is gone — encrypting to it is useless).
+# $1=age-public-key  $2=comment-label
 pc_sops_add_and_reencrypt() {
   local age_pub="$1" label="$2" sops_yaml="../nix-secrets/.sops.yaml"
   if grep -qF "$age_pub" "$sops_yaml"; then
     echo "   Age key already in .sops.yaml — skipping re-encryption."
     return 0
   fi
+  # awk pass: (1) drop an existing "# Host Key (<label>)" comment and the key line
+  # that follows it; (2) collect surviving lines into a compacted array (no gaps
+  # from the removed lines); (3) re-emit, inserting the fresh key after the last
+  # remaining age recipient. index() is a literal match; the trailing ")" anchors
+  # it so label "core" can't match "core-pi".
   awk -v key="$age_pub" -v label="$label" '
-        /^[[:space:]]*- "age1/ { last = NR }
-        { lines[NR] = $0 }
+        index($0, "# Host Key (" label ")") > 0 { skip = 1; next }
+        skip { skip = 0; next }
+        { lines[++n] = $0; if ($0 ~ /^[[:space:]]*- "age1/) last = n }
         END {
-            for (i = 1; i <= NR; i++) {
+            for (i = 1; i <= n; i++) {
                 print lines[i]
                 if (i == last) { print "          # Host Key (" label ")"; print "          - \"" key "\"" }
             }
