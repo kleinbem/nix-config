@@ -121,17 +121,16 @@ pc_cache_preflight() {
 }
 
 # ── teardown ──────────────────────────────────────────────────────────────────
-# Robustly release a target before wiping. Handles the failure mode where a flaky
-# USB enclosure re-enumerates its device letter mid-run (e.g. sdc->sdd), leaving
-# the SAME mountpoint stacked in /proc/mounts over a now-vanished ("ghost") device.
-# $1=mnt  $2=dev  $3=crypt-name  $4=vg-name (optional; "" if LUKS-direct, no LVM)
-pc_cleanup() {
-  local mnt="$1" dev="$2" crypt="$3" vg="${4:-}" u=0 dn p dm h
-  echo "🧹 Cleaning up mounts / device-mapper for $dev ($mnt)..."
-
-  # 1. Unmount everything under $mnt, looping until clean (peels stacked/ghost
-  #    mounts one layer per pass). umount by mountpoint works even when the
-  #    backing device is gone. Hard cap so a genuinely-stuck mount can't spin.
+# Unmount everything mounted at or under $mnt, looping until clean (peels
+# stacked/ghost mounts one layer per pass). CRITICAL: $mnt itself is usually NOT
+# a mountpoint — the host roots (Orin, Pi) are tmpfs, so only children like
+# $mnt/boot, $mnt/nix, $mnt/mnt/* are mounted. `umount -R $mnt` therefore fails
+# with "not mounted" and unmounts nothing; matching /proc/mounts by prefix is
+# what actually releases them. umount-by-mountpoint works even when the backing
+# device is gone. Hard cap so a genuinely-stuck mount can't spin forever.
+# $1=mnt
+pc_unmount_under() {
+  local mnt="$1" u=0 p
   while awk -v m="$mnt" '$2 ~ "^"m"(/|$)"' /proc/mounts | grep -q . && [ "$u" -lt 30 ]; do
     for p in $(awk -v m="$mnt" '$2 ~ "^"m"(/|$)" {print $2}' /proc/mounts | sort -r | uniq); do
       sudo fuser -km "$p" 2>/dev/null || true
@@ -140,6 +139,38 @@ pc_cleanup() {
     u=$((u + 1))
     sudo udevadm settle 2>/dev/null || true
   done
+}
+
+# Non-destructive teardown after a SUCCESSFUL install/update: unmount the tree,
+# deactivate the VG, and close the LUKS container — WITHOUT vgremove/wipe (the VG
+# holds the freshly-installed system). This is what the recipes call at the end;
+# do NOT use pc_cleanup there — it destroys the VG. $1=mnt $2=crypt $3=vg (opt)
+pc_teardown() {
+  local mnt="$1" crypt="$2" vg="${3:-}"
+  echo "🔌 Unmounting $mnt and closing $crypt..."
+  pc_unmount_under "$mnt"
+  sudo sync
+  [ -n "$vg" ] && sudo vgchange -an "$vg" 2>/dev/null || true
+  sudo cryptsetup close "$crypt" 2>/dev/null || true
+  if awk -v m="$mnt" '$2 ~ "^"m"(/|$)"' /proc/mounts | grep -q .; then
+    echo "⚠️  $mnt still has mounts after teardown:" >&2
+    awk -v m="$mnt" '$2 ~ "^"m"(/|$)"' /proc/mounts >&2
+    return 1
+  fi
+  echo "✅ $mnt fully unmounted; $crypt closed."
+}
+
+# Robustly release a target before wiping. Handles the failure mode where a flaky
+# USB enclosure re-enumerates its device letter mid-run (e.g. sdc->sdd), leaving
+# the SAME mountpoint stacked in /proc/mounts over a now-vanished ("ghost") device.
+# DESTRUCTIVE: also vgremoves the VG — pre-wipe use only, never post-install.
+# $1=mnt  $2=dev  $3=crypt-name  $4=vg-name (optional; "" if LUKS-direct, no LVM)
+pc_cleanup() {
+  local mnt="$1" dev="$2" crypt="$3" vg="${4:-}" dn p dm h
+  echo "🧹 Cleaning up mounts / device-mapper for $dev ($mnt)..."
+
+  # 1. Unmount everything under $mnt (see pc_unmount_under for why prefix-match).
+  pc_unmount_under "$mnt"
 
   # 2. Unmount any host-auto-mounted partitions of the device itself.
   for p in $(lsblk -rn -o MOUNTPOINT "$dev" 2>/dev/null | awk 'NF'); do
@@ -169,7 +200,7 @@ pc_cleanup() {
 
   # 5. Report if anything is still mounted (caller may choose to bail).
   if awk -v m="$mnt" '$2 ~ "^"m"(/|$)"' /proc/mounts | grep -q .; then
-    echo "⚠️  $mnt still has mounts after ${u} cleanup passes:" >&2
+    echo "⚠️  $mnt still has mounts after cleanup:" >&2
     awk -v m="$mnt" '$2 ~ "^"m"(/|$)"' /proc/mounts >&2
   fi
 }

@@ -320,10 +320,7 @@ orin-install-usb device="/dev/sdb":
 
     pc_clevis_bind_tang "$CRYPT"
 
-    echo "🔌 Unmounting..."
-    sudo umount -R "$MNT" || true
-    sudo vgchange -an "$VG" || true
-    sudo cryptsetup close "$CRYPT" || true
+    pc_teardown "$MNT" "$CRYPT" "$VG"
     echo ""
     echo "✅ Orin Nano SSD installation complete!"
     echo "   1. Commit: just jj::save-all 'feat: orin-nano install'"
@@ -382,10 +379,7 @@ orin-update-usb device="/dev/sdb":
     rm "${ENTRY}"
     rm -f /tmp/orin-system
 
-    echo "🔌 Unmounting..."
-    sudo umount -R /mnt/orin || true
-    sudo vgchange -an vg_orin || true
-    sudo cryptsetup close orin_crypt || true
+    pc_teardown /mnt/orin orin_crypt vg_orin
     echo "✅ In-place update complete — put the SSD in the Orin, plug in ethernet, and boot."
 
 
@@ -463,9 +457,7 @@ pi-install-usb host device="/dev/sdc":
 
     pc_clevis_bind_tang "$CRYPT"
 
-    echo "🔌 Unmounting..."
-    sudo umount -R "$MNT" 2>/dev/null || true
-    sudo cryptsetup close "$CRYPT" || true
+    pc_teardown "$MNT" "$CRYPT"
     echo "✅ Installation complete — put the SSD in the Pi and boot."
 
 [group("Provisioning")]
