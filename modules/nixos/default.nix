@@ -20,5 +20,6 @@
     ./scripts.nix
     ./services/tang.nix
     ./clevis-initrd.nix
+    ./initrd-fan.nix
   ];
 }

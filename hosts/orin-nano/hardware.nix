@@ -103,11 +103,23 @@ in
         "sd_mod"
         # TPM — T234 uses CRB interface, not tpm-tis (x86 only)
         "tpm_crb"
+        # PWM fan (my.boot.initrd-fan): controller then hwmon driver, so the fan
+        # can be spun up while the machine waits at the LUKS/Tang prompt. This
+        # list is mkOverride 0, which would otherwise drop the module's own
+        # availableKernelModules addition — so they must be listed here.
+        "pwm-tegra"
+        "pwm-fan"
       ];
 
     };
     swraid.enable = false;
   };
+
+  # Spin the fan during the initrd for pre-OS thermal safety: nvfancontrol only
+  # starts once the full system boots, so while the Orin waits at the LUKS/Tang
+  # prompt (or drops to an initrd emergency shell) the fan is otherwise off.
+  # The pwm-tegra + pwm-fan modules are in boot.initrd.availableKernelModules above.
+  my.boot.initrd-fan.enable = true;
 
   # --- Stateless Root (Impermanence) ---
   fileSystems = {

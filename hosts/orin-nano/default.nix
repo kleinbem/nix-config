@@ -27,6 +27,7 @@ in
     "${self}/modules/nixos/ananicy.nix" # process scheduler
     "${self}/modules/nixos/scripts.nix" # verify-system helpers
     "${self}/modules/nixos/clevis-initrd.nix" # Tang/clevis LUKS unlock
+    "${self}/modules/nixos/initrd-fan.nix" # spin fan during initrd (pre-OS thermal safety)
 
     "${self}/users/martin/nixos.nix"
     # Hardware support from our local hardware flake
