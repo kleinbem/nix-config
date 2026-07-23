@@ -113,6 +113,13 @@ in
 
     };
     swraid.enable = false;
+
+    # Headless node — no audio. The Tegra audio graph card ("sound" DT node)
+    # fails to register with -16 (EBUSY) on every boot, spamming the kernel log.
+    # Blacklist the card driver so it never probes (other tegra audio modules
+    # stay loadable but register nothing). Purely to keep dmesg / `systemctl
+    # --failed` clean.
+    blacklistedKernelModules = [ "snd_soc_tegra_audio_graph_card" ];
   };
 
   # Spin the fan during the initrd for pre-OS thermal safety: nvfancontrol only
