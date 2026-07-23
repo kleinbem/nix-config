@@ -143,13 +143,20 @@ in
   # serial, while HDMI still shows everything once the system is up. Do NOT drop
   # ttyTCU0 again (an HDMI-only console makes a stale-JWE unlock failure an
   # invisible black-screen hang). See docs/ + the clevis-initrd setup.
+  # This mkForce replaces the WHOLE kernelParams list, so anything NixOS or a
+  # module would otherwise inject MUST be re-listed here or it is silently
+  # dropped:
+  #   - root=fstab       : systemd stage-1 mounts the tmpfs root via fstab;
+  #                        without it → gpt-auto-root timeout → emergency mode.
+  #   - systemd.machine_id: /etc/machine-id is NOT persisted under systemd-initrd
+  #                        (persistence.nix), so without a fixed id here systemd
+  #                        regenerates a random one every boot ("Detected first
+  #                        boot" each time). Pin it. (nixos-nvme does the same.)
+  # console=ttyTCU0 stays LAST so it is the primary /dev/console for the LUKS
+  # prompt over the Tegra debug UART — do not reorder the console= entries.
   boot.kernelParams = lib.mkForce [
-    # root=fstab tells systemd stage-1 to mount the (tmpfs) root via the fstab
-    # mechanism. NixOS injects this automatically for systemd-initrd, but the
-    # mkForce below replaces the whole list — so it MUST be re-listed here or
-    # systemd-initrd falls back to gpt-auto-root, finds no root-GUID partition,
-    # times out, and drops to emergency mode. (nixos-nvme carries the same flag.)
     "root=fstab"
+    "systemd.machine_id=9fef3c9be6eb4bf29456f7be28ec4d6d"
     "console=tty0"
     "console=ttyTCU0,115200"
   ];

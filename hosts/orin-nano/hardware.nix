@@ -119,7 +119,13 @@ in
   # starts once the full system boots, so while the Orin waits at the LUKS/Tang
   # prompt (or drops to an initrd emergency shell) the fan is otherwise off.
   # The pwm-tegra + pwm-fan modules are in boot.initrd.availableKernelModules above.
-  my.boot.initrd-fan.enable = true;
+  # 160/255 (~63%): ample airflow for an idle SoC during the short initrd window,
+  # noticeably quieter than full blast. nvfancontrol takes over at switch-root.
+  # Bump toward 255 if a genuinely-stuck boot (minutes at the prompt) ever runs hot.
+  my.boot.initrd-fan = {
+    enable = true;
+    pwm = 160;
+  };
 
   # --- Stateless Root (Impermanence) ---
   fileSystems = {

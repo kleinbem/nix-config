@@ -66,9 +66,12 @@ in
       "-a always,exit -F arch=b64 -S sethostname -S setdomainname -k sethostname"
 
       # 4. Kernel Module Loading / Rootkit Behavior
-      "-w /sbin/insmod -p x -k kmod_change"
-      "-w /sbin/rmmod -p x -k kmod_change"
-      "-w /sbin/modprobe -p x -k kmod_change"
+      # Audited at the syscall level rather than by watching /sbin/{insmod,rmmod,
+      # modprobe}: those paths do not exist on NixOS (kmod lives in the Nix store),
+      # so the `-w` watches loaded with ENOENT ("No such file or directory") and
+      # aborted the ENTIRE ruleset — silently under nixos-rebuild (unit warn only),
+      # fatally under colmena (activation exit 4). init_module/delete_module catches
+      # the actual kernel load/unload regardless of which binary triggered it.
       "-a always,exit -F arch=b64 -S init_module -S delete_module -k kmod_change"
 
       # 5. Process Injection / Ptrace (Process Hollowing)
