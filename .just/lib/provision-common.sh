@@ -92,7 +92,7 @@ pc_require_block_device() {
 pc_cache_preflight() {
   local host="$1" extra="${2:-}"
   shift $(($# >= 2 ? 2 : $#))
-  local output build_list heavy exclude
+  local output build_list heavy exclude leaves
   if [ "${PC_ALLOW_BUILD:-0}" = "1" ]; then
     echo "⏭️  PC_ALLOW_BUILD=1 — skipping cache pre-flight for $host (local build permitted)."
     return 0
@@ -100,7 +100,14 @@ pc_cache_preflight() {
   echo "🔍 Pre-flight: verifying Attic cache coverage for $host..."
   output=$(nix build --no-link --dry-run ".#nixosConfigurations.$host.config.system.build.toplevel" "$@" 2>&1) || true
   build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
-  exclude="-(nixos-system-|boot\.json${extra:+|$extra})\.drv\$"
+  # Trivial config-assembly leaves that ALWAYS build locally for a host not in
+  # CI's cache matrix (Orin, routers are excluded from build-all on purpose):
+  # text/symlink generators that finish in seconds under emulation, never a
+  # compiler. Excluding them lets the pre-flight pass a genuinely-cached closure
+  # while still hard-stopping on a real package/kernel miss — those are named
+  # <pkg>-<version>.drv, not etc/activate/*-units/unit-*/*.{rules,yaml,conf,…}.
+  leaves='nixos-system-|boot\.json|etc|activate|(system|user)-units|unit-.*|.*\.(rules|service|yaml|conf|toml|json)'
+  exclude="-(${leaves}${extra:+|$extra})\.drv\$"
   heavy=$(echo "$build_list" | grep -vE -- "$exclude" || true)
   if [ -n "$heavy" ]; then
     echo "❌ Cache miss — these would compile locally:"
