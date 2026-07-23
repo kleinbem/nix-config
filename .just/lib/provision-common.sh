@@ -287,7 +287,7 @@ pc_sops_add_and_reencrypt() {
             }
         }' "$sops_yaml" >/tmp/sops_updated.yaml && mv /tmp/sops_updated.yaml "$sops_yaml"
   echo "🔐 Re-encrypting secrets (YubiKey touch may be required)..."
-  (cd ./nix-secrets && sops updatekeys --yes secrets.yaml)
+  (cd ../nix-secrets && sops updatekeys --yes secrets.yaml)
   echo "✅ Secrets updated — remember to commit nix-secrets + nix-config."
 }
 
