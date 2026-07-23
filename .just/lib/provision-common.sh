@@ -26,7 +26,7 @@ pc_sudo_keepalive() {
 # ── safety guards (workstation shares disko partlabels with the target SSDs) ───
 # Refuse to touch a non-USB disk, or one backing THIS host's / or /boot.
 pc_assert_safe_target() {
-  local dev="$1" d rootpk bootpk tran
+  local dev="$1" d rootpk bootpk tran rootsrc bootsrc
   [ -b "$dev" ] || {
     echo "❌ SAFETY ABORT: $dev is not a block device."
     exit 1
@@ -37,8 +37,17 @@ pc_assert_safe_target() {
     exit 1
   fi
   d=$(basename "$dev")
-  rootpk=$(lsblk -no PKNAME "$(findmnt -no SOURCE / 2>/dev/null)" 2>/dev/null | head -1)
-  bootpk=$(lsblk -no PKNAME "$(findmnt -no SOURCE /boot 2>/dev/null)" 2>/dev/null | head -1)
+  # Resolve backing disks for / and /boot. A tmpfs / overlay root reports a
+  # non-block SOURCE ("none"), on which `lsblk PKNAME` exits 32 — under the
+  # caller's pipefail+set -e that would abort the whole recipe. Only look up
+  # PKNAME when the source is a real block device; a rootless / has no disk to
+  # collide with, so an empty rootpk is the correct "no match".
+  rootsrc=$(findmnt -no SOURCE / 2>/dev/null || true)
+  bootsrc=$(findmnt -no SOURCE /boot 2>/dev/null || true)
+  rootpk=""
+  bootpk=""
+  [ -b "$rootsrc" ] && rootpk=$(lsblk -no PKNAME "$rootsrc" 2>/dev/null | head -1)
+  [ -b "$bootsrc" ] && bootpk=$(lsblk -no PKNAME "$bootsrc" 2>/dev/null | head -1)
   if [ "$d" = "$rootpk" ] || [ "$d" = "$bootpk" ]; then
     echo "❌ SAFETY ABORT: $dev backs THIS host's / ($rootpk) or /boot ($bootpk)."
     exit 1
