@@ -95,16 +95,17 @@
         };
       };
 
-      # Local log sink. Kept enabled so fluent-bit (audit.nix) always has a
-      # reachable Loki: with it disabled and central Loki (nasbook) off the
-      # mesh, fluent-bit shipped into a black hole and flooded 1M+ errors +
-      # 135G of journal writes over the days preceding the 2026-07-22 freeze.
-      # memoryLimit bounds it on this memory-constrained workstation.
+      # Loki's home is nasbook: its inventory IP (10.85.47.116) is on nasbook's
+      # .47 container subnet, which this host routes to 10.0.0.30 (nasbook), not
+      # to cbr0 (.46). Enabling it here does NOT give fluent-bit a reachable
+      # sink — the container comes up with that off-subnet IP and the host
+      # routes traffic away to (currently-off) nasbook. Kept disabled; the
+      # fluent-bit hardening in audit.nix makes the dead sink harmless, and
+      # shipping resumes fleet-wide on its own once nasbook is back.
       loki = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.loki.ip}/24";
         hostDataDir = "/var/lib/images/loki";
-        memoryLimit = "2G";
       };
 
       monitoring = {
