@@ -77,10 +77,10 @@ deploy-orin:
 
 [group("Provisioning")]
 [confirm("💿 Re-install full orin-nano config onto the bootstrapped Orin? Builds natively on the device (no cross-compilation). This reformats the SSD.")]
-[doc("Requires bootstrap running and SSH key working. Builds aarch64 closure on the Orin itself, reformats disk with full LUKS+LVM+impermanence layout. LUKS passphrase is prompted interactively. Seal TPM2 afterwards with: just deployment::orin-seal")]
+[doc("Requires bootstrap running and SSH key working. Builds aarch64 closure on the Orin itself, reformats disk with full LUKS+LVM+impermanence layout. LUKS passphrase is prompted interactively.")]
 orin-promote host="root@orin-nano-bootstrap.local":
     @echo "🔨 Building and installing full orin-nano config (native aarch64 build on the Orin)..."
-    @echo "   LUKS passphrase will be prompted interactively. Seal TPM2 afterwards with: just deployment::orin-seal"
+    @echo "   LUKS passphrase will be prompted interactively."
     nix run github:nix-community/nixos-anywhere -- \
         --flake .#orin-nano \
         --build-on-remote \
@@ -158,6 +158,12 @@ push-cache +args:
 # Note: SSH-based diagnostic recipes (ping/tegrastats/logs/shell) live in
 # `orin.just` alongside the on-device ones. Run `just --list orin` to see them.
 
+# INERT as of 2026-07-23 — do not run. This Jetson exposes no /dev/tpm0 (see
+# hosts/orin-nano/disko.nix: tpm2-device was removed from the LUKS config), so
+# the tpm2_pcrseal below has no device to seal against. Nothing consumes the
+# output either, and the path is wrong (Orin persist is /nix/persist, not
+# /persist). LUKS unlock is FIDO2 + Tang/clevis. Kept as a placeholder for if
+# TPM sealing is ever wired up (hardware.nix does load the tpm_crb module).
 [group("Provisioning")]
 [confirm("🔐 Seal the TPM key on the Orin Nano? This can only be done once after boot.")]
 orin-seal:
@@ -323,10 +329,12 @@ orin-install-usb device="/dev/sdb":
     pc_teardown "$MNT" "$CRYPT" "$VG"
     echo ""
     echo "✅ Orin Nano SSD installation complete!"
-    echo "   1. Commit: just jj::save-all 'feat: orin-nano install'"
-    echo "   2. Plug SSD into the Jetson and boot"
-    echo "   3. Deploy config: just deployment::deploy-orin"
-    echo "   4. Seal TPM2: just deployment::orin-seal"
+    echo "   1. Commit secrets + config:  just jj::save-all 'feat: orin-nano install'"
+    echo "   2. Plug SSD into the Jetson, connect ethernet, and boot"
+    echo "   3. Load the re-encrypted secrets onto the running host:"
+    echo "        just deployment::deploy-orin   (colmena apply — the installed"
+    echo "        closure predates the sops re-encryption, so its runtime secrets"
+    echo "        won't decrypt until this first deploy rebuilds against them)"
 
 [group("Provisioning")]
 [confirm("🔄 Re-install orin-nano config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS/LVM, rebuilds, and refreshes the closure + bootloader.")]
