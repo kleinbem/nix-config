@@ -143,6 +143,12 @@ in
   # ttyTCU0 again (an HDMI-only console makes a stale-JWE unlock failure an
   # invisible black-screen hang). See docs/ + the clevis-initrd setup.
   boot.kernelParams = lib.mkForce [
+    # root=fstab tells systemd stage-1 to mount the (tmpfs) root via the fstab
+    # mechanism. NixOS injects this automatically for systemd-initrd, but the
+    # mkForce below replaces the whole list — so it MUST be re-listed here or
+    # systemd-initrd falls back to gpt-auto-root, finds no root-GUID partition,
+    # times out, and drops to emergency mode. (nixos-nvme carries the same flag.)
+    "root=fstab"
     "console=tty0"
     "console=ttyTCU0,115200"
   ];
