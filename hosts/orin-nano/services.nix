@@ -16,6 +16,12 @@
     };
   };
 
+  # RTSP creds for Frigate — decrypted only when Frigate is enabled, so this
+  # disabled scaffold never requires frigate_rtsp_env to exist in secrets.yaml
+  # yet (create it before flipping enable = true; see the container preset's
+  # environmentFile option). Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
+  sops.secrets.frigate_rtsp_env = lib.mkIf config.my.containers.frigate.enable { };
+
   # ─── AI Edge Services ──────────────────────────────────────
   my = {
     boot.clevis-initrd = {
@@ -56,9 +62,33 @@
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "tensorrt";
         jetson = true; # Tegra device passthrough; no desktop DRI node / VAAPI
+        # Validated on the real Orin 2026-07-23 (JetPack 6 / r36). The preset's
+        # default list has 4 nodes THIS board does not expose (nvhost-ctrl,
+        # -nvdec, -vic, -nvjpg) — binding a missing node fails container start —
+        # and on r36 the iGPU/CUDA lives under /dev/nvgpu/igpu0/*, not the legacy
+        # nvhost-*-gpu nodes alone. This is the present GPU-compute set; the exact
+        # minimal set for TensorRT gets confirmed on the first test-enable.
+        jetsonDevices = [
+          "/dev/nvhost-ctrl-gpu"
+          "/dev/nvhost-gpu"
+          "/dev/nvhost-as-gpu"
+          "/dev/nvhost-prof-gpu"
+          "/dev/nvmap"
+          "/dev/nvgpu/igpu0/as"
+          "/dev/nvgpu/igpu0/channel"
+          "/dev/nvgpu/igpu0/ctrl"
+          "/dev/nvgpu/igpu0/power"
+          "/dev/nvgpu/igpu0/sched"
+          "/dev/nvgpu/igpu0/tsg"
+        ];
         mediaDir = "/mnt/data/frigate";
         hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
         memoryLimit = "3G"; # leave room for llama-cpp + syncthing + system on 8GB host
+        # Camera RTSP creds: sops secret → env-file → Frigate {VAR} substitution.
+        # Literal path (= sops default /run/secrets/<name>) rather than
+        # config.sops.secrets.….path, so nothing references the secret while
+        # Frigate is OFF — the secret itself is declared below, gated on enable.
+        environmentFile = "/run/secrets/frigate_rtsp_env";
         innerConfig.services.frigate.settings = {
           # --- MQTT is required for Home Assistant integration ---
           mqtt = {
