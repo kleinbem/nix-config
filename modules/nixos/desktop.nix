@@ -97,6 +97,11 @@ in
         gnomeExtensions.user-themes
         gnomeExtensions.quick-settings-tweaker
         gnomeExtensions.custom-command-list # Top-bar shortcuts to `just` recipes
+        gnomeExtensions.bluetooth-quick-connect # Connect paired BT devices from Quick Settings
+        gnomeExtensions.quick-settings-audio-panel # Per-app volume + output switcher in QS
+        gnomeExtensions.rounded-window-corners-reborn # Completes the blur-my-shell aesthetic
+        gnomeExtensions.weather-oclock # Weather beside the clock (surfaces gnome-weather)
+        gnomeExtensions.media-controls # MPRIS controls in the panel (amberol/browser)
 
         # Modern GNOME Apps & Utilities (Premium Suite)
         ptyxis # Container-aware terminal
@@ -118,6 +123,45 @@ in
         gnome-font-viewer
         gnome-logs
         smile # Modern Emoji Picker
+
+        # Utilities (homelab / privacy / imaging)
+        impression # GUI USB/SD image writer (Orin/OpenWrt installer flashing)
+        metadata-cleaner # Strip EXIF/metadata before sharing (privacy)
+        switcheroo # Batch image format/resize converter (GTK4)
+        dialect # Translation front-end (self-hostable backend)
+        eyedropper # Color picker / palette builder
+
+        # Screenshot annotation. Satty needs an input image; wire a GNOME
+        # Wayland region-capture → satty pipeline (bound to <Super><Shift>s
+        # in home-manager gnome.nix). Uses the GNOME Shell Screenshot D-Bus
+        # API, which works under Wayland where grim/slurp do not.
+        satty
+        (writeShellApplication {
+          name = "satty-screenshot";
+          runtimeInputs = [
+            glib # gdbus
+            coreutils # mktemp, tr
+            satty
+            wl-clipboard # wl-copy for --copy-command
+          ];
+          text = ''
+            tmp=$(mktemp --suffix=.png)
+            trap 'rm -f "$tmp"' EXIT
+            read -r x y w h < <(
+              gdbus call --session \
+                --dest org.gnome.Shell.Screenshot \
+                --object-path /org/gnome/Shell/Screenshot \
+                --method org.gnome.Shell.Screenshot.SelectArea \
+                | tr -d '(),'
+            )
+            gdbus call --session \
+              --dest org.gnome.Shell.Screenshot \
+              --object-path /org/gnome/Shell/Screenshot \
+              --method org.gnome.Shell.Screenshot.ScreenshotArea \
+              "$x" "$y" "$w" "$h" false "$tmp" >/dev/null
+            satty --filename "$tmp" --copy-command wl-copy --early-exit
+          '';
+        })
 
         # Password Management
         # Installed as a plain package (NOT firejail-wrapped): the launcher,

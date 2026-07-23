@@ -108,6 +108,11 @@
           "user-theme@gnome-shell-extensions.gcampax.github.com"
           "quick-settings-tweaks@qwreey"
           "custom-command-list@storageb.github.com"
+          "bluetooth-quick-connect@bjarosze.gmail.com"
+          "quick-settings-audio-panel@rayzeq.github.io"
+          "rounded-window-corners@fxgn"
+          "weatheroclock@CleoMenezesJr.github.io"
+          "mediacontrols@cliffniff.github.com"
         ];
         favorite-apps = [
           "firefox-standard.desktop"
@@ -276,6 +281,12 @@
             "network-server-symbolic"
             true
           ];
+          command7 = lib.hm.gvariant.mkTuple [
+            "NetBird Status"
+            (term "netbird status --detail")
+            "network-vpn-symbolic"
+            true
+          ];
         };
 
       "org/gnome/shell/extensions/vitals" = {
@@ -394,7 +405,14 @@
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-alpaca/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile-alt/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-satty/"
         ];
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-satty" = {
+        binding = "<Super><Shift>s";
+        command = "satty-screenshot";
+        name = "Screenshot + annotate (Satty)";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-terminal" = {
