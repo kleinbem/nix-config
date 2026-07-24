@@ -51,7 +51,8 @@
       llama-cpp = {
         enable = true; # Serving Gemma via llama.cpp (CUDA)
         ip = "10.85.46.126/24";
-        modelPath = "/mnt/models/gemma-2-9b-it-q4_k_m.gguf"; # Updated to Gemma as requested
+        modelPath = "/mnt/models/gemma-3-4b-it-Q4_K_M.gguf"; # Gemma 3 4B — fits 8GB unified mem with headroom
+        contextSize = 8192; # KV cache is q4_0-quantized + flash-attn, so cheap even at 8k
         memoryLimit = "5G";
       };
       frigate = {
