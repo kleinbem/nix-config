@@ -183,6 +183,26 @@ in
           IdentityFile = "~/.ssh/id_ed25519_sk";
           IdentityAgent = "none";
         };
+        # orin-nano (Jetson Orin Nano, AI edge node). Same FIDO2-SK-via-agent
+        # failure as the Pis ("agent refused operation") — bypass the agent so the
+        # key signs. Match the IP too, so `ssh …10.0.0.15` gets it, not just the alias.
+        "orin-nano 10.0.0.15" = {
+          Hostname = "10.0.0.15";
+          User = "martin";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/cm-%r@%h:%p";
+          ControlPersist = "1h";
+        };
+        # initrd LUKS-unlock stage for orin-nano (manual fallback; Tang auto-unlocks)
+        "orin-nano-initrd" = {
+          Hostname = "10.0.0.15";
+          Port = 2222;
+          User = "root";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+        };
       };
     };
   };

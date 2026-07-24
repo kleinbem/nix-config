@@ -11,6 +11,7 @@
     ./security
     ./snapper.nix
     ./printing.nix
+    ./threed-printing.nix
     ./firejail.nix
     ./ai-hardening.nix
     ./ananicy.nix

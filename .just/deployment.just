@@ -109,7 +109,39 @@ deploy-edge:
 push-cache +args:
     #!/usr/bin/env bash
     set -euo pipefail
-    
+
+    # Attic is a SPARSE OVERLAY on the public caches (see the design note in
+    # nix-presets/containers/attic.nix): it must hold ONLY paths no public cache
+    # has. attic's own upstream filter covers cache.nixos.org ALONE, so cachix
+    # paths (nix-community/devenv/cuda/anduril) leak in. We instead filter every
+    # closure member by its on-disk signatures: a path substitutable from any
+    # cache this flake trusts carries that cache's signature (key names below
+    # mirror trusted-public-keys in nix-config/modules/nixos/core.nix). We push
+    # only the unsigned remainder with --no-closure. This is a LOCAL, instant
+    # check (no per-path network probe) that keeps Attic small and cuts the RPi5
+    # ingest load behind the `os error 110` push timeouts.
+    UPSTREAM_KEYS='cache.nixos.org-1 nix-community.cachix.org-1 devenv.cachix.org-1 cuda-maintainers.cachix.org-1 anduril.cachix.org-1'
+    push_filtered() {
+        local root="$1" label="$2"
+        local to_push
+        # Emit each closure member whose narinfo has NO signature from an
+        # upstream key. Locally-built paths (no sig at all) are pushed too, so
+        # Attic is authoritative for exactly what this host runs.
+        to_push=$(nix path-info -r --json "$root" 2>/dev/null | jq -r --arg keys "$UPSTREAM_KEYS" '
+            ($keys | split(" ")) as $uk
+            | to_entries[]
+            | select((.value.signatures // []) | any(. as $s | $uk | any(. as $k | ($s | startswith($k + ":")))) | not)
+            | .key')
+        if [ -z "$to_push" ]; then
+            echo "  ✓ $label: fully covered upstream — nothing to push."
+            return 0
+        fi
+        echo "  ☁️ $label: pushing $(printf '%s\n' "$to_push" | wc -l) non-upstream path(s) to Attic..."
+        printf '%s\n' "$to_push" | \
+            nix run nixpkgs#attic-client -- push --no-closure --stdin system -j 2 \
+            || echo "⚠️ Warning: Failed to push $label to Attic"
+    }
+
     IS_REMOTE=0
     HOSTS=()
     for arg in {{args}}; do
@@ -132,7 +164,7 @@ push-cache +args:
             for node in $HOSTLIST; do
                 echo "  Pushing $node..."
                 OUT_PATH=$(nix build .#nixosConfigurations.$node.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null)
-                nix run nixpkgs#attic-client -- push system "$OUT_PATH" -j 2 || echo "⚠️ Warning: Failed to push $node to Attic"
+                push_filtered "$OUT_PATH" "$node"
             done
         else
             echo "☁️ Pushing $h to Attic cache..."
@@ -149,8 +181,8 @@ push-cache +args:
                 # Ensure it is realized locally if not remote
                 nix build .#nixosConfigurations.$h.config.system.build.toplevel --impure --no-link >/dev/null 2>&1 || true
             fi
-            
-            nix run nixpkgs#attic-client -- push system "$OUT_PATH" -j 2 || echo "⚠️ Warning: Failed to push $h to Attic"
+
+            push_filtered "$OUT_PATH" "$h"
         fi
     done
     echo "✅ Cache push complete."

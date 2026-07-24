@@ -72,6 +72,7 @@
     monitoring.node.enable = true;
     services.tang.enable = true;
     deploy.autoUpgrade.enable = true;
+    services.threeDPrinting.enable = true; # Bambu Lab A1 mini: slicers + LAN discovery
     desktop = {
       gnome.enable = true;
       claude.enable = true;

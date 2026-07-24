@@ -233,6 +233,7 @@ in
     nixfmt
     deadnix
     statix
+    manix # Fast terminal search for Nix/NixOS/HM options
 
     android-tools # ADB & Fastboot
     lm_sensors # Hardware heat sensors
