@@ -42,7 +42,7 @@
         center-new-windows = true;
         workspaces-only-on-primary = true;
         # Free left-Super from triggering the overview; it's used as a modifier
-        # for workspace and pano shortcuts, so accidental taps are annoying.
+        # for workspace and clipboard shortcuts, so accidental taps are annoying.
         # Right-Super still opens the overview, and <Super>a is bound below.
         overlay-key = "Super_R";
         experimental-features = [
@@ -98,7 +98,7 @@
           "just-perfection-desktop@just-perfection"
           "Vitals@corecoding.com"
           "caffeine@patapon.info"
-          "pano@elhan.io"
+          "clipboard-indicator@tudmotu.com"
           "gsconnect@andyholmes.github.io"
           "space-bar@luchrioh"
           "search-light@icedman.github.com"
@@ -183,15 +183,15 @@
         workspace-margin = 4;
       };
 
-      "org/gnome/shell/extensions/pano" = {
-        global-shortcut = [ "<Super>v" ];
-        incognito-shortcut = [ "<Super><Shift>v" ];
-        paste-on-select = true;
-        send-notification-on-copy = false;
-        play-audio-on-copy = false;
-        history-length = 200;
-        link-previews = true;
-        sync-primary = false;
+      # pano was removed from nixpkgs (upstream unmaintained, 2026-07); fall back
+      # to clipboard-indicator, which is still packaged.
+      "org/gnome/shell/extensions/clipboard-indicator" = {
+        toggle-menu = [ "<Super>v" ];
+        clear-history = [ "<Super><Shift>v" ];
+        paste-on-selection = true;
+        notify-on-copy = false;
+        history-size = 200;
+        move-item-first = true;
       };
 
       "org/gnome/shell/extensions/search-light" = {

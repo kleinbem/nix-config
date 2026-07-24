@@ -86,14 +86,13 @@ in
         gnomeExtensions.just-perfection
         gnomeExtensions.vitals
         gnomeExtensions.caffeine
-        gnomeExtensions.clipboard-indicator
+        gnomeExtensions.clipboard-indicator # Clipboard manager (pano removed upstream 2026-07)
         gnomeExtensions.gsconnect
         gnomeExtensions.space-bar
         gnomeExtensions.search-light
         gnomeExtensions.removable-drive-menu
         gnomeExtensions.tiling-assistant
         gnomeExtensions.logo-menu
-        gnomeExtensions.pano # Rich clipboard manager (replaces clipboard-indicator)
         gnomeExtensions.user-themes
         gnomeExtensions.quick-settings-tweaker
         gnomeExtensions.custom-command-list # Top-bar shortcuts to `just` recipes
