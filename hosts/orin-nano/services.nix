@@ -49,7 +49,7 @@
         memoryLimit = "6G";
       };
       llama-cpp = {
-        enable = false; # Temporarily disabled: nixpkgs.perl eval error in 26.05 containers — re-enable after first boot
+        enable = true; # Serving Gemma via llama.cpp (CUDA)
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-2-9b-it-q4_k_m.gguf"; # Updated to Gemma as requested
         memoryLimit = "5G";
