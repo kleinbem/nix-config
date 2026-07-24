@@ -31,7 +31,10 @@ in
       # CAD / modelling
       openscad-unstable # Script-based CAD (nightly; stable openscad is the stale 2021.01)
       blender # Mesh modelling / sculpting
-      freecad-wayland # Parametric CAD (native-Wayland build for GNOME/Ozone)
+      # freecad dropped 2026-07-24: unused (reuse existing models, not authoring
+      # complex parametric parts) and freecad-wayland is an uncached variant → a
+      # 1-2h FreeCAD source compile in CI every nixpkgs bump. Stock `freecad`
+      # (cached) is the swap-in if GUI parametric CAD is ever needed.
     ];
 
     # mDNS so the slicer can resolve the printer by name on the LAN.
