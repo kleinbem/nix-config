@@ -177,6 +177,9 @@ in
         ip = "${myInventory.network.nodes.attic.ip}/24";
         hostDataDir = "/var/lib/images/attic";
         secretsFile = config.sops.templates."attic.env".path;
+        # atticd marks superseded chunks deleted but never unlinks them here;
+        # weekly reaper reclaims the dead files (Sun 05:30, post-autoUpgrade).
+        autoReap.enable = true;
       };
 
       monitoring = {

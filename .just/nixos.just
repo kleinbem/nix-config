@@ -242,3 +242,17 @@ attic-gc:
       echo \"── storage AFTER ──\";  du -sh /var/lib/atticd/storage 2>/dev/null || true
     '"
     echo "✅ Attic GC sweep complete."
+
+# On-demand run of the orphaned-chunk reaper (the same host service the weekly
+# `autoReap` timer fires). atticd's retention GC marks superseded chunks deleted
+# but never unlinks the files on core-pi; this reclaims them (+VACUUMs the DB).
+# Safe: refuses if any deleted-marked chunk is still referenced, and defers if a
+# push is writing chunks. `systemctl start` blocks until the oneshot finishes.
+[group("System")]
+attic-reap:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🧹 Running attic-reap on core-pi (reclaims orphaned chunks + VACUUM)…"
+    ssh core-pi "sudo systemctl start attic-reap.service"
+    ssh core-pi "sudo journalctl -u attic-reap.service -n 15 --no-pager --output cat"
+    echo "✅ attic-reap complete."
