@@ -41,6 +41,9 @@ jobs:
           - system: aarch64-linux
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
+    permissions:
+      statuses: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -67,6 +70,38 @@ jobs:
           attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
           configure-auto-gc: 'true'
           free-disk-space: 'true'
+
+      - name: Initialize Commit Statuses for best-effort builds
+        if: steps.cache.outputs.push_cache == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SYSTEM="${{ matrix.system }}"
+          SHA="${{ github.sha }}"
+          
+          # Initialize container-factory on both systems
+          gh api "repos/${{ github.repository }}/statuses/$SHA" \
+            -f state="pending" \
+            -f context="CI/container-factory ($SYSTEM)" \
+            -f description="Container factory build is pending" \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            
+          if [ "$SYSTEM" = "x86_64-linux" ]; then
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state="pending" \
+              -f context="CI/nixos-nvme" \
+              -f description="Workstation toplevel build is pending" \
+              -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          
+          if [ "$SYSTEM" = "aarch64-linux" ]; then
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state="pending" \
+              -f context="CI/orin-nano" \
+              -f description="Orin Nano toplevel build is pending" \
+              -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
 
       - name: Run nix-fast-build
         run: |
@@ -358,3 +393,45 @@ jobs:
           [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel (jetpack/L4T kernel — check firmware.autoUpdate is false)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the detailed logs of the failed steps above to see exactly which package (e.g., Electron) ran out of memory or failed to compile." >> $GITHUB_STEP_SUMMARY
+
+      - name: Update Commit Statuses for best-effort builds
+        if: always() && steps.cache.outputs.push_cache == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SYSTEM="${{ matrix.system }}"
+          SHA="${{ github.sha }}"
+          
+          update_status() {
+            local context="$1"
+            local outcome="$2"
+            local desc_prefix="$3"
+            local state="success"
+            local desc="${desc_prefix} succeeded"
+            
+            if [ "$outcome" = "failure" ]; then
+              state="failure"
+              desc="${desc_prefix} failed"
+            elif [ "$outcome" = "skipped" ] || [ -z "$outcome" ]; then
+              state="error"
+              desc="${desc_prefix} was skipped or errored"
+            fi
+            
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state="$state" \
+              -f context="CI/$context" \
+              -f description="$desc" \
+              -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+
+          # Update container-factory status
+          update_status "container-factory ($SYSTEM)" "${{ steps.factory-build.outcome }}" "Container factory build"
+
+          if [ "$SYSTEM" = "x86_64-linux" ]; then
+            update_status "nixos-nvme" "${{ steps.nvme-build.outcome }}" "Workstation toplevel build"
+          fi
+
+          if [ "$SYSTEM" = "aarch64-linux" ]; then
+            update_status "orin-nano" "${{ steps.orin-build.outcome }}" "Orin Nano toplevel build"
+          fi

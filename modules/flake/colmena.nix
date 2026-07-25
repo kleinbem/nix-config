@@ -27,7 +27,7 @@ in
       deployment = {
         targetHost = hostMeta.orin-nano.ip;
         targetUser = "martin";
-        buildOnTarget = false; # Evaluates on workstation, fetches from Attic, pushes via SSH
+        buildOnTarget = true; # Build natively on the Orin Nano itself to avoid slow QEMU cross-compilation on the workstation
         inherit (hostMeta.orin-nano) tags;
       };
       imports = [ ../../hosts/orin-nano/default.nix ];
