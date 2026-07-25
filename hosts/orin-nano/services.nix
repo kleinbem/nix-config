@@ -40,6 +40,16 @@
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";
 
+    services.container-updater = {
+      enable = true;
+      containers =
+        let
+          excludeFromUpdater = [ ];
+          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+        in
+        lib.subtractLists excludeFromUpdater allEnabled;
+    };
+
     containers = {
       ollama = {
         enable = false; # Switched to llama-cpp for better memory efficiency

@@ -30,6 +30,7 @@ in
     "${self}/modules/nixos/initrd-fan.nix" # spin fan during initrd (pre-OS thermal safety)
 
     "${self}/users/martin/nixos.nix"
+    "${self}/modules/nixos/services/container-updater.nix"
     # Hardware support from our local hardware flake
     inputs.nix-hardware.nixosModules.orin-nano
     # Presets
