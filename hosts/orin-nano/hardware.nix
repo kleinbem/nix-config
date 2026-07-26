@@ -15,13 +15,11 @@ in
   hardware = {
     graphics.enable = true;
     enableRedistributableFirmware = true;
-    # Firmware auto-update disabled: jetpack-nixos rev 441616c builds edk2/OP-TEE
-    # capsules, and edk2-pytool-extensions dies on `import pkg_resources`
-    # (removed in setuptools 81+). Not cached anywhere (Orin excluded from CI),
-    # so it's a hard local build failure. Device firmware is already flashed;
-    # re-enable once jetpack-nixos/nixpkgs restores pkg_resources.
+    # Firmware auto-updates are now safe because we pull the pre-built firmware
+    # capsules directly from the anduril cachix, bypassing the pkg_resources bug
+    # in nixos-unstable.
     nvidia-jetpack = {
-      firmware.autoUpdate = false;
+      firmware.autoUpdate = true;
       super = true; # Enable 25W "Super Mode" for Orin Nano Plus
       maxClock = true; # Always run at maximum clock speed
     };

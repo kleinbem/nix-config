@@ -75,9 +75,14 @@ in
     };
     overlays = [
       (final: _prev: {
+        # Force the entire Jetpack stack to use the pre-built packages from the anduril cachix.
+        # We override all versions so that if Jetpack 7 becomes the default for Orin,
+        # it will automatically switch without triggering a source rebuild.
+        nvidia-jetpack5 = inputs.jetpack-nixos.legacyPackages.${final.system}.nvidia-jetpack5;
+        nvidia-jetpack6 = inputs.jetpack-nixos.legacyPackages.${final.system}.nvidia-jetpack6;
+        nvidia-jetpack7 = inputs.jetpack-nixos.legacyPackages.${final.system}.nvidia-jetpack7;
+
         cudaPackages = final.cudaPackages_12_6;
-        # Temporary fix for jetpack-nixos capsule updates failing on unstable
-        bzip2_1_1 = final.bzip2;
       })
     ];
   };
