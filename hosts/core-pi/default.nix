@@ -106,7 +106,6 @@ in
         ip = "${myInventory.network.nodes.ntfy.ip}/24";
       };
 
-
       ente = {
         enable = true;
         ip = "${myInventory.network.nodes.ente.ip}/24";
