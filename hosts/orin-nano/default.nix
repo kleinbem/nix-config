@@ -74,7 +74,8 @@ in
       allowUnsupportedSystem = true;
     };
     overlays = [
-      (final: prev:
+      (
+        final: prev:
         let
           jpPkgs = inputs.jetpack-nixos.legacyPackages.${prev.system};
           # Dynamically extract all Jetpack versions (nvidia-jetpack5, 6, 7, etc.)
