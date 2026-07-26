@@ -8,6 +8,9 @@
     # Use a persistent host key for decryption
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
 
+    # Don't fail the build in CI validating against the dummy secrets.yaml
+    validateSopsFiles = false;
+
     # We only need the user password for now
     secrets = {
       martin_password_hash = {
