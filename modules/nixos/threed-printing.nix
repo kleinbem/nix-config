@@ -32,7 +32,7 @@ in
       # CAD / modelling
       openscad-unstable # Script-based CAD (nightly; stable openscad is the stale 2021.01)
       blender # Mesh modelling / sculpting
-      inputs.nixpkgs-stable.legacyPackages.${pkgs.system}.freecad # Stable cached variant
+      freecad # Stock cached variant
     ];
 
     # mDNS so the slicer can resolve the printer by name on the LAN.
