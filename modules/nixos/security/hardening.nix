@@ -32,7 +32,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    apparmor-profiles # Pre-built profiles for ClamAV, Dnsmasq, etc.
+    # apparmor-profiles # Pre-built profiles for ClamAV, Dnsmasq, etc. (Temporarily disabled due to build failures)
   ];
 
   security = {
