@@ -19,7 +19,7 @@ in
     # capsules directly from the anduril cachix, bypassing the pkg_resources bug
     # in nixos-unstable.
     nvidia-jetpack = {
-      firmware.autoUpdate = true;
+      firmware.autoUpdate = false;
       super = true; # Enable 25W "Super Mode" for Orin Nano Plus
       maxClock = true; # Always run at maximum clock speed
     };
