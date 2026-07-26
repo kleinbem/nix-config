@@ -22,8 +22,8 @@
       # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so
       # nightly upgrades substitute the CI-built closure instead of compiling
       # jetpack/l4t packages on-device.
-      attic_pull_token = { };
-      attic_push_token = { };
+      # attic_pull_token = { };
+      # attic_push_token = { };
       github_pat = {
         owner = "martin";
       };
