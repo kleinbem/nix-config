@@ -74,18 +74,22 @@ in
       allowUnsupportedSystem = true;
     };
     overlays = [
-      (final: _prev:
+      (final: prev:
         let
-          jpPkgs = inputs.jetpack-nixos.legacyPackages.${final.system};
+          jpPkgs = inputs.jetpack-nixos.legacyPackages.${prev.system};
           # Dynamically extract all Jetpack versions (nvidia-jetpack5, 6, 7, etc.)
           # so that when the default majorVersion bumps, it auto-switches safely.
-          jetpackOverrides = lib.filterAttrs (n: _v: lib.hasPrefix "nvidia-jetpack" n) jpPkgs;
+          # We extract names from the overlay directly to avoid infinite recursion
+          # caused by traversing the full Nixpkgs package set.
+          jpOverlayAttrNames = builtins.attrNames (inputs.jetpack-nixos.overlays.default final prev);
+          jetpackNames = lib.filter (lib.hasPrefix "nvidia-jetpack") jpOverlayAttrNames;
+          jetpackOverrides = lib.genAttrs jetpackNames (name: jpPkgs.${name});
         in
         jetpackOverrides
         // {
           cudaPackages = final.cudaPackages_12_6;
         }
-      })
+      )
     ];
   };
 
