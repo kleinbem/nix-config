@@ -14,6 +14,10 @@
     ./disko.nix
     ./secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
+    inputs.nix-presets.nixosModules.open-webui
+    inputs.nix-presets.nixosModules.agent-zero
+    inputs.nix-presets.nixosModules.openclaw
+    inputs.nix-presets.nixosModules.anythingllm
   ];
 
   networking = {
@@ -51,6 +55,36 @@
         enableBluetooth = true; # For BLE sensors
         memoryLimit = "4G";
       };
+
+      open-webui = {
+        enable = true;
+        ip = "${myInventory.network.nodes.open-webui.ip}/24";
+        hostDataDir = "/var/lib/open-webui";
+        memoryLimit = "2G";
+      };
+
+      openclaw = {
+        enable = true;
+        ip = "${myInventory.network.nodes.openclaw.ip}/24";
+        hostDataDir = "/var/lib/openclaw";
+        memoryLimit = "1G";
+      };
+
+      agent-zero = {
+        enable = true;
+        ip = "${myInventory.network.nodes.agent-zero.ip}/24";
+        hostDataDir = "/var/lib/agent-zero";
+        memoryLimit = "1G";
+      };
+
+      anythingllm = {
+        enable = true;
+        ip = "${myInventory.network.nodes.anythingllm.ip}/24";
+        hostDataDir = "/var/lib/anythingllm";
+        llmUrl = "https://litellm.internal";
+        modelName = "google/gemma-2b"; # Aligned with Orin Nano backend in ai.nix
+        memoryLimit = "2G";
+      };
     };
 
     # ─── Standalone container auto-update (ADR 002) ─────────────
@@ -87,6 +121,10 @@
     directories = [
       "/var/lib/home-assistant"
       "/var/lib/homarr"
+      "/var/lib/open-webui"
+      "/var/lib/openclaw"
+      "/var/lib/agent-zero"
+      "/var/lib/anythingllm"
       # Native Services. DynamicUser services keep real state in
       # /var/lib/private/<name> (systemd makes /var/lib/<name> a symlink to it),
       # so we must persist the private path — bind-mounting onto the symlink

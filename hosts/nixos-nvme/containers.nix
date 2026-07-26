@@ -131,7 +131,7 @@
       };
 
       netdata = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.netdata.ip}/24";
       };
 

@@ -24,10 +24,6 @@ in
     "${self}/modules/nixos/services/container-updater.nix"
     ./disko.nix
     ./secrets.nix
-    inputs.nix-presets.nixosModules.open-webui
-    inputs.nix-presets.nixosModules.agent-zero
-    inputs.nix-presets.nixosModules.openclaw
-    inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.cups
@@ -110,35 +106,6 @@ in
         ip = "${myInventory.network.nodes.ntfy.ip}/24";
       };
 
-      open-webui = {
-        enable = true;
-        ip = "${myInventory.network.nodes.open-webui.ip}/24";
-        hostDataDir = "/var/lib/open-webui";
-        memoryLimit = "2G";
-      };
-
-      openclaw = {
-        enable = true;
-        ip = "${myInventory.network.nodes.openclaw.ip}/24";
-        hostDataDir = "/var/lib/openclaw";
-        memoryLimit = "1G";
-      };
-
-      agent-zero = {
-        enable = true;
-        ip = "${myInventory.network.nodes.agent-zero.ip}/24";
-        hostDataDir = "/var/lib/agent-zero";
-        memoryLimit = "1G";
-      };
-
-      anythingllm = {
-        enable = true;
-        ip = "${myInventory.network.nodes.anythingllm.ip}/24";
-        hostDataDir = "/var/lib/anythingllm";
-        llmUrl = "https://litellm.internal";
-        modelName = "google/gemma-2b"; # Aligned with Orin Nano backend in ai.nix
-        memoryLimit = "2G";
-      };
 
       ente = {
         enable = true;
@@ -230,10 +197,6 @@ in
   # ─── Persistence ─────────────────────────────────────────────
   environment.persistence."/nix/persist" = {
     directories = [
-      "/var/lib/open-webui"
-      "/var/lib/openclaw"
-      "/var/lib/agent-zero"
-      "/var/lib/anythingllm"
       "/var/lib/ente"
       "/var/lib/monitoring"
     ];

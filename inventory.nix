@@ -229,7 +229,7 @@
         };
       };
       open-webui = {
-        ip = "10.85.48.102"; # Core-Pi
+        ip = "10.85.49.102"; # Hass-Pi
         port = 8080;
         externalPort = 443;
         domain = "chat.kleinbem.dev";
@@ -307,7 +307,7 @@
         };
       };
       openclaw = {
-        ip = "10.85.48.112"; # Core-Pi
+        ip = "10.85.49.112"; # Hass-Pi
         meta = {
           name = "OpenClaw";
           category = "AI Engineering";
@@ -316,7 +316,7 @@
         };
       };
       agent-zero = {
-        ip = "10.85.48.113"; # Core-Pi
+        ip = "10.85.49.113"; # Hass-Pi
         port = 50001;
         externalPort = 50001;
         mtls = true;
@@ -515,7 +515,7 @@
         };
       };
       anythingllm = {
-        ip = "10.85.48.132"; # Moved to Core-Pi subnet
+        ip = "10.85.49.132"; # Moved to Hass-Pi subnet
         port = 3001;
         meta = {
           name = "AnythingLLM";
