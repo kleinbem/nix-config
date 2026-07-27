@@ -23,6 +23,7 @@ attic-coverage host="$(hostname)":
 apply *args="":
     #!/usr/bin/env bash
     set -euo pipefail
+    set -- {{args}}
 
     TARGET_HOST="$(hostname)"
     MODE="switch"
