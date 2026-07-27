@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 52  
-**Consumer files scanned:** 13
+**Declarations indexed:** 55  
+**Consumer files scanned:** 14
 
 ---
 
@@ -18,6 +18,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
+
+## `my.attic-push`
+
+### `my.attic-push`
+
+- **Declared:** `nix-presets/attic-push.nix:12`
+- **Sub-options:** `enable`, `tokenFile`
+- **Consumed by:** `host:orin-nano`
 
 ## `my.atticPull`
 
@@ -35,6 +43,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `jabra.buttons.enable`, `jabra.buttons.smartButtonCommand`, `jabra.preferred`
 - **Consumed by:** `host:nixos-nvme`
 
+## `my.boot`
+
+### `my.boot.initrd-fan`
+
+- **Declared:** `nix-config/modules/nixos/initrd-fan.nix:61`
+- **Sub-options:** `enable`, `kernelModules`, `pwm`
+- **Consumed by:** `host:orin-nano`
+
 ## `my.containers`
 
 ### `my.containers.agent-team`
@@ -48,18 +64,18 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/agent-zero.nix:14`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
-- **Consumed by:** `host:core-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:hass-pi`, `host:nixos-nvme`
 
 ### `my.containers.anythingllm`
 
 - **Declared:** `nix-presets/containers/anythingllm.nix:12`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `llmUrl`, `memoryLimit`, `modelName`
-- **Consumed by:** `host:core-pi`
+- **Consumed by:** `host:hass-pi`
 
 ### `my.containers.attic`
 
-- **Declared:** `nix-presets/containers/attic.nix:13`
-- **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`
+- **Declared:** `nix-presets/containers/attic.nix:14`
+- **Sub-options:** `autoReap.enable`, `autoReap.schedule`, `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.authelia`
@@ -124,8 +140,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.frigate`
 
-- **Declared:** `nix-presets/containers/frigate.nix:12`
-- **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `hostDataDir`, `innerConfig`, `ip`, `mediaDir`, `memoryLimit`
+- **Declared:** `nix-presets/containers/frigate.nix:32`
+- **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `environmentFile`, `hostDataDir`, `innerConfig`, `ip`, `jetson`, `jetsonDevices`, `mediaDir`, `memoryLimit`
 - **Consumed by:** `host:orin-nano`
 
 ### `my.containers.github-runner`
@@ -160,9 +176,9 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.llama-cpp`
 
-- **Declared:** `nix-presets/containers/llama-cpp.nix:20`
+- **Declared:** `nix-presets/containers/llama-cpp.nix:23`
 - **Sub-options:** `contextSize`, `enable`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`
-- **Consumed by:** `host:container-factory`, `host:orin-nano`
+- **Consumed by:** `host:orin-nano`
 
 ### `my.containers.loki`
 
@@ -216,13 +232,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/open-webui.nix:14`
 - **Sub-options:** `enable`, `enableAudio`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
-- **Consumed by:** `host:core-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:hass-pi`, `host:nixos-nvme`
 
 ### `my.containers.openclaw`
 
 - **Declared:** `nix-presets/containers/openclaw.nix:14`
 - **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `enableAudio`, `enableUSB`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `vllmUrl`
-- **Consumed by:** `host:core-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:hass-pi`, `host:nixos-nvme`
 
 ### `my.containers.paperless`
 
@@ -312,7 +328,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/container-updater.nix:17`
 - **Sub-options:** `containers`, `enable`, `manifestUrl`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.printing`
 
@@ -331,6 +347,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/services/tang.nix:11`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+
+### `my.services.threeDPrinting`
+
+- **Declared:** `nix-config/modules/nixos/threed-printing.nix:21`
+- **Sub-options:** `enable`
+- **Consumed by:** `host:nixos-nvme`
 
 ### `my.services.timesync`
 

@@ -40,8 +40,8 @@ apply *args="":
     If HOST is provided, applies to that remote device using nixos-rebuild.
 
     Mode flags (mutually exclusive):
-      (default)         Build the current config and activate it.
-      --boot            Activate AND set the new generation as boot default.
+      (default)         Build the current config, activate it immediately, AND set as boot default.
+      --boot            Build and set as boot default ONLY (activates on next reboot).
       --rollback        Roll back to the previous system generation.
 
     Modifiers (composable with each other and with mode flags):

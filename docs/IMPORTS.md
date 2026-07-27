@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 8  
-**Distinct imports:** 74
+**Distinct imports:** 76
 
 ---
 
@@ -21,13 +21,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `core-pi`
 
 - **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:ntfy`, `nix-presets:open-webui`, `nix-presets:openclaw`
+- **Presets:** `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:github-runner`, `nix-presets:monitoring`, `nix-presets:ntfy`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `hass-pi`
 
 - **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:home-assistant`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:home-assistant`, `nix-presets:open-webui`, `nix-presets:openclaw`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `nasbook`
@@ -47,8 +47,8 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `orin-nano`
 
-- **Modules:** `modules/nixos/ai-hardening.nix`, `modules/nixos/ananicy.nix`, `modules/nixos/audit.nix`, `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/kernel.nix`, `modules/nixos/persistence.nix`, `modules/nixos/scripts.nix`, `modules/nixos/users.nix`
-- **Presets:** `nix-presets:frigate`, `nix-presets:llama-cpp`, `nix-presets:monitoring-node`, `nix-presets:ollama`, `nix-presets:syncthing`
+- **Modules:** `modules/nixos/ai-hardening.nix`, `modules/nixos/ananicy.nix`, `modules/nixos/audit.nix`, `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/initrd-fan.nix`, `modules/nixos/kernel.nix`, `modules/nixos/persistence.nix`, `modules/nixos/scripts.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/users.nix`
+- **Presets:** `nix-presets:attic-push`, `nix-presets:frigate`, `nix-presets:llama-cpp`, `nix-presets:monitoring-node`, `nix-presets:ollama`, `nix-presets:syncthing`
 - **Hardware:** `nix-hardware:orin-nano`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`
@@ -91,12 +91,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/disko.nix` ← nixos-nvme
 - `modules/nixos/headless.nix` ← nasbook, orin-nano
 - `modules/nixos/hosts.nix` ← nasbook, nixos-nvme, orin-nano
+- `modules/nixos/initrd-fan.nix` ← orin-nano
 - `modules/nixos/kernel.nix` ← orin-nano
 - `modules/nixos/persistence.nix` ← nixos-nvme, orin-nano
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← core-pi
-- `modules/nixos/services/container-updater.nix` ← core-pi, hass-pi, nixos-nvme
+- `modules/nixos/services/container-updater.nix` ← core-pi, hass-pi, nixos-nvme, orin-nano
 - `modules/nixos/services/github-runner.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano
 - `modules/nixos/workstation.nix` ← nixos-nvme
@@ -104,10 +105,11 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-hardware:nixos-nvme` ← nixos-nvme
 - `nix-hardware:orin-nano` ← orin-nano, orin-nano-bootstrap
 - `nix-presets:agent-team` ← container-factory, nasbook
-- `nix-presets:agent-zero` ← container-factory, core-pi
+- `nix-presets:agent-zero` ← container-factory, hass-pi
 - `nix-presets:all` ← nixos-nvme
-- `nix-presets:anythingllm` ← container-factory, core-pi
+- `nix-presets:anythingllm` ← container-factory, hass-pi
 - `nix-presets:attic` ← container-factory, core-pi
+- `nix-presets:attic-push` ← orin-nano
 - `nix-presets:authelia` ← container-factory, core-pi
 - `nix-presets:backup` ← container-factory, nasbook
 - `nix-presets:caddy` ← container-factory, core-pi
@@ -131,8 +133,8 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:netdata` ← container-factory
 - `nix-presets:ntfy` ← container-factory, core-pi
 - `nix-presets:ollama` ← container-factory, orin-nano
-- `nix-presets:open-webui` ← container-factory, core-pi
-- `nix-presets:openclaw` ← container-factory, core-pi
+- `nix-presets:open-webui` ← container-factory, hass-pi
+- `nix-presets:openclaw` ← container-factory, hass-pi
 - `nix-presets:paperless` ← container-factory, nasbook
 - `nix-presets:playground` ← container-factory
 - `nix-presets:qdrant` ← container-factory, nasbook

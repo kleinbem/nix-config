@@ -10,7 +10,7 @@
 
 ## 🖥️ Managed Hosts
 
-- **ap-upstairs** (`10.0.0.2`, openwrt) — physical, ap, lxc-host
+- **ap-upstairs** (`10.0.0.2`, openwrt) — physical, ap
 - **core-gateway** (`10.0.0.1`, openwrt) — physical, gateway, core
 - **core-pi** (`10.0.0.22`, aarch64-linux, ssh) — raspberry-pi, central
 - **hass-pi** (`10.0.0.21`, aarch64-linux, ssh) — raspberry-pi, home-assistant
@@ -23,9 +23,7 @@
 
 ### core-pi
 
-- 🕵️ **Agent Zero** (`agent-zero`) `10.85.48.113:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
-- 🧠 **AnythingLLM** (`anythingllm`) `10.85.48.132:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
-- 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:13]_
+- 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
 - 🔐 **Authelia SSO** (`authelia`) `10.85.48.123:9091` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:18]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
@@ -34,12 +32,14 @@
 - 🔐 **Ente Auth** (`ente`) `10.85.48.133:8080` → `auth.kleinbem.dev` — E2E Encrypted 2FA & Authenticator Server. _[src: nix-presets/containers/ente.nix:13]_
 - 📊 **Monitoring** (`monitoring`) `10.85.48.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
-- 🤖 **Open WebUI** (`open-webui`) `10.85.48.102:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
-- 🐾 **OpenClaw** (`openclaw`) `10.85.48.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
 ### hass-pi
 
+- 🕵️ **Agent Zero** (`agent-zero`) `10.85.49.113:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
+- 🧠 **AnythingLLM** (`anythingllm`) `10.85.49.132:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
 - 🏠 **Home Assistant** (`home-assistant`) `10.85.49.10:8123` — Smart Home Automation. _[src: nix-presets/containers/home-assistant.nix:12]_
+- 🤖 **Open WebUI** (`open-webui`) `10.85.49.102:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
+- 🐾 **OpenClaw** (`openclaw`) `10.85.49.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
 ### nasbook
 
@@ -52,11 +52,13 @@
 
 ### nixos-nvme
 
+- 📊 **Monitoring** (`monitoring`) `10.85.48.114:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
+- 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### orin-nano
 
-- 📹 **Frigate NVR** (`frigate`) `10.85.46.130:5000` — NVR with AI object detection (NVIDIA TensorRT). _[src: nix-presets/containers/frigate.nix:12]_
+- 📦 **llama-cpp** (`llama-cpp`) _[src: nix-presets/containers/llama-cpp.nix:23]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### Declared but not currently enabled on any host
@@ -66,14 +68,13 @@
 - `code-server` — Code Server _[src: nix-presets/containers/code-server.nix:14]_
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
+- `frigate` — Frigate NVR _[src: nix-presets/containers/frigate.nix:32]_
 - `garage` — Garage S3
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:42]_
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:12]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:13]_
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
-- `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:20]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:13]_
-- `netdata` — Netdata _[src: nix-presets/containers/netdata.nix:13]_
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
 - `odoo` _[src: nix-presets/containers/odoo.nix:14]_
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
