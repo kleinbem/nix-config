@@ -82,33 +82,27 @@ jobs:
             eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
           done
 
-      - name: Commit lockfile changes via GitHub API (verified signature)
+      - name: Create Pull Request
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
         run: |
           cd nix-config
-          # Branch protection on main requires verified signatures. CI runners
-          # cannot use the YubiKey, so we push via the GitHub Contents API —
-          # commits created through the API get a web-flow signature that
-          # satisfies the protection rule.
           if git diff --quiet flake.lock; then
             echo "flake.lock unchanged — nothing to commit."
             exit 0
           fi
-
-          CURRENT_SHA=$(gh api "repos/${GH_REPO}/contents/flake.lock?ref=${BRANCH}" --jq .sha)
-
-          # Build the request body via stdin — passing the base64 content as a
-          # CLI arg via `-f content=…` blows past ARG_MAX for non-trivial
-          # lockfiles.
-          base64 -w0 flake.lock > /tmp/flake-lock.b64
-          jq -n \
-            --arg msg "chore: update flake.lock (auto)" \
-            --arg branch "${BRANCH}" \
-            --arg sha "${CURRENT_SHA}" \
-            --rawfile content /tmp/flake-lock.b64 \
-            '{message: $msg, branch: $branch, sha: $sha, content: $content}' \
-          | gh api --method PUT "repos/${GH_REPO}/contents/flake.lock" --input -
+          
+          BRANCH_NAME="update-flake-lock"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH_NAME"
+          git add flake.lock
+          git commit -m "chore: update flake.lock (auto)"
+          git push -f origin "$BRANCH_NAME"
+          
+          gh pr create \
+            --title "chore: update flake.lock" \
+            --body "Automated lockfile update. Please wait for CI to finish warming the cache before merging!" \
+            --head "$BRANCH_NAME" \
+            --base main || true
