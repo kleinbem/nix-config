@@ -10,6 +10,7 @@
   services.ananicy = {
     enable = true;
     package = pkgs.ananicy-cpp;
+    rulesProvider = pkgs.ananicy-cpp;
     settings.apply_cgroups = false;
     extraRules = [
       # Prioritize the GNOME desktop environment
