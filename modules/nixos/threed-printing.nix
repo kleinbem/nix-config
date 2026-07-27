@@ -32,6 +32,11 @@ in
       openscad-unstable # Script-based CAD (nightly; stable openscad is the stale 2021.01)
       blender # Mesh modelling / sculpting
       stable.freecad # Stock cached variant pinned to stable
+
+      # 3D Utilities, Viewers & Mesh Repair
+      f3d # Fast terminal/GUI 3D file viewer (STL, STEP, 3MF, OBJ) + desktop thumbnailer
+      meshlab # Advanced mesh processing, polygon reduction & manifold repair
+      assimp # Command-line 3D format converter (STEP <-> STL <-> OBJ <-> GLTF)
     ];
 
     # mDNS so the slicer can resolve the printer by name on the LAN.
