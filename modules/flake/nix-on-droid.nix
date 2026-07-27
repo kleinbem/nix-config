@@ -9,9 +9,7 @@ in
         system = "aarch64-linux";
         config = {
           allowUnfree = true;
-          permittedInsecurePackages = [
-            "olivetin-2025.11.25"
-          ];
+          allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "olivetin";
         };
         overlays = [ inputs.nix-on-droid.overlays.default ];
       };

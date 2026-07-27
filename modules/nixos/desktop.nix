@@ -24,7 +24,7 @@ in
       # the desktop host (never blanket host-level — see modules/flake/hosts.nix).
       # bitwarden-desktop pins electron_39; when it bumps, eval trips here and
       # forces a conscious re-ack rather than silently carrying an old Electron.
-      nixpkgs.config.permittedInsecurePackages = [ "electron-39.8.10" ];
+      nixpkgs.config.allowInsecurePredicate = pkg: builtins.elem (lib.getName pkg) [ "electron" ];
 
       services = {
         displayManager.gdm = {
