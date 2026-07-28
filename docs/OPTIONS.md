@@ -318,7 +318,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.pwa`
 
-- **Declared:** `nix-presets/pwa.nix:55`
+- **Declared:** `nix-presets/pwa.nix:61`
 - **Sub-options:** `apps`, `defaultFlags`, `enable`, `package`
 - **Consumed by:** `preset:nix-presets/desktop.nix`
 
