@@ -7,6 +7,7 @@ set working-directory := ".."
 [group("System")]
 switch auth="" mode="" *args="":
     #!/usr/bin/env bash
+    set -euo pipefail
     ACTUAL_MODE="{{mode}}"
     if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
         sudo -v
@@ -28,9 +29,11 @@ switch auth="" mode="" *args="":
 
 [group("System")]
 build *args="":
-    @echo "🔨 Building System Configuration..."
-    @{{LOCK_CMD}} {{TIMER}} nh os build . -- {{OVERRIDES}} {{args}}
-    @just deployment::push-cache "$(hostname)"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🔨 Building System Configuration..."
+    {{LOCK_CMD}} {{TIMER}} nh os build . -- {{OVERRIDES}} {{args}}
+    just deployment::push-cache "$(hostname)"
 
 [group("Development")]
 dry-run *args="":
@@ -39,14 +42,17 @@ dry-run *args="":
 
 [group("Development")]
 test *args="":
-    @echo "🚦 Testing System Configuration (Activation Only)..."
-    @{{LOCK_CMD}} {{TIMER}} nh os test . -- {{OVERRIDES}} {{args}}
-    @just deployment::push-cache "$(hostname)"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🚦 Testing System Configuration (Activation Only)..."
+    {{LOCK_CMD}} {{TIMER}} nh os test . -- {{OVERRIDES}} {{args}}
+    just deployment::push-cache "$(hostname)"
 
 [group("System")]
 [confirm("👢 This will make the current configuration the DEFAULT at boot. Proceed?")]
 switch-boot auth="":
     #!/usr/bin/env bash
+    set -euo pipefail
     if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
         sudo -v
         while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
@@ -60,6 +66,7 @@ switch-boot auth="":
 [group("Debugging")]
 switch-debug auth="" mode="" *args="":
     #!/usr/bin/env bash
+    set -euo pipefail
     ACTUAL_MODE="{{mode}}"
     if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
         sudo -v
@@ -82,6 +89,7 @@ switch-debug auth="" mode="" *args="":
 [group("Debugging")]
 switch-boot-debug auth="":
     #!/usr/bin/env bash
+    set -euo pipefail
     if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
         sudo -v
         while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
