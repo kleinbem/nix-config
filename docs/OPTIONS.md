@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 55  
-**Consumer files scanned:** 14
+**Declarations indexed:** 56  
+**Consumer files scanned:** 15
 
 ---
 
@@ -313,6 +313,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/nixosModules/monitoring-node.nix:6`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+
+## `my.pwa`
+
+### `my.pwa`
+
+- **Declared:** `nix-presets/pwa.nix:55`
+- **Sub-options:** `apps`, `defaultFlags`, `enable`, `package`
+- **Consumed by:** `preset:nix-presets/desktop.nix`
 
 ## `my.security`
 
