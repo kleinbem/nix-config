@@ -1,6 +1,6 @@
 # `os notes::*` — Obsidian vault helpers.
 
-SCRIPTS := "~/Develop/github.com/kleinbem/nix/nix-config/users/martin/files/scripts"
+SCRIPTS := "~/Develop/github.com/kleinbem/nix-config/users/martin/files/scripts"
 
 # Append a quick note to the Obsidian Inbox.
 add message="":

@@ -249,7 +249,7 @@ in
   ];
 
   environment.sessionVariables = {
-    FLAKE = "${config.my.developDir}/nix/nix-config";
+    FLAKE = "${config.my.developDir}/nix-config";
     NH_FLAKE = "${config.my.developDir}/nix-config"; # nh 4.2+ support
   };
 

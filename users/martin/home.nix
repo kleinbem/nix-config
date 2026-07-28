@@ -212,7 +212,7 @@ in
     "launch-nested-dhirujaan" = {
       name = "Nested Session (Dhirujaan)";
       genericName = "Lightweight Wayland Session";
-      exec = "sudo /home/martin/Develop/github.com/kleinbem/nix/nix-config/scripts/launch-nested.sh";
+      exec = "sudo /home/martin/Develop/github.com/kleinbem/nix-config/scripts/launch-nested.sh";
       icon = "system-users";
       terminal = true;
       categories = [ "System" ];
