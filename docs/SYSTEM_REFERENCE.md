@@ -91,9 +91,4 @@
 - **Devenv**: Not found in path
 - **Autonomous Guardian**: Active ✅
 
-## 📜 Open Decisions (ADRs)
-
-- **001-structure-modules-users.md** (`unknown`) — _[src: .agent/decisions/001-structure-modules-users.md]_
-- **ADR 002: Standalone containers everywhere (manifest-based updates)** (`unknown`) — _[src: .agent/decisions/002-standalone-containers-everywhere.md]_
-
 ## 🤖 AI Capabilities (MCP Tools)
