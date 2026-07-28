@@ -231,23 +231,33 @@ in
       environment = {
         sessionVariables.NIXOS_OZONE_WL = "1";
 
-        etc."chromium/policies/managed/lab_policies.json".text = builtins.toJSON {
-          ClearSiteDataOnExit = false;
-          BlockThirdPartyCookies = false;
-          SignInAllowed = false;
-          DeveloperToolsAvailability = 1;
-          MetricsReportingEnabled = false;
-          SpellCheckServiceEnabled = false;
-          ExtensionSettings = {
-            "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
-              installation_mode = "force_installed";
-              update_url = "https://clients2.google.com/service/update2/crx";
+        # Browser managed policies — deploy to both Chromium and Google Chrome paths.
+        # Chromium reads from /etc/chromium/policies/managed/
+        # Google Chrome reads from /etc/opt/chrome/policies/managed/
+        etc =
+          let
+            browserPolicies = builtins.toJSON {
+              ClearSiteDataOnExit = false;
+              BlockThirdPartyCookies = false;
+              SignInAllowed = false;
+              DeveloperToolsAvailability = 1;
+              MetricsReportingEnabled = false;
+              SpellCheckServiceEnabled = false;
+              ExtensionSettings = {
+                "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
+                  installation_mode = "force_installed";
+                  update_url = "https://clients2.google.com/service/update2/crx";
+                };
+              };
+              PasswordManagerEnabled = false;
+              AutofillAddressEnabled = false;
+              AutofillCreditCardEnabled = false;
             };
+          in
+          {
+            "chromium/policies/managed/lab_policies.json".text = browserPolicies;
+            "opt/chrome/policies/managed/lab_policies.json".text = browserPolicies;
           };
-          PasswordManagerEnabled = false;
-          AutofillAddressEnabled = false;
-          AutofillCreditCardEnabled = false;
-        };
 
         systemPackages = with pkgs; [
           qt5.qtwayland
