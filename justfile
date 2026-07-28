@@ -32,3 +32,7 @@ default:
 [group("Main")]
 switch *args="":
     @just nixos::switch {{args}}
+
+[group("Main")]
+apply *args="":
+    @just dev::apply {{args}}

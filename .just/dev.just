@@ -104,10 +104,10 @@ apply *args="":
     fi
 
     # 1. Align with CI's last green build (fetch + rebase every sub-repo)
-    just -f ../justfile jj::pull-all
+    if [ -f ../nix/justfile ]; then just -f ../nix/justfile jj::pull-all; elif [ -f ../justfile ]; then just -f ../justfile jj::pull-all; fi
 
     # 2. Sync sub-flake lockfiles topologically
-    just -f ../justfile maintenance::update-local
+    if [ -f ../nix/justfile ]; then just -f ../nix/justfile maintenance::update-local; elif [ -f ../justfile ]; then just -f ../justfile maintenance::update-local; fi
 
     # 3. Eval check + cache coverage (skipped with --fast)
     if [ "$FAST" -eq 0 ]; then
