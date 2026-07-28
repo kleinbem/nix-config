@@ -180,8 +180,8 @@ in
           NoNewPrivileges = true;
         };
         script = ''
-          HOST_REPORT="/var/log/security-report-host.txt"
-          CONT_REPORT="/var/log/security-report-containers.txt"
+          HOST_REPORT="/var/log/security-audit/security-report-host.txt"
+          CONT_REPORT="/var/log/security-audit/security-report-containers.txt"
 
           # Determine status
           STATUS="Healthy"
@@ -209,7 +209,7 @@ in
         description = "Lynis Security Audit";
         serviceConfig.Type = "oneshot";
         script = ''
-          ${pkgs.lynis}/bin/lynis audit system --no-colors --quiet > /var/log/lynis-report.txt 2>&1
+          ${pkgs.lynis}/bin/lynis audit system --no-colors --quiet > /var/log/security-audit/lynis-report.txt 2>&1
         '';
       };
     };
@@ -252,9 +252,10 @@ in
 
     # Ensure log files and cache exist with correct permissions
     tmpfiles.rules = [
-      "f /var/log/security-report-host.txt 0644 root root - -"
-      "f /var/log/security-report-containers.txt 0644 root root - -"
-      "f /var/log/lynis-report.txt 0644 root root - -"
+      "d /var/log/security-audit 0755 root root - -"
+      "f /var/log/security-audit/security-report-host.txt 0644 root root - -"
+      "f /var/log/security-audit/security-report-containers.txt 0644 root root - -"
+      "f /var/log/security-audit/lynis-report.txt 0644 root root - -"
       "d /var/cache/trivy 0755 root root - -"
       "d /var/log/audit 0750 root root - -" # Ensure directory exists for auditd
     ];
@@ -290,12 +291,12 @@ in
         inputs = [
           {
             name = "tail";
-            path = "/var/log/security-report-host.txt,/var/log/security-report-containers.txt,/var/log/lynis-report.txt";
+            path = "/var/log/security-audit/security-report-host.txt,/var/log/security-audit/security-report-containers.txt,/var/log/security-audit/lynis-report.txt";
             tag = "security_audits";
           }
           {
             name = "tail";
-            path = "/var/log/security-report-secrets.json";
+            path = "/var/log/security-audit/security-report-secrets.json";
             tag = "secret_scans";
           }
           {
