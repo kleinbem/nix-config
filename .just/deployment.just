@@ -634,12 +634,12 @@ pi-update-usb host device="/dev/sdc":
 [group("Router")]
 router-secrets file="site.yml":
     @echo "🔐 Editing OpenWrt secrets: {{file}}..."
-    @cd ../../openwrt/openwrt-secrets && sops {{file}}
+    @cd ../openwrt-secrets && sops {{file}}
 
 [group("Router")]
 router-provision:
     @echo "⚙️  Provisioning OpenWrt routers via Ansible..."
-    @cd ../../openwrt/openwrt-config && just provision
+    @cd ../openwrt-config && just provision
 
 
 [group("Provisioning")]
