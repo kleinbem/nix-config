@@ -88,7 +88,7 @@
 
 ## 🛠️ Workspace Status
 
-- **Devenv**: Available
+- **Devenv**: Not found in path
 - **Autonomous Guardian**: Active ✅
 
 ## 🤖 AI Capabilities (MCP Tools)

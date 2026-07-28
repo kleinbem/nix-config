@@ -243,6 +243,8 @@ in
               DeveloperToolsAvailability = 1;
               MetricsReportingEnabled = false;
               SpellCheckServiceEnabled = false;
+              SystemTheme = 1;
+              UseSystemTitleBar = true;
               ExtensionSettings = {
                 "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
                   installation_mode = "force_installed";

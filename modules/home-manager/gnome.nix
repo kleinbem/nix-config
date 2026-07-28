@@ -47,6 +47,7 @@
         overlay-key = "Super_R";
         experimental-features = [
           "scale-monitor-framebuffer"
+          "xwayland-native-scaling"
           "variable-refresh-rate"
         ];
       };
