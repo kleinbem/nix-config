@@ -327,6 +327,15 @@
           description = "Autonomous AI agent framework. [AIRLOCK: Restricted Egress]";
         };
       };
+      hermes = {
+        ip = "10.85.49.114"; # Hass-Pi
+        meta = {
+          name = "Hermes Agent";
+          category = "AI Engineering";
+          icon = "🪽";
+          description = "Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress]";
+        };
+      };
       agent-team = {
         ip = "10.85.47.118"; # NASbook
         port = 8000;

@@ -16,5 +16,6 @@
     inputs.nix-presets.homeManagerModules.firefox-browser
     inputs.nix-presets.homeManagerModules.opencode
     inputs.nix-presets.homeManagerModules.dx
+    inputs.nix-presets.homeManagerModules.herdr
   ];
 }

@@ -97,6 +97,11 @@ let
       ip = ip 36;
       hostDataDir = dataDir "anythingllm";
     };
+    hermes = {
+      ip = ip 47;
+      hostDataDir = dataDir "hermes";
+      secretsFile = "/run/secrets/factory-dummy";
+    };
     caddy.ip = ip 37;
     cups.ip = ip 38;
     frigate.ip = ip 39;
@@ -166,6 +171,7 @@ in
     inputs.nix-presets.nixosModules.netdata
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
+    inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.agent-team
     inputs.nix-presets.nixosModules.cups

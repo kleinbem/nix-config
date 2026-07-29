@@ -36,6 +36,7 @@ let
     "email"
     "matrix-id"
     "github-account"
+    "discord-id"
     "oidc-subject"
     "origin"
     "timezone"

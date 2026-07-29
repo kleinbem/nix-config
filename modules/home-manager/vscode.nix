@@ -32,6 +32,7 @@ in
           vsx.jnoortheen.nix-ide
           vsx.tamasfe.even-better-toml
           vsx.waderyan.gitblame
+          vsx.visualjj.visualjj
           # vsx.ms-python.python # disabled: jedi-language-server-0.46.0 requires jedi<0.20, nixpkgs has 0.20.0
           vsx.usernamehw.errorlens
           vsx.gruntfuggly.todo-tree
