@@ -23,11 +23,6 @@
           url = "http://${myInventory.network.nodes.ollama-orin.ip}:8000/v1";
           model = "google/gemma-2b";
         }
-        {
-          name = "qwen-7b-rpi";
-          url = "http://${myInventory.network.nodes.ollama-rpi.ip}:8000/v1";
-          model = "Qwen/Qwen2.5-Coder-7B-Instruct";
-        }
       ];
     };
 
@@ -65,7 +60,6 @@
       ];
       ollamaTargets = [
         myInventory.network.nodes.ollama-orin.ip
-        myInventory.network.nodes.ollama-rpi.ip
       ];
     };
 

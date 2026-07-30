@@ -286,16 +286,6 @@
           description = "LLM telemetry and tracing. [AIRLOCK: Restricted Egress]";
         };
       };
-      ollama-rpi = {
-        ip = "10.85.46.117";
-        port = 11434;
-        meta = {
-          name = "Ollama RPi 5";
-          category = "AI";
-          icon = "🦙";
-          description = "CPU-only Ollama inference (ARM64).";
-        };
-      };
       ollama-orin = {
         ip = "10.85.46.104";
         port = 11434;
