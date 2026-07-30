@@ -58,6 +58,17 @@
       "/etc/ssh/ssh_host_ed25519_key.pub"
     ]
     ++ lib.optional (!config.boot.initrd.systemd.enable) "/etc/machine-id";
+
+    # Shell history survives reboots on every host using this module
+    # (fleet-wide — root is tmpfs on impermanence hosts like hass-pi, so
+    # without this it's wiped every boot). Both shells persisted since
+    # apps.nix wires zoxide into bash and zsh alike.
+    users.martin = {
+      files = [
+        ".bash_history"
+        ".zsh_history"
+      ];
+    };
   };
 
   # Impermanence mkdir -p creates parent directories (like /var/lib/private) with 0755.
