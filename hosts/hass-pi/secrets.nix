@@ -22,11 +22,22 @@
 # fatal — but do step 1 first to avoid a failed autoUpgrade cycle.
 # NOTE: confirm netbird_setup_key in secrets.yaml is a *reusable* key (it's
 # shared with nixos-nvme/orin-nano); a one-time key already consumed won't join.
-{ inputs, config, lib, ... }:
+{
+  inputs,
+  config,
+  lib,
+  ...
+}:
 let
+  # CI overrides the nix-secrets input with an empty dummy directory
+  # (--override-input nix-secrets /tmp/dummy-secrets — same workaround
+  # validateSopsFiles=false exists for below). Fall back to an empty contact
+  # set in that case; lib/personas.nix renders missing PII fields as
+  # "(private)", which is fine for a CI-only eval that never activates.
+  contactFile = inputs.nix-secrets + "/personas-contact.nix";
   personas = import ../../lib/personas.nix {
     inherit lib;
-    contact = import (inputs.nix-secrets + "/personas-contact.nix");
+    contact = if builtins.pathExists contactFile then import contactFile else { };
   };
 in
 {
