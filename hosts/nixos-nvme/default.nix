@@ -146,7 +146,14 @@
     };
   };
 
-  home-manager.users.${config.my.username} = import "${self}/users/martin/home.nix";
+  home-manager.users.${config.my.username} = {
+    imports = [
+      "${self}/users/martin/home.nix"
+      # Physical-hardware quirk specific to this desktop's YubiKey — see the
+      # file for why it lives here rather than in the shared home.nix.
+      ./ssh-fido-recovery.nix
+    ];
+  };
   home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";
 
   # NOTE: the efi-boot-guard service lives in ./hardware-boot.nix (it also
