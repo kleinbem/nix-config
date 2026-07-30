@@ -59,26 +59,21 @@
     ]
     ++ lib.optional (!config.boot.initrd.systemd.enable) "/etc/machine-id";
 
-    # Shell history survives reboots on every host using this module
-    # (fleet-wide — root is tmpfs on impermanence hosts like hass-pi, so
-    # without this it's wiped every boot). Both shells persisted since
-    # apps.nix wires zoxide into bash and zsh alike.
-    users.martin = {
+    # Shell history survives reboots on edge devices with an ephemeral
+    # root (hass-pi, and similar Pi/Jetson boxes) — without this it's
+    # wiped every boot. Excludes nixos-nvme: its /home is a real, separate,
+    # already-durable partition (/dev/vg0/home), so persisting through the
+    # bind-mount indirection here is unnecessary — and actively breaks
+    # activation the first time, since impermanence refuses to silently
+    # pick a winner when a real file already sits at the target path with
+    # no corresponding source under /nix/persist yet.
+    users.martin = lib.mkIf (config.networking.hostName != "nixos-nvme") {
       files = [
         ".bash_history"
         ".zsh_history"
       ];
     };
   };
-
-  # impermanence asserts that any filesystem holding a persisted per-user
-  # path be marked neededForBoot (the bind mount is set up early in
-  # stage-2). Hosts differ on whether /home is even its own filesystem —
-  # nixos-nvme has a real separate /home partition (fixed in its own
-  # hardware-boot.nix); hass-pi has none at all (/home is just a directory
-  # inside the tmpfs root, which is already neededForBoot). Declaring
-  # fileSystems."/home" unconditionally here broke hass-pi's eval (creates
-  # an incomplete entry with no device/fsType), so this stays per-host.
 
   # Impermanence mkdir -p creates parent directories (like /var/lib/private) with 0755.
   # This breaks systemd DynamicUser services (like tangd) which require 0700.
