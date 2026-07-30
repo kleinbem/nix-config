@@ -71,6 +71,15 @@
     };
   };
 
+  # impermanence asserts that any filesystem holding a persisted per-user
+  # path be marked neededForBoot (the bind mount is set up early in
+  # stage-2). Hosts differ on whether /home is even its own filesystem —
+  # nixos-nvme has a real separate /home partition (fixed in its own
+  # hardware-boot.nix); hass-pi has none at all (/home is just a directory
+  # inside the tmpfs root, which is already neededForBoot). Declaring
+  # fileSystems."/home" unconditionally here broke hass-pi's eval (creates
+  # an incomplete entry with no device/fsType), so this stays per-host.
+
   # Impermanence mkdir -p creates parent directories (like /var/lib/private) with 0755.
   # This breaks systemd DynamicUser services (like tangd) which require 0700.
   systemd.tmpfiles.rules = [

@@ -36,6 +36,10 @@ in
 
     "/nix".neededForBoot = true;
     "/nix/persist".neededForBoot = true;
+    # Required by impermanence's assertion for the persisted shell-history
+    # bind mount (modules/nixos/persistence.nix, users.martin.files) — /home
+    # is a real separate partition here (/dev/vg0/home), unlike hass-pi.
+    "/home".neededForBoot = true;
   };
 
   my.boot.clevis-initrd = {
