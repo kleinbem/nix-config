@@ -124,13 +124,28 @@
   # is set up, also forward the Pi's LAN port straight to the container so it's
   # reachable by IP at **http://10.0.0.21:8123** (HTTP, not HTTPS). Safe to drop
   # once DNS/Caddy is the only path again.
-  containers.home-assistant.forwardPorts = [
-    {
-      hostPort = 8123;
-      containerPort = 8123;
-      protocol = "tcp";
-    }
-  ];
+  #
+  # NOT using `containers.home-assistant.forwardPorts` here — confirmed
+  # non-functional for this container. NixOS's forwardPorts implementation
+  # passes `--port=` straight through to systemd-nspawn, which tracks its
+  # own internally-assigned veth address for the DNAT target. That doesn't
+  # necessarily match the address the container's own NixOS network config
+  # statically self-assigns (10.85.49.10 here) via `localAddress`+hostBridge,
+  # so the forward silently targets the wrong (unused) address inside the
+  # container.
+  #
+  # Plain host-side iptables DNAT to the verified-working address sidesteps
+  # that mismatch — iptables, not nftables: hass-pi has
+  # networking.nftables.enable = false (classic firewall.enable backend), so
+  # `networking.nftables.tables.*` would silently no-op here.
+  networking.firewall.extraCommands = ''
+    iptables -t nat -A PREROUTING -i end0 -p tcp --dport 8123 -j DNAT --to-destination 10.85.49.10:8123
+    iptables -t nat -A POSTROUTING -d 10.85.49.10 -p tcp --dport 8123 -j MASQUERADE
+  '';
+  networking.firewall.extraStopCommands = ''
+    iptables -t nat -D PREROUTING -i end0 -p tcp --dport 8123 -j DNAT --to-destination 10.85.49.10:8123 || true
+    iptables -t nat -D POSTROUTING -d 10.85.49.10 -p tcp --dport 8123 -j MASQUERADE || true
+  '';
 
   # ─── Persistence ─────────────────────────────────────────────
   environment.persistence."/nix/persist" = {
