@@ -24,6 +24,8 @@ _: {
       allow id 8087:0026
       # USB to SATA/PCIe Bridge (External Harddisk Reader)
       allow id 152d:0581
+      # Ugreen Storage Device (USB-SATA Reader)
+      allow id 174c:55aa
       # Generic USB2.0 Card Reader
       allow id 0bda:0153
       # ESS Technology USB DAC (Audio)

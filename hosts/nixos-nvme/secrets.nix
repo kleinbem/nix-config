@@ -61,13 +61,17 @@
         owner = "github-runner";
       };
       u2f_keys = { };
-      # Buzz (Nostr relay) — 32-byte hex Nostr signing key + MinIO root
+      # Buzz (Nostr relay) — 32-byte hex Nostr signing key + Garage RPC/admin
       # creds + Typesense admin key. buzz_typesense_api_key is also used
       # directly as services.typesense.apiKeyFile (raw value, no template
       # needed there — see hosts/nixos-nvme/containers.nix).
+      # buzz_s3_access_key/buzz_s3_secret_key don't exist yet — they're a
+      # Garage S3 API key created via the one-time init documented at the
+      # bottom of nix-presets/containers/buzz.nix, added here once you have
+      # them. Until then buzz-relay starts but its S3 calls fail.
       buzz_relay_private_key = { };
-      buzz_minio_root_user = { };
-      buzz_minio_root_password = { };
+      buzz_garage_rpc_secret = { }; # `openssl rand -hex 32`
+      buzz_garage_admin_token = { }; # `openssl rand -base64 32`
       buzz_typesense_api_key = { };
 
       # Service Internal Secrets
@@ -178,11 +182,14 @@
         mode = "0444";
         content = ''
           BUZZ_RELAY_PRIVATE_KEY=${config.sops.placeholder.buzz_relay_private_key}
-          MINIO_ROOT_USER=${config.sops.placeholder.buzz_minio_root_user}
-          MINIO_ROOT_PASSWORD=${config.sops.placeholder.buzz_minio_root_password}
-          # Same values as above, under the names the relay itself reads.
-          BUZZ_S3_ACCESS_KEY=${config.sops.placeholder.buzz_minio_root_user}
-          BUZZ_S3_SECRET_KEY=${config.sops.placeholder.buzz_minio_root_password}
+          GARAGE_RPC_SECRET=${config.sops.placeholder.buzz_garage_rpc_secret}
+          GARAGE_ADMIN_TOKEN=${config.sops.placeholder.buzz_garage_admin_token}
+          # TODO: not created yet — see the one-time init at the bottom of
+          # nix-presets/containers/buzz.nix. Until buzz_s3_access_key/
+          # buzz_s3_secret_key exist as sops secrets, buzz-relay starts with
+          # empty S3 creds and its S3 calls fail (Garage itself is fine).
+          BUZZ_S3_ACCESS_KEY=
+          BUZZ_S3_SECRET_KEY=
           TYPESENSE_API_KEY=${config.sops.placeholder.buzz_typesense_api_key}
         '';
       };
