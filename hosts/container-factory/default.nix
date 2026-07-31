@@ -102,6 +102,13 @@ let
       hostDataDir = dataDir "hermes";
       secretsFile = "/run/secrets/factory-dummy";
     };
+    buzz = {
+      ip = ip 48;
+      hostDataDir = dataDir "buzz";
+      secretsFile = "/run/secrets/factory-dummy";
+      typesenseApiKeyFile = "/run/secrets/factory-dummy";
+      relayUrl = "wss://buzz.example.invalid";
+    };
     caddy.ip = ip 37;
     cups.ip = ip 38;
     frigate.ip = ip 39;
@@ -172,6 +179,7 @@ in
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.hermes
+    inputs.nix-presets.nixosModules.buzz
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.agent-team
     inputs.nix-presets.nixosModules.cups

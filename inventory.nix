@@ -326,6 +326,16 @@
           description = "Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress]";
         };
       };
+      buzz = {
+        ip = "10.85.49.115"; # Hass-Pi (placement TBD — see resource note)
+        port = 3000;
+        meta = {
+          name = "Buzz";
+          category = "AI Engineering";
+          icon = "🐝";
+          description = "Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress]";
+        };
+      };
       agent-team = {
         ip = "10.85.47.118"; # NASbook
         port = 8000;
