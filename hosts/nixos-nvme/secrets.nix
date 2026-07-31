@@ -61,6 +61,14 @@
         owner = "github-runner";
       };
       u2f_keys = { };
+      # Buzz (Nostr relay) — 32-byte hex Nostr signing key + MinIO root
+      # creds + Typesense admin key. buzz_typesense_api_key is also used
+      # directly as services.typesense.apiKeyFile (raw value, no template
+      # needed there — see hosts/nixos-nvme/containers.nix).
+      buzz_relay_private_key = { };
+      buzz_minio_root_user = { };
+      buzz_minio_root_password = { };
+      buzz_typesense_api_key = { };
 
       # Service Internal Secrets
       n8n_encryption_key = { };
@@ -164,6 +172,18 @@
         mode = "0444";
         content = ''
           HUGGING_FACE_HUB_TOKEN=${config.sops.placeholder.vllm_huggingface_token}
+        '';
+      };
+      "buzz.env" = {
+        mode = "0444";
+        content = ''
+          BUZZ_RELAY_PRIVATE_KEY=${config.sops.placeholder.buzz_relay_private_key}
+          MINIO_ROOT_USER=${config.sops.placeholder.buzz_minio_root_user}
+          MINIO_ROOT_PASSWORD=${config.sops.placeholder.buzz_minio_root_password}
+          # Same values as above, under the names the relay itself reads.
+          BUZZ_S3_ACCESS_KEY=${config.sops.placeholder.buzz_minio_root_user}
+          BUZZ_S3_SECRET_KEY=${config.sops.placeholder.buzz_minio_root_password}
+          TYPESENSE_API_KEY=${config.sops.placeholder.buzz_typesense_api_key}
         '';
       };
       "n8n.env" = {

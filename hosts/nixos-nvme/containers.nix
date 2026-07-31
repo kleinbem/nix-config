@@ -203,6 +203,17 @@
         hostConsumptionDir = "/mnt/data/Archive/Inbox";
         passwordFile = config.sops.secrets.paperless_password.path;
       };
+
+      buzz = {
+        enable = true;
+        ip = "${myInventory.network.nodes.buzz.ip}/24";
+        hostDataDir = "/var/lib/images/buzz";
+        secretsFile = config.sops.templates."buzz.env".path;
+        typesenseApiKeyFile = config.sops.secrets.buzz_typesense_api_key.path;
+        # Reachable over NetBird mesh only for now — no public domain/Caddy
+        # vhost set up yet. Switch to wss://buzz.kleinbem.dev once that's wired.
+        relayUrl = "ws://${myInventory.network.nodes.buzz.ip}:3000";
+      };
     };
 
   };

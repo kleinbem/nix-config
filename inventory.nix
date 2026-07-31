@@ -327,7 +327,7 @@
         };
       };
       buzz = {
-        ip = "10.85.49.115"; # Hass-Pi (placement TBD — see resource note)
+        ip = "10.85.46.131"; # nixos-nvme — Pis (hass-pi/core-pi) too tight on RAM for now
         port = 3000;
         meta = {
           name = "Buzz";
