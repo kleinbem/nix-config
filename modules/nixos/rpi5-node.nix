@@ -240,10 +240,6 @@ in
     services = {
       tang.enable = true;
       rpi-eeprom.enable = true;
-      # Run NetBird's built-in SSH server so YubiKey-less devices can reach this
-      # headless node via `netbird ssh <host>` (auth = NetBird peer identity).
-      # Scope access to your own devices with a NetBird SSH policy in the console.
-      netbird.allowServerSsh = true;
     };
 
     # Pull-deploy; these Pis only ever substitute from Attic (over NetBird) and

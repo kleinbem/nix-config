@@ -72,10 +72,6 @@ in
     # nixos-nvme/core-pi/hass-pi/nasbook) — more fleet redundancy.
     services.tang.enable = true;
 
-    # Keyless `netbird ssh mac-mini` — same convenience the rpi5 tier
-    # (core-pi/hass-pi) has; regular pubkey SSH still works independently.
-    services.netbird.allowServerSsh = true;
-
     herdr-remote-client = {
       enable = true;
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
