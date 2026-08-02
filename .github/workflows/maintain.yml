@@ -103,6 +103,8 @@ jobs:
           
           gh pr create \
             --title "chore: update flake.lock" \
-            --body "Automated lockfile update. Please wait for CI to finish warming the cache before merging!" \
+            --body "Automated lockfile update. Check re-validates the new inputs on this PR; auto-merge is enabled and lands this once it's green." \
             --head "$BRANCH_NAME" \
             --base main || true
+
+          gh pr merge "$BRANCH_NAME" --auto --squash || true
