@@ -6,7 +6,6 @@
 # wiped+installed via USB-SATA adapter (see .just/deployment.just
 # mac-mini-install-usb), then moved internally.
 {
-  config,
   lib,
   pkgs,
   inputs,
@@ -59,37 +58,39 @@ in
     keys.ssh.fido2-backup
   ];
 
-  # Old, comparatively slow CPU (2011 Sandy Bridge) — don't let nightly
-  # auto-upgrade fall back to a multi-hour local compile if Attic ever misses.
-  my.deploy.autoUpgrade = {
-    enable = true;
-    requireCache = true;
-  };
+  my = {
+    # Old, comparatively slow CPU (2011 Sandy Bridge) — don't let nightly
+    # auto-upgrade fall back to a multi-hour local compile if Attic ever misses.
+    deploy.autoUpgrade = {
+      enable = true;
+      requireCache = true;
+    };
 
-  my.monitoring.node.enable = true;
+    monitoring.node.enable = true;
 
-  my.herdr-remote-client = {
-    enable = true;
-    serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
-  };
+    herdr-remote-client = {
+      enable = true;
+      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
+    };
 
-  # Tang auto-unlock at boot — mandatory here, not optional: this host has no
-  # physical keyboard/screen, ever, so a plain LUKS passphrase prompt would
-  # hang forever with nobody able to answer it.
-  #
-  # `enable` is gated on the JWE existing rather than hardcoded true: the JWE
-  # (nix-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated AFTER
-  # the real LUKS passphrase is set during the physical install (disko), so
-  # it doesn't exist at the time this file is first committed. Once it's
-  # generated — `scripts/generate-jwe.sh mac-mini`, same passphrase used
-  # during disko format — this flips on automatically on the next
-  # rebuild/redeploy; no further code change needed. Same pattern
-  # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
-  my.boot.clevis-initrd = {
-    enable = builtins.pathExists (inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe");
-    luksDevice = "mac_mini_crypt";
-    secretFile = inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe";
-    # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
+    # Tang auto-unlock at boot — mandatory here, not optional: this host has
+    # no physical keyboard/screen, ever, so a plain LUKS passphrase prompt
+    # would hang forever with nobody able to answer it.
+    #
+    # `enable` is gated on the JWE existing rather than hardcoded true: the
+    # JWE (nix-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated
+    # AFTER the real LUKS passphrase is set during the physical install
+    # (disko), so it doesn't exist at the time this file is first committed.
+    # Once it's generated — `scripts/generate-jwe.sh mac-mini`, same
+    # passphrase used during disko format — this flips on automatically on
+    # the next rebuild/redeploy; no further code change needed. Same pattern
+    # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
+    boot.clevis-initrd = {
+      enable = builtins.pathExists (inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe");
+      luksDevice = "mac_mini_crypt";
+      secretFile = inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe";
+      # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
+    };
   };
 
   environment.systemPackages = with pkgs; [

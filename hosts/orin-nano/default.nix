@@ -55,21 +55,23 @@ in
 
   networking.hostName = "orin-nano";
 
-  # Orin Nano needs to compile its own kernel/L4T locally.
-  # We do NOT set requireCache = true here, so there is no 30-minute timeout
-  # to brutally kill the build. It will take as long as it needs.
-  my.deploy.autoUpgrade = {
-    enable = true;
-  };
+  my = {
+    # Orin Nano needs to compile its own kernel/L4T locally.
+    # We do NOT set requireCache = true here, so there is no 30-minute
+    # timeout to brutally kill the build. It will take as long as it needs.
+    deploy.autoUpgrade = {
+      enable = true;
+    };
 
-  my.attic-push = {
-    enable = true;
-    tokenFile = config.sops.secrets.attic_push_token.path;
-  };
+    attic-push = {
+      enable = true;
+      tokenFile = config.sops.secrets.attic_push_token.path;
+    };
 
-  my.herdr-remote-client = {
-    enable = true;
-    serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
+    herdr-remote-client = {
+      enable = true;
+      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
+    };
   };
 
   nixpkgs = {
