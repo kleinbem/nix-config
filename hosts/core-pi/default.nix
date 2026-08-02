@@ -34,6 +34,7 @@ in
     inputs.nix-presets.nixosModules.monitoring
     inputs.nix-presets.nixosModules.caddy
     inputs.nix-presets.nixosModules.crowdsec
+    inputs.nix-presets.nixosModules.herdr-remote-client
     "${self}/modules/nixos/services/cloudflare-tunnel.nix"
   ];
 
@@ -73,6 +74,11 @@ in
       luksDevice = "core_crypt";
       hostIp = "10.0.0.22";
       secretFile = "${inputs.nix-secrets}/initrd/cryptroot_core-pi.jwe";
+    };
+
+    herdr-remote-client = {
+      enable = true;
+      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
     # ─── Container Network ──────────────────────────────────────

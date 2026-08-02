@@ -98,6 +98,15 @@
         "hub"
       ];
     };
+    mac-mini = {
+      # ip = "TBD"; # not on the network yet — fill in the DHCP lease after first boot
+      system = "x86_64-linux"; # Mid-2011 Mac Mini (Macmini5,x) — Intel, real 64-bit EFI
+      deployType = "ssh";
+      tags = [
+        "desktop"
+        "legacy-hardware"
+      ];
+    };
   };
 
   git = {

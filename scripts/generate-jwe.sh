@@ -9,10 +9,21 @@ fi
 
 HOST="$1"
 HOST_DIR="hosts/$HOST"
-JWE_FILE="$HOST_DIR/cryptroot.jwe"
+# This must match what `my.boot.clevis-initrd.secretFile` actually reads
+# (see modules/nixos/clevis-initrd.nix consumers, e.g. hosts/*/services.nix
+# or hosts/*/default.nix: "${inputs.nix-secrets}/initrd/cryptroot_${HOST}.jwe").
+# Previously wrote to hosts/$HOST/cryptroot.jwe, a path nothing reads — every
+# real cryptroot_*.jwe in nix-secrets/initrd/ was produced some other way.
+SECRETS_DIR="../nix-secrets/initrd"
+JWE_FILE="$SECRETS_DIR/cryptroot_${HOST}.jwe"
 
 if [ ! -d "$HOST_DIR" ]; then
   echo "Error: Host directory $HOST_DIR does not exist."
+  exit 1
+fi
+
+if [ ! -d "$SECRETS_DIR" ]; then
+  echo "Error: $SECRETS_DIR does not exist (run from the nix-config repo root, with nix-secrets cloned as a sibling)."
   exit 1
 fi
 

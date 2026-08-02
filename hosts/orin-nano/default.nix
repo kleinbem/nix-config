@@ -40,6 +40,7 @@ in
     inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.attic-push
+    inputs.nix-presets.nixosModules.herdr-remote-client
     # Disko configuration
     inputs.disko.nixosModules.disko
     ./disko.nix
@@ -64,6 +65,11 @@ in
   my.attic-push = {
     enable = true;
     tokenFile = config.sops.secrets.attic_push_token.path;
+  };
+
+  my.herdr-remote-client = {
+    enable = true;
+    serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
   };
 
   nixpkgs = {

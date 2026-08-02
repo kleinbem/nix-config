@@ -39,6 +39,19 @@
     ./garage.nix
   ];
 
+  # security/ssh.nix (workstation tier) requires publickey+MFA but this host
+  # never actually authorized a key for its own normal sshd (port 22) — only
+  # the initrd-stage unlock sshd (hardware-boot.nix, port 2222) had one, with
+  # the same key set. Needed so other fleet devices (orin-nano, phone) can
+  # SSH in, e.g. to attach a remote herdr client to the server running here.
+  users.users.martin.openssh.authorizedKeys.keys =
+    with (import "${self}/modules/nixos/keys.nix").ssh;
+    [
+      yubikey
+      fido2
+      fido2-backup
+    ];
+
   environment = {
     etc = { };
     variables = { };

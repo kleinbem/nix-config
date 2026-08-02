@@ -96,6 +96,9 @@ in
       nasbook = mkHost "nasbook" {
         modules = [ ../../hosts/nasbook/default.nix ];
       };
+      mac-mini = mkHost "mac-mini" {
+        modules = [ ../../hosts/mac-mini/default.nix ];
+      };
 
       # --- Dedicated factories for building deployed standalone containers ---
       container-factory = mkHost "nixos-nvme" {

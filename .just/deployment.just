@@ -424,6 +424,147 @@ orin-update-usb device="/dev/sdb":
 
 
 [group("Provisioning")]
+[doc("Generate/rotate a host's Tang-wrapped LUKS unlock secret (nix-secrets/initrd/cryptroot_<host>.jwe), consumed by my.boot.clevis-initrd.secretFile. Prompts for the LUKS passphrase — must match what's actually set on that host's LUKS container, or the JWE decrypts to the wrong passphrase and auto-unlock fails.")]
+generate-jwe host:
+    @bash scripts/generate-jwe.sh {{host}}
+
+[group("Provisioning")]
+[confirm("💿 WIPE the USB-attached SSD and install NixOS for mac-mini? This is destructive.")]
+[doc("mac-mini has ZERO physical peripherals (no keyboard/screen, ever) — see the final output for the mandatory generate-jwe.sh + mac-mini-update-usb follow-up before it can boot unattended.")]
+mac-mini-install-usb device="/dev/sdb":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source .just/lib/provision-common.sh
+
+    DEV="{{device}}"; MNT="/mnt/mac-mini"; CRYPT="mac_mini_crypt"
+    pc_sudo_keepalive
+    pc_require_block_device "$DEV"
+    pc_assert_safe_target "$DEV"
+    # No cache pre-flight here on purpose: mac-mini is x86_64, same arch as
+    # this workstation, so a local build is a normal fast native build, not
+    # an hours-long QEMU-emulated cross-arch one (the thing pc_cache_preflight
+    # exists to catch). It's also a brand-new host with nothing in Attic yet.
+
+    echo "🔍 Ensuring clean state before install..."
+    pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
+    pc_wipe "$DEV" 100
+
+    echo "💽 Formatting via disko (will prompt for a NEW LUKS passphrase)..."
+    sudo nix run github:nix-community/disko -- \
+        --mode destroy,format,mount \
+        --argstr device "$DEV" \
+        --root-mountpoint "$MNT" ./hosts/mac-mini/disko.nix
+
+    # Guard: /mnt/mac-mini/boot MUST be the target's ESP, not the workstation's.
+    pc_assert_esp_on_target "$MNT" "$DEV"
+
+    SYSTEM="$(pc_build_toplevel mac-mini {{OVERRIDES}})"
+    [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ mac-mini closure build failed."; exit 1; }
+    pc_install_closure "$MNT" "$SYSTEM"
+
+    echo "💾 Installing systemd-boot to the ESP (host-side; writing NVRAM boot vars here would register against THIS workstation's EFI, not mac-mini's)..."
+    pc_assert_esp_on_target "$MNT" "$DEV"   # re-verify right before writing
+    ESP="$MNT/boot"
+    BOOT_EFI="$(find "$MNT/nix/store" -maxdepth 6 -name systemd-bootx64.efi 2>/dev/null | head -1)"
+    [ -n "$BOOT_EFI" ] || { echo "❌ systemd-bootx64.efi not found in store" >&2; exit 1; }
+    KERNEL_SRC="$(realpath "${SYSTEM}/kernel")"
+    INITRD_SRC="$(realpath "${SYSTEM}/initrd")"
+    KERNEL_PARAMS="$(cat "${SYSTEM}/kernel-params")"
+    SYS_STORE_PATH="/nix/store/$(basename "${SYSTEM}")"
+    sudo mkdir -p "${ESP}/EFI/systemd" "${ESP}/EFI/BOOT" "${ESP}/EFI/nixos" "${ESP}/loader/entries"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/systemd/systemd-bootx64.efi"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTX64.EFI"
+    sudo cp "${KERNEL_SRC}" "${ESP}/EFI/nixos/kernel"
+    sudo cp "${INITRD_SRC}" "${ESP}/EFI/nixos/initrd"
+    # CRITICAL: embed boot.initrd.secrets (initrd-sshd host key, and — once
+    # generated — the clevis JWE) into the ESP initrd. nixos-install
+    # --no-bootloader skipped this; without it the first boot fails
+    # copy-secrets + sshd and drops to EMERGENCY MODE (which, with no
+    # physical keyboard attached, is unrecoverable without re-plugging the
+    # SSD into this workstation).
+    pc_append_initrd_secrets mac-mini "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
+    printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
+    ENTRY="$(mktemp)"
+    printf 'title NixOS\nlinux /EFI/nixos/kernel\ninitrd /EFI/nixos/initrd\noptions init=%s/init %s\n' \
+        "${SYS_STORE_PATH}" "${KERNEL_PARAMS}" > "${ENTRY}"
+    sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
+    rm -f /tmp/mac-mini-system
+
+    AGE_PUB="$(pc_host_identity "$MNT" mac-mini)"
+    echo "📋 mac-mini age public key: ${AGE_PUB}"
+    pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
+
+    pc_clevis_bind_tang "$CRYPT"
+
+    pc_teardown "$MNT" "$CRYPT"
+    echo ""
+    echo "✅ mac-mini SSD base install complete — but DO NOT plug it into the"
+    echo "   Mac Mini and boot yet. This host has no physical keyboard/screen,"
+    echo "   so the disk MUST auto-unlock via Tang before its first unattended"
+    echo "   boot, and that isn't wired into the closure you just installed:"
+    echo ""
+    echo "   1. just deployment::generate-jwe mac-mini"
+    echo "        (enter the EXACT SAME LUKS passphrase you just typed for disko)"
+    echo "   2. just jj::save-all 'feat: mac-mini install' mac-mini nix-secrets"
+    echo "   3. just deployment::mac-mini-update-usb   (rebuilds + reinstalls the"
+    echo "        closure — my.boot.clevis-initrd.enable auto-flips true now that"
+    echo "        the JWE exists, no code change needed)"
+    echo "   4. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
+
+[group("Provisioning")]
+[confirm("🔄 Re-install mac-mini config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS, rebuilds, and refreshes the closure + bootloader.")]
+[doc("Non-destructive in-place update. Also the required second step after generate-jwe.sh — see mac-mini-install-usb's final output.")]
+mac-mini-update-usb device="/dev/sdb":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source .just/lib/provision-common.sh
+
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
+    echo "🔓 Mounting existing SSD via disko (enter the mac-mini LUKS passphrase when prompted)..."
+    sudo nix run github:nix-community/disko -- \
+        --mode mount \
+        --argstr device {{device}} \
+        --root-mountpoint /mnt/mac-mini \
+        ./hosts/mac-mini/disko.nix
+
+    echo "🏗️ Building mac-mini closure..."
+    nix build .#nixosConfigurations.mac-mini.config.system.build.toplevel \
+        --option sandbox false \
+        --option builders "" \
+        {{OVERRIDES}} \
+        --out-link /tmp/mac-mini-system
+
+    SYSTEM="$(readlink /tmp/mac-mini-system)"
+    ESP="/mnt/mac-mini/boot"
+
+    echo "💿 Installing closure (skipping bootloader — done host-side below)..."
+    sudo nixos-install --root /mnt/mac-mini --system "${SYSTEM}" --no-root-passwd --no-bootloader
+
+    echo "💾 Installing systemd-boot to ESP (host-side)..."
+    BOOT_EFI="$(find /mnt/mac-mini/nix/store -maxdepth 6 -name "systemd-bootx64.efi" 2>/dev/null | head -1)"
+    [ -n "$BOOT_EFI" ] || { echo "❌ systemd-bootx64.efi not found in store" >&2; exit 1; }
+    sudo mkdir -p "${ESP}/EFI/systemd" "${ESP}/EFI/BOOT" "${ESP}/EFI/nixos" "${ESP}/loader/entries"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/systemd/systemd-bootx64.efi"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTX64.EFI"
+    sudo cp "$(realpath "${SYSTEM}/kernel")" "${ESP}/EFI/nixos/kernel"
+    sudo cp "$(realpath "${SYSTEM}/initrd")" "${ESP}/EFI/nixos/initrd"
+    # CRITICAL: embed boot.initrd.secrets or the boot drops to emergency mode.
+    pc_append_initrd_secrets mac-mini "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
+    printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
+    ENTRY="$(mktemp)"
+    printf 'title NixOS\nlinux /EFI/nixos/kernel\ninitrd /EFI/nixos/initrd\noptions init=%s/init %s\n' \
+        "/nix/store/$(basename "${SYSTEM}")" "$(cat "${SYSTEM}/kernel-params")" > "${ENTRY}"
+    sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"
+    rm "${ENTRY}"
+    rm -f /tmp/mac-mini-system
+
+    pc_teardown /mnt/mac-mini mac_mini_crypt
+    echo "✅ In-place update complete — put the SSD in the Mac Mini, plug in ethernet, and boot."
+
+
+[group("Provisioning")]
 [confirm("💿 WIPE the USB SSD and install NixOS for a Pi? This is destructive.")]
 pi-install-usb host device="/dev/sdc":
     #!/usr/bin/env bash

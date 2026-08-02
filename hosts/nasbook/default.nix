@@ -6,6 +6,9 @@
   config,
   ...
 }:
+let
+  keys = import "${self}/modules/nixos/keys.nix";
+in
 {
   imports = [
     # IMPORTANT: You must run `nixos-generate-config` on the physical NASbook
@@ -23,6 +26,8 @@
     inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.qdrant
     inputs.nix-presets.nixosModules.backup
+    inputs.nix-presets.nixosModules.monitoring-node
+    inputs.nix-presets.nixosModules.herdr-remote-client
 
     # Needs SOPS to unlock the secrets below
     ./secrets.nix
@@ -30,7 +35,21 @@
 
   networking.hostName = "nasbook";
 
+  # headless.nix creates the martin user but — unlike orin-nano/core-pi/
+  # hass-pi — nothing here ever authorized a key for it, so it was actually
+  # unreachable by SSH. Same fleet-wide key set as everywhere else.
+  users.users.martin.openssh.authorizedKeys.keys = [
+    keys.ssh.yubikey
+    keys.ssh.fido2
+    keys.ssh.fido2-backup
+  ];
+
   my = {
+    herdr-remote-client = {
+      enable = true;
+      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
+    };
+
     # Pull-deploy; substitute-only — this laptop is too weak for long builds.
     # Gate the nightly run on cache reachability and cap its runtime.
     deploy.autoUpgrade = {

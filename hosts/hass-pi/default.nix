@@ -19,6 +19,7 @@
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.anythingllm
+    inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
   networking = {
@@ -36,6 +37,11 @@
       luksDevice = "hass_crypt";
       hostIp = "10.0.0.21";
       secretFile = "${inputs.nix-secrets}/initrd/cryptroot_hass-pi.jwe";
+    };
+
+    herdr-remote-client = {
+      enable = true;
+      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
     # ─── Container Network ──────────────────────────────────────
