@@ -125,7 +125,10 @@ jobs:
           #   in the dedicated vm-tests.yaml workflow; they remain in .#checks
           #   for local runs.
           # - host-* checks: hosts are targeted EXPLICITLY below (hass-pi +
-          #   core-pi hardcoded native, nixos-nvme in its own best-effort step
+          #   core-pi hardcoded native on aarch64, mac-mini hardcoded native
+          #   on x86_64 — it pulls production via my.deploy.autoUpgrade with
+          #   requireCache = true, same "must never build on-device" contract
+          #   as the RPi5 pair; nixos-nvme is a separate best-effort step
           #   because its ~8.6 GiB eval needs swap + isolation; Orin/routers
           #   deliberately never build in CI — jetpack/bespoke kernels).
           #   Enumerating them here would re-add those giant builds blocking.
@@ -185,6 +188,7 @@ jobs:
           if [ "$SYSTEM" = "x86_64-linux" ]; then
             TARGETS+=(
               ".#devShells"
+              ".#nixosConfigurations.mac-mini.config.system.build.toplevel"
             )
           fi
           if [ "$SYSTEM" = "aarch64-linux" ]; then

@@ -39,6 +39,13 @@ in
 
   networking.hostName = "mac-mini";
 
+  # Wake-on-LAN TODO: this host has zero physical access (no keyboard/
+  # screen/case access after it's mounted), so remote power-on would be
+  # genuinely useful. Deliberately NOT wired up yet — the option
+  # (networking.interfaces.<name>.wakeOnLan.enable) needs the real
+  # interface name, which only exists after the onboard Broadcom NIC gets
+  # its udev-assigned name on first boot. Set this once that's known.
+
   # Same fleet-wide key set as every other host (modules/nixos/keys.nix).
   # headless.nix only creates the user; each host authorizes its own keys.
   users.users.martin.openssh.authorizedKeys.keys = [
@@ -90,6 +97,46 @@ in
     age
     libfido2
   ];
+
+  # Real x86 hardware (2011 Mac Mini, Sandy Bridge i5-2415M) — same reasoning
+  # as nixos-nvme: microcode security/stability fixes, and redistributable
+  # firmware in case the internal Broadcom Wi-Fi/Bluetooth ever gets used.
+  # NOT required for the onboard tg3 Ethernet (BCM57765 is in the
+  # 57765_PLUS chip group, which brings the link up without a firmware
+  # blob) — Tang-unlock-in-initrd doesn't depend on this.
+  hardware = {
+    enableRedistributableFirmware = true;
+    cpu.intel.updateMicrocode = true;
+
+    # VAAPI for the eventual Zoom-recording container workload — a 2-core
+    # CPU wants encode/decode offloaded to the iGPU. `intel-vaapi-driver`
+    # (legacy i965), NOT `intel-media-driver` (iHD): the latter only
+    # supports Broadwell+/Gen8+, this is Sandy Bridge/Gen6. Encode
+    # support on Gen6 via i965 is known to be flaky on Linux (decode is
+    # solid) — untested until the actual container exists; enabled now
+    # so it's ready to try.
+    graphics = {
+      enable = true;
+      extraPackages = with pkgs; [ intel-vaapi-driver ];
+    };
+  };
+
+  # (services.fwupd is already on fleet-wide via core.nix — LVFS almost
+  # certainly has nothing for this specific hardware anyway: Apple's own
+  # Boot ROM firmware isn't LVFS-published, and the Samsung SATA SSD is
+  # out of scope too — but it's already there for whatever's plugged in
+  # later, no host-specific override needed.)
+
+  # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
+  # alongside disko's allowDiscards, not instead of it.
+  services.fstrim.enable = true;
+
+  # Override the fleet-wide zstd zram default (core.nix): zstd's better
+  # ratio costs more CPU per swap page than lz4, which matters more on
+  # this 2-core CPU than on the rest of the fleet. 16GB RAM means this
+  # host is unlikely to swap heavily anyway, so it's a marginal call —
+  # revisit if the recording workload turns out to be swap-hungry.
+  zramSwap.algorithm = lib.mkForce "lz4";
 
   # Stateless root (impermanence) — same pattern as modules/nixos/rpi5-node.nix
   # (shared by core-pi/hass-pi). disko.nix only declares the real, disk-backed

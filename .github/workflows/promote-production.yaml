@@ -46,8 +46,13 @@ jobs:
   # the whole closure.
   verify-cache:
     name: "Verify closures are fully cached"
-    # Run natively on aarch64 — the pull-deploy edge hosts are all aarch64, so a
-    # native runner sidesteps any cross-arch dry-run eval quirks.
+    # Runner arch doesn't matter here: `nix build --dry-run` never executes a
+    # builder, it only queries substituters and classifies each path as
+    # fetchable or not — verified cross-arch locally (dry-running an
+    # aarch64-linux target from an x86_64-linux machine correctly classified
+    # all 446 derivations, no arch-mismatch error). Stayed on aarch64 as the
+    # historical default now that hosts span both arches (mac-mini added
+    # 2026-08-02); revisit only if a real quirk shows up.
     runs-on: ubuntu-24.04-arm
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -79,11 +84,13 @@ jobs:
         run: |
           set -euo pipefail
           # The hosts that pull `production` via my.deploy.autoUpgrade and must
-          # never build on-device. Mirrors build-all's aarch64 toplevel targets.
+          # never build on-device. Mirrors build-all's hardcoded-native toplevel
+          # targets (hass-pi/core-pi on aarch64, mac-mini on x86_64 — all three
+          # set my.deploy.autoUpgrade.requireCache = true).
           # Excluded (deliberately, same as build-all): nixos-nvme (IS the cache
           # host — builds locally, never pulls), orin-nano + routers (build
           # on-device by design). Edit this list as hosts opt into pull-deploy.
-          HOSTS=(hass-pi core-pi)
+          HOSTS=(hass-pi core-pi mac-mini)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"

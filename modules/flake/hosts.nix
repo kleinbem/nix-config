@@ -50,6 +50,7 @@ let
     "hass-pi"
     "orin-nano"
     "nasbook"
+    "mac-mini"
   ];
   deployedContainers =
     system: extras:
