@@ -157,6 +157,9 @@
         leftbox-padding = -1;
         tray-padding = -1;
         window-preview-title-position = "TOP";
+        # Center the taskbar (app icons) on the panel instead of leaving it
+        # stacked at the left edge; all other elements keep their defaults.
+        panel-element-positions = ''{"0":[{"element":"showAppsButton","visible":true,"position":"stackedTL"},{"element":"activitiesButton","visible":false,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"centerMonitor"},{"element":"centerBox","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"dateMenu","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":true,"position":"stackedBR"}]}'';
       };
 
       "org/gnome/shell/extensions/arcmenu" = {

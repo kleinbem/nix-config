@@ -11,6 +11,7 @@
     "http://10.0.0.22:7654" # core-pi
     "http://10.0.0.30:7654" # nasbook
     "http://10.0.0.21:7654" # hass-pi (planned, not yet active)
+    "http://10.0.0.70:7654" # mac-mini (current DHCP IP — update to .16 once static)
   ];
 
   # ─── Managed Hosts ──────────────────────────────────────────
@@ -99,7 +100,8 @@
       ];
     };
     mac-mini = {
-      # ip = "TBD"; # not on the network yet — fill in the DHCP lease after first boot
+      ip = "10.0.0.16"; # LAN IP — assign static (currently DHCP at .70, not yet reconfigured)
+      netbirdIp = "100.117.247.175"; # Mesh IP (stable per enrollment)
       system = "x86_64-linux"; # Mid-2011 Mac Mini (Macmini5,x) — Intel, real 64-bit EFI
       deployType = "ssh";
       tags = [

@@ -64,5 +64,20 @@ in
       imports = [ ../../hosts/nasbook/default.nix ];
       nixpkgs.hostPlatform = hostMeta.nasbook.system;
     };
+
+    mac-mini = {
+      deployment = {
+        # NOT hostMeta.mac-mini.ip (10.0.0.16): the host is still on its
+        # first-boot DHCP lease, nothing has configured a static address yet.
+        # Switch this to hostMeta.mac-mini.ip once static networking is set up
+        # on-host to match inventory.nix.
+        targetHost = "10.0.0.70";
+        targetUser = "martin";
+        buildOnTarget = false; # same x86_64 arch as nixos-nvme — fast native build, push via SSH
+        inherit (hostMeta.mac-mini) tags;
+      };
+      imports = [ ../../hosts/mac-mini/default.nix ];
+      nixpkgs.hostPlatform = hostMeta.mac-mini.system;
+    };
   };
 }

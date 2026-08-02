@@ -68,6 +68,14 @@ in
 
     monitoring.node.enable = true;
 
+    # Joins the unlock cluster as a 4th independent Tang server (alongside
+    # nixos-nvme/core-pi/hass-pi/nasbook) — more fleet redundancy.
+    services.tang.enable = true;
+
+    # Keyless `netbird ssh mac-mini` — same convenience the rpi5 tier
+    # (core-pi/hass-pi) has; regular pubkey SSH still works independently.
+    services.netbird.allowServerSsh = true;
+
     herdr-remote-client = {
       enable = true;
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
@@ -89,9 +97,33 @@ in
       enable = builtins.pathExists (inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe");
       luksDevice = "mac_mini_crypt";
       secretFile = inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe";
+      fallbackMessage = "Tang still unreachable; falling back to initrd SSH (no physical console on this host)";
       # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
     };
   };
+
+  # Initrd SSH fallback — same pattern as hosts/nixos-nvme/hardware-boot.nix.
+  # mac-mini has zero physical keyboard/screen access, ever, so if Tang is
+  # ever unreachable at boot the normal ask-password prompt would hang
+  # forever with nobody able to answer it. This lets the passphrase be typed
+  # in remotely instead. Gated on the key file existing, same convention as
+  # clevis-initrd.enable above.
+  boot.initrd.network = {
+    enable = true;
+    ssh = {
+      enable = builtins.pathExists (inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini");
+      port = 2222;
+      authorizedKeys = [
+        keys.ssh.yubikey
+        keys.ssh.fido2
+        keys.ssh.fido2-backup
+      ];
+      hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_mac-mini" ];
+    };
+  };
+  boot.initrd.secrets."/etc/ssh/ssh_host_ed25519_key_mac-mini" = lib.mkForce (
+    inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini"
+  );
 
   environment.systemPackages = with pkgs; [
     sops
@@ -127,10 +159,33 @@ in
   # Boot ROM firmware isn't LVFS-published, and the Samsung SATA SSD is
   # out of scope too — but it's already there for whatever's plugged in
   # later, no host-specific override needed.)
+  #
+  # Boot ROM confirmed current as of the 2026-08-02 High Sierra install
+  # (133.0.0.0.0) — the last firmware Apple ever shipped for Macmini5,x.
+  # Not upgradable further, and not LVFS-managed (see above), so if
+  # third-party-OS boot flakiness ever shows up here, stale firmware is
+  # ruled out as the cause.
 
   # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
   # alongside disko's allowDiscards, not instead of it.
   services.fstrim.enable = true;
+
+  # Join the NetBird mesh — same pattern as orin-nano/nasbook/core-pi/hass-pi
+  # (modules/nixos/networking.nix netbird-autojoin, gated on netbird_setup_key
+  # from secrets.nix).
+  services.netbird.enable = true;
+
+  # DNS was broken out of the box: modules/nixos/networking.nix defaults
+  # networking.resolvconf.enable to true fleet-wide, and every OTHER host
+  # overrides that (resolved.enable=true here like orin-nano, or forced off
+  # like the rpi5 nodes) — mac-mini never got either override, so resolv.conf
+  # pointed at a systemd-resolved stub (127.0.0.1) that was never enabled.
+  services.resolved = {
+    enable = true;
+    settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
+    settings.Resolve.DNSSEC = "false";
+  };
+  networking.resolvconf.enable = lib.mkForce false;
 
   # Override the fleet-wide zstd zram default (core.nix): zstd's better
   # ratio costs more CPU per swap page than lz4, which matters more on
