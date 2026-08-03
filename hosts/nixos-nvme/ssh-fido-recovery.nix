@@ -1,22 +1,23 @@
-# Auto-recovery for a known-flaky interaction between OpenSSH's built-in
+# Fix + auto-recovery for a long-standing flaky interaction between OpenSSH's
 # FIDO2/security-key signing path and this desktop's YubiKey (USB 1050:0406).
 #
-# Symptom: `sign_and_send_pubkey: signing failed for ED25519-SK "...": invalid
-# format` (direct signing) or "... from agent: agent refused operation"
-# (agent-mediated), for ANY destination including localhost — confirmed via
-# extensive testing on 2026-07-30 to be a USB/CTAP2-level glitch on the
-# physical key, not a host, network, or OpenSSH config problem (identical
-# openssh binary before/after; fails signing to itself). The only reliable
-# fix found was a full USB re-enumeration (unplug/replug). `usbreset` does the
-# same thing in software and — confirmed — needs no sudo: the device carries
-# systemd-logind's `uaccess` tag, so the logged-in seat user already has
-# read/write on the device node.
+# ACTUAL root cause, found 2026-08-03 via `ssh -vvv` on a genuinely fresh
+# (non-multiplexed, non-agent) connection: this key's ED25519-SK credential
+# requires a PIN ("verify-required"), not just touch. OpenSSH's ssh-sk-helper
+# always tries touch-only first, which always fails for this credential
+# (logged misleadingly as `sk_sign failed`/`incorrect passphrase supplied to
+# decrypt private key`), then automatically retries via $SSH_ASKPASS to
+# actually prompt for the PIN. That retry goes through a GUI dialog
+# (lxqt-openssh-askpass) which is unreliable — when it fails to show or
+# capture input, ssh reports the generic `sign_and_send_pubkey ... invalid
+# format` / "agent refused operation" errors that were previously (2026-07-30)
+# misdiagnosed as a USB/CTAP2 hardware glitch requiring `usbreset`. The real,
+# repeatable fix is forcing PIN entry through the terminal instead of the
+# flaky GUI dialog: `SSH_ASKPASS_REQUIRE=never` — confirmed reliable across
+# multiple fresh-connection tests once found.
 #
-# This wraps `ssh` so that when (and only when) it hits this exact failure
-# signature, it resets the key and retries once automatically, instead of
-# requiring the manual multi-step recovery dance. Deliberately event-driven,
-# not a scheduled/preventive reset — a blind timer could fire mid-touch on an
-# unrelated operation and make things worse.
+# The usbreset-based retry below is kept as a defensive fallback only (in
+# case a genuine USB hiccup ever does occur), not the primary fix anymore.
 { pkgs, ... }:
 let
   wrappedSsh = pkgs.writeShellScriptBin "ssh" ''
@@ -25,12 +26,18 @@ let
     usbreset="${pkgs.usbutils}/bin/usbreset"
     yubikey_id="1050:0406"
 
+    # The actual fix: force PIN entry through the terminal instead of the
+    # unreliable GUI askpass dialog (see file header for how this was found).
+    export SSH_ASKPASS_REQUIRE=never
+
     errfile="$(mktemp)"
     trap 'rm -f "$errfile"' EXIT
 
     "$real_ssh" "$@" 2> >(tee "$errfile" >&2)
     status=$?
 
+    # Defensive fallback only — the SSH_ASKPASS_REQUIRE fix above should
+    # prevent this from firing in the first place.
     if [ "$status" -eq 255 ] \
       && grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)' "$errfile"; then
       echo "ssh: detected FIDO2 signing glitch — resetting YubiKey ($yubikey_id) and retrying once..." >&2
