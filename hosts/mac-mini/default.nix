@@ -122,15 +122,36 @@ in
   # this specific value to ever differ on this single-purpose, no-console
   # host — unlike nixos-nvme, where a real human might reasonably want to
   # change power settings via the GUI.
+  # power-button-action added after idle-suspend locking turned out NOT to
+  # be the whole story: confirmed via /var/log/journal (persisted through
+  # impermanence, modules/nixos/persistence.nix) that the box suspended
+  # again 26 minutes into a normal running session, with NO idle-timeout
+  # involved at all — systemd-logind logged "Power key pressed short" /
+  # "suspend requested from client ... ('.gsd-media-keys')". desktop.nix's
+  # shared power-button-action = "interactive" (meant to show a confirm
+  # dialog) has no display to show that dialog on here, so it appears to
+  # fall through straight to suspend. Whether the button press itself was
+  # a genuine spurious ACPI signal (a known quirk class on older Apple
+  # hardware under Linux) or something else, the fix is the same either
+  # way: this box has no legitimate reason to ever honor a power-button
+  # suspend, since resume-from-sleep is already confirmed broken on this
+  # hardware (see mac-mini-wake's doc).
   programs.dconf.profiles.user.databases = [
     {
       settings."org/gnome/settings-daemon/plugins/power" = {
         sleep-inactive-ac-type = "nothing";
         sleep-inactive-battery-type = "nothing"; # no battery on this hardware, kept for consistency
+        power-button-action = "nothing";
       };
       lockAll = true;
     }
   ];
+
+  # Defense-in-depth alongside the dconf lock above: logind's OWN power-key
+  # handling (independent of GNOME's gsd-media-keys, e.g. before a session
+  # exists to claim it) also gets set to ignore, so there's no path — GNOME
+  # session up or not — where a power-button signal results in suspend.
+  services.logind.settings.Login.HandlePowerKey = "ignore";
 
   # grdctl writes RDP config into per-user dconf, which needs a real D-Bus
   # session + dconf — i.e. martin's actual logind session after autologin,
