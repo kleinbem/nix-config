@@ -106,6 +106,14 @@ in
   # clevis-initrd.enable above.
   boot = {
     initrd = {
+      # tg3 (onboard Broadcom NetXtreme NIC) was missing from the initrd
+      # entirely — neither Tang nor the initrd SSH fallback below can bring up
+      # networking without it. Confirmed the hard way 2026-08-03: first reboot
+      # after enabling both hung at an unreachable LUKS prompt with no network
+      # in initrd at all, needing a one-off physical passphrase entry to
+      # recover. Eager-load like nixos-nvme's e1000e (hardware-boot.nix).
+      kernelModules = [ "tg3" ];
+
       network = {
         enable = true;
         ssh = {
