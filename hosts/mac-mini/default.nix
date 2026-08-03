@@ -138,40 +138,62 @@ in
   # is exactly that context. Idempotent: password + TLS cert/key are
   # generated once and persisted (below), re-applied via grdctl on every
   # session start rather than regenerated.
-  systemd.user.services.gnome-remote-desktop-rdp-setup = {
-    description = "Provision GNOME Remote Desktop (headless RDP) credentials + TLS cert";
-    wantedBy = [ "gnome-session.target" ];
-    after = [ "gnome-session.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+  systemd.user.services = {
+    gnome-remote-desktop-rdp-setup = {
+      description = "Provision GNOME Remote Desktop (headless RDP) credentials + TLS cert";
+      wantedBy = [ "gnome-session.target" ];
+      after = [ "gnome-session.target" ];
+      # Both this unit and the packaged gnome-remote-desktop-headless.service
+      # only declared After=gnome-session.target, with no ordering relative
+      # to EACH OTHER — systemd was free to start the RDP daemon before this
+      # finished writing credentials via grdctl, and the daemon doesn't
+      # appear to hot-reload a credential written after its own startup.
+      # Confirmed live 2026-08-03: daemon logged "[RDP] Credentials are not
+      # set, denying client" despite this service having already exited 0
+      # successfully — only `systemctl --user restart
+      # gnome-remote-desktop-headless` (after the fact) fixed the live
+      # session. Before= here is the fix; belt-and-suspenders with the
+      # matching After=/Requires= added to that unit below.
+      before = [ "gnome-remote-desktop-headless.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        set -euo pipefail
+        # Owner-only from the moment of creation — closes the brief window a
+        # create-then-chmod sequence leaves open (file inherits the process's
+        # default umask, e.g. 644, until the chmod call lands).
+        umask 077
+        state="$HOME/.local/share/gnome-remote-desktop-rdp"
+        mkdir -p "$state"
+
+        if [ ! -f "$state/password" ]; then
+          ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
+          echo "Generated a new GNOME Remote Desktop (RDP) password for martin — save it now: $(cat "$state/password")"
+        fi
+
+        if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
+          ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
+            -subj "/CN=mac-mini" \
+            -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
+        fi
+
+        grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
+        "$grdctl" --headless rdp set-tls-cert "$state/tls.crt"
+        "$grdctl" --headless rdp set-tls-key "$state/tls.key"
+        "$grdctl" --headless rdp set-credentials martin "$(cat "$state/password")"
+        "$grdctl" --headless rdp enable
+      '';
     };
-    script = ''
-      set -euo pipefail
-      # Owner-only from the moment of creation — closes the brief window a
-      # create-then-chmod sequence leaves open (file inherits the process's
-      # default umask, e.g. 644, until the chmod call lands).
-      umask 077
-      state="$HOME/.local/share/gnome-remote-desktop-rdp"
-      mkdir -p "$state"
 
-      if [ ! -f "$state/password" ]; then
-        ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
-        echo "Generated a new GNOME Remote Desktop (RDP) password for martin — save it now: $(cat "$state/password")"
-      fi
-
-      if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
-        ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
-          -subj "/CN=mac-mini" \
-          -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
-      fi
-
-      grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
-      "$grdctl" --headless rdp set-tls-cert "$state/tls.crt"
-      "$grdctl" --headless rdp set-tls-key "$state/tls.key"
-      "$grdctl" --headless rdp set-credentials martin "$(cat "$state/password")"
-      "$grdctl" --headless rdp enable
-    '';
+    # Packaged unit (pkgs.gnome-remote-desktop, not authored here) — this
+    # augments it with the ordering the package itself doesn't declare. See
+    # the Before= comment on gnome-remote-desktop-rdp-setup above for why.
+    gnome-remote-desktop-headless = {
+      after = [ "gnome-remote-desktop-rdp-setup.service" ];
+      requires = [ "gnome-remote-desktop-rdp-setup.service" ];
+    };
   };
 
   environment = {
