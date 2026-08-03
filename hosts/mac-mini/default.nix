@@ -67,6 +67,17 @@ in
   # via `ssh -L 5900:localhost:5900 mac-mini` (FIDO2/Yubikey pubkey, the
   # fleet's real trust mechanism) then point a VNC client at localhost:5900.
   # No firewall rule needed: nothing is listening on a routable interface.
+  #
+  # Audio: the RFB protocol wayvnc speaks has no audio channel at all (never
+  # has, in any VNC implementation) — so sound needs its own path, riding the
+  # same SSH pubkey trust rather than a new listening service. PipeWire +
+  # WirePlumber below give the sway session somewhere to send audio; to
+  # actually hear it on the client, pull it over the same SSH connection:
+  #   ssh mac-mini pw-record --format=s16 --rate=48000 --channels=2 - \
+  #     | pw-play --format=s16 --rate=48000 --channels=2 -
+  # (client side needs its own pipewire install for pw-play). On-demand, not
+  # a standing tunnel — matches the ssh -L step above rather than adding an
+  # always-on audio daemon.
   programs.sway = {
     enable = true;
     # XWayland stays on (module default) for GUI apps (e.g. the eventual
@@ -224,6 +235,8 @@ in
       slurp # region-select for the grim screenshot tool already in
       # programs.sway.extraPackages
       swappy # quick screenshot annotation
+
+      pipewire # pw-record/pw-play, for the ssh-piped audio one-liner above
     ];
   };
 
@@ -235,9 +248,13 @@ in
         Type = "simple";
         User = "martin";
         Group = "users";
-        # Self-contained runtime dir — deliberately not /run/user/<uid>/logind's
-        # kind, so this doesn't depend on a real login session or lingering
-        # ever having been set up (this host has none).
+        # Self-contained runtime dir — deliberately not /run/user/<uid>, the
+        # one logind would give a systemd --user session (martin does have
+        # linger=true set fleet-wide, users/martin/nixos.nix, so that dir
+        # does exist here too). Using a plain system service instead keeps
+        # sway/wayvnc/pipewire independent of user@<uid>.service's own
+        # startup ordering, and gives them one shared runtime dir instead of
+        # needing to agree on logind's.
         RuntimeDirectory = "sway-headless";
         RuntimeDirectoryMode = "0700";
         ExecStart = "${config.programs.sway.package}/bin/sway";
@@ -285,6 +302,70 @@ in
         XDG_RUNTIME_DIR = "/run/sway-headless";
         WAYLAND_DISPLAY = "wayland-1";
       };
+    };
+
+    # Deliberately not services.pipewire.enable: that module wires PipeWire
+    # as systemd --user units, which live under logind's /run/user/<uid> —
+    # a different runtime dir than the /run/sway-headless this whole session
+    # already uses (see the runtime-dir comment on sway-headless above).
+    # Running PipeWire as plain system services pointed at the same
+    # /run/sway-headless keeps everything — Wayland socket, wayvnc, audio —
+    # in one runtime dir any app spawned inside the sway session can find.
+    # (The module's other alternative, services.pipewire.systemWide, is a
+    # different thing: a separate "pipewire" system user shared across all
+    # users, which upstream itself advises against — not what's needed for a
+    # single-user box.)
+    pipewire-headless = {
+      description = "PipeWire media server for the headless Sway session";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "sway-headless.service" ];
+      requires = [ "sway-headless.service" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "martin";
+        Group = "users";
+        ExecStart = "${pkgs.pipewire}/bin/pipewire -c ${pkgs.pipewire}/share/pipewire/pipewire.conf";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
+    };
+
+    # Chromium/Firefox (and most Electron apps, e.g. Zoom) talk libpulse, not
+    # native PipeWire — this compat server is what actually catches their
+    # audio output. Socket lands at $XDG_RUNTIME_DIR/pulse/native, same dir
+    # every app in the sway session already has as XDG_RUNTIME_DIR, so
+    # nothing extra needs pointing at it.
+    pipewire-pulse-headless = {
+      description = "PipeWire PulseAudio-compat server for the headless Sway session";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "pipewire-headless.service" ];
+      requires = [ "pipewire-headless.service" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "martin";
+        Group = "users";
+        ExecStart = "${pkgs.pipewire}/bin/pipewire-pulse -c ${pkgs.pipewire}/share/pipewire/pipewire-pulse.conf";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
+    };
+
+    wireplumber-headless = {
+      description = "WirePlumber session manager for the headless PipeWire instance";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "pipewire-headless.service" ];
+      requires = [ "pipewire-headless.service" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "martin";
+        Group = "users";
+        ExecStart = "${pkgs.wireplumber}/bin/wireplumber";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
     };
   };
 
