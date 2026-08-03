@@ -22,6 +22,7 @@ mod orin        '.just/orin.just'
 mod nasbook     '.just/nasbook.just'
 mod core-pi     '.just/core-pi.just'
 mod hass-pi     '.just/hass-pi.just'
+mod mac-mini    '.just/mac-mini.just'
 
 # --- Top-level shortcuts (muscle memory) ---
 
