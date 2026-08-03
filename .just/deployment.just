@@ -670,8 +670,33 @@ mac-mini-verify ip="10.0.0.16":
     # for the first connection.
     export SSH_ASKPASS_REQUIRE=never
 
+    # After a mac-mini reinstall its SSH host key is new — this workstation's
+    # known_hosts still has the OLD one, so ssh refuses the connection for
+    # safety ("REMOTE HOST IDENTIFICATION HAS CHANGED"). Expected after a
+    # legitimate reinstall, not a MITM — but only auto-clear the stale entry
+    # on that SPECIFIC error, never for a generic connection failure (that
+    # would defeat the whole point of host-key checking).
     check "SSH reachable"
-    if ssh -o ConnectTimeout=15 "$IP" true; then ok "reachable"; else bad "unreachable — stopping"; exit 1; fi
+    sshErr="$(mktemp)"
+    if ssh -o ConnectTimeout=15 "$IP" true 2>"$sshErr"; then
+      ok "reachable"
+    elif grep -q "REMOTE HOST IDENTIFICATION HAS CHANGED\|Host key verification failed" "$sshErr"; then
+      echo "  (stale known_hosts entry for $IP — clearing and re-trusting the new key from this reinstall)"
+      ssh-keygen -R "$IP" >/dev/null 2>&1
+      if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$IP" true; then
+        ok "reachable (re-trusted new host key)"
+      else
+        bad "still unreachable after re-trusting host key — stopping"
+        rm -f "$sshErr"
+        exit 1
+      fi
+    else
+      cat "$sshErr" >&2
+      bad "unreachable — stopping"
+      rm -f "$sshErr"
+      exit 1
+    fi
+    rm -f "$sshErr"
 
     check "auto-unlock (no physical passphrase needed to reach here)"
     ok "implied by SSH reachability — this host has no console fallback"
