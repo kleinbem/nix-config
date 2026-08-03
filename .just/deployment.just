@@ -446,23 +446,25 @@ mac-mini-install-usb device="/dev/sdb":
     # exists to catch). It's also a brand-new host with nothing in Attic yet.
 
     # Random alnum passphrase, not human-chosen: this box has no console to
-    # ever type it at again (Tang auto-unlock is the real unlock path), so
-    # there's no benefit to it being memorable — only to it being strong and
-    # never typed twice by hand (a mismatch between the disko-format-time and
-    # generate-jwe-time passphrase silently breaks auto-unlock, previously a
-    # real manual-entry risk). Save it to Bitwarden per the printed output —
-    # this script does NOT persist it anywhere itself.
-    # NOT `tr ... | head -c 24`: head closes the pipe after 24 bytes, tr gets
+    # ever type it at again in normal operation (Tang auto-unlock is the real
+    # unlock path) — 14 chars (~83 bits of alnum entropy) is still far beyond
+    # brute-force reach for a passphrase this rarely used, and short enough to
+    # type by hand for the one legitimate reason to ever need it: the
+    # initrd-SSH fallback if Tang is ever unreachable at boot. Also avoids the
+    # old real risk of a mismatch between the disko-format-time and
+    # generate-jwe-time passphrase from manual entry. Save it to Bitwarden per
+    # the printed output — this script does NOT persist it anywhere itself.
+    # NOT `tr ... | head -c 14`: head closes the pipe after 14 bytes, tr gets
     # SIGPIPE writing into it, and under this script's `set -o pipefail` that
     # aborts the whole recipe (exit 141) despite the passphrase itself being
     # fine. Read a generous fixed amount up front instead (tr fully consumes
     # it, no pipe closes early) and slice with bash, no second pipe at all.
     RAW_ENTROPY="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9')"
-    if [ "${#RAW_ENTROPY}" -lt 24 ]; then
-      echo "❌ Only got ${#RAW_ENTROPY} alnum chars from 256 random bytes (need 24) — vanishingly unlikely, just retry."
+    if [ "${#RAW_ENTROPY}" -lt 14 ]; then
+      echo "❌ Only got ${#RAW_ENTROPY} alnum chars from 256 random bytes (need 14) — vanishingly unlikely, just retry."
       exit 1
     fi
-    PASSPHRASE="${RAW_ENTROPY:0:24}"
+    PASSPHRASE="${RAW_ENTROPY:0:14}"
     PASS_FILE="$(mktemp)"
     chmod 600 "$PASS_FILE"
     printf '%s' "$PASSPHRASE" > "$PASS_FILE"
