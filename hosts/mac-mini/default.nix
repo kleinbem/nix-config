@@ -196,6 +196,35 @@ in
   };
   networking.resolvconf.enable = lib.mkForce false;
 
+  # Fixes network-routing.nix (fleet-wide via base.nix) silently targeting a
+  # nonexistent "wlo1" (the my.network.externalInterface default) on every
+  # boot/5min timer — harmless (the enforce-container-routes script has
+  # `|| true`) but pointless without the real interface name.
+  my.network.externalInterface = "enp2s0f0";
+
+  # Static IP migration, stage 1 (safe/additive): add the target infra-VLAN
+  # address (inventory.nix ip = 10.0.0.16) as a SECOND address on top of the
+  # existing DHCP lease (.70) — DHCP stays fully in control, nothing about
+  # current reachability changes. This host has zero physical console, so
+  # cutting DHCP over in the same step as adding the static address isn't
+  # worth the risk: verify .16 actually responds first. Stage 2 (later, once
+  # confirmed): useDHCP = false, explicit defaultGateway, and flip
+  # modules/flake/colmena.nix's targetHost from .70 to hostMeta.mac-mini.ip.
+  #
+  # useDHCP must be EXPLICIT here: NixOS's actual default (networking.
+  # interfaces.<name>.useDHCP = null) disables DHCP automatically the moment
+  # ANY ipv4.addresses entry exists on the interface — without this line,
+  # "stage 1" would silently perform the full cutover we're trying to avoid.
+  networking.interfaces."enp2s0f0" = {
+    useDHCP = true;
+    ipv4.addresses = [
+      {
+        address = "10.0.0.16";
+        prefixLength = 16;
+      }
+    ];
+  };
+
   # Override the fleet-wide zstd zram default (core.nix): zstd's better
   # ratio costs more CPU per swap page than lz4, which matters more on
   # this 2-core CPU than on the rest of the fleet. 16GB RAM means this
