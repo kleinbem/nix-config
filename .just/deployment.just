@@ -731,6 +731,21 @@ mac-mini-verify ip="10.0.0.16":
     echo ""
     if [ "$fail" = "0" ]; then echo "✅ All checks passed."; else echo "❌ Some checks failed — see above."; exit 1; fi
 
+[doc("Wake mac-mini via a Wake-on-LAN magic packet, for the rare case it ends up suspended (e.g. a manual `systemctl suspend`) — idle-suspend is disabled fleet-side (hosts/mac-mini/default.nix, programs.dconf.profiles.user), so this shouldn't normally be needed. Confirmed working: tg3 NIC on this host reports 'Supports Wake-on: g' / 'Wake-on: g' (magic-packet mode enabled by networking.interfaces.enp2s0f0.wakeOnLan.enable = true). NOT a substitute for physical power if the box has actually lost power (WoL only wakes from a soft sleep/off state, not a cold boot after a power loss).")]
+[group("Provisioning")]
+mac-mini-wake:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # MAC of enp2s0f0 (mac-mini's onboard Broadcom NetXtreme), confirmed via
+    # `ssh mac-mini ethtool enp2s0f0` — not otherwise recorded anywhere, so
+    # pinned here rather than re-discovered by SSHing into a host that, by
+    # definition, isn't reachable when you need this recipe.
+    mac="3c:07:54:0b:7b:a0"
+    broadcast="10.0.255.255" # matches the /16 subnet in hosts/mac-mini/default.nix
+    echo "📡 Sending Wake-on-LAN magic packet to mac-mini ($mac via $broadcast)..."
+    nix shell nixpkgs#wakeonlan --command wakeonlan -i "$broadcast" "$mac"
+    echo "   Give it ~30-60s (Tang unlock + boot), then: just deployment::mac-mini-verify"
+
 [group("Provisioning")]
 [confirm("💿 WIPE the USB SSD and install NixOS for a Pi? This is destructive.")]
 pi-install-usb host device="/dev/sdc":

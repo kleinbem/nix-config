@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 56  
-**Consumer files scanned:** 15
+**Declarations indexed:** 59  
+**Consumer files scanned:** 16
 
 ---
 
@@ -96,6 +96,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `ip`, `memoryLimit`, `passwordFile`, `rcloneConfigFile`, `systemPasswordFile`, `systemTargets`, `targets`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
 
+### `my.containers.buzz`
+
+- **Declared:** `nix-presets/containers/buzz.nix:32`
+- **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
+- **Consumed by:** `host:nixos-nvme`
+
 ### `my.containers.caddy`
 
 - **Declared:** `nix-presets/containers/caddy/default.nix:18`
@@ -149,6 +155,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/github-runner.nix:42`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
+
+### `my.containers.hermes`
+
+- **Declared:** `nix-presets/containers/hermes.nix:14`
+- **Sub-options:** `discord.enable`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
+- **Consumed by:** `host:hass-pi`
 
 ### `my.containers.home-assistant`
 
@@ -282,7 +294,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.desktop`
 
@@ -290,7 +302,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/desktop.nix:12`
 - **Sub-options:** `gnome.enable`
-- **Consumed by:** `host:nixos-nvme`
+- **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
 ### `my.desktop.claude`
 
@@ -306,13 +318,21 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`
 - **Consumed by:** _(no opt-ins detected)_
 
+## `my.herdr-remote-client`
+
+### `my.herdr-remote-client`
+
+- **Declared:** `nix-presets/herdr-remote-client.nix:12`
+- **Sub-options:** `enable`, `serverAlias`, `serverIp`, `serverUser`, `shellAlias`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
+
 ## `my.monitoring`
 
 ### `my.monitoring.node`
 
 - **Declared:** `nix-presets/nixosModules/monitoring-node.nix:6`
 - **Sub-options:** `enable`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.pwa`
 
@@ -354,7 +374,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/tang.nix:11`
 - **Sub-options:** `enable`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.threeDPrinting`
 
@@ -366,7 +386,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/timesync.nix:11`
 - **Sub-options:** `enable`
-- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.virtualisation`
 
@@ -374,6 +394,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
 - **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
-- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 - **Explicit overrides:** `host:nixos-nvme`
 

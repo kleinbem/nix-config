@@ -92,6 +92,25 @@ in
 
   services.gnome.gnome-remote-desktop.enable = true;
 
+  # nixos-nvme disables GNOME's idle-suspend via a home-manager dconf setting
+  # (modules/home-manager/gnome.nix, sleep-inactive-ac-type = "nothing"), but
+  # that's only wired to martin's home-manager profile — mac-mini has no
+  # home-manager at all (headless tier). Without this, GNOME's stock
+  # idle-suspend default applies, and with zero physical peripherals ever
+  # generating input, the box suspends itself shortly after autologin —
+  # confirmed live 2026-08-03 (pulsing sleep LED, full ARP-level
+  # unreachability including over NetBird) not long after a clean first
+  # boot. programs.dconf.profiles.user is the non-home-manager equivalent:
+  # a system-wide dconf default any user picks up, no home-manager needed.
+  programs.dconf.profiles.user.databases = [
+    {
+      settings."org/gnome/settings-daemon/plugins/power" = {
+        sleep-inactive-ac-type = "nothing";
+        sleep-inactive-battery-type = "nothing"; # no battery on this hardware, kept for consistency
+      };
+    }
+  ];
+
   # grdctl writes RDP config into per-user dconf, which needs a real D-Bus
   # session + dconf — i.e. martin's actual logind session after autologin,
   # not a bespoke runtime dir the way wayvnc needed one. gnome-session.target

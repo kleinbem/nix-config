@@ -14,6 +14,7 @@
 - **core-gateway** (`10.0.0.1`, openwrt) — physical, gateway, core
 - **core-pi** (`10.0.0.22`, aarch64-linux, ssh) — raspberry-pi, central
 - **hass-pi** (`10.0.0.21`, aarch64-linux, ssh) — raspberry-pi, home-assistant
+- **mac-mini** (`10.0.0.16`, x86_64-linux, ssh) — desktop, legacy-hardware
 - **nasbook** (`10.0.0.30`, x86_64-linux, ssh) — nas, storage, hub
 - **nixos-nvme** (`10.85.46.1`, x86_64-linux, local) — workstation, desktop
 - **orin-nano** (`10.0.0.15`, aarch64-linux, ssh) — edge, ai, jetson
@@ -37,6 +38,7 @@
 
 - 🕵️ **Agent Zero** (`agent-zero`) `10.85.49.113:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
 - 🧠 **AnythingLLM** (`anythingllm`) `10.85.49.132:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
+- 🪽 **Hermes Agent** (`hermes`) `10.85.49.114` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
 - 🏠 **Home Assistant** (`home-assistant`) `10.85.49.10:8123` — Smart Home Automation. _[src: nix-presets/containers/home-assistant.nix:12]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.49.102:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
 - 🐾 **OpenClaw** (`openclaw`) `10.85.49.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
@@ -65,6 +67,7 @@
 
 - `alertmanager` — Alertmanager
 - `authentik` _[src: nix-presets/containers/authentik.nix:13]_
+- `buzz` — Buzz _[src: nix-presets/containers/buzz.nix:32]_
 - `code-server` — Code Server _[src: nix-presets/containers/code-server.nix:14]_
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
@@ -79,7 +82,6 @@
 - `odoo` _[src: nix-presets/containers/odoo.nix:14]_
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
-- `ollama-rpi` — Ollama RPi 5
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
 - `stalwart` _[src: nix-presets/containers/stalwart.nix:23]_
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
