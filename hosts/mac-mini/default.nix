@@ -28,6 +28,7 @@ in
 
     "${self}/users/martin/nixos.nix"
     "${self}/modules/nixos/services/container-updater.nix"
+    "${self}/modules/nixos/desktop.nix"
 
     inputs.disko.nixosModules.disko
     ./disko.nix
@@ -52,391 +53,104 @@ in
 
   # Remote desktop: this host's whole reason for existing (see top-of-file
   # comment) is GUI access with zero physical keyboard/screen/console ever
-  # attached. Wayland (sway), not X11 — xrdp was considered first but it only
-  # speaks X11 (drives xorgxrdp/Xvnc, no compositor support at all), and a
-  # real wlroots compositor + wayvnc is the modern equivalent without that
-  # legacy dependency.
+  # attached. Was Wayland (sway) + wayvnc + noVNC (bespoke systemd services
+  # driving a headless wlroots compositor by hand — see git history for that
+  # setup); replaced with real GNOME (my.desktop.gnome.enable, the same
+  # fleet-wide module nixos-nvme uses) via GDM autologin + GNOME Remote
+  # Desktop's headless RDP daemon, which is the module's own supported
+  # answer to "no physical display ever attached" rather than a hand-rolled
+  # runtime dir + WLR_BACKENDS=headless trick.
   #
-  # Auth: wayvnc's only auth backend is a PAM username+password check, which
-  # would be this fleet's first password-gated remote-access surface (every
-  # other host is FIDO2/Yubikey pubkey-only, headless.nix sets
-  # PasswordAuthentication=false and martin has no password hash here at
-  # all). Same call already made for NetBird's keyless SSH (reverted
-  # fleet-wide for being weaker auth than pubkey SSH). So wayvnc binds
-  # loopback-only and is NOT reachable from LAN/NetBird directly — reach it
-  # via `ssh -L 5900:localhost:5900 -L 6080:localhost:6080 mac-mini`
-  # (FIDO2/Yubikey pubkey, the fleet's real trust mechanism) then either
-  # point a native VNC client at localhost:5900, or open
-  # http://localhost:6080/vnc.html for the browser-based noVNC client
-  # (novnc-headless below) — same tunnel, same auth, just a different
-  # client. No firewall rule needed: nothing is listening on a routable
-  # interface.
+  # Auth/exposure: kept identical to the old wayvnc posture. RDP's only auth
+  # is a username+password (grdctl-provisioned below), the same
+  # weaker-than-FIDO2 tradeoff wayvnc had — so it stays OFF the firewall
+  # entirely (no networking.firewall.allowedTCPPorts / openFirewall) and is
+  # reachable only via `ssh -L 3389:localhost:3389 mac-mini` (FIDO2/Yubikey
+  # pubkey, the fleet's real trust mechanism) + a local RDP client pointed
+  # at localhost:3389. No NetBird ACL change needed — this never touches a
+  # routable interface, same as wayvnc never did.
   #
-  # Audio: the RFB protocol wayvnc speaks has no audio channel at all (never
-  # has, in any VNC implementation) — so sound needs its own path, riding the
-  # same SSH pubkey trust rather than a new listening service. PipeWire +
-  # WirePlumber below give the sway session somewhere to send audio, and
-  # pipewire-null-sink-headless (further down) declares a virtual sink with
-  # a real monitor port and makes it the default — WirePlumber's own
-  # fallback ("Dummy Output") has no monitor at all on this host, since
-  # there's no real audio hardware. To actually hear it on the client, pull
-  # it over the same SSH connection, using parec (not pw-record — that's
-  # native-protocol only and can't see a pulse-compat monitor by name):
-  #   ssh mac-mini parec --device=headless_sink.monitor --format=s16le --rate=48000 --channels=2 \
-  #     | pw-play --format=s16 --rate=48000 --channels=2 -
-  # (client side needs its own pipewire install for pw-play). On-demand, not
-  # a standing tunnel — matches the ssh -L step above rather than adding an
-  # always-on audio daemon.
-  programs.sway = {
-    enable = true;
-    # XWayland stays on (module default) for GUI apps (e.g. the eventual
-    # Zoom-recording container) that don't speak native Wayland.
+  # UNVERIFIED so far (no physical monitor to watch a first boot on, and
+  # this hasn't been through a real reboot test yet — see the mac-mini tg3
+  # incident for why that matters): whether GDM autologin + gnome-shell
+  # actually come up cleanly on this box's real Sandy Bridge iGPU with
+  # nothing connected to its HDMI/DP port. Unlike tg3 (an initrd-level
+  # failure with no network at all), a failed GNOME session here does NOT
+  # take SSH/NetBird down with it — recover via `ssh mac-mini` +
+  # `journalctl -u display-manager` / `systemctl --user status
+  # gnome-remote-desktop-headless`, or roll back to the previous generation
+  # over SSH, no physical access required.
+  my.desktop.gnome.enable = true;
+
+  services.displayManager = {
+    autoLogin = {
+      enable = true;
+      user = "martin";
+    };
+    defaultSession = "gnome";
   };
 
-  # Full config override, not the stock sway config programs.sway ships
-  # (mkOptionDefault priority, so a plain assignment here wins). Tuned for
-  # this box's actual situation: driven entirely over VNC from another
-  # machine's keyboard, no physical display to size for, dark-mode
-  # preference.
-  environment = {
-    etc."sway/config".text = ''
-      # Mod4 (Super) risks being intercepted by the host GNOME session on
-      # whatever machine you're VNC-ing in from before it ever reaches this
-      # compositor. Alt passes through VNC clients far more reliably.
-      set $mod Mod1
-      set $term foot
-      set $menu wmenu-run
+  services.gnome.gnome-remote-desktop.enable = true;
 
-      # wlroots' headless backend defaults to a cramped 1280x720 virtual
-      # output — there's no physical monitor to size against, so just pick
-      # something comfortable to view over VNC.
-      output HEADLESS-1 resolution 1920x1080
+  # grdctl writes RDP config into per-user dconf, which needs a real D-Bus
+  # session + dconf — i.e. martin's actual logind session after autologin,
+  # not a bespoke runtime dir the way wayvnc needed one. gnome-session.target
+  # is exactly that context. Idempotent: password + TLS cert/key are
+  # generated once and persisted (below), re-applied via grdctl on every
+  # session start rather than regenerated.
+  systemd.user.services.gnome-remote-desktop-rdp-setup = {
+    description = "Provision GNOME Remote Desktop (headless RDP) credentials + TLS cert";
+    wantedBy = [ "gnome-session.target" ];
+    after = [ "gnome-session.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      set -euo pipefail
+      state="$HOME/.local/share/gnome-remote-desktop-rdp"
+      mkdir -p "$state"
 
-      output * bg #000000 solid_color
+      if [ ! -f "$state/password" ]; then
+        ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
+        chmod 600 "$state/password"
+        echo "Generated a new GNOME Remote Desktop (RDP) password for martin — save it now: $(cat "$state/password")"
+      fi
 
-      # GTK apps (Firefox, pcmanfm) pick up dark mode from $GTK_THEME, set on
-      # the sway-headless systemd service below.
+      if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
+        ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
+          -subj "/CN=mac-mini" \
+          -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
+        chmod 600 "$state/tls.key"
+      fi
 
-      gaps inner 8
-      default_border pixel 2
-
-      # Mouse-first setup: every window floats by default instead of tiling,
-      # with a real titlebar to grab (default_floating_border normal, not
-      # pixel) — drag the titlebar to move, drag an edge/corner to resize,
-      # no keyboard modifier required for either. floating_modifier below is
-      # a fallback (hold $mod to drag from anywhere in the window body), not
-      # the primary way to move things.
-      for_window [app_id=".*"] floating enable
-      for_window [class=".*"] floating enable
-      default_floating_border normal
-
-      font pango:sans 10
-
-      floating_modifier $mod normal
-
-      # Scroll over empty desktop to switch workspaces; right-click empty
-      # desktop for the app launcher — both fire only on bare background,
-      # never stealing scroll/right-click from an actual application window.
-      bindsym button3 exec $menu
-      bindsym button4 workspace prev
-      bindsym button5 workspace next
-      bindsym $mod+Return exec $term
-      bindsym $mod+Shift+q kill
-      bindsym $mod+d exec $menu
-      bindsym $mod+Shift+c reload
-      bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit sway (ends the VNC session)?' -B 'Yes, exit sway' 'swaymsg exit'
-
-      bindsym $mod+Left focus left
-      bindsym $mod+Down focus down
-      bindsym $mod+Up focus up
-      bindsym $mod+Right focus right
-      bindsym $mod+Shift+Left move left
-      bindsym $mod+Shift+Down move down
-      bindsym $mod+Shift+Up move up
-      bindsym $mod+Shift+Right move right
-
-      bindsym $mod+1 workspace number 1
-      bindsym $mod+2 workspace number 2
-      bindsym $mod+3 workspace number 3
-      bindsym $mod+4 workspace number 4
-      bindsym $mod+5 workspace number 5
-      bindsym $mod+Shift+1 move container to workspace number 1
-      bindsym $mod+Shift+2 move container to workspace number 2
-      bindsym $mod+Shift+3 move container to workspace number 3
-      bindsym $mod+Shift+4 move container to workspace number 4
-      bindsym $mod+Shift+5 move container to workspace number 5
-
-      bindsym $mod+h splith
-      bindsym $mod+v splitv
-      bindsym $mod+s layout stacking
-      bindsym $mod+w layout tabbed
-      bindsym $mod+e layout toggle split
-      bindsym $mod+f fullscreen
-      bindsym $mod+Shift+space floating toggle
-      bindsym $mod+space focus mode_toggle
-
-      bindsym $mod+Shift+minus move scratchpad
-      bindsym $mod+minus scratchpad show
-
-      mode "resize" {
-          bindsym Left resize shrink width 10px
-          bindsym Down resize grow height 10px
-          bindsym Up resize shrink height 10px
-          bindsym Right resize grow width 10px
-          bindsym Return mode "default"
-          bindsym Escape mode "default"
-      }
-      bindsym $mod+r mode "resize"
-
-      # No idle lock, deliberately: this box has no physical screen to
-      # protect (headless, VNC-only), and the real access gate is the
-      # loopback-only wayvnc + SSH tunnel, not anything inside the session.
-      # swayidle/swaylock are installed (programs.sway.extraPackages default)
-      # but intentionally not wired up here.
-
-      client.focused          #4c7899 #000000 #ffffff #2e9ef4   #000000
-      client.focused_inactive #333333 #000000 #ffffff #484e50   #000000
-      client.unfocused        #333333 #000000 #888888 #292d2e   #000000
-      client.urgent           #2f343a #900000 #ffffff #900000   #900000
-      client.background       #000000
-
-      bar {
-          position top
-          status_command while date +'%Y-%m-%d %X'; do sleep 1; done
-          colors {
-              background #000000
-              statusline #ffffff
-              focused_workspace  #4c7899 #285577 #ffffff
-              inactive_workspace #000000 #000000 #888888
-          }
-      }
-
-      include /etc/sway/config.d/*
+      grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
+      "$grdctl" --headless rdp set-tls-cert "$state/tls.crt"
+      "$grdctl" --headless rdp set-tls-key "$state/tls.key"
+      "$grdctl" --headless rdp set-credentials martin "$(cat "$state/password")"
+      "$grdctl" --headless rdp enable
     '';
+  };
 
+  environment = {
     # /home has no disk-backed mount of its own (disko.nix only declares
     # /nix and /nix/persist) — it lives under the tmpfs "/" declared near
-    # the bottom of this file, so it's wiped every reboot by default. The
-    # fleet-wide persistence.nix only keeps shell history for hosts other
-    # than nixos-nvme (whose /home is a real, separate partition) —
-    # mac-mini is the first host in the fleet running GUI apps that
-    # actually need real per-user state, so there's no existing pattern to
-    # inherit here. Without this, Firefox's profile (bookmarks/history/
-    # logins/extensions) and pcmanfm/GTK settings (e.g. the dark theme)
-    # would reset every boot.
+    # the bottom of this file, so it's wiped every reboot by default.
+    # gnome-remote-desktop-rdp state (above) also needs to survive reboots —
+    # without it the RDP password/cert would regenerate (and need
+    # re-entering in a client) on every boot.
     persistence."/nix/persist".users.martin.directories = [
       ".mozilla" # Firefox profile
-      ".config" # pcmanfm bookmarks, GTK/dconf-less settings, mimeapps.list
+      ".config" # GNOME/dconf settings, GTK, mimeapps.list
+      ".local/share/gnome-remote-desktop-rdp" # RDP password + TLS cert/key
     ];
 
     systemPackages = with pkgs; [
       sops
       age
       libfido2
-
-      # Sway session extras — programs.sway.extraPackages only covers the
-      # bare minimum (terminal, launcher, lock/idle); this rounds it out
-      # into an actually usable remote desktop over wayvnc.
       firefox
-      pcmanfm # lightweight GTK file manager, fits the minimal setup better
-      # than Nautilus/Thunar's heavier dependency chains
-      wl-clipboard # wl-copy/wl-paste
-      slurp # region-select for the grim screenshot tool already in
-      # programs.sway.extraPackages
-      swappy # quick screenshot annotation
-
-      pipewire # pw-record/pw-play, for the ssh-piped audio one-liner above
     ];
-  };
-
-  systemd.services = {
-    sway-headless = {
-      description = "Headless Sway compositor (no physical display) for remote desktop";
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "martin";
-        Group = "users";
-        # Self-contained runtime dir — deliberately not /run/user/<uid>, the
-        # one logind would give a systemd --user session (martin does have
-        # linger=true set fleet-wide, users/martin/nixos.nix, so that dir
-        # does exist here too). Using a plain system service instead keeps
-        # sway/wayvnc/pipewire independent of user@<uid>.service's own
-        # startup ordering, and gives them one shared runtime dir instead of
-        # needing to agree on logind's.
-        RuntimeDirectory = "sway-headless";
-        RuntimeDirectoryMode = "0700";
-        ExecStart = "${config.programs.sway.package}/bin/sway";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-      environment = {
-        # No physical GPU output ever attached — wlroots' headless backend
-        # creates a virtual output instead of requiring real DRM/KMS access.
-        WLR_BACKENDS = "headless";
-        WLR_LIBINPUT_NO_DEVICES = "1";
-        XDG_RUNTIME_DIR = "/run/sway-headless";
-        WAYLAND_DISPLAY = "wayland-1";
-        XDG_SESSION_TYPE = "wayland";
-        # GTK apps (Firefox, pcmanfm) launched inside this session inherit
-        # this — forces dark mode without needing a full gsettings/dconf
-        # stack, which this minimal setup doesn't have.
-        GTK_THEME = "Adwaita:dark";
-        # System services get systemd's own minimal built-in PATH (coreutils/
-        # findutils/systemd bin dirs only), NOT /run/current-system/sw/bin —
-        # that's a login-shell/profile thing. The wrapped sway binary shells
-        # out to `dbus-run-session`, which then needs `dbus-daemon` on PATH;
-        # without this it fails with "No such file or directory" (exit 127).
-        # Confirmed the hard way on first deploy 2026-08-03: sway-headless
-        # crash-looped every 5s until this was added. /run/wrappers/bin is
-        # for setuid wrappers sway or its children might need too.
-        PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
-      };
-    };
-
-    wayvnc = {
-      description = "wayvnc VNC server for the headless Sway session (loopback only)";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "sway-headless.service" ];
-      requires = [ "sway-headless.service" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "martin";
-        Group = "users";
-        ExecStart = "${pkgs.wayvnc}/bin/wayvnc 127.0.0.1 5900";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-      environment = {
-        XDG_RUNTIME_DIR = "/run/sway-headless";
-        WAYLAND_DISPLAY = "wayland-1";
-      };
-    };
-
-    # Browser-based VNC (noVNC), for when installing/opening a native VNC
-    # client isn't convenient. websockify bridges the browser's WebSocket
-    # connection to wayvnc's raw VNC port and also serves noVNC's static
-    # web client — same loopback-only posture as wayvnc itself (127.0.0.1
-    # only, no firewall rule, reached through the same SSH tunnel — just
-    # forward 6080 alongside 5900). Not a second listening surface with its
-    # own auth story: it's a local-only proxy in front of the same wayvnc
-    # instance, gated by the identical SSH-tunnel requirement.
-    novnc-headless = {
-      description = "noVNC web client + websockify proxy for wayvnc (loopback only)";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "wayvnc.service" ];
-      requires = [ "wayvnc.service" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "martin";
-        Group = "users";
-        ExecStart = "${pkgs.python3Packages.websockify}/bin/websockify --web=${pkgs.novnc}/share/webapps/novnc 127.0.0.1:6080 127.0.0.1:5900";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-    };
-
-    # Deliberately not services.pipewire.enable: that module wires PipeWire
-    # as systemd --user units, which live under logind's /run/user/<uid> —
-    # a different runtime dir than the /run/sway-headless this whole session
-    # already uses (see the runtime-dir comment on sway-headless above).
-    # Running PipeWire as plain system services pointed at the same
-    # /run/sway-headless keeps everything — Wayland socket, wayvnc, audio —
-    # in one runtime dir any app spawned inside the sway session can find.
-    # (The module's other alternative, services.pipewire.systemWide, is a
-    # different thing: a separate "pipewire" system user shared across all
-    # users, which upstream itself advises against — not what's needed for a
-    # single-user box.)
-    pipewire-headless = {
-      description = "PipeWire media server for the headless Sway session";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "sway-headless.service" ];
-      requires = [ "sway-headless.service" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "martin";
-        Group = "users";
-        ExecStart = "${pkgs.pipewire}/bin/pipewire -c ${pkgs.pipewire}/share/pipewire/pipewire.conf";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
-    };
-
-    # Chromium/Firefox (and most Electron apps, e.g. Zoom) talk libpulse, not
-    # native PipeWire — this compat server is what actually catches their
-    # audio output. Socket lands at $XDG_RUNTIME_DIR/pulse/native, same dir
-    # every app in the sway session already has as XDG_RUNTIME_DIR, so
-    # nothing extra needs pointing at it.
-    pipewire-pulse-headless = {
-      description = "PipeWire PulseAudio-compat server for the headless Sway session";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "pipewire-headless.service" ];
-      requires = [ "pipewire-headless.service" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "martin";
-        Group = "users";
-        ExecStart = "${pkgs.pipewire}/bin/pipewire-pulse -c ${pkgs.pipewire}/share/pipewire/pipewire-pulse.conf";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
-    };
-
-    wireplumber-headless = {
-      description = "WirePlumber session manager for the headless PipeWire instance";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "pipewire-headless.service" ];
-      requires = [ "pipewire-headless.service" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "martin";
-        Group = "users";
-        ExecStart = "${pkgs.wireplumber}/bin/wireplumber";
-        Restart = "on-failure";
-        RestartSec = "5s";
-      };
-      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
-    };
-
-    # No real audio hardware exists on this host, so WirePlumber's own
-    # fallback ("Dummy Output") has no monitor port at all — confirmed live
-    # via `wpctl status`/`pactl list short sources` (empty). Without a
-    # monitor there's nothing for the ssh-piped pw-record/parec one-liner
-    # (top-of-file Audio comment) to capture. This declares a proper null
-    # sink with a real monitor instead, and makes it the default so anything
-    # in the sway session actually routes there. Oneshot + RemainAfterExit:
-    # runs once per boot, not restarted continuously; the sink-exists check
-    # keeps it idempotent if the service ever IS manually restarted (loading
-    # module-null-sink twice would otherwise create a duplicate sink).
-    pipewire-null-sink-headless = {
-      description = "Create the headless virtual audio sink (WirePlumber's own fallback has no monitor port)";
-      wantedBy = [ "multi-user.target" ];
-      after = [
-        "pipewire-pulse-headless.service"
-        "wireplumber-headless.service"
-      ];
-      requires = [
-        "pipewire-pulse-headless.service"
-        "wireplumber-headless.service"
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        User = "martin";
-        Group = "users";
-        ExecStart = pkgs.writeShellScript "pipewire-null-sink-setup" ''
-          set -euo pipefail
-          if ! ${pkgs.pulseaudio}/bin/pactl list short sinks | grep -q headless_sink; then
-            ${pkgs.pulseaudio}/bin/pactl load-module module-null-sink \
-              sink_name=headless_sink sink_properties=device.description=Headless_Sink
-          fi
-          ${pkgs.pulseaudio}/bin/pactl set-default-sink headless_sink
-        '';
-      };
-      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
-    };
   };
 
   my = {

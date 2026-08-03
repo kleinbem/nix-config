@@ -584,8 +584,8 @@ mac-mini-install-usb device:
     echo "        fleet-wide 'just in' passthrough for it)"
     echo "   4. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
     echo "   5. just deployment::mac-mini-verify   (once it's reachable over SSH —"
-    echo "        confirms auto-unlock, static IP, NetBird, and the sway/wayvnc"
-    echo "        remote desktop all actually came up clean)"
+    echo "        confirms auto-unlock, static IP, NetBird, and the GNOME/GDM"
+    echo "        autologin + remote desktop all actually came up clean)"
     echo "   6. (cd ../nix/infra/netbird && just plan, then just apply)   new"
     echo "        peers land with zero access until promoted into"
     echo "        personal-devices — groups.tf already lists mac-mini by name,"
@@ -650,7 +650,7 @@ mac-mini-update-usb device:
     echo "✅ In-place update complete — put the SSD in the Mac Mini, plug in ethernet, and boot."
 
 [group("Provisioning")]
-[doc("Post-boot sanity check after a mac-mini (re)install: SSH reachability, static IP, tg3 in the running kernel, NetBird mesh status, and the sway/wayvnc remote-desktop services. Read-only — doesn't change anything.")]
+[doc("Post-boot sanity check after a mac-mini (re)install: SSH reachability, static IP, tg3 in the running kernel, NetBird mesh status, and the GNOME/GDM autologin + GNOME Remote Desktop (headless RDP) services. Read-only — doesn't change anything.")]
 mac-mini-verify ip="10.0.0.16":
     #!/usr/bin/env bash
     set -uo pipefail
@@ -713,13 +713,20 @@ mac-mini-verify ip="10.0.0.16":
     check "NetBird visible peers"
     if echo "$nb" | grep -qE "Peers count: [1-9]"; then ok "has visible peers"; else bad "0 peers — check groups.tf membership / default-policy closure"; fi
 
-    check "sway-headless + wayvnc services"
-    st="$(ssh "$IP" "systemctl is-active sway-headless.service wayvnc.service" 2>/dev/null || true)"
-    active_count="$(echo "$st" | grep -c '^active$')"
-    if [ "$active_count" = "2" ]; then ok "both active"; else bad "not both active: $st"; fi
+    check "GDM autologin session for martin"
+    if ssh "$IP" "loginctl list-sessions --no-legend 2>/dev/null | grep -q martin"; then ok "session active"; else bad "no martin session found"; fi
 
-    check "wayvnc listening on loopback only (127.0.0.1:5900, not exposed)"
-    if ssh "$IP" "ss -tlnp 2>/dev/null | grep -q '127.0.0.1:5900'" 2>/dev/null; then ok "loopback-only, as designed"; else bad "not listening where expected"; fi
+    check "gnome-remote-desktop-headless (user service)"
+    if ssh "$IP" "systemctl --user is-active gnome-remote-desktop-headless.service" 2>/dev/null | grep -q "^active$"; then ok "active"; else bad "not active"; fi
+
+    check "RDP listening, but NOT firewall-exposed (SSH-tunnel-only by design)"
+    listening="$(ssh "$IP" "ss -tlnp 2>/dev/null | grep -q ':3389 '" 2>/dev/null; echo $?)"
+    fw_open="$(ssh "$IP" "iptables -L nixos-fw -n 2>/dev/null | grep -q ':3389'" 2>/dev/null; echo $?)"
+    if [ "$listening" = "0" ] && [ "$fw_open" != "0" ]; then
+      ok "listening + no firewall rule (reach it via ssh -L 3389:localhost:3389 mac-mini)"
+    else
+      bad "listening=$listening (want 0) fw_open=$fw_open (want nonzero)"
+    fi
 
     echo ""
     if [ "$fail" = "0" ]; then echo "✅ All checks passed."; else echo "❌ Some checks failed — see above."; exit 1; fi
