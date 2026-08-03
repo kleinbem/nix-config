@@ -731,7 +731,7 @@ mac-mini-verify ip="10.0.0.16":
     echo ""
     if [ "$fail" = "0" ]; then echo "✅ All checks passed."; else echo "❌ Some checks failed — see above."; exit 1; fi
 
-[doc("Wake mac-mini via a Wake-on-LAN magic packet, for the rare case it ends up suspended (e.g. a manual `systemctl suspend`) — idle-suspend is disabled fleet-side (hosts/mac-mini/default.nix, programs.dconf.profiles.user), so this shouldn't normally be needed. Confirmed working: tg3 NIC on this host reports 'Supports Wake-on: g' / 'Wake-on: g' (magic-packet mode enabled by networking.interfaces.enp2s0f0.wakeOnLan.enable = true). NOT a substitute for physical power if the box has actually lost power (WoL only wakes from a soft sleep/off state, not a cold boot after a power loss).")]
+[doc("Wake mac-mini via a Wake-on-LAN magic packet, for the rare case it ends up suspended — idle-suspend is disabled + locked fleet-side (hosts/mac-mini/default.nix, programs.dconf.profiles.user, lockAll = true), so this shouldn't normally be needed. tg3 NIC confirms 'Supports Wake-on: g' / 'Wake-on: g' (magic packet is enabled), so the packet itself gets sent — but resume-from-sleep was observed NOT to restore network reachability on this specific hardware (2026-08-03: woke from sleep, stayed unreachable, only a full restart fixed it). Treat this as best-effort, not a reliable fix: if the box stays unreachable a minute or two after this, the box needs a physical power-cycle (hold the button) instead of waiting longer. Also NOT a substitute for physical power if the box has actually lost power (WoL only wakes from a soft sleep/off state, not a cold boot after a power loss).")]
 [group("Provisioning")]
 mac-mini-wake:
     #!/usr/bin/env bash
@@ -744,7 +744,10 @@ mac-mini-wake:
     broadcast="10.0.255.255" # matches the /16 subnet in hosts/mac-mini/default.nix
     echo "📡 Sending Wake-on-LAN magic packet to mac-mini ($mac via $broadcast)..."
     nix shell nixpkgs#wakeonlan --command wakeonlan -i "$broadcast" "$mac"
-    echo "   Give it ~30-60s (Tang unlock + boot), then: just deployment::mac-mini-verify"
+    echo "   Give it ~30-60s, then: just deployment::mac-mini-verify"
+    echo "   Resume-from-sleep has been observed to NOT restore network reachability"
+    echo "   on this hardware — if it's still unreachable after that, don't keep"
+    echo "   waiting: physically power-cycle it instead (hold the button)."
 
 [group("Provisioning")]
 [confirm("💿 WIPE the USB SSD and install NixOS for a Pi? This is destructive.")]

@@ -102,12 +102,25 @@ in
   # unreachability including over NetBird) not long after a clean first
   # boot. programs.dconf.profiles.user is the non-home-manager equivalent:
   # a system-wide dconf default any user picks up, no home-manager needed.
+  #
+  # lockAll = true (not a plain default): dconf's own precedence puts the
+  # user's personal database (user-db:user, ~/.config/dconf/user) ahead of
+  # system defaults — enableUserDb defaults to true — so a plain default
+  # here can be silently shadowed by anything that ever writes an explicit
+  # value into the user db (a GNOME component initializing/migrating
+  # settings, gnome-control-center's Power panel being opened, etc.).
+  # Locking is mandatory-enforcement instead: no per-user write can
+  # override it. Appropriate here because there's no legitimate reason for
+  # this specific value to ever differ on this single-purpose, no-console
+  # host — unlike nixos-nvme, where a real human might reasonably want to
+  # change power settings via the GUI.
   programs.dconf.profiles.user.databases = [
     {
       settings."org/gnome/settings-daemon/plugins/power" = {
         sleep-inactive-ac-type = "nothing";
         sleep-inactive-battery-type = "nothing"; # no battery on this hardware, kept for consistency
       };
+      lockAll = true;
     }
   ];
 
@@ -127,12 +140,15 @@ in
     };
     script = ''
       set -euo pipefail
+      # Owner-only from the moment of creation — closes the brief window a
+      # create-then-chmod sequence leaves open (file inherits the process's
+      # default umask, e.g. 644, until the chmod call lands).
+      umask 077
       state="$HOME/.local/share/gnome-remote-desktop-rdp"
       mkdir -p "$state"
 
       if [ ! -f "$state/password" ]; then
         ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
-        chmod 600 "$state/password"
         echo "Generated a new GNOME Remote Desktop (RDP) password for martin — save it now: $(cat "$state/password")"
       fi
 
@@ -140,7 +156,6 @@ in
         ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
           -subj "/CN=mac-mini" \
           -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
-        chmod 600 "$state/tls.key"
       fi
 
       grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
