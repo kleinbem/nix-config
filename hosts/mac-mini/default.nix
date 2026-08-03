@@ -6,6 +6,7 @@
 # wiped+installed via USB-SATA adapter (see .just/deployment.just
 # mac-mini-install-usb), then moved internally.
 {
+  config,
   lib,
   pkgs,
   inputs,
@@ -36,15 +37,6 @@ in
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
-  networking.hostName = "mac-mini";
-
-  # Wake-on-LAN TODO: this host has zero physical access (no keyboard/
-  # screen/case access after it's mounted), so remote power-on would be
-  # genuinely useful. Deliberately NOT wired up yet — the option
-  # (networking.interfaces.<name>.wakeOnLan.enable) needs the real
-  # interface name, which only exists after the onboard Broadcom NIC gets
-  # its udev-assigned name on first boot. Set this once that's known.
-
   # Same fleet-wide key set as every other host (modules/nixos/keys.nix).
   # headless.nix only creates the user; each host authorizes its own keys.
   users.users.martin.openssh.authorizedKeys.keys = [
@@ -57,6 +49,244 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
+
+  # Remote desktop: this host's whole reason for existing (see top-of-file
+  # comment) is GUI access with zero physical keyboard/screen/console ever
+  # attached. Wayland (sway), not X11 — xrdp was considered first but it only
+  # speaks X11 (drives xorgxrdp/Xvnc, no compositor support at all), and a
+  # real wlroots compositor + wayvnc is the modern equivalent without that
+  # legacy dependency.
+  #
+  # Auth: wayvnc's only auth backend is a PAM username+password check, which
+  # would be this fleet's first password-gated remote-access surface (every
+  # other host is FIDO2/Yubikey pubkey-only, headless.nix sets
+  # PasswordAuthentication=false and martin has no password hash here at
+  # all). Same call already made for NetBird's keyless SSH (reverted
+  # fleet-wide for being weaker auth than pubkey SSH). So wayvnc binds
+  # loopback-only and is NOT reachable from LAN/NetBird directly — reach it
+  # via `ssh -L 5900:localhost:5900 mac-mini` (FIDO2/Yubikey pubkey, the
+  # fleet's real trust mechanism) then point a VNC client at localhost:5900.
+  # No firewall rule needed: nothing is listening on a routable interface.
+  programs.sway = {
+    enable = true;
+    # XWayland stays on (module default) for GUI apps (e.g. the eventual
+    # Zoom-recording container) that don't speak native Wayland.
+  };
+
+  # Full config override, not the stock sway config programs.sway ships
+  # (mkOptionDefault priority, so a plain assignment here wins). Tuned for
+  # this box's actual situation: driven entirely over VNC from another
+  # machine's keyboard, no physical display to size for, dark-mode
+  # preference.
+  environment = {
+    etc."sway/config".text = ''
+      # Mod4 (Super) risks being intercepted by the host GNOME session on
+      # whatever machine you're VNC-ing in from before it ever reaches this
+      # compositor. Alt passes through VNC clients far more reliably.
+      set $mod Mod1
+      set $term foot
+      set $menu wmenu-run
+
+      # wlroots' headless backend defaults to a cramped 1280x720 virtual
+      # output — there's no physical monitor to size against, so just pick
+      # something comfortable to view over VNC.
+      output HEADLESS-1 resolution 1920x1080
+
+      output * bg #000000 solid_color
+
+      # GTK apps (Firefox, pcmanfm) pick up dark mode from $GTK_THEME, set on
+      # the sway-headless systemd service below.
+
+      gaps inner 8
+      default_border pixel 2
+
+      # Mouse-first setup: every window floats by default instead of tiling,
+      # with a real titlebar to grab (default_floating_border normal, not
+      # pixel) — drag the titlebar to move, drag an edge/corner to resize,
+      # no keyboard modifier required for either. floating_modifier below is
+      # a fallback (hold $mod to drag from anywhere in the window body), not
+      # the primary way to move things.
+      for_window [app_id=".*"] floating enable
+      for_window [class=".*"] floating enable
+      default_floating_border normal
+
+      font pango:sans 10
+
+      floating_modifier $mod normal
+
+      # Scroll over empty desktop to switch workspaces; right-click empty
+      # desktop for the app launcher — both fire only on bare background,
+      # never stealing scroll/right-click from an actual application window.
+      bindsym button3 exec $menu
+      bindsym button4 workspace prev
+      bindsym button5 workspace next
+      bindsym $mod+Return exec $term
+      bindsym $mod+Shift+q kill
+      bindsym $mod+d exec $menu
+      bindsym $mod+Shift+c reload
+      bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit sway (ends the VNC session)?' -B 'Yes, exit sway' 'swaymsg exit'
+
+      bindsym $mod+Left focus left
+      bindsym $mod+Down focus down
+      bindsym $mod+Up focus up
+      bindsym $mod+Right focus right
+      bindsym $mod+Shift+Left move left
+      bindsym $mod+Shift+Down move down
+      bindsym $mod+Shift+Up move up
+      bindsym $mod+Shift+Right move right
+
+      bindsym $mod+1 workspace number 1
+      bindsym $mod+2 workspace number 2
+      bindsym $mod+3 workspace number 3
+      bindsym $mod+4 workspace number 4
+      bindsym $mod+5 workspace number 5
+      bindsym $mod+Shift+1 move container to workspace number 1
+      bindsym $mod+Shift+2 move container to workspace number 2
+      bindsym $mod+Shift+3 move container to workspace number 3
+      bindsym $mod+Shift+4 move container to workspace number 4
+      bindsym $mod+Shift+5 move container to workspace number 5
+
+      bindsym $mod+h splith
+      bindsym $mod+v splitv
+      bindsym $mod+s layout stacking
+      bindsym $mod+w layout tabbed
+      bindsym $mod+e layout toggle split
+      bindsym $mod+f fullscreen
+      bindsym $mod+Shift+space floating toggle
+      bindsym $mod+space focus mode_toggle
+
+      bindsym $mod+Shift+minus move scratchpad
+      bindsym $mod+minus scratchpad show
+
+      mode "resize" {
+          bindsym Left resize shrink width 10px
+          bindsym Down resize grow height 10px
+          bindsym Up resize shrink height 10px
+          bindsym Right resize grow width 10px
+          bindsym Return mode "default"
+          bindsym Escape mode "default"
+      }
+      bindsym $mod+r mode "resize"
+
+      # No idle lock, deliberately: this box has no physical screen to
+      # protect (headless, VNC-only), and the real access gate is the
+      # loopback-only wayvnc + SSH tunnel, not anything inside the session.
+      # swayidle/swaylock are installed (programs.sway.extraPackages default)
+      # but intentionally not wired up here.
+
+      client.focused          #4c7899 #000000 #ffffff #2e9ef4   #000000
+      client.focused_inactive #333333 #000000 #ffffff #484e50   #000000
+      client.unfocused        #333333 #000000 #888888 #292d2e   #000000
+      client.urgent           #2f343a #900000 #ffffff #900000   #900000
+      client.background       #000000
+
+      bar {
+          position top
+          status_command while date +'%Y-%m-%d %X'; do sleep 1; done
+          colors {
+              background #000000
+              statusline #ffffff
+              focused_workspace  #4c7899 #285577 #ffffff
+              inactive_workspace #000000 #000000 #888888
+          }
+      }
+
+      include /etc/sway/config.d/*
+    '';
+
+    # /home has no disk-backed mount of its own (disko.nix only declares
+    # /nix and /nix/persist) — it lives under the tmpfs "/" declared near
+    # the bottom of this file, so it's wiped every reboot by default. The
+    # fleet-wide persistence.nix only keeps shell history for hosts other
+    # than nixos-nvme (whose /home is a real, separate partition) —
+    # mac-mini is the first host in the fleet running GUI apps that
+    # actually need real per-user state, so there's no existing pattern to
+    # inherit here. Without this, Firefox's profile (bookmarks/history/
+    # logins/extensions) and pcmanfm/GTK settings (e.g. the dark theme)
+    # would reset every boot.
+    persistence."/nix/persist".users.martin.directories = [
+      ".mozilla" # Firefox profile
+      ".config" # pcmanfm bookmarks, GTK/dconf-less settings, mimeapps.list
+    ];
+
+    systemPackages = with pkgs; [
+      sops
+      age
+      libfido2
+
+      # Sway session extras — programs.sway.extraPackages only covers the
+      # bare minimum (terminal, launcher, lock/idle); this rounds it out
+      # into an actually usable remote desktop over wayvnc.
+      firefox
+      pcmanfm # lightweight GTK file manager, fits the minimal setup better
+      # than Nautilus/Thunar's heavier dependency chains
+      wl-clipboard # wl-copy/wl-paste
+      slurp # region-select for the grim screenshot tool already in
+      # programs.sway.extraPackages
+      swappy # quick screenshot annotation
+    ];
+  };
+
+  systemd.services = {
+    sway-headless = {
+      description = "Headless Sway compositor (no physical display) for remote desktop";
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "martin";
+        Group = "users";
+        # Self-contained runtime dir — deliberately not /run/user/<uid>/logind's
+        # kind, so this doesn't depend on a real login session or lingering
+        # ever having been set up (this host has none).
+        RuntimeDirectory = "sway-headless";
+        RuntimeDirectoryMode = "0700";
+        ExecStart = "${config.programs.sway.package}/bin/sway";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      environment = {
+        # No physical GPU output ever attached — wlroots' headless backend
+        # creates a virtual output instead of requiring real DRM/KMS access.
+        WLR_BACKENDS = "headless";
+        WLR_LIBINPUT_NO_DEVICES = "1";
+        XDG_RUNTIME_DIR = "/run/sway-headless";
+        WAYLAND_DISPLAY = "wayland-1";
+        XDG_SESSION_TYPE = "wayland";
+        # GTK apps (Firefox, pcmanfm) launched inside this session inherit
+        # this — forces dark mode without needing a full gsettings/dconf
+        # stack, which this minimal setup doesn't have.
+        GTK_THEME = "Adwaita:dark";
+        # System services get systemd's own minimal built-in PATH (coreutils/
+        # findutils/systemd bin dirs only), NOT /run/current-system/sw/bin —
+        # that's a login-shell/profile thing. The wrapped sway binary shells
+        # out to `dbus-run-session`, which then needs `dbus-daemon` on PATH;
+        # without this it fails with "No such file or directory" (exit 127).
+        # Confirmed the hard way on first deploy 2026-08-03: sway-headless
+        # crash-looped every 5s until this was added. /run/wrappers/bin is
+        # for setuid wrappers sway or its children might need too.
+        PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
+      };
+    };
+
+    wayvnc = {
+      description = "wayvnc VNC server for the headless Sway session (loopback only)";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "sway-headless.service" ];
+      requires = [ "sway-headless.service" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "martin";
+        Group = "users";
+        ExecStart = "${pkgs.wayvnc}/bin/wayvnc 127.0.0.1 5900";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      environment = {
+        XDG_RUNTIME_DIR = "/run/sway-headless";
+        WAYLAND_DISPLAY = "wayland-1";
+      };
+    };
+  };
 
   my = {
     # Old, comparatively slow CPU (2011 Sandy Bridge) — don't let nightly
@@ -140,12 +370,6 @@ in
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    sops
-    age
-    libfido2
-  ];
-
   # Real x86 hardware (2011 Mac Mini, Sandy Bridge i5-2415M) — same reasoning
   # as nixos-nvme: microcode security/stability fixes, and redistributable
   # firmware in case the internal Broadcom Wi-Fi/Bluetooth ever gets used.
@@ -202,8 +426,6 @@ in
       settings.Resolve.DNSSEC = "false";
     };
   };
-  networking.resolvconf.enable = lib.mkForce false;
-
   # Fixes network-routing.nix (fleet-wide via base.nix) silently targeting a
   # nonexistent "wlo1" (the my.network.externalInterface default) on every
   # boot/5min timer — harmless (the enforce-container-routes script has
@@ -217,6 +439,12 @@ in
   # needed now that .16 is confirmed. modules/flake/colmena.nix's targetHost
   # is updated to match in the same change.
   networking = {
+    hostName = "mac-mini";
+
+    # Paired with services.resolved above — see that comment for why this
+    # override is needed on this host specifically.
+    resolvconf.enable = lib.mkForce false;
+
     interfaces."enp2s0f0" = {
       useDHCP = false;
       ipv4.addresses = [
@@ -225,6 +453,11 @@ in
           prefixLength = 16;
         }
       ];
+      # Wake-on-LAN: zero physical access (no keyboard/screen/case access
+      # after it's mounted) makes remote power-on genuinely useful. Was
+      # deliberately left unwired until the udev-assigned interface name was
+      # known; enp2s0f0 is now confirmed.
+      wakeOnLan.enable = true;
     };
     defaultGateway = {
       address = "10.0.0.1";

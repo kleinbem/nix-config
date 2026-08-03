@@ -3,12 +3,19 @@
 # moved internally. Same simple GPT/LUKS/btrfs shape as core-pi/hass-pi (no
 # LVM — this box has no orin-style multi-volume storage need).
 #
-# No on-disk swap, same rationale as core-pi/hass-pi: CI+Attic supply
-# prebuilt closures, zram covers memory headroom (core.nix). If the Zoom/
-# recording container workload later proves swap-hungry, add a dedicated
-# partition outside LUKS — don't put a swapfile inside mac_mini_crypt.
+# On-disk swap partition, outside LUKS — same pattern as orin-nano's disko.nix.
+# randomEncryption=true gives it a fresh random key every boot (discarded on
+# shutdown), so nothing plaintext ever persists there and no Tang/FIDO2 unlock
+# ceremony is needed for it, unlike the real root. 8G is a supplementary layer
+# on top of zram (core.nix's memoryPercent=50 already gives ~8G compressed
+# swap on this host's 16G RAM) — not the primary swap path.
 {
   device ? "/dev/sdb",
+  # Path to a file containing the LUKS passphrase, for non-interactive format
+  # during scripted provisioning (mac-mini-install-usb generates a random
+  # passphrase and writes it here instead of prompting). null preserves the
+  # normal interactive cryptsetup prompt for manual/other-host use.
+  passwordFile ? null,
   ...
 }:
 {
@@ -30,11 +37,20 @@
                 mountOptions = [ "umask=0077" ];
               };
             };
+            swap = {
+              size = "8G";
+              content = {
+                type = "swap";
+                discardPolicy = "both";
+                randomEncryption = true;
+              };
+            };
             luks = {
               size = "100%";
               content = {
                 type = "luks";
                 name = "mac_mini_crypt";
+                inherit passwordFile;
                 settings = {
                   allowDiscards = true;
                   crypttabExtraOpts = [
