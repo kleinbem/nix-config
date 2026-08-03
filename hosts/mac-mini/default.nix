@@ -153,6 +153,30 @@ in
   # session up or not — where a power-button signal results in suspend.
   services.logind.settings.Login.HandlePowerKey = "ignore";
 
+  # STILL not the whole story: confirmed via /var/log/journal that both the
+  # earlier power-button suspend AND a later idle-looking suspend were
+  # actually requested by unit `user@60578.service` — that's gdm-greeter,
+  # NOT martin (uid 1000). GDM keeps a greeter session alive on the seat
+  # even after autologin succeeds (`loginctl list-sessions` shows both a
+  # martin session and a gdm-greeter session running the whole time), and
+  # that greeter session runs its OWN gsd-power/gsd-media-keys instance,
+  # governed by the separate "gdm" dconf profile (desktop.nix, currently
+  # only sets org/gnome/login-screen keys) — completely untouched by the
+  # programs.dconf.profiles.user lock above, which only covers martin's
+  # actual session. Every dconf.databases entry for a profile concatenates
+  # (list-type option), so this adds to desktop.nix's existing gdm database
+  # rather than replacing it.
+  programs.dconf.profiles.gdm.databases = [
+    {
+      settings."org/gnome/settings-daemon/plugins/power" = {
+        sleep-inactive-ac-type = "nothing";
+        sleep-inactive-battery-type = "nothing";
+        power-button-action = "nothing";
+      };
+      lockAll = true;
+    }
+  ];
+
   # grdctl writes RDP config into per-user dconf, which needs a real D-Bus
   # session + dconf — i.e. martin's actual logind session after autologin,
   # not a bespoke runtime dir the way wayvnc needed one. gnome-session.target
