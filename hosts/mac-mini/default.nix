@@ -6,7 +6,6 @@
 # wiped+installed via USB-SATA adapter (see .just/deployment.just
 # mac-mini-install-usb), then moved internally.
 {
-  config,
   lib,
   pkgs,
   inputs,
