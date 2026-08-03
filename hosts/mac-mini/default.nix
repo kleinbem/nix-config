@@ -29,6 +29,15 @@ in
     "${self}/users/martin/nixos.nix"
     "${self}/modules/nixos/services/container-updater.nix"
     "${self}/modules/nixos/desktop.nix"
+    # firejail.nix is a separate file from desktop.nix, only pulled in
+    # transitively via modules/nixos/default.nix's aggregator — which
+    # mac-mini deliberately doesn't import wholesale (pulls in unrelated
+    # things like kernel.nix/security/). my.desktop.gnome.enable alone does
+    # NOT bring this in; without this explicit import,
+    # programs.firejail.wrappedBinaries evaluates empty here even though
+    # the option's own lib.mkIf condition is satisfied — confirmed via
+    # `nix eval .#nixosConfigurations.mac-mini.config.programs.firejail.wrappedBinaries`.
+    "${self}/modules/nixos/firejail.nix"
 
     inputs.disko.nixosModules.disko
     ./disko.nix
@@ -183,7 +192,13 @@ in
       sops
       age
       libfido2
-      firefox
+      # NOT firefox here: my.desktop.gnome.enable (above) pulls in
+      # modules/nixos/firejail.nix, which already wraps a sandboxed
+      # firefox-beta under the plain "firefox" binary name — same as
+      # nixos-nvme. An explicit plain pkgs.firefox here would shadow that
+      # wrapper; confirmed live 2026-08-03 that it was doing exactly that
+      # (firefox resolved to the unsandboxed store path) before this was
+      # removed — leftover from before this host ran GNOME at all.
     ];
   };
 
