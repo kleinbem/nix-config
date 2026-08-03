@@ -64,9 +64,13 @@ in
   # all). Same call already made for NetBird's keyless SSH (reverted
   # fleet-wide for being weaker auth than pubkey SSH). So wayvnc binds
   # loopback-only and is NOT reachable from LAN/NetBird directly — reach it
-  # via `ssh -L 5900:localhost:5900 mac-mini` (FIDO2/Yubikey pubkey, the
-  # fleet's real trust mechanism) then point a VNC client at localhost:5900.
-  # No firewall rule needed: nothing is listening on a routable interface.
+  # via `ssh -L 5900:localhost:5900 -L 6080:localhost:6080 mac-mini`
+  # (FIDO2/Yubikey pubkey, the fleet's real trust mechanism) then either
+  # point a native VNC client at localhost:5900, or open
+  # http://localhost:6080/vnc.html for the browser-based noVNC client
+  # (novnc-headless below) — same tunnel, same auth, just a different
+  # client. No firewall rule needed: nothing is listening on a routable
+  # interface.
   #
   # Audio: the RFB protocol wayvnc speaks has no audio channel at all (never
   # has, in any VNC implementation) — so sound needs its own path, riding the
@@ -306,6 +310,29 @@ in
       environment = {
         XDG_RUNTIME_DIR = "/run/sway-headless";
         WAYLAND_DISPLAY = "wayland-1";
+      };
+    };
+
+    # Browser-based VNC (noVNC), for when installing/opening a native VNC
+    # client isn't convenient. websockify bridges the browser's WebSocket
+    # connection to wayvnc's raw VNC port and also serves noVNC's static
+    # web client — same loopback-only posture as wayvnc itself (127.0.0.1
+    # only, no firewall rule, reached through the same SSH tunnel — just
+    # forward 6080 alongside 5900). Not a second listening surface with its
+    # own auth story: it's a local-only proxy in front of the same wayvnc
+    # instance, gated by the identical SSH-tunnel requirement.
+    novnc-headless = {
+      description = "noVNC web client + websockify proxy for wayvnc (loopback only)";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "wayvnc.service" ];
+      requires = [ "wayvnc.service" ];
+      serviceConfig = {
+        Type = "simple";
+        User = "martin";
+        Group = "users";
+        ExecStart = "${pkgs.python3Packages.websockify}/bin/websockify --web=${pkgs.novnc}/share/webapps/novnc 127.0.0.1:6080 127.0.0.1:5900";
+        Restart = "on-failure";
+        RestartSec = "5s";
       };
     };
 
