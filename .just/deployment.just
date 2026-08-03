@@ -431,7 +431,7 @@ generate-jwe host:
 [group("Provisioning")]
 [confirm("💿 WIPE the USB-attached SSD and install NixOS for mac-mini? This is destructive. A random LUKS passphrase will be generated and printed at the end for you to save.")]
 [doc("mac-mini has ZERO physical peripherals (no keyboard/screen, ever). Fully non-interactive: generates a random passphrase, formats, builds, and Tang-binds in one pass — no generate-jwe.sh/mac-mini-update-usb dance needed. See the final output for what's still manual (NetBird cleanup, physically plugging in the SSD, saving the passphrase).")]
-mac-mini-install-usb device="/dev/sdb":
+mac-mini-install-usb device:
     #!/usr/bin/env bash
     set -euo pipefail
     source .just/lib/provision-common.sh
@@ -600,7 +600,7 @@ mac-mini-install-usb device="/dev/sdb":
 [group("Provisioning")]
 [confirm("🔄 Re-install mac-mini config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS, rebuilds, and refreshes the closure + bootloader.")]
 [doc("Non-destructive in-place update. Also the required second step after generate-jwe.sh — see mac-mini-install-usb's final output.")]
-mac-mini-update-usb device="/dev/sdb":
+mac-mini-update-usb device:
     #!/usr/bin/env bash
     set -euo pipefail
     source .just/lib/provision-common.sh
