@@ -71,9 +71,14 @@ in
   # Audio: the RFB protocol wayvnc speaks has no audio channel at all (never
   # has, in any VNC implementation) — so sound needs its own path, riding the
   # same SSH pubkey trust rather than a new listening service. PipeWire +
-  # WirePlumber below give the sway session somewhere to send audio; to
-  # actually hear it on the client, pull it over the same SSH connection:
-  #   ssh mac-mini pw-record --format=s16 --rate=48000 --channels=2 - \
+  # WirePlumber below give the sway session somewhere to send audio, and
+  # pipewire-null-sink-headless (further down) declares a virtual sink with
+  # a real monitor port and makes it the default — WirePlumber's own
+  # fallback ("Dummy Output") has no monitor at all on this host, since
+  # there's no real audio hardware. To actually hear it on the client, pull
+  # it over the same SSH connection, using parec (not pw-record — that's
+  # native-protocol only and can't see a pulse-compat monitor by name):
+  #   ssh mac-mini parec --device=headless_sink.monitor --format=s16le --rate=48000 --channels=2 \
   #     | pw-play --format=s16 --rate=48000 --channels=2 -
   # (client side needs its own pipewire install for pw-play). On-demand, not
   # a standing tunnel — matches the ssh -L step above rather than adding an
@@ -364,6 +369,44 @@ in
         ExecStart = "${pkgs.wireplumber}/bin/wireplumber";
         Restart = "on-failure";
         RestartSec = "5s";
+      };
+      environment.XDG_RUNTIME_DIR = "/run/sway-headless";
+    };
+
+    # No real audio hardware exists on this host, so WirePlumber's own
+    # fallback ("Dummy Output") has no monitor port at all — confirmed live
+    # via `wpctl status`/`pactl list short sources` (empty). Without a
+    # monitor there's nothing for the ssh-piped pw-record/parec one-liner
+    # (top-of-file Audio comment) to capture. This declares a proper null
+    # sink with a real monitor instead, and makes it the default so anything
+    # in the sway session actually routes there. Oneshot + RemainAfterExit:
+    # runs once per boot, not restarted continuously; the sink-exists check
+    # keeps it idempotent if the service ever IS manually restarted (loading
+    # module-null-sink twice would otherwise create a duplicate sink).
+    pipewire-null-sink-headless = {
+      description = "Create the headless virtual audio sink (WirePlumber's own fallback has no monitor port)";
+      wantedBy = [ "multi-user.target" ];
+      after = [
+        "pipewire-pulse-headless.service"
+        "wireplumber-headless.service"
+      ];
+      requires = [
+        "pipewire-pulse-headless.service"
+        "wireplumber-headless.service"
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "martin";
+        Group = "users";
+        ExecStart = pkgs.writeShellScript "pipewire-null-sink-setup" ''
+          set -euo pipefail
+          if ! ${pkgs.pulseaudio}/bin/pactl list short sinks | grep -q headless_sink; then
+            ${pkgs.pulseaudio}/bin/pactl load-module module-null-sink \
+              sink_name=headless_sink sink_properties=device.description=Headless_Sink
+          fi
+          ${pkgs.pulseaudio}/bin/pactl set-default-sink headless_sink
+        '';
       };
       environment.XDG_RUNTIME_DIR = "/run/sway-headless";
     };
