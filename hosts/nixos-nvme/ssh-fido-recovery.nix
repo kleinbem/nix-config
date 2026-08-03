@@ -16,8 +16,20 @@
 # flaky GUI dialog: `SSH_ASKPASS_REQUIRE=never` — confirmed reliable across
 # multiple fresh-connection tests once found.
 #
-# The usbreset-based retry below is kept as a defensive fallback only (in
-# case a genuine USB hiccup ever does occur), not the primary fix anymore.
+# 2026-08-03, later the same day: hit the glitch again, and this time
+# SSH_ASKPASS_REQUIRE=never + the usbreset retry BOTH failed to clear it —
+# only `systemctl --user restart ssh-agent.service` + physically replugging
+# the key did. The distinguishing factor from the original diagnosis: this
+# was a long-running ssh-agent (the actual FIDO2/PIN negotiation happens
+# INSIDE the agent process, using whatever environment/session it was
+# started in — not the environment of whatever ssh client later asks it to
+# sign something), and something about its internal state had gotten stuck
+# in a way neither the client-side env var nor a USB reset alone could
+# clear. No explicit ssh-add was needed afterward — OpenSSH's own identity-
+# file fallback re-prompted directly once the agent was fresh, so the retry
+# below doesn't do one either. Both fixes are real, for two different
+# failure modes of the same underlying flaky interaction — kept as two
+# escalating tiers rather than picking one.
 { pkgs, ... }:
 let
   wrappedSsh = pkgs.writeShellScriptBin "ssh" ''
@@ -33,15 +45,32 @@ let
     errfile="$(mktemp)"
     trap 'rm -f "$errfile"' EXIT
 
+    is_glitch() {
+      grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)' "$errfile"
+    }
+
     "$real_ssh" "$@" 2> >(tee "$errfile" >&2)
     status=$?
 
-    # Defensive fallback only — the SSH_ASKPASS_REQUIRE fix above should
-    # prevent this from firing in the first place.
-    if [ "$status" -eq 255 ] \
-      && grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)' "$errfile"; then
+    # Tier 1: defensive fallback for a genuine USB hiccup — the
+    # SSH_ASKPASS_REQUIRE fix above should prevent most cases of this.
+    if [ "$status" -eq 255 ] && is_glitch; then
       echo "ssh: detected FIDO2 signing glitch — resetting YubiKey ($yubikey_id) and retrying once..." >&2
       "$usbreset" "$yubikey_id" >/dev/null 2>&1 || true
+      sleep 1
+      : >"$errfile"
+      "$real_ssh" "$@" 2> >(tee "$errfile" >&2)
+      status=$?
+    fi
+
+    # Tier 2: the agent itself is stuck, not the USB device — confirmed
+    # 2026-08-03 (see file header) that a plain USB reset doesn't clear
+    # this case, only restarting the agent process does. Last resort: exec
+    # hands off to the real ssh so an actually-interactive session behaves
+    # normally afterward.
+    if [ "$status" -eq 255 ] && is_glitch; then
+      echo "ssh: still glitching after USB reset — restarting ssh-agent and retrying once more..." >&2
+      systemctl --user restart ssh-agent.service 2>/dev/null || true
       sleep 1
       exec "$real_ssh" "$@"
     fi
