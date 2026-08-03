@@ -429,8 +429,8 @@ generate-jwe host:
     @bash scripts/generate-jwe.sh {{host}}
 
 [group("Provisioning")]
-[confirm("💿 WIPE the USB-attached SSD and install NixOS for mac-mini? This is destructive.")]
-[doc("mac-mini has ZERO physical peripherals (no keyboard/screen, ever) — see the final output for the mandatory generate-jwe.sh + mac-mini-update-usb follow-up before it can boot unattended.")]
+[confirm("💿 WIPE the USB-attached SSD and install NixOS for mac-mini? This is destructive. A random LUKS passphrase will be generated and printed at the end for you to save.")]
+[doc("mac-mini has ZERO physical peripherals (no keyboard/screen, ever). Fully non-interactive: generates a random passphrase, formats, builds, and Tang-binds in one pass — no generate-jwe.sh/mac-mini-update-usb dance needed. See the final output for what's still manual (NetBird cleanup, physically plugging in the SSD, saving the passphrase).")]
 mac-mini-install-usb device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -445,19 +445,52 @@ mac-mini-install-usb device="/dev/sdb":
     # an hours-long QEMU-emulated cross-arch one (the thing pc_cache_preflight
     # exists to catch). It's also a brand-new host with nothing in Attic yet.
 
+    # Random alnum passphrase, not human-chosen: this box has no console to
+    # ever type it at again (Tang auto-unlock is the real unlock path), so
+    # there's no benefit to it being memorable — only to it being strong and
+    # never typed twice by hand (a mismatch between the disko-format-time and
+    # generate-jwe-time passphrase silently breaks auto-unlock, previously a
+    # real manual-entry risk). Save it to Bitwarden per the printed output —
+    # this script does NOT persist it anywhere itself.
+    PASSPHRASE="$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24)"
+    PASS_FILE="$(mktemp)"
+    chmod 600 "$PASS_FILE"
+    printf '%s' "$PASSPHRASE" > "$PASS_FILE"
+    # Belt-and-suspenders: wipe the passphrase from this script's memory and
+    # the temp file on ANY exit path (success, error, or Ctrl-C), not just
+    # the happy path at the bottom.
+    cleanup_passfile() { shred -u "$PASS_FILE" 2>/dev/null || rm -f "$PASS_FILE"; }
+    trap cleanup_passfile EXIT
+
     echo "🔍 Ensuring clean state before install..."
     pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
     pc_wipe "$DEV" 100
 
-    echo "💽 Formatting via disko (will prompt for a NEW LUKS passphrase)..."
+    # Generate the Tang JWE BEFORE formatting, using the passphrase we just
+    # chose ourselves — no need to wait until after disko like the old
+    # (manual-passphrase) flow did, since we already know the exact value.
+    # git add makes the new file visible to the git+file:// override
+    # {{OVERRIDES}} uses to resolve inputs.nix-secrets to this local checkout
+    # (Nix flakes only see tracked/staged files, not arbitrary untracked
+    # ones) — jj::save-all later gives it a real commit message, this just
+    # gets it build-visible right now.
+    echo "🔑 Generating Tang JWE with the new passphrase..."
+    LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh mac-mini
+    git -C ../nix-secrets add initrd/cryptroot_mac-mini.jwe
+
+    echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
         --mode destroy,format,mount \
         --argstr device "$DEV" \
+        --argstr passwordFile "$PASS_FILE" \
         --root-mountpoint "$MNT" ./hosts/mac-mini/disko.nix
 
     # Guard: /mnt/mac-mini/boot MUST be the target's ESP, not the workstation's.
     pc_assert_esp_on_target "$MNT" "$DEV"
 
+    # my.boot.clevis-initrd.enable is gated on the JWE existing (see
+    # hosts/mac-mini/default.nix) — it already does now, so this one build
+    # comes out clevis-enabled from the start; no second pass required.
     SYSTEM="$(pc_build_toplevel mac-mini {{OVERRIDES}})"
     [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ mac-mini closure build failed."; exit 1; }
     pc_install_closure "$MNT" "$SYSTEM"
@@ -476,8 +509,8 @@ mac-mini-install-usb device="/dev/sdb":
     sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTX64.EFI"
     sudo cp "${KERNEL_SRC}" "${ESP}/EFI/nixos/kernel"
     sudo cp "${INITRD_SRC}" "${ESP}/EFI/nixos/initrd"
-    # CRITICAL: embed boot.initrd.secrets (initrd-sshd host key, and — once
-    # generated — the clevis JWE) into the ESP initrd. nixos-install
+    # CRITICAL: embed boot.initrd.secrets (initrd-sshd host key + the clevis
+    # JWE, both already present now) into the ESP initrd. nixos-install
     # --no-bootloader skipped this; without it the first boot fails
     # copy-secrets + sshd and drops to EMERGENCY MODE (which, with no
     # physical keyboard attached, is unrecoverable without re-plugging the
@@ -494,22 +527,33 @@ mac-mini-install-usb device="/dev/sdb":
     echo "📋 mac-mini age public key: ${AGE_PUB}"
     pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
 
-    pc_clevis_bind_tang "$CRYPT"
+    pc_clevis_bind_tang "$CRYPT" "$PASS_FILE"
 
     pc_teardown "$MNT" "$CRYPT"
     echo ""
-    echo "✅ mac-mini SSD base install complete — but DO NOT plug it into the"
-    echo "   Mac Mini and boot yet. This host has no physical keyboard/screen,"
-    echo "   so the disk MUST auto-unlock via Tang before its first unattended"
-    echo "   boot, and that isn't wired into the closure you just installed:"
+    echo "✅ mac-mini SSD install complete (JWE generated, disk formatted, closure"
+    echo "   built + installed, Tang-bound — all in this one pass). Remaining steps"
+    echo "   are the ones that genuinely can't be scripted (secrets need a real"
+    echo "   commit message, the disk needs a human hand to move it):"
     echo ""
-    echo "   1. just deployment::generate-jwe mac-mini"
-    echo "        (enter the EXACT SAME LUKS passphrase you just typed for disko)"
-    echo "   2. just jj::save-all 'feat: mac-mini install' mac-mini nix-secrets"
-    echo "   3. just deployment::mac-mini-update-usb   (rebuilds + reinstalls the"
-    echo "        closure — my.boot.clevis-initrd.enable auto-flips true now that"
-    echo "        the JWE exists, no code change needed)"
-    echo "   4. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
+    echo "   1. just jj::save-all 'feat: mac-mini reinstall' mac-mini nix-secrets"
+    echo "        (the JWE was already 'git add'-ed above so the build could see"
+    echo "        it — this gives it a proper commit through jj)"
+    echo "   2. (cd ../nix/infra/netbird && just remove-peer mac-mini)   (clears"
+    echo "        the OLD peer identity from the wiped host BEFORE it re-enrolls"
+    echo "        under the same name; skip if this is a first-ever install, not"
+    echo "        a reinstall. Standalone Justfile — run from its own dir, no"
+    echo "        fleet-wide 'just in' passthrough for it)"
+    echo "   3. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
+    echo "   4. just deployment::mac-mini-verify   (once it's reachable over SSH —"
+    echo "        confirms auto-unlock, static IP, NetBird, and the sway/wayvnc"
+    echo "        remote desktop all actually came up clean)"
+    echo ""
+    echo "🔑 LUKS passphrase for mac-mini (save to Bitwarden now, then close this"
+    echo "   terminal — it is NOT stored anywhere by this script):"
+    echo ""
+    echo "   ${PASSPHRASE}"
+    echo ""
 
 [group("Provisioning")]
 [confirm("🔄 Re-install mac-mini config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS, rebuilds, and refreshes the closure + bootloader.")]
@@ -563,6 +607,45 @@ mac-mini-update-usb device="/dev/sdb":
     pc_teardown /mnt/mac-mini mac_mini_crypt
     echo "✅ In-place update complete — put the SSD in the Mac Mini, plug in ethernet, and boot."
 
+[group("Provisioning")]
+[doc("Post-boot sanity check after a mac-mini (re)install: SSH reachability, static IP, tg3 in the running kernel, NetBird mesh status, and the sway/wayvnc remote-desktop services. Read-only — doesn't change anything.")]
+mac-mini-verify ip="10.0.0.16":
+    #!/usr/bin/env bash
+    set -uo pipefail
+    IP="{{ip}}"
+    fail=0
+    check() { echo -n "  $1... "; }
+    ok() { echo "✅ $1"; }
+    bad() { echo "❌ $1"; fail=1; }
+
+    check "SSH reachable"
+    if ssh -o ConnectTimeout=5 -o BatchMode=yes "$IP" true 2>/dev/null; then ok "reachable"; else bad "unreachable — stopping"; exit 1; fi
+
+    check "auto-unlock (no physical passphrase needed to reach here)"
+    ok "implied by SSH reachability — this host has no console fallback"
+
+    check "static IP bound to enp2s0f0"
+    if ssh "$IP" "ip -4 addr show enp2s0f0" 2>/dev/null | grep -q "$IP/"; then ok "$IP bound"; else bad "expected $IP not found on enp2s0f0"; fi
+
+    check "tg3 loaded (initrd NIC driver made it into the running kernel too)"
+    if ssh "$IP" "lsmod | grep -q '^tg3'" 2>/dev/null; then ok "tg3 loaded"; else bad "tg3 not loaded"; fi
+
+    nb="$(ssh "$IP" "netbird status" 2>/dev/null || true)"
+    check "NetBird management connection"
+    if echo "$nb" | grep -q "Management: Connected"; then ok "connected"; else bad "not connected"; fi
+    check "NetBird visible peers"
+    if echo "$nb" | grep -qE "Peers count: [1-9]"; then ok "has visible peers"; else bad "0 peers — check groups.tf membership / default-policy closure"; fi
+
+    check "sway-headless + wayvnc services"
+    st="$(ssh "$IP" "systemctl is-active sway-headless.service wayvnc.service" 2>/dev/null || true)"
+    active_count="$(echo "$st" | grep -c '^active$')"
+    if [ "$active_count" = "2" ]; then ok "both active"; else bad "not both active: $st"; fi
+
+    check "wayvnc listening on loopback only (127.0.0.1:5900, not exposed)"
+    if ssh "$IP" "ss -tlnp 2>/dev/null | grep -q '127.0.0.1:5900'" 2>/dev/null; then ok "loopback-only, as designed"; else bad "not listening where expected"; fi
+
+    echo ""
+    if [ "$fail" = "0" ]; then echo "✅ All checks passed."; else echo "❌ Some checks failed — see above."; exit 1; fi
 
 [group("Provisioning")]
 [confirm("💿 WIPE the USB SSD and install NixOS for a Pi? This is destructive.")]

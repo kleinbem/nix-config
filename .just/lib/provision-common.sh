@@ -334,17 +334,24 @@ pc_sops_add_and_reencrypt() {
 # ── clevis / Tang ─────────────────────────────────────────────────────────────
 # Bind a LUKS container to the Tang cluster (t=1: any one server unlocks). Uses
 # the repo's tang-adv.jws advertisements — keep those in sync with the live Tang
-# servers or the resulting binding won't decrypt. $1=crypt-name
+# servers or the resulting binding won't decrypt. $1=crypt-name $2=optional
+# keyfile with the EXISTING passphrase (non-interactive); omit for the normal
+# interactive prompt.
 pc_clevis_bind_tang() {
-  local crypt="$1" luks_dev
+  local crypt="$1" keyfile="${2:-}" luks_dev
   echo "🔗 Binding $crypt to the Tang cluster for silent boot..."
   luks_dev=$(sudo cryptsetup status "$crypt" | awk '/device:/ {print $2}')
   if [ -z "$luks_dev" ]; then
     echo "⚠️  Could not find mapped device $crypt for Tang binding."
     return 0
   fi
-  echo "   (will prompt for the LUKS passphrase to authorize the binding)"
-  sudo clevis luks bind -d "$luks_dev" sss \
+  local bind_opts=(-d "$luks_dev")
+  if [ -n "$keyfile" ]; then
+    bind_opts+=(-y -f -k "$keyfile")
+  else
+    echo "   (will prompt for the LUKS passphrase to authorize the binding)"
+  fi
+  sudo clevis luks bind "${bind_opts[@]}" sss \
     '{"t": 1, "pins": {"tang": [
             {"url": "http://10.0.0.5:7654",  "adv": "hosts/nixos-nvme/tang-adv.jws"},
             {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"},
