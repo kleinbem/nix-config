@@ -452,7 +452,17 @@ mac-mini-install-usb device="/dev/sdb":
     # generate-jwe-time passphrase silently breaks auto-unlock, previously a
     # real manual-entry risk). Save it to Bitwarden per the printed output —
     # this script does NOT persist it anywhere itself.
-    PASSPHRASE="$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24)"
+    # NOT `tr ... | head -c 24`: head closes the pipe after 24 bytes, tr gets
+    # SIGPIPE writing into it, and under this script's `set -o pipefail` that
+    # aborts the whole recipe (exit 141) despite the passphrase itself being
+    # fine. Read a generous fixed amount up front instead (tr fully consumes
+    # it, no pipe closes early) and slice with bash, no second pipe at all.
+    RAW_ENTROPY="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9')"
+    if [ "${#RAW_ENTROPY}" -lt 24 ]; then
+      echo "❌ Only got ${#RAW_ENTROPY} alnum chars from 256 random bytes (need 24) — vanishingly unlikely, just retry."
+      exit 1
+    fi
+    PASSPHRASE="${RAW_ENTROPY:0:24}"
     PASS_FILE="$(mktemp)"
     chmod 600 "$PASS_FILE"
     printf '%s' "$PASSPHRASE" > "$PASS_FILE"
