@@ -104,22 +104,33 @@ in
   # forever with nobody able to answer it. This lets the passphrase be typed
   # in remotely instead. Gated on the key file existing, same convention as
   # clevis-initrd.enable above.
-  boot.initrd.network = {
-    enable = true;
-    ssh = {
-      enable = builtins.pathExists (inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini");
-      port = 2222;
-      authorizedKeys = [
-        keys.ssh.yubikey
-        keys.ssh.fido2
-        keys.ssh.fido2-backup
-      ];
-      hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_mac-mini" ];
+  boot = {
+    initrd = {
+      network = {
+        enable = true;
+        ssh = {
+          enable = builtins.pathExists (inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini");
+          port = 2222;
+          authorizedKeys = [
+            keys.ssh.yubikey
+            keys.ssh.fido2
+            keys.ssh.fido2-backup
+          ];
+          hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_mac-mini" ];
+        };
+      };
+      secrets."/etc/ssh/ssh_host_ed25519_key_mac-mini" = lib.mkForce (
+        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini"
+      );
+    };
+
+    loader.systemd-boot = {
+      enable = true;
+      # Same cap orin-nano uses — an unpruned ESP fills up with stale
+      # per-generation kernels/initrds over time.
+      configurationLimit = 10;
     };
   };
-  boot.initrd.secrets."/etc/ssh/ssh_host_ed25519_key_mac-mini" = lib.mkForce (
-    inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini"
-  );
 
   environment.systemPackages = with pkgs; [
     sops
@@ -162,24 +173,26 @@ in
   # third-party-OS boot flakiness ever shows up here, stale firmware is
   # ruled out as the cause.
 
-  # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
-  # alongside disko's allowDiscards, not instead of it.
-  services.fstrim.enable = true;
+  services = {
+    # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
+    # alongside disko's allowDiscards, not instead of it.
+    fstrim.enable = true;
 
-  # Join the NetBird mesh — same pattern as orin-nano/nasbook/core-pi/hass-pi
-  # (modules/nixos/networking.nix netbird-autojoin, gated on netbird_setup_key
-  # from secrets.nix).
-  services.netbird.enable = true;
+    # Join the NetBird mesh — same pattern as orin-nano/nasbook/core-pi/hass-pi
+    # (modules/nixos/networking.nix netbird-autojoin, gated on netbird_setup_key
+    # from secrets.nix).
+    netbird.enable = true;
 
-  # DNS was broken out of the box: modules/nixos/networking.nix defaults
-  # networking.resolvconf.enable to true fleet-wide, and every OTHER host
-  # overrides that (resolved.enable=true here like orin-nano, or forced off
-  # like the rpi5 nodes) — mac-mini never got either override, so resolv.conf
-  # pointed at a systemd-resolved stub (127.0.0.1) that was never enabled.
-  services.resolved = {
-    enable = true;
-    settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
-    settings.Resolve.DNSSEC = "false";
+    # DNS was broken out of the box: modules/nixos/networking.nix defaults
+    # networking.resolvconf.enable to true fleet-wide, and every OTHER host
+    # overrides that (resolved.enable=true here like orin-nano, or forced off
+    # like the rpi5 nodes) — mac-mini never got either override, so resolv.conf
+    # pointed at a systemd-resolved stub (127.0.0.1) that was never enabled.
+    resolved = {
+      enable = true;
+      settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
+      settings.Resolve.DNSSEC = "false";
+    };
   };
   networking.resolvconf.enable = lib.mkForce false;
 
@@ -217,13 +230,6 @@ in
     };
     "/nix".neededForBoot = true;
     "/nix/persist".neededForBoot = true;
-  };
-
-  boot.loader.systemd-boot = {
-    enable = true;
-    # Same cap orin-nano uses — an unpruned ESP fills up with stale
-    # per-generation kernels/initrds over time.
-    configurationLimit = 10;
   };
 
   system.stateVersion = "25.11";
