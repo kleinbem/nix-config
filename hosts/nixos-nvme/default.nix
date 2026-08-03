@@ -72,6 +72,16 @@
       efibootmgr # EFI NVRAM entry management (recovery + boot guard)
       bind.dnsutils # provides nslookup, dig
       google-antigravity-ide-no-fhs # Google Antigravity IDE
+
+      # RDP clients for mac-mini's GNOME Remote Desktop (reached via
+      # `ssh -L 3389:localhost:3389 mac-mini`, see hosts/mac-mini/default.nix).
+      # GNOME Connections (already installed via desktop.nix's core-apps)
+      # gave a confusing "not responding" error on a credential-provisioning
+      # race — freerdp gives a CLI fallback (wlfreerdp, native Wayland) with
+      # actual error output instead of a silent GUI hang; remmina is a more
+      # full-featured GUI alternative.
+      freerdp
+      remmina
     ];
   };
 
