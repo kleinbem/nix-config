@@ -628,8 +628,18 @@ mac-mini-verify ip="10.0.0.16":
     ok() { echo "✅ $1"; }
     bad() { echo "❌ $1"; fail=1; }
 
+    # This YubiKey's SSH credential requires PIN entry, not just touch (see
+    # hosts/nixos-nvme/ssh-fido-recovery.nix) — that PIN has to go through the
+    # terminal, not a GUI askpass dialog which doesn't work headlessly/in a
+    # script. A `just` recipe's shebang script is a non-interactive bash
+    # process, so shellAliases.ssh (which normally sets this) never applies
+    # here — set it explicitly instead. BatchMode=yes would silently disable
+    # the PIN prompt entirely and fail closed, so it's deliberately not used
+    # for the first connection.
+    export SSH_ASKPASS_REQUIRE=never
+
     check "SSH reachable"
-    if ssh -o ConnectTimeout=5 -o BatchMode=yes "$IP" true 2>/dev/null; then ok "reachable"; else bad "unreachable — stopping"; exit 1; fi
+    if ssh -o ConnectTimeout=15 "$IP" true; then ok "reachable"; else bad "unreachable — stopping"; exit 1; fi
 
     check "auto-unlock (no physical passphrase needed to reach here)"
     ok "implied by SSH reachability — this host has no console fallback"
