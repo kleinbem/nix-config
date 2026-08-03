@@ -500,9 +500,31 @@ mac-mini-install-usb device="/dev/sdb":
     # Guard: /mnt/mac-mini/boot MUST be the target's ESP, not the workstation's.
     pc_assert_esp_on_target "$MNT" "$DEV"
 
+    # Host identity + age key rotation MUST happen before the build below,
+    # not after: pc_host_identity generates the SSH host key directly onto
+    # the mounted disk itself (needs nothing but the mount — not the built
+    # closure), so there's no reason to defer it. Doing this after the build
+    # instead (the original order here) meant the INSTALLED closure was
+    # built against the OLD, now-mismatched encrypted secrets.yaml — the
+    # fresh host's new key was never a valid recipient for what actually got
+    # installed, so nothing needing a secret (e.g. the NetBird setup key)
+    # could decrypt anything after first boot. Confirmed the hard way on
+    # mac-mini's actual reinstall 2026-08-03: fixed after the fact by
+    # bumping flake.lock and redeploying, but that's exactly the manual step
+    # this reorder removes the need for.
+    AGE_PUB="$(pc_host_identity "$MNT" mac-mini)"
+    echo "📋 mac-mini age public key: ${AGE_PUB}"
+    pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
+    # Same reason the JWE needed `git add` above: the build below resolves
+    # inputs.nix-secrets via {{OVERRIDES}}' git+file:// override, which only
+    # sees tracked/staged files, not arbitrary untracked/modified ones.
+    git -C ../nix-secrets add .sops.yaml secrets.yaml
+
     # my.boot.clevis-initrd.enable is gated on the JWE existing (see
     # hosts/mac-mini/default.nix) — it already does now, so this one build
-    # comes out clevis-enabled from the start; no second pass required.
+    # comes out clevis-enabled from the start; no second pass required. It
+    # also now builds against the JUST-rotated age key above, so the
+    # installed system can actually decrypt its own secrets from first boot.
     SYSTEM="$(pc_build_toplevel mac-mini {{OVERRIDES}})"
     [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ mac-mini closure build failed."; exit 1; }
     pc_install_closure "$MNT" "$SYSTEM"
@@ -535,10 +557,6 @@ mac-mini-install-usb device="/dev/sdb":
     sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
     rm -f /tmp/mac-mini-system
 
-    AGE_PUB="$(pc_host_identity "$MNT" mac-mini)"
-    echo "📋 mac-mini age public key: ${AGE_PUB}"
-    pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
-
     pc_clevis_bind_tang "$CRYPT" "$PASS_FILE"
 
     pc_teardown "$MNT" "$CRYPT"
@@ -549,17 +567,29 @@ mac-mini-install-usb device="/dev/sdb":
     echo "   commit message, the disk needs a human hand to move it):"
     echo ""
     echo "   1. just jj::save-all 'feat: mac-mini reinstall' mac-mini nix-secrets"
-    echo "        (the JWE was already 'git add'-ed above so the build could see"
-    echo "        it — this gives it a proper commit through jj)"
-    echo "   2. (cd ../nix/infra/netbird && just remove-peer mac-mini)   (clears"
+    echo "        (the JWE + rotated .sops.yaml/secrets.yaml were already"
+    echo "        'git add'-ed above so the build could see them — this gives"
+    echo "        them a proper commit through jj)"
+    echo "   2. nix flake lock --update-input nix-secrets   (from nix-config's"
+    echo "        root, THEN commit the flake.lock bump too — every OTHER"
+    echo "        deploy path, e.g. 'just deployment::deploy mac-mini' later,"
+    echo "        builds against this pin, not the local nix-secrets checkout"
+    echo "        this recipe pointed at just now. Skipping this is exactly what"
+    echo "        caused a stale-secrets deploy failure the first time this"
+    echo "        recipe's output was followed, 2026-08-03.)"
+    echo "   3. (cd ../nix/infra/netbird && just remove-peer mac-mini)   (clears"
     echo "        the OLD peer identity from the wiped host BEFORE it re-enrolls"
     echo "        under the same name; skip if this is a first-ever install, not"
     echo "        a reinstall. Standalone Justfile — run from its own dir, no"
     echo "        fleet-wide 'just in' passthrough for it)"
-    echo "   3. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
-    echo "   4. just deployment::mac-mini-verify   (once it's reachable over SSH —"
+    echo "   4. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
+    echo "   5. just deployment::mac-mini-verify   (once it's reachable over SSH —"
     echo "        confirms auto-unlock, static IP, NetBird, and the sway/wayvnc"
     echo "        remote desktop all actually came up clean)"
+    echo "   6. (cd ../nix/infra/netbird && just plan, then just apply)   new"
+    echo "        peers land with zero access until promoted into"
+    echo "        personal-devices — groups.tf already lists mac-mini by name,"
+    echo "        so this just needs a real apply to take effect"
     echo ""
     echo "🔑 LUKS passphrase for mac-mini (save to Bitwarden now, then close this"
     echo "   terminal — it is NOT stored anywhere by this script):"
