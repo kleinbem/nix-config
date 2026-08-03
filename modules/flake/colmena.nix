@@ -67,11 +67,9 @@ in
 
     mac-mini = {
       deployment = {
-        # NOT hostMeta.mac-mini.ip (10.0.0.16): the host is still on its
-        # first-boot DHCP lease, nothing has configured a static address yet.
-        # Switch this to hostMeta.mac-mini.ip once static networking is set up
-        # on-host to match inventory.nix.
-        targetHost = "10.0.0.70";
+        # Static IP migration complete (hosts/mac-mini/default.nix stage 2) —
+        # .16 is now the host's real, sole address; DHCP's .70 is retired.
+        targetHost = hostMeta.mac-mini.ip;
         targetUser = "martin";
         buildOnTarget = false; # same x86_64 arch as nixos-nvme — fast native build, push via SSH
         inherit (hostMeta.mac-mini) tags;

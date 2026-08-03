@@ -202,27 +202,26 @@ in
   # `|| true`) but pointless without the real interface name.
   my.network.externalInterface = "enp2s0f0";
 
-  # Static IP migration, stage 1 (safe/additive): add the target infra-VLAN
-  # address (inventory.nix ip = 10.0.0.16) as a SECOND address on top of the
-  # existing DHCP lease (.70) — DHCP stays fully in control, nothing about
-  # current reachability changes. This host has zero physical console, so
-  # cutting DHCP over in the same step as adding the static address isn't
-  # worth the risk: verify .16 actually responds first. Stage 2 (later, once
-  # confirmed): useDHCP = false, explicit defaultGateway, and flip
-  # modules/flake/colmena.nix's targetHost from .70 to hostMeta.mac-mini.ip.
-  #
-  # useDHCP must be EXPLICIT here: NixOS's actual default (networking.
-  # interfaces.<name>.useDHCP = null) disables DHCP automatically the moment
-  # ANY ipv4.addresses entry exists on the interface — without this line,
-  # "stage 1" would silently perform the full cutover we're trying to avoid.
-  networking.interfaces."enp2s0f0" = {
-    useDHCP = true;
-    ipv4.addresses = [
-      {
-        address = "10.0.0.16";
-        prefixLength = 16;
-      }
-    ];
+  # Static IP migration, stage 2 (cutover): DHCP lease (.70) retired, .16
+  # (inventory.nix) is now the sole address with an explicit gateway. Stage 1
+  # (ran first, verified .16 reachable/SSH-auth-working before cutting DHCP)
+  # added .16 as a second address alongside DHCP as a safety net — no longer
+  # needed now that .16 is confirmed. modules/flake/colmena.nix's targetHost
+  # is updated to match in the same change.
+  networking = {
+    interfaces."enp2s0f0" = {
+      useDHCP = false;
+      ipv4.addresses = [
+        {
+          address = "10.0.0.16";
+          prefixLength = 16;
+        }
+      ];
+    };
+    defaultGateway = {
+      address = "10.0.0.1";
+      interface = "enp2s0f0";
+    };
   };
 
   # Override the fleet-wide zstd zram default (core.nix): zstd's better
