@@ -31,7 +31,6 @@ in
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.ntfy
-    inputs.nix-presets.nixosModules.monitoring
     inputs.nix-presets.nixosModules.caddy
     inputs.nix-presets.nixosModules.crowdsec
     inputs.nix-presets.nixosModules.herdr-remote-client
@@ -154,19 +153,6 @@ in
         autoReap.enable = true;
       };
 
-      monitoring = {
-        enable = true;
-        ip = "10.85.48.114/24";
-        hostDataDir = "/var/lib/monitoring";
-        nodeTargets = [
-          myInventory.hosts.nixos-nvme.ip
-          myInventory.hosts.core-gateway.ip
-          myInventory.hosts.ap-upstairs.ip
-          myInventory.hosts.core-pi.ip
-          myInventory.hosts.hass-pi.ip
-        ];
-        githubMetrics.enable = false;
-      };
     };
 
     # This host IS the cache entrypoint: its own pulls must go straight to the
@@ -203,7 +189,6 @@ in
   environment.persistence."/nix/persist" = {
     directories = [
       "/var/lib/ente"
-      "/var/lib/monitoring"
     ];
   };
 

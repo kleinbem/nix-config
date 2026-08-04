@@ -15,6 +15,7 @@ let
     nasbook = "10.85.47.0/24";
     core-pi = "10.85.48.0/24";
     hass-pi = "10.85.49.0/24";
+    mac-mini = "10.85.50.0/24";
   };
 
   routes = lib.mapAttrsToList (name: host: {

@@ -11,6 +11,7 @@
   pkgs,
   inputs,
   self,
+  myInventory,
   ...
 }:
 let
@@ -44,6 +45,11 @@ in
     ./secrets.nix
 
     inputs.nix-presets.nixosModules.monitoring-node
+    inputs.nix-presets.nixosModules.monitoring
+    inputs.nix-presets.nixosModules.open-webui
+    inputs.nix-presets.nixosModules.agent-zero
+    inputs.nix-presets.nixosModules.anythingllm
+    inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
@@ -143,6 +149,24 @@ in
 
     monitoring.node.enable = true;
 
+    # Required for the monitoring container below: modules/nixos/
+    # virtualisation.nix wraps its ENTIRE config (including
+    # podman-network-cbr0, the service that actually creates the shared
+    # cbr0 bridge every container — podman or nspawn — attaches to) in
+    # `lib.mkIf cfg.enable`, the my.virtualisation.enable master switch.
+    # podman.enable defaults to true on its own, but that default is inert
+    # without this — confirmed live 2026-08-04: the monitoring container
+    # failed to start with "Failed to add interface vb-monitoring to
+    # bridge cbr0: No such device" because cbr0 had never been created on
+    # this host (mac-mini never ran a container before). Same explicit
+    # values rpi5-node.nix sets for core-pi/hass-pi.
+    virtualisation = {
+      enable = true;
+      libvirtd.enable = false;
+      podman.enable = true;
+      lxc.enable = false;
+    };
+
     # Joins the unlock cluster as a 4th independent Tang server (alongside
     # nixos-nvme/core-pi/hass-pi/nasbook) — more fleet redundancy.
     services.tang.enable = true;
@@ -176,7 +200,100 @@ in
     # nonexistent "wlo1" (the my.network.externalInterface default) on every
     # boot/5min timer — harmless (the enforce-container-routes script has
     # `|| true`) but pointless without the real interface name.
-    network.externalInterface = "enp2s0f0";
+    #
+    # subnet/hostAddress: this host's own slice of the fleet's container
+    # network (modules/nixos/network-routing.nix's subnets map has a
+    # matching "mac-mini" entry) — same pattern core-pi/nixos-nvme/hass-pi
+    # use. Deliberately NOT sourced from inventory.nix's
+    # hosts.mac-mini.ip (that field is colmena's real SSH deploy target,
+    # currently the LAN IP — repointing it at this bridge address would
+    # break deployment: colmena couldn't reach a brand-new bridge address
+    # to deploy the very change that creates it, and cross-host routing to
+    # it depends on a route that itself only exists after a successful
+    # deploy). Hardcoded here instead, same as core-pi's own hostAddress.
+    network = {
+      externalInterface = "enp2s0f0";
+      subnet = "10.85.50.0/24";
+      hostAddress = "10.85.50.1";
+    };
+
+    containers = {
+      # Moved from core-pi 2026-08-04: core-pi was genuinely RAM-constrained
+      # (7.9GB, actively swapping under its existing container load —
+      # grafana alone was ~226MB) while this host sat nearly idle (15GB
+      # RAM, <1GB used). Verified before moving that CPU/network aren't a
+      # downgrade either: same Gigabit link speed on both hosts' real
+      # uplink, and a direct zstd -3 benchmark showed core-pi's Cortex-A76
+      # is actually slightly *faster* per-core than this 2011 Sandy Bridge
+      # chip (159 vs 142 MB/s) — so this move is purely about RAM/disk
+      # headroom, not a performance upgrade. nodeTargets matches core-pi's
+      # list plus this host's own bridge address (self-monitoring, wasn't
+      # scraped before).
+      monitoring = {
+        enable = true;
+        ip = "10.85.50.2/24";
+        hostDataDir = "/var/lib/monitoring";
+        nodeTargets = [
+          myInventory.hosts.nixos-nvme.ip
+          myInventory.hosts.core-gateway.ip
+          myInventory.hosts.ap-upstairs.ip
+          myInventory.hosts.core-pi.ip
+          myInventory.hosts.hass-pi.ip
+          "10.85.50.1" # mac-mini itself (my.network.hostAddress above)
+        ];
+        githubMetrics.enable = false;
+      };
+
+      # Moved from hass-pi 2026-08-05: hass-pi's actual purpose (Home
+      # Assistant + Zigbee/Z-Wave/BLE device integration, enableUSB/
+      # enableBluetooth hardware pass-through) stays put — these five are
+      # just AI chat/agent orchestration frontends with no local-hardware
+      # dependency and no local inference (all route to litellm.internal ->
+      # orin-nano's vLLM/Ollama, same as before), same profile as the
+      # monitoring move above. IPs continue mac-mini's 10.85.50.0/24 slice
+      # (.2 is monitoring above).
+      open-webui = {
+        enable = true;
+        ip = "10.85.50.3/24";
+        hostDataDir = "/var/lib/open-webui";
+        memoryLimit = "2G";
+      };
+
+      # NOT openclaw (deliberately left on hass-pi): its pnpm-deps
+      # fixed-output derivation has a hash mismatch against its pinned
+      # upstream flake (github:openclaw/nix-openclaw) — confirmed
+      # 2026-08-05 via a from-scratch build here, a genuine bug in that
+      # external project's own lockfile, unrelated to this migration.
+      # hass-pi's copy still works fine since it's running an
+      # already-built/cached artifact (container-updater decouples
+      # container updates from full host rebuilds) — only a *fresh*
+      # build hits this. Move it once upstream fixes their lockfile.
+      agent-zero = {
+        enable = true;
+        ip = "10.85.50.5/24";
+        hostDataDir = "/var/lib/agent-zero";
+        memoryLimit = "1G";
+      };
+
+      anythingllm = {
+        enable = true;
+        ip = "10.85.50.6/24";
+        hostDataDir = "/var/lib/anythingllm";
+        llmUrl = "https://litellm.internal";
+        modelName = "google/gemma-2b"; # Aligned with Orin Nano backend in ai.nix
+        memoryLimit = "2G";
+      };
+
+      hermes = {
+        enable = true;
+        ip = "10.85.50.7/24";
+        hostDataDir = "/var/lib/hermes";
+        memoryLimit = "2G";
+        ollamaUrl = "https://litellm.internal/v1";
+        secretsFile = config.sops.templates."hermes.env".path;
+        discord.enable = true;
+      };
+    };
   };
 
   # All services.* for this host in one block too (same statix repeated-key
@@ -215,16 +332,6 @@ in
       settings.Resolve.DNSSEC = "false";
     };
   };
-
-  # /var/lib/gnome-remote-desktop is the dedicated system user's home
-  # (modules created by services.gnome.gnome-remote-desktop.enable) — where
-  # the system daemon's own grdctl --system state (credentials, TLS cert)
-  # lives. Not in modules/nixos/persistence.nix's shared list (that's for
-  # fleet-wide state, this is specific to this host actually using the
-  # system RDP daemon), so add it here or credentials regenerate every boot.
-  environment.persistence."/nix/persist".directories = [
-    "/var/lib/gnome-remote-desktop"
-  ];
 
   # grdctl --system talks to gnome-remote-desktop-configuration.service over
   # the system bus, not a per-user session bus — this runs as a plain system
@@ -395,14 +502,43 @@ in
   # itself (the portal-based, always-inhibited path) every time it started.
   systemd.user.services.gnome-remote-desktop-headless.enable = false;
 
+  # All environment.* for this host in one block (same statix repeated-key
+  # concern as my.*/services.* above — this used to be two separate spots).
   environment = {
-    # /home has no disk-backed mount of its own (disko.nix only declares
-    # /nix and /nix/persist) — it lives under the tmpfs "/" declared near
-    # the bottom of this file, so it's wiped every reboot by default.
-    persistence."/nix/persist".users.martin.directories = [
-      ".mozilla" # Firefox profile
-      ".config" # GNOME/dconf settings, GTK, mimeapps.list
-    ];
+    persistence."/nix/persist" = {
+      # /home has no disk-backed mount of its own (disko.nix only declares
+      # /nix and /nix/persist) — it lives under the tmpfs "/" declared near
+      # the bottom of this file, so it's wiped every reboot by default.
+      users.martin.directories = [
+        ".mozilla" # Firefox profile
+        ".config" # GNOME/dconf settings, GTK, mimeapps.list
+      ];
+
+      directories = [
+        # /var/lib/gnome-remote-desktop is the dedicated system user's home
+        # (modules created by services.gnome.gnome-remote-desktop.enable) —
+        # where the system daemon's own grdctl --system state (credentials,
+        # TLS cert) lives. Not in modules/nixos/persistence.nix's shared
+        # list (that's for fleet-wide state, this is specific to this host
+        # actually using the system RDP daemon) — needed here or
+        # credentials regenerate every boot.
+        "/var/lib/gnome-remote-desktop"
+
+        # Monitoring container's actual state (VictoriaMetrics DB + Grafana
+        # DB/dashboards) — moved from core-pi 2026-08-04, see the
+        # my.containers.monitoring comment above for why. Same pattern
+        # core-pi used for the same directory.
+        "/var/lib/monitoring"
+
+        # AI stack containers' state — moved from hass-pi 2026-08-05, see
+        # the my.containers.open-webui comment above for why. Same
+        # directories hass-pi used.
+        "/var/lib/open-webui"
+        "/var/lib/agent-zero"
+        "/var/lib/anythingllm"
+        "/var/lib/hermes"
+      ];
+    };
 
     systemPackages = with pkgs; [
       sops

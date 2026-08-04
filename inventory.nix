@@ -240,7 +240,7 @@
         };
       };
       open-webui = {
-        ip = "10.85.49.102"; # Hass-Pi
+        ip = "10.85.50.3"; # mac-mini (moved from hass-pi 2026-08-05)
         port = 8080;
         externalPort = 443;
         domain = "chat.kleinbem.dev";
@@ -308,7 +308,7 @@
         };
       };
       openclaw = {
-        ip = "10.85.49.112"; # Hass-Pi
+        ip = "10.85.49.112"; # Hass-Pi (kept here — pnpm-deps hash mismatch against its pinned upstream flake blocks a fresh build elsewhere, see hosts/hass-pi/default.nix)
         meta = {
           name = "OpenClaw";
           category = "AI Engineering";
@@ -317,7 +317,7 @@
         };
       };
       agent-zero = {
-        ip = "10.85.49.113"; # Hass-Pi
+        ip = "10.85.50.5"; # mac-mini (moved from hass-pi 2026-08-05)
         port = 50001;
         externalPort = 50001;
         mtls = true;
@@ -329,7 +329,7 @@
         };
       };
       hermes = {
-        ip = "10.85.49.114"; # Hass-Pi
+        ip = "10.85.50.7"; # mac-mini (moved from hass-pi 2026-08-05)
         meta = {
           name = "Hermes Agent";
           category = "AI Engineering";
@@ -361,7 +361,7 @@
       };
       monitoring = {
         enabled = true;
-        ip = "10.85.48.114"; # Core-Pi
+        ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
         port = 3000;
         externalPort = 3001;
         auth = true; # Protected by Authelia
@@ -374,7 +374,13 @@
       };
       alertmanager = {
         enabled = true;
-        ip = "10.85.47.114"; # Runs in monitoring container
+        # Runs inside the SAME monitoring container (containers/monitoring.nix
+        # enables prometheus.alertmanager in the same innerConfig as
+        # victoriametrics/grafana) — was pointing at 10.85.47.114 (nasbook's
+        # subnet), a stale/wrong value predating this move, not something
+        # that ever matched the container's real address. Fixed to match
+        # monitoring's own IP above.
+        ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
         port = 9093;
         externalPort = 9093;
         auth = true; # Protected by Authelia
@@ -535,7 +541,7 @@
         };
       };
       anythingllm = {
-        ip = "10.85.49.132"; # Moved to Hass-Pi subnet
+        ip = "10.85.50.6"; # mac-mini (moved from hass-pi 2026-08-05)
         port = 3001;
         meta = {
           name = "AnythingLLM";

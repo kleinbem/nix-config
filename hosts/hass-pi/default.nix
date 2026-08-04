@@ -14,11 +14,14 @@
     ./disko.nix
     ./secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
-    inputs.nix-presets.nixosModules.open-webui
-    inputs.nix-presets.nixosModules.agent-zero
+    # openclaw stays here (not moved with the rest of the AI stack to
+    # mac-mini 2026-08-05): its pnpm-deps fixed-output derivation hash
+    # mismatches its pinned upstream flake (github:openclaw/nix-openclaw)
+    # on a from-scratch build — a genuine bug in that external project's
+    # own lockfile. This host's copy is unaffected since it's running an
+    # already-built/cached artifact (container-updater decouples container
+    # updates from full host rebuilds).
     inputs.nix-presets.nixosModules.openclaw
-    inputs.nix-presets.nixosModules.hermes
-    inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
@@ -63,49 +66,11 @@
         memoryLimit = "4G";
       };
 
-      open-webui = {
-        enable = true;
-        ip = "${myInventory.network.nodes.open-webui.ip}/24";
-        hostDataDir = "/var/lib/open-webui";
-        memoryLimit = "2G";
-      };
-
       openclaw = {
         enable = true;
         ip = "${myInventory.network.nodes.openclaw.ip}/24";
         hostDataDir = "/var/lib/openclaw";
         memoryLimit = "1G";
-      };
-
-      agent-zero = {
-        enable = true;
-        ip = "${myInventory.network.nodes.agent-zero.ip}/24";
-        hostDataDir = "/var/lib/agent-zero";
-        memoryLimit = "1G";
-      };
-
-      anythingllm = {
-        enable = true;
-        ip = "${myInventory.network.nodes.anythingllm.ip}/24";
-        hostDataDir = "/var/lib/anythingllm";
-        llmUrl = "https://litellm.internal";
-        modelName = "google/gemma-2b"; # Aligned with Orin Nano backend in ai.nix
-        memoryLimit = "2G";
-      };
-
-      hermes = {
-        enable = true;
-        ip = "${myInventory.network.nodes.hermes.ip}/24";
-        hostDataDir = "/var/lib/hermes";
-        memoryLimit = "2G";
-        # Same litellm.internal backend as anythingllm above (routes to the
-        # Orin Nano's vLLM/Ollama). Pick the actual model with `hermes model`
-        # (or `/model custom`, which auto-detects if only one is loaded) —
-        # left unset here since litellm's exposed model name isn't verified
-        # from this session; adjust model.default in hermes.nix if needed.
-        ollamaUrl = "https://litellm.internal/v1";
-        secretsFile = config.sops.templates."hermes.env".path;
-        discord.enable = true;
       };
     };
 
@@ -158,11 +123,7 @@
     directories = [
       "/var/lib/home-assistant"
       "/var/lib/homarr"
-      "/var/lib/open-webui"
       "/var/lib/openclaw"
-      "/var/lib/agent-zero"
-      "/var/lib/anythingllm"
-      "/var/lib/hermes"
       # Native Services. DynamicUser services keep real state in
       # /var/lib/private/<name> (systemd makes /var/lib/<name> a symlink to it),
       # so we must persist the private path — bind-mounting onto the symlink

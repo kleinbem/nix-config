@@ -22,24 +22,7 @@
 # fatal — but do step 1 first to avoid a failed autoUpgrade cycle.
 # NOTE: confirm netbird_setup_key in secrets.yaml is a *reusable* key (it's
 # shared with nixos-nvme/orin-nano); a one-time key already consumed won't join.
-{
-  inputs,
-  config,
-  lib,
-  ...
-}:
-let
-  # CI overrides the nix-secrets input with an empty dummy directory
-  # (--override-input nix-secrets /tmp/dummy-secrets — same workaround
-  # validateSopsFiles=false exists for below). Fall back to an empty contact
-  # set in that case; lib/personas.nix renders missing PII fields as
-  # "(private)", which is fine for a CI-only eval that never activates.
-  contactFile = inputs.nix-secrets + "/personas-contact.nix";
-  personas = import ../../lib/personas.nix {
-    inherit lib;
-    contact = if builtins.pathExists contactFile then import contactFile else { };
-  };
-in
+{ inputs, ... }:
 {
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
@@ -66,22 +49,6 @@ in
       # enables it; ConditionPathExists on this secret's path keeps it inert
       # until the key materialises at activation).
       ntfy_deploy_topic = { };
-      # Hermes Agent's Discord gateway bot token (Discord Developer Portal →
-      # Bot → Reset Token). Must be added to nix-secrets/secrets.yaml before
-      # this deploys — see hosts/hass-pi/default.nix my.containers.hermes.
-      discord_bot_token = { };
-    };
-
-    templates."hermes.env" = {
-      mode = "0444";
-      content = ''
-        DISCORD_BOT_TOKEN=${config.sops.placeholder.discord_bot_token}
-        # Comma-separated Discord user IDs allowed to talk to the bot. Sourced
-        # from nix-secrets/personas-contact.nix (martin.discord-id) via
-        # lib/personas.nix — add more personas' discord-id here as needed.
-        # By default the gateway denies everyone not listed here.
-        DISCORD_ALLOWED_USERS=${personas.all.martin.discord-id}
-      '';
     };
   };
 }
