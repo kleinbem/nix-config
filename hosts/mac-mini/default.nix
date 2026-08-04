@@ -131,8 +131,17 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        User = "gnome-remote-desktop";
-        Group = "gnome-remote-desktop";
+        # NOT User = "gnome-remote-desktop" (tried first, wrong): confirmed
+        # live 2026-08-04 via direct comparison — `sudo -u gnome-remote-desktop
+        # grdctl --system rdp set-credentials ...` (this service's exact prior
+        # execution context) reports exit 0 but silently writes nothing;
+        # `pkexec --user gnome-remote-desktop grdctl ...` run AS ROOT actually
+        # writes credentials.ini correctly. grdctl's own internal pkexec call
+        # apparently doesn't correctly escalate when the invoking user is
+        # already the target user — needs a real privilege transition, not a
+        # same-user one. Running this service as root (systemd's default,
+        # hence no User= here) lets grdctl's own pkexec do that transition
+        # properly, matching the working manual invocation.
       };
       # Confirmed live 2026-08-04: grdctl --system shells out to pkexec (the
       # security.polkit setuid wrapper at /run/wrappers/bin, already enabled
