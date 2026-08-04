@@ -6,7 +6,6 @@
 # wiped+installed via USB-SATA adapter (see .just/deployment.just
 # mac-mini-install-usb), then moved internally.
 {
-  config,
   lib,
   pkgs,
   inputs,
@@ -59,20 +58,6 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
-
-  # Overrides users/martin/nixos.nix's shared hashedPasswordFile (martin's
-  # real password, used wherever that file is imported — nixos-nvme etc.)
-  # with a mac-mini-specific short PIN instead. Deliberate: unlike
-  # nixos-nvme, martin doesn't have a YubiKey to authenticate with here at
-  # all (there's no physical port to plug one into on a box with zero
-  # physical access) — GDM login over RDP is the only auth surface, and
-  # it's already treated as secondary to the real security boundary (the
-  # SSH tunnel gating RDP access itself, FIDO2-protected) rather than as
-  # the primary gate. A short, easy-to-type PIN here doesn't weaken that —
-  # it's consistent with the tradeoff this host already made for RDP's own
-  # credentials. Chosen directly by martin via `sops set`, never seen in
-  # plaintext by anything else (see hosts/mac-mini/secrets.nix).
-  users.users.martin.hashedPasswordFile = lib.mkForce config.sops.secrets.mac_mini_login_pin_hash.path;
 
   # All my.* fleet options for this host live in one block (statix flags
   # repeated top-level keys — this used to be three separate my.* spots).
