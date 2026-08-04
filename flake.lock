@@ -1496,11 +1496,11 @@
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1785775720,
-        "narHash": "sha256-+lboobofkSuskkXoagggWn35z0jACMH7RBsP2nP8J1U=",
+        "lastModified": 1785841970,
+        "narHash": "sha256-LATst+wC/j6BowQ9JKHmm8cVRmt+fIJlrYDEboog+/s=",
         "owner": "kleinbem",
         "repo": "nix-secrets",
-        "rev": "33eb6b6cfcc10a7c06bedf3299a3454a1440cfc9",
+        "rev": "ad2169b06e858d047be25a2fa65cebe27374b3af",
         "type": "github"
       },
       "original": {
