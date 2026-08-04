@@ -64,10 +64,12 @@ in
   # attached. Was Wayland (sway) + wayvnc + noVNC (bespoke systemd services
   # driving a headless wlroots compositor by hand — see git history for that
   # setup); replaced with real GNOME (my.desktop.gnome.enable, the same
-  # fleet-wide module nixos-nvme uses) via GDM autologin + GNOME Remote
-  # Desktop's headless RDP daemon, which is the module's own supported
-  # answer to "no physical display ever attached" rather than a hand-rolled
-  # runtime dir + WLR_BACKENDS=headless trick.
+  # fleet-wide module nixos-nvme uses) via GNOME Remote Desktop, which is
+  # the module's own supported answer to "no physical display ever
+  # attached" rather than a hand-rolled runtime dir + WLR_BACKENDS=headless
+  # trick. See the NOT autologin comment below for the actual login/RDP
+  # architecture — it isn't the simple "headless daemon on autologin" this
+  # paragraph originally described.
   #
   # Auth/exposure: kept identical to the old wayvnc posture. RDP's only auth
   # is a username+password (grdctl-provisioned below), the same
@@ -78,27 +80,88 @@ in
   # at localhost:3389. No NetBird ACL change needed — this never touches a
   # routable interface, same as wayvnc never did.
   #
-  # UNVERIFIED so far (no physical monitor to watch a first boot on, and
-  # this hasn't been through a real reboot test yet — see the mac-mini tg3
-  # incident for why that matters): whether GDM autologin + gnome-shell
-  # actually come up cleanly on this box's real Sandy Bridge iGPU with
-  # nothing connected to its HDMI/DP port. Unlike tg3 (an initrd-level
-  # failure with no network at all), a failed GNOME session here does NOT
-  # take SSH/NetBird down with it — recover via `ssh mac-mini` +
-  # `journalctl -u display-manager` / `systemctl --user status
-  # gnome-remote-desktop-headless`, or roll back to the previous generation
-  # over SSH, no physical access required.
+  # NOT autologin (reverted 2026-08-04, see git history for the autologin +
+  # headless-only version this replaced): gnome-remote-desktop's --headless
+  # daemon is designed to run standalone, as the only compositor on the
+  # machine — layering it on top of an already-running GDM autologin
+  # session consistently failed with "Session creation inhibited" on every
+  # connection attempt (reproduced with both GNOME Connections and
+  # wlfreerdp, including on a freshly-restarted daemon's very first
+  # attempt — not stale state). The architecture GNOME actually supports
+  # for "headless box, RDP for GUI access" is RDP straight into the GDM
+  # login screen itself (gnome-remote-desktop.service, System daemon,
+  # WantedBy=graphical.target — was sitting inactive this whole time) with
+  # a real interactive login, then GDM's own handover mechanism
+  # (gnome-remote-desktop-handover.service, packaged, not authored here)
+  # bridges the RDP connection into the resulting session. defaultSession
+  # still applies to whatever session GDM starts after that login.
   my.desktop.gnome.enable = true;
 
-  services.displayManager = {
-    autoLogin = {
-      enable = true;
-      user = "martin";
-    };
-    defaultSession = "gnome";
-  };
+  services.displayManager.defaultSession = "gnome";
 
   services.gnome.gnome-remote-desktop.enable = true;
+
+  # /var/lib/gnome-remote-desktop is the dedicated system user's home
+  # (modules created by services.gnome.gnome-remote-desktop.enable) — where
+  # the system daemon's own grdctl --system state (credentials, TLS cert)
+  # lives. Not in modules/nixos/persistence.nix's shared list (that's for
+  # fleet-wide state, this is specific to this host actually using the
+  # system RDP daemon), so add it here or credentials regenerate every boot.
+  environment.persistence."/nix/persist".directories = [
+    "/var/lib/gnome-remote-desktop"
+  ];
+
+  # Mirrors gnome-remote-desktop-rdp-setup below, but for the SYSTEM daemon
+  # (login-screen RDP) instead of the headless one: grdctl --system talks to
+  # gnome-remote-desktop-configuration.service over the system bus rather
+  # than a per-user session bus, so — unlike the headless version — this can
+  # run as a plain system service, no gnome-session.target dependency.
+  # UNVERIFIED: whether grdctl --system genuinely only needs the system bus
+  # (no session context) hasn't been confirmed by an actual successful run
+  # yet — best-supported reading of gnome-remote-desktop-configuration's own
+  # packaged unit (User=gnome-remote-desktop, WantedBy=graphical.target, no
+  # session-bus setup of its own), not something I've verified working.
+  systemd.services = {
+    gnome-remote-desktop-system-rdp-setup = {
+      description = "Provision GNOME Remote Desktop (system/login-screen RDP) credentials + TLS cert";
+      after = [ "gnome-remote-desktop-configuration.service" ];
+      requires = [ "gnome-remote-desktop-configuration.service" ];
+      before = [ "gnome-remote-desktop.service" ];
+      wantedBy = [ "graphical.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "gnome-remote-desktop";
+        Group = "gnome-remote-desktop";
+      };
+      script = ''
+        set -euo pipefail
+        umask 077
+        state="/var/lib/gnome-remote-desktop/rdp-provisioning"
+        mkdir -p "$state"
+
+        if [ ! -f "$state/password" ]; then
+          ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
+          echo "Generated a new GNOME Remote Desktop (system/login-screen RDP) password for martin — save it now: $(cat "$state/password")"
+        fi
+
+        if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
+          ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
+            -subj "/CN=mac-mini" \
+            -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
+        fi
+
+        grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
+        "$grdctl" --system rdp set-tls-cert "$state/tls.crt"
+        "$grdctl" --system rdp set-tls-key "$state/tls.key"
+        "$grdctl" --system rdp set-credentials martin "$(cat "$state/password")"
+        "$grdctl" --system rdp enable
+      '';
+    };
+
+    gnome-remote-desktop.after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+    gnome-remote-desktop.requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+  };
 
   # nixos-nvme disables GNOME's idle-suspend via a home-manager dconf setting
   # (modules/home-manager/gnome.nix, sleep-inactive-ac-type = "nothing"), but

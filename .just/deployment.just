@@ -584,8 +584,8 @@ mac-mini-install-usb device:
     echo "        fleet-wide 'just in' passthrough for it)"
     echo "   4. THEN plug the SSD into the Mac Mini, connect ethernet, and boot"
     echo "   5. just deployment::mac-mini-verify   (once it's reachable over SSH —"
-    echo "        confirms auto-unlock, static IP, NetBird, and the GNOME/GDM"
-    echo "        autologin + remote desktop all actually came up clean)"
+    echo "        confirms auto-unlock, static IP, NetBird, and GDM +"
+    echo "        login-screen remote desktop all actually came up clean)"
     echo "   6. (cd ../nix/infra/netbird && just plan, then just apply)   new"
     echo "        peers land with zero access until promoted into"
     echo "        personal-devices — groups.tf already lists mac-mini by name,"
@@ -650,7 +650,7 @@ mac-mini-update-usb device:
     echo "✅ In-place update complete — put the SSD in the Mac Mini, plug in ethernet, and boot."
 
 [group("Provisioning")]
-[doc("Post-boot sanity check after a mac-mini (re)install: SSH reachability, static IP, tg3 in the running kernel, NetBird mesh status, and the GNOME/GDM autologin + GNOME Remote Desktop (headless RDP) services. Read-only — doesn't change anything.")]
+[doc("Post-boot sanity check after a mac-mini (re)install: SSH reachability, static IP, tg3 in the running kernel, NetBird mesh status, and GDM + GNOME Remote Desktop (login-screen RDP) services. Read-only — doesn't change anything.")]
 mac-mini-verify ip="10.0.0.16":
     #!/usr/bin/env bash
     set -uo pipefail
@@ -713,11 +713,11 @@ mac-mini-verify ip="10.0.0.16":
     check "NetBird visible peers"
     if echo "$nb" | grep -qE "Peers count: [1-9]"; then ok "has visible peers"; else bad "0 peers — check groups.tf membership / default-policy closure"; fi
 
-    check "GDM autologin session for martin"
-    if ssh "$IP" "loginctl list-sessions --no-legend 2>/dev/null | grep -q martin"; then ok "session active"; else bad "no martin session found"; fi
+    check "GDM at login screen (no autologin — see hosts/mac-mini/default.nix for why)"
+    if ssh "$IP" "systemctl is-active display-manager.service" 2>/dev/null | grep -q "^active$"; then ok "display-manager active"; else bad "display-manager not active"; fi
 
-    check "gnome-remote-desktop-headless (user service)"
-    if ssh "$IP" "systemctl --user is-active gnome-remote-desktop-headless.service" 2>/dev/null | grep -q "^active$"; then ok "active"; else bad "not active"; fi
+    check "gnome-remote-desktop.service (system, login-screen RDP)"
+    if ssh "$IP" "systemctl is-active gnome-remote-desktop.service" 2>/dev/null | grep -q "^active$"; then ok "active"; else bad "not active"; fi
 
     check "RDP listening, but NOT firewall-exposed (SSH-tunnel-only by design)"
     listening="$(ssh "$IP" "ss -tlnp 2>/dev/null | grep -q ':3389 '" 2>/dev/null; echo $?)"

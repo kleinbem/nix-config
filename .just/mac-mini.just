@@ -1,6 +1,7 @@
 # mac-mini Operations — remote ops via SSH from the dev workstation.
-# mac-mini is a headless GNOME desktop box (GDM autologin, GNOME Remote
-# Desktop for GUI access) — no physical keyboard/screen/HDMI TTY, ever.
+# mac-mini is a headless GNOME desktop box (GDM login screen reachable via
+# GNOME Remote Desktop, no autologin) — no physical keyboard/screen/HDMI
+# TTY, ever.
 #
 # mac-mini.local doesn't reliably resolve from this workstation (mDNS lookup
 # just hangs) — these recipes use the static IP (inventory.nix) directly
@@ -29,5 +30,5 @@ shell:
     @ssh root@10.0.0.16
 
 [group("mac-mini")]
-logs service="gnome-remote-desktop-headless":
-    @ssh martin@10.0.0.16 "journalctl --user -u {{service}} -n 50 --no-pager"
+logs service="gnome-remote-desktop":
+    @ssh martin@10.0.0.16 "journalctl -u {{service}} -n 50 --no-pager"
