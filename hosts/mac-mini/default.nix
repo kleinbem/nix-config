@@ -59,47 +59,128 @@ in
     keys.ssh.fido2-backup
   ];
 
-  # Remote desktop: this host's whole reason for existing (see top-of-file
-  # comment) is GUI access with zero physical keyboard/screen/console ever
-  # attached. Was Wayland (sway) + wayvnc + noVNC (bespoke systemd services
-  # driving a headless wlroots compositor by hand — see git history for that
-  # setup); replaced with real GNOME (my.desktop.gnome.enable, the same
-  # fleet-wide module nixos-nvme uses) via GNOME Remote Desktop, which is
-  # the module's own supported answer to "no physical display ever
-  # attached" rather than a hand-rolled runtime dir + WLR_BACKENDS=headless
-  # trick. See the NOT autologin comment below for the actual login/RDP
-  # architecture — it isn't the simple "headless daemon on autologin" this
-  # paragraph originally described.
-  #
-  # Auth/exposure: kept identical to the old wayvnc posture. RDP's only auth
-  # is a username+password (grdctl-provisioned below), the same
-  # weaker-than-FIDO2 tradeoff wayvnc had — so it stays OFF the firewall
-  # entirely (no networking.firewall.allowedTCPPorts / openFirewall) and is
-  # reachable only via `ssh -L 3389:localhost:3389 mac-mini` (FIDO2/Yubikey
-  # pubkey, the fleet's real trust mechanism) + a local RDP client pointed
-  # at localhost:3389. No NetBird ACL change needed — this never touches a
-  # routable interface, same as wayvnc never did.
-  #
-  # NOT autologin (reverted 2026-08-04, see git history for the autologin +
-  # headless-only version this replaced): gnome-remote-desktop's --headless
-  # daemon is designed to run standalone, as the only compositor on the
-  # machine — layering it on top of an already-running GDM autologin
-  # session consistently failed with "Session creation inhibited" on every
-  # connection attempt (reproduced with both GNOME Connections and
-  # wlfreerdp, including on a freshly-restarted daemon's very first
-  # attempt — not stale state). The architecture GNOME actually supports
-  # for "headless box, RDP for GUI access" is RDP straight into the GDM
-  # login screen itself (gnome-remote-desktop.service, System daemon,
-  # WantedBy=graphical.target — was sitting inactive this whole time) with
-  # a real interactive login, then GDM's own handover mechanism
-  # (gnome-remote-desktop-handover.service, packaged, not authored here)
-  # bridges the RDP connection into the resulting session. defaultSession
-  # still applies to whatever session GDM starts after that login.
-  my.desktop.gnome.enable = true;
+  # All my.* fleet options for this host live in one block (statix flags
+  # repeated top-level keys — this used to be three separate my.* spots).
+  my = {
+    # Remote desktop: this host's whole reason for existing (see top-of-file
+    # comment) is GUI access with zero physical keyboard/screen/console ever
+    # attached. Was Wayland (sway) + wayvnc + noVNC (bespoke systemd services
+    # driving a headless wlroots compositor by hand — see git history for that
+    # setup); replaced with real GNOME (my.desktop.gnome.enable, the same
+    # fleet-wide module nixos-nvme uses) via GNOME Remote Desktop, which is
+    # the module's own supported answer to "no physical display ever
+    # attached" rather than a hand-rolled runtime dir + WLR_BACKENDS=headless
+    # trick. See the NOT autologin comment further down for the actual
+    # login/RDP architecture — it isn't the simple "headless daemon on
+    # autologin" this paragraph originally described.
+    #
+    # Auth/exposure: kept identical to the old wayvnc posture. RDP's only auth
+    # is a username+password (grdctl-provisioned below), the same
+    # weaker-than-FIDO2 tradeoff wayvnc had — so it stays OFF the firewall
+    # entirely (no networking.firewall.allowedTCPPorts / openFirewall) and is
+    # reachable only via `ssh -L 3389:localhost:3389 mac-mini` (FIDO2/Yubikey
+    # pubkey, the fleet's real trust mechanism) + a local RDP client pointed
+    # at localhost:3389. No NetBird ACL change needed — this never touches a
+    # routable interface, same as wayvnc never did.
+    #
+    # NOT autologin (reverted 2026-08-04, see git history for the autologin +
+    # headless-only version this replaced): gnome-remote-desktop's --headless
+    # daemon is designed to run standalone, as the only compositor on the
+    # machine — layering it on top of an already-running GDM autologin
+    # session consistently failed with "Session creation inhibited" on every
+    # connection attempt (reproduced with both GNOME Connections and
+    # wlfreerdp, including on a freshly-restarted daemon's very first
+    # attempt — not stale state). The architecture GNOME actually supports
+    # for "headless box, RDP for GUI access" is RDP straight into the GDM
+    # login screen itself (gnome-remote-desktop.service, System daemon,
+    # WantedBy=graphical.target — was sitting inactive this whole time) with
+    # a real interactive login, then GDM's own handover mechanism
+    # (gnome-remote-desktop-handover.service, packaged, not authored here)
+    # bridges the RDP connection into the resulting session. defaultSession
+    # still applies to whatever session GDM starts after that login.
+    desktop.gnome.enable = true;
 
-  services.displayManager.defaultSession = "gnome";
+    # Old, comparatively slow CPU (2011 Sandy Bridge) — don't let nightly
+    # auto-upgrade fall back to a multi-hour local compile if Attic ever misses.
+    deploy.autoUpgrade = {
+      enable = true;
+      requireCache = true;
+    };
 
-  services.gnome.gnome-remote-desktop.enable = true;
+    monitoring.node.enable = true;
+
+    # Joins the unlock cluster as a 4th independent Tang server (alongside
+    # nixos-nvme/core-pi/hass-pi/nasbook) — more fleet redundancy.
+    services.tang.enable = true;
+
+    herdr-remote-client = {
+      enable = true;
+      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
+    };
+
+    # Tang auto-unlock at boot — mandatory here, not optional: this host has
+    # no physical keyboard/screen, ever, so a plain LUKS passphrase prompt
+    # would hang forever with nobody able to answer it.
+    #
+    # `enable` is gated on the JWE existing rather than hardcoded true: the
+    # JWE (nix-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated
+    # AFTER the real LUKS passphrase is set during the physical install
+    # (disko), so it doesn't exist at the time this file is first committed.
+    # Once it's generated — `scripts/generate-jwe.sh mac-mini`, same
+    # passphrase used during disko format — this flips on automatically on
+    # the next rebuild/redeploy; no further code change needed. Same pattern
+    # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
+    boot.clevis-initrd = {
+      enable = builtins.pathExists (inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe");
+      luksDevice = "mac_mini_crypt";
+      secretFile = inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe";
+      fallbackMessage = "Tang still unreachable; falling back to initrd SSH (no physical console on this host)";
+      # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
+    };
+
+    # Fixes network-routing.nix (fleet-wide via base.nix) silently targeting a
+    # nonexistent "wlo1" (the my.network.externalInterface default) on every
+    # boot/5min timer — harmless (the enforce-container-routes script has
+    # `|| true`) but pointless without the real interface name.
+    network.externalInterface = "enp2s0f0";
+  };
+
+  # All services.* for this host in one block too (same statix repeated-key
+  # concern as my.* above).
+  services = {
+    # Whatever session GDM starts after a successful login (see the NOT
+    # autologin comment above for the actual login/RDP architecture).
+    displayManager.defaultSession = "gnome";
+
+    gnome.gnome-remote-desktop.enable = true;
+
+    # Defense-in-depth alongside the dconf lock further down: logind's OWN
+    # power-key handling (independent of GNOME's gsd-media-keys, e.g. before
+    # a session exists to claim it) also gets set to ignore, so there's no
+    # path — GNOME session up or not — where a power-button signal results
+    # in suspend.
+    logind.settings.Login.HandlePowerKey = "ignore";
+
+    # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
+    # alongside disko's allowDiscards, not instead of it.
+    fstrim.enable = true;
+
+    # Join the NetBird mesh — same pattern as orin-nano/nasbook/core-pi/hass-pi
+    # (modules/nixos/networking.nix netbird-autojoin, gated on netbird_setup_key
+    # from secrets.nix).
+    netbird.enable = true;
+
+    # DNS was broken out of the box: modules/nixos/networking.nix defaults
+    # networking.resolvconf.enable to true fleet-wide, and every OTHER host
+    # overrides that (resolved.enable=true here like orin-nano, or forced off
+    # like the rpi5 nodes) — mac-mini never got either override, so resolv.conf
+    # pointed at a systemd-resolved stub (127.0.0.1) that was never enabled.
+    resolved = {
+      enable = true;
+      settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
+      settings.Resolve.DNSSEC = "false";
+    };
+  };
 
   # /var/lib/gnome-remote-desktop is the dedicated system user's home
   # (modules created by services.gnome.gnome-remote-desktop.enable) — where
@@ -169,8 +250,6 @@ in
       '';
     };
 
-    gnome-remote-desktop.after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
-    gnome-remote-desktop.requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
     # Confirmed live 2026-08-04: unlike gnome-remote-desktop-system-rdp-setup
     # (which explicitly declares wantedBy itself), the PACKAGED
     # gnome-remote-desktop.service's own [Install] WantedBy=graphical.target
@@ -183,7 +262,11 @@ in
     # that exact symlink itself at runtime — NixOS's /etc is immutable, so
     # nothing (grdctl included) can create it there at runtime; it has to be
     # done at build/activation time via this option instead.
-    gnome-remote-desktop.wantedBy = [ "graphical.target" ];
+    gnome-remote-desktop = {
+      after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+      requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+      wantedBy = [ "graphical.target" ];
+    };
   };
 
   # nixos-nvme disables GNOME's idle-suspend via a home-manager dconf setting
@@ -232,12 +315,6 @@ in
       lockAll = true;
     }
   ];
-
-  # Defense-in-depth alongside the dconf lock above: logind's OWN power-key
-  # handling (independent of GNOME's gsd-media-keys, e.g. before a session
-  # exists to claim it) also gets set to ignore, so there's no path — GNOME
-  # session up or not — where a power-button signal results in suspend.
-  services.logind.settings.Login.HandlePowerKey = "ignore";
 
   # STILL not the whole story: confirmed via /var/log/journal that both the
   # earlier power-button suspend AND a later idle-looking suspend were
@@ -305,46 +382,6 @@ in
       # (firefox resolved to the unsandboxed store path) before this was
       # removed — leftover from before this host ran GNOME at all.
     ];
-  };
-
-  my = {
-    # Old, comparatively slow CPU (2011 Sandy Bridge) — don't let nightly
-    # auto-upgrade fall back to a multi-hour local compile if Attic ever misses.
-    deploy.autoUpgrade = {
-      enable = true;
-      requireCache = true;
-    };
-
-    monitoring.node.enable = true;
-
-    # Joins the unlock cluster as a 4th independent Tang server (alongside
-    # nixos-nvme/core-pi/hass-pi/nasbook) — more fleet redundancy.
-    services.tang.enable = true;
-
-    herdr-remote-client = {
-      enable = true;
-      serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
-    };
-
-    # Tang auto-unlock at boot — mandatory here, not optional: this host has
-    # no physical keyboard/screen, ever, so a plain LUKS passphrase prompt
-    # would hang forever with nobody able to answer it.
-    #
-    # `enable` is gated on the JWE existing rather than hardcoded true: the
-    # JWE (nix-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated
-    # AFTER the real LUKS passphrase is set during the physical install
-    # (disko), so it doesn't exist at the time this file is first committed.
-    # Once it's generated — `scripts/generate-jwe.sh mac-mini`, same
-    # passphrase used during disko format — this flips on automatically on
-    # the next rebuild/redeploy; no further code change needed. Same pattern
-    # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
-    boot.clevis-initrd = {
-      enable = builtins.pathExists (inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe");
-      luksDevice = "mac_mini_crypt";
-      secretFile = inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe";
-      fallbackMessage = "Tang still unreachable; falling back to initrd SSH (no physical console on this host)";
-      # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
-    };
   };
 
   # Initrd SSH fallback — same pattern as hosts/nixos-nvme/hardware-boot.nix.
@@ -423,33 +460,6 @@ in
   # Not upgradable further, and not LVFS-managed (see above), so if
   # third-party-OS boot flakiness ever shows up here, stale firmware is
   # ruled out as the cause.
-
-  services = {
-    # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
-    # alongside disko's allowDiscards, not instead of it.
-    fstrim.enable = true;
-
-    # Join the NetBird mesh — same pattern as orin-nano/nasbook/core-pi/hass-pi
-    # (modules/nixos/networking.nix netbird-autojoin, gated on netbird_setup_key
-    # from secrets.nix).
-    netbird.enable = true;
-
-    # DNS was broken out of the box: modules/nixos/networking.nix defaults
-    # networking.resolvconf.enable to true fleet-wide, and every OTHER host
-    # overrides that (resolved.enable=true here like orin-nano, or forced off
-    # like the rpi5 nodes) — mac-mini never got either override, so resolv.conf
-    # pointed at a systemd-resolved stub (127.0.0.1) that was never enabled.
-    resolved = {
-      enable = true;
-      settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
-      settings.Resolve.DNSSEC = "false";
-    };
-  };
-  # Fixes network-routing.nix (fleet-wide via base.nix) silently targeting a
-  # nonexistent "wlo1" (the my.network.externalInterface default) on every
-  # boot/5min timer — harmless (the enforce-container-routes script has
-  # `|| true`) but pointless without the real interface name.
-  my.network.externalInterface = "enp2s0f0";
 
   # Static IP migration, stage 2 (cutover): DHCP lease (.70) retired, .16
   # (inventory.nix) is now the sole address with an explicit gateway. Stage 1
