@@ -117,9 +117,8 @@
         ];
         favorite-apps = [
           "firefox-standard.desktop"
-          "org.gnome.Thunderbird.desktop"
           "org.gnome.Nautilus.desktop"
-          "gnome-software.desktop"
+          "org.gnome.Software.desktop"
           "org.gnome.Console.desktop"
         ];
       };
@@ -339,11 +338,8 @@
       "org/gnome/desktop/app-folders/folders/Development" = {
         name = "Development";
         apps = [
-          "org.gnome.Builder.desktop"
-          "io.podman_desktop.PodmanDesktop.desktop"
           "virt-manager.desktop"
           "code.desktop"
-          "dev-pod.desktop"
         ];
       };
 
@@ -351,7 +347,7 @@
         name = "Productivity";
         apps = [
           "org.gnome.Papers.desktop"
-          "simple-scan.desktop"
+          "org.gnome.SimpleScan.desktop"
           "org.gnome.Connections.desktop"
         ];
       };
@@ -406,7 +402,6 @@
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-terminal/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-terminal-alt/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-mission-center/"
-          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-alpaca/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile-alt/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-satty/"
@@ -435,12 +430,6 @@
         binding = "<Control><Shift>Escape";
         command = "missioncenter";
         name = "Mission Center";
-      };
-
-      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-alpaca" = {
-        binding = "<Control><Alt>BackSpace";
-        command = "alpaca";
-        name = "Launch Alpaca (AI)";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile" = {
