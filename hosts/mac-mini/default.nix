@@ -74,6 +74,18 @@ in
   home-manager.users.${config.my.username} = {
     imports = [ "${self}/modules/home-manager/gnome.nix" ];
     modules.gnome.enable = true;
+
+    # gnome.nix's org/gnome/settings-daemon/plugins/power (sleep-inactive-
+    # ac-type, power-button-action = "interactive") lives under the exact
+    # path programs.dconf.profiles.user.databases below locks with
+    # lockAll = true — a plain user-db write there fails activation
+    # outright ("non-writable keys"). Not just a technical workaround:
+    # "interactive" would reintroduce the suspend bug that lock exists to
+    # fix (this host has no display to show the confirm dialog on, so it
+    # falls straight through to suspend — see the lock's own comment
+    # further down). Defer entirely to the system-wide lock instead.
+    dconf.settings."org/gnome/settings-daemon/plugins/power" = lib.mkForce { };
+
     home = {
       inherit (config.my) username;
       homeDirectory = config.my.home;
