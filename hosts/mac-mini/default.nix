@@ -111,16 +111,9 @@ in
     "/var/lib/gnome-remote-desktop"
   ];
 
-  # Mirrors gnome-remote-desktop-rdp-setup below, but for the SYSTEM daemon
-  # (login-screen RDP) instead of the headless one: grdctl --system talks to
-  # gnome-remote-desktop-configuration.service over the system bus rather
-  # than a per-user session bus, so — unlike the headless version — this can
-  # run as a plain system service, no gnome-session.target dependency.
-  # UNVERIFIED: whether grdctl --system genuinely only needs the system bus
-  # (no session context) hasn't been confirmed by an actual successful run
-  # yet — best-supported reading of gnome-remote-desktop-configuration's own
-  # packaged unit (User=gnome-remote-desktop, WantedBy=graphical.target, no
-  # session-bus setup of its own), not something I've verified working.
+  # grdctl --system talks to gnome-remote-desktop-configuration.service over
+  # the system bus, not a per-user session bus — this runs as a plain system
+  # service, no gnome-session.target dependency.
   systemd.services = {
     gnome-remote-desktop-system-rdp-setup = {
       description = "Provision GNOME Remote Desktop (system/login-screen RDP) credentials + TLS cert";
@@ -178,6 +171,19 @@ in
 
     gnome-remote-desktop.after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
     gnome-remote-desktop.requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+    # Confirmed live 2026-08-04: unlike gnome-remote-desktop-system-rdp-setup
+    # (which explicitly declares wantedBy itself), the PACKAGED
+    # gnome-remote-desktop.service's own [Install] WantedBy=graphical.target
+    # never actually got linked — `ls /etc/systemd/system/graphical.target.wants/`
+    # had no entry for it. NixOS does not appear to auto-process a
+    # systemd.packages-provided unit's [Install] section into that symlink;
+    # it needs an explicit wantedBy from a systemd.services.<name> override
+    # here to actually get created declaratively. This is also very likely
+    # why `grdctl --system rdp enable` failed with EROFS trying to write
+    # that exact symlink itself at runtime — NixOS's /etc is immutable, so
+    # nothing (grdctl included) can create it there at runtime; it has to be
+    # done at build/activation time via this option instead.
+    gnome-remote-desktop.wantedBy = [ "graphical.target" ];
   };
 
   # nixos-nvme disables GNOME's idle-suspend via a home-manager dconf setting
@@ -257,81 +263,34 @@ in
     }
   ];
 
-  # grdctl writes RDP config into per-user dconf, which needs a real D-Bus
-  # session + dconf — i.e. martin's actual logind session after autologin,
-  # not a bespoke runtime dir the way wayvnc needed one. gnome-session.target
-  # is exactly that context. Idempotent: password + TLS cert/key are
-  # generated once and persisted (below), re-applied via grdctl on every
-  # session start rather than regenerated.
-  systemd.user.services = {
-    gnome-remote-desktop-rdp-setup = {
-      description = "Provision GNOME Remote Desktop (headless RDP) credentials + TLS cert";
-      wantedBy = [ "gnome-session.target" ];
-      after = [ "gnome-session.target" ];
-      # Both this unit and the packaged gnome-remote-desktop-headless.service
-      # only declared After=gnome-session.target, with no ordering relative
-      # to EACH OTHER — systemd was free to start the RDP daemon before this
-      # finished writing credentials via grdctl, and the daemon doesn't
-      # appear to hot-reload a credential written after its own startup.
-      # Confirmed live 2026-08-03: daemon logged "[RDP] Credentials are not
-      # set, denying client" despite this service having already exited 0
-      # successfully — only `systemctl --user restart
-      # gnome-remote-desktop-headless` (after the fact) fixed the live
-      # session. Before= here is the fix; belt-and-suspenders with the
-      # matching After=/Requires= added to that unit below.
-      before = [ "gnome-remote-desktop-headless.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        set -euo pipefail
-        # Owner-only from the moment of creation — closes the brief window a
-        # create-then-chmod sequence leaves open (file inherits the process's
-        # default umask, e.g. 644, until the chmod call lands).
-        umask 077
-        state="$HOME/.local/share/gnome-remote-desktop-rdp"
-        mkdir -p "$state"
-
-        if [ ! -f "$state/password" ]; then
-          ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
-          echo "Generated a new GNOME Remote Desktop (RDP) password for martin — save it now: $(cat "$state/password")"
-        fi
-
-        if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
-          ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
-            -subj "/CN=mac-mini" \
-            -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
-        fi
-
-        grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
-        "$grdctl" --headless rdp set-tls-cert "$state/tls.crt"
-        "$grdctl" --headless rdp set-tls-key "$state/tls.key"
-        "$grdctl" --headless rdp set-credentials martin "$(cat "$state/password")"
-        "$grdctl" --headless rdp enable
-      '';
-    };
-
-    # Packaged unit (pkgs.gnome-remote-desktop, not authored here) — this
-    # augments it with the ordering the package itself doesn't declare. See
-    # the Before= comment on gnome-remote-desktop-rdp-setup above for why.
-    gnome-remote-desktop-headless = {
-      after = [ "gnome-remote-desktop-rdp-setup.service" ];
-      requires = [ "gnome-remote-desktop-rdp-setup.service" ];
-    };
-  };
+  # NOT headless mode (removed 2026-08-04, see git history): gnome-remote-
+  # desktop --headless goes through mutter's XDG remote-desktop PORTAL API,
+  # which — per upstream (gitlab.gnome.org/GNOME/gnome-remote-desktop
+  # issue #16; matches https://bugs.launchpad.net/ubuntu/+source/gnome-
+  # remote-desktop/+bug/1936261) — refuses to create or restore a screencast
+  # session whenever the session is considered locked. Confirmed live: this
+  # is not specific to autologin — the packaged gnome-remote-desktop-headless
+  # unit is WantedBy=gnome-session.target, which is NOT scoped to any one
+  # user; GDM's greeter is itself a real gnome-session, so this same unit
+  # was also running under the gdm-greeter account this whole time, and hit
+  # the IDENTICAL "Session creation inhibited" error there too — ruling out
+  # "layered on an existing autologin session" as the cause. The system
+  # daemon (gnome-remote-desktop.service, above) uses mutter's privileged
+  # remote-desktop API instead of the portal, which upstream documents as
+  # exactly the intended fix for "works at the GDM login screen, never
+  # inhibited by the lock shield." Disabling headless entirely — it was
+  # also actively harmful here: its Conflicts=gnome-remote-desktop.service
+  # meant it was stopping the system daemon and claiming port 3389 for
+  # itself (the portal-based, always-inhibited path) every time it started.
+  systemd.user.services.gnome-remote-desktop-headless.enable = false;
 
   environment = {
     # /home has no disk-backed mount of its own (disko.nix only declares
     # /nix and /nix/persist) — it lives under the tmpfs "/" declared near
     # the bottom of this file, so it's wiped every reboot by default.
-    # gnome-remote-desktop-rdp state (above) also needs to survive reboots —
-    # without it the RDP password/cert would regenerate (and need
-    # re-entering in a client) on every boot.
     persistence."/nix/persist".users.martin.directories = [
       ".mozilla" # Firefox profile
       ".config" # GNOME/dconf settings, GTK, mimeapps.list
-      ".local/share/gnome-remote-desktop-rdp" # RDP password + TLS cert/key
     ];
 
     systemPackages = with pkgs; [
