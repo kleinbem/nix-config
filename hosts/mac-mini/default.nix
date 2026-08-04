@@ -6,6 +6,7 @@
 # wiped+installed via USB-SATA adapter (see .just/deployment.just
 # mac-mini-install-usb), then moved internally.
 {
+  config,
   lib,
   pkgs,
   inputs,
@@ -58,6 +59,27 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
+
+  # Same GNOME look/feel/keybindings/extensions martin uses on nixos-nvme
+  # (theme, dash-to-panel, blur-my-shell, workspace shortcuts, etc.) —
+  # base.nix already pulls in the home-manager NixOS module fleet-wide, so
+  # this only needs a per-host opt-in. Deliberately NOT users/martin/home.nix
+  # (nixos-nvme's full profile) — that pulls in dev tooling, pentesting,
+  # vscode, syncthing, opencode, herdr, etc. that don't belong on this
+  # single-purpose, no-console box. Just the shared dconf-settings module
+  # (modules/home-manager/gnome.nix), same one nixos-nvme's home.nix imports.
+  # ~/.config is already in this host's persistence list below, so dconf
+  # state (extension enable/disable, any interactive tweaks) survives
+  # reboots despite the tmpfs root.
+  home-manager.users.${config.my.username} = {
+    imports = [ "${self}/modules/home-manager/gnome.nix" ];
+    modules.gnome.enable = true;
+    home = {
+      inherit (config.my) username;
+      homeDirectory = config.my.home;
+      stateVersion = "25.11";
+    };
+  };
 
   # All my.* fleet options for this host live in one block (statix flags
   # repeated top-level keys — this used to be three separate my.* spots).
