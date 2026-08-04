@@ -134,6 +134,14 @@ in
         User = "gnome-remote-desktop";
         Group = "gnome-remote-desktop";
       };
+      # Confirmed live 2026-08-04: grdctl --system shells out to pkexec (the
+      # security.polkit setuid wrapper at /run/wrappers/bin, already enabled
+      # via services.gnome.gnome-remote-desktop's own module) to actually
+      # configure the system daemon. Plain systemd services get systemd's
+      # own minimal built-in PATH, not the full system profile — same
+      # PATH-missing-pkexec/dbus-daemon class of bug the old (now-removed)
+      # sway-headless service hit for dbus-daemon specifically.
+      environment.PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
       script = ''
         set -euo pipefail
         umask 077
