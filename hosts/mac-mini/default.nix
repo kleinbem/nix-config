@@ -296,6 +296,23 @@ in
     };
   };
 
+  # agent-zero and anythingllm both run podman nested inside their own
+  # ephemeral nspawn container (my.containers.* above) — that container's
+  # own root is tmpfs, capped small (~3.9G, systemd-nspawn's own default
+  # for --ephemeral, not something my.containers exposes). Both images are
+  # large (agent-zero bundles PyTorch/NumPy) and consistently ran out of
+  # disk mid-unpack on every attempt — confirmed live 2026-08-05, not a
+  # fluke. This gives podman's own storage dir (/var/lib/containers,
+  # confirmed via each container's /etc/containers/storage.conf
+  # graphroot) a dedicated, generously-sized tmpfs mount instead of
+  # resizing the whole ephemeral root — mac-mini has 15GB RAM with room to
+  # spare. containers.<name>.tmpfs is the plain NixOS nixos-containers
+  # option (nspawn's own --tmpfs=PATH:size=X), separate from and merging
+  # fine alongside whatever my.containers.<name> (mkContainer) already
+  # sets for the same container name.
+  containers.agent-zero.tmpfs = [ "/var/lib/containers:size=8G" ];
+  containers.anythingllm.tmpfs = [ "/var/lib/containers:size=8G" ];
+
   # All services.* for this host in one block too (same statix repeated-key
   # concern as my.* above).
   services = {
