@@ -73,6 +73,19 @@ in
             runroot = "/run/containers/storage";
           };
         };
+
+        # Without this, any container image referenced by a short/
+        # unqualified name (e.g. "frdel/agent-zero:latest", no registry
+        # prefix) fails to pull outright: "short-name ... did not resolve
+        # to an alias and no unqualified-search registries are defined in
+        # /etc/containers/registries.conf". NixOS doesn't default this the
+        # way most distros' containers-common package does. Confirmed live
+        # 2026-08-05: agent-zero and anythingllm (nix-presets containers)
+        # both use short names and had been failing this way since they
+        # were first enabled — 0 bytes of ever-persisted state on hass-pi
+        # proved neither had ever successfully pulled its image, on any
+        # host, the whole time.
+        registries.settings.unqualified-search-registries = [ "docker.io" ];
       };
 
       # Raw LXC (Daemonless)
