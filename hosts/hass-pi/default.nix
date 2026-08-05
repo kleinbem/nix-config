@@ -122,13 +122,11 @@
   environment.persistence."/nix/persist" = {
     directories = [
       "/var/lib/home-assistant"
-      "/var/lib/homarr"
       "/var/lib/openclaw"
       # Native Services. DynamicUser services keep real state in
       # /var/lib/private/<name> (systemd makes /var/lib/<name> a symlink to it),
       # so we must persist the private path — bind-mounting onto the symlink
-      # fails with "mount path not canonical" (see AdGuardHome/matter-server).
-      "/var/lib/private/AdGuardHome"
+      # fails with "mount path not canonical" (see matter-server).
       "/var/lib/node-red"
       "/var/lib/private/esphome"
       "/var/lib/private/matter-server"
@@ -138,12 +136,6 @@
 
   # ─── Native Services (Replacing HassOS Add-ons) ─────────────
   services = {
-    adguardhome = {
-      enable = true;
-      port = 3000;
-      openFirewall = true;
-    };
-
     node-red = {
       enable = true;
       openFirewall = true;
@@ -182,21 +174,4 @@
     };
   };
 
-  # ─── Homarr Dashboard (OCI) ─────────────────────────────────
-  systemd.tmpfiles.rules = [
-    "d /var/lib/homarr 0755 root root - -"
-    "d /var/lib/homarr/configs 0755 root root - -"
-    "d /var/lib/homarr/icons 0755 root root - -"
-    "d /var/lib/homarr/data 0755 root root - -"
-  ];
-
-  virtualisation.oci-containers.containers.homarr = {
-    image = "ghcr.io/ajnart/homarr:latest";
-    ports = [ "7575:7575" ];
-    volumes = [
-      "/var/lib/homarr/configs:/app/data/configs"
-      "/var/lib/homarr/icons:/app/public/icons"
-      "/var/lib/homarr/data:/data"
-    ];
-  };
 }

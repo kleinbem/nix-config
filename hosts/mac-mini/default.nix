@@ -316,6 +316,19 @@ in
   # All services.* for this host in one block too (same statix repeated-key
   # concern as my.* above).
   services = {
+    # Moved from hass-pi 2026-08-05: not actually Home-Assistant-related
+    # (network-wide DNS ad-blocking), just scope creep onto that box.
+    # Confirmed with martin nothing depends on it being at hass-pi's IP
+    # specifically (not wired into router/DHCP) before moving. port here
+    # is the web admin UI (3000), not DNS (53) — doesn't conflict with
+    # services.resolved below, which only binds loopback + the NetBird
+    # interface, never the LAN-facing one.
+    adguardhome = {
+      enable = true;
+      port = 3000;
+      openFirewall = true;
+    };
+
     # Whatever session GDM starts after a successful login (see the NOT
     # autologin comment above for the actual login/RDP architecture).
     displayManager.defaultSession = "gnome";
@@ -353,78 +366,90 @@ in
   # grdctl --system talks to gnome-remote-desktop-configuration.service over
   # the system bus, not a per-user session bus — this runs as a plain system
   # service, no gnome-session.target dependency.
-  systemd.services = {
-    gnome-remote-desktop-system-rdp-setup = {
-      description = "Provision GNOME Remote Desktop (system/login-screen RDP) credentials + TLS cert";
-      after = [ "gnome-remote-desktop-configuration.service" ];
-      requires = [ "gnome-remote-desktop-configuration.service" ];
-      before = [ "gnome-remote-desktop.service" ];
-      wantedBy = [ "graphical.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        # NOT User = "gnome-remote-desktop" (tried first, wrong): confirmed
-        # live 2026-08-04 via direct comparison — `sudo -u gnome-remote-desktop
-        # grdctl --system rdp set-credentials ...` (this service's exact prior
-        # execution context) reports exit 0 but silently writes nothing;
-        # `pkexec --user gnome-remote-desktop grdctl ...` run AS ROOT actually
-        # writes credentials.ini correctly. grdctl's own internal pkexec call
-        # apparently doesn't correctly escalate when the invoking user is
-        # already the target user — needs a real privilege transition, not a
-        # same-user one. Running this service as root (systemd's default,
-        # hence no User= here) lets grdctl's own pkexec do that transition
-        # properly, matching the working manual invocation.
+  # All systemd.* for this host in one block (same statix repeated-key
+  # concern as my.*/services.*/environment.* above).
+  systemd = {
+    services = {
+      gnome-remote-desktop-system-rdp-setup = {
+        description = "Provision GNOME Remote Desktop (system/login-screen RDP) credentials + TLS cert";
+        after = [ "gnome-remote-desktop-configuration.service" ];
+        requires = [ "gnome-remote-desktop-configuration.service" ];
+        before = [ "gnome-remote-desktop.service" ];
+        wantedBy = [ "graphical.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          # NOT User = "gnome-remote-desktop" (tried first, wrong): confirmed
+          # live 2026-08-04 via direct comparison — `sudo -u gnome-remote-desktop
+          # grdctl --system rdp set-credentials ...` (this service's exact prior
+          # execution context) reports exit 0 but silently writes nothing;
+          # `pkexec --user gnome-remote-desktop grdctl ...` run AS ROOT actually
+          # writes credentials.ini correctly. grdctl's own internal pkexec call
+          # apparently doesn't correctly escalate when the invoking user is
+          # already the target user — needs a real privilege transition, not a
+          # same-user one. Running this service as root (systemd's default,
+          # hence no User= here) lets grdctl's own pkexec do that transition
+          # properly, matching the working manual invocation.
+        };
+        # Confirmed live 2026-08-04: grdctl --system shells out to pkexec (the
+        # security.polkit setuid wrapper at /run/wrappers/bin, already enabled
+        # via services.gnome.gnome-remote-desktop's own module) to actually
+        # configure the system daemon. Plain systemd services get systemd's
+        # own minimal built-in PATH, not the full system profile — same
+        # PATH-missing-pkexec/dbus-daemon class of bug the old (now-removed)
+        # sway-headless service hit for dbus-daemon specifically.
+        environment.PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
+        script = ''
+          set -euo pipefail
+          umask 077
+          state="/var/lib/gnome-remote-desktop/rdp-provisioning"
+          mkdir -p "$state"
+
+          if [ ! -f "$state/password" ]; then
+            ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
+            echo "Generated a new GNOME Remote Desktop (system/login-screen RDP) password for martin — save it now: $(cat "$state/password")"
+          fi
+
+          if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
+            ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
+              -subj "/CN=mac-mini" \
+              -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
+          fi
+
+          grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
+          "$grdctl" --system rdp set-tls-cert "$state/tls.crt"
+          "$grdctl" --system rdp set-tls-key "$state/tls.key"
+          "$grdctl" --system rdp set-credentials martin "$(cat "$state/password")"
+          "$grdctl" --system rdp enable
+        '';
       };
-      # Confirmed live 2026-08-04: grdctl --system shells out to pkexec (the
-      # security.polkit setuid wrapper at /run/wrappers/bin, already enabled
-      # via services.gnome.gnome-remote-desktop's own module) to actually
-      # configure the system daemon. Plain systemd services get systemd's
-      # own minimal built-in PATH, not the full system profile — same
-      # PATH-missing-pkexec/dbus-daemon class of bug the old (now-removed)
-      # sway-headless service hit for dbus-daemon specifically.
-      environment.PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
-      script = ''
-        set -euo pipefail
-        umask 077
-        state="/var/lib/gnome-remote-desktop/rdp-provisioning"
-        mkdir -p "$state"
 
-        if [ ! -f "$state/password" ]; then
-          ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
-          echo "Generated a new GNOME Remote Desktop (system/login-screen RDP) password for martin — save it now: $(cat "$state/password")"
-        fi
-
-        if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
-          ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
-            -subj "/CN=mac-mini" \
-            -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
-        fi
-
-        grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
-        "$grdctl" --system rdp set-tls-cert "$state/tls.crt"
-        "$grdctl" --system rdp set-tls-key "$state/tls.key"
-        "$grdctl" --system rdp set-credentials martin "$(cat "$state/password")"
-        "$grdctl" --system rdp enable
-      '';
+      # Confirmed live 2026-08-04: unlike gnome-remote-desktop-system-rdp-setup
+      # (which explicitly declares wantedBy itself), the PACKAGED
+      # gnome-remote-desktop.service's own [Install] WantedBy=graphical.target
+      # never actually got linked — `ls /etc/systemd/system/graphical.target.wants/`
+      # had no entry for it. NixOS does not appear to auto-process a
+      # systemd.packages-provided unit's [Install] section into that symlink;
+      # it needs an explicit wantedBy from a systemd.services.<name> override
+      # here to actually get created declaratively. This is also very likely
+      # why `grdctl --system rdp enable` failed with EROFS trying to write
+      # that exact symlink itself at runtime — NixOS's /etc is immutable, so
+      # nothing (grdctl included) can create it there at runtime; it has to be
+      # done at build/activation time via this option instead.
+      gnome-remote-desktop = {
+        after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+        requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
+        wantedBy = [ "graphical.target" ];
+      };
     };
 
-    # Confirmed live 2026-08-04: unlike gnome-remote-desktop-system-rdp-setup
-    # (which explicitly declares wantedBy itself), the PACKAGED
-    # gnome-remote-desktop.service's own [Install] WantedBy=graphical.target
-    # never actually got linked — `ls /etc/systemd/system/graphical.target.wants/`
-    # had no entry for it. NixOS does not appear to auto-process a
-    # systemd.packages-provided unit's [Install] section into that symlink;
-    # it needs an explicit wantedBy from a systemd.services.<name> override
-    # here to actually get created declaratively. This is also very likely
-    # why `grdctl --system rdp enable` failed with EROFS trying to write
-    # that exact symlink itself at runtime — NixOS's /etc is immutable, so
-    # nothing (grdctl included) can create it there at runtime; it has to be
-    # done at build/activation time via this option instead.
-    gnome-remote-desktop = {
-      after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
-      requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
-      wantedBy = [ "graphical.target" ];
-    };
+    # Homarr dashboard's data dirs — moved from hass-pi 2026-08-05.
+    tmpfiles.rules = [
+      "d /var/lib/homarr 0755 root root - -"
+      "d /var/lib/homarr/configs 0755 root root - -"
+      "d /var/lib/homarr/icons 0755 root root - -"
+      "d /var/lib/homarr/data 0755 root root - -"
+    ];
   };
 
   # nixos-nvme disables GNOME's idle-suspend via a home-manager dconf setting
@@ -554,6 +579,14 @@ in
         "/var/lib/agent-zero"
         "/var/lib/anythingllm"
         "/var/lib/hermes"
+
+        # Homarr + AdGuard Home — moved from hass-pi 2026-08-05 (not
+        # HA-related, see the my.containers.open-webui / services block
+        # comments above for the same reasoning). DynamicUser service
+        # (AdGuard) needs the /var/lib/private path, not the /var/lib
+        # symlink — same convention hass-pi used.
+        "/var/lib/homarr"
+        "/var/lib/private/AdGuardHome"
       ];
     };
 
@@ -715,6 +748,18 @@ in
     };
     "/nix".neededForBoot = true;
     "/nix/persist".neededForBoot = true;
+  };
+
+  # Homarr dashboard — moved from hass-pi 2026-08-05, same reasoning as
+  # AdGuard Home above (general-purpose start page, not HA-related).
+  virtualisation.oci-containers.containers.homarr = {
+    image = "ghcr.io/ajnart/homarr:latest";
+    ports = [ "7575:7575" ];
+    volumes = [
+      "/var/lib/homarr/configs:/app/data/configs"
+      "/var/lib/homarr/icons:/app/public/icons"
+      "/var/lib/homarr/data:/data"
+    ];
   };
 
   system.stateVersion = "25.11";
