@@ -10,6 +10,23 @@
   };
 
   config = lib.mkIf config.modules.gnome.enable {
+    # KDE Frameworks apps (Okular, etc) don't follow the GTK3 Qt-platform
+    # bridge in nix-presets/desktop.nix — they read their own kdeglobals
+    # color scheme instead, independent of QT_QPA_PLATFORMTHEME.
+    qt.style = {
+      name = "breeze";
+      package = pkgs.kdePackages.breeze;
+    };
+
+    xdg.configFile."kdeglobals".text = ''
+      [General]
+      ColorScheme=BreezeDark
+
+      [KDE]
+      LookAndFeelPackage=org.kde.breezedark.desktop
+      widgetStyle=Breeze
+    '';
+
     dconf.settings = {
       "org/gnome/desktop/interface" = {
         color-scheme = "prefer-dark";
