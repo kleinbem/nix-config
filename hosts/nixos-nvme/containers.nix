@@ -205,19 +205,15 @@
       };
 
       buzz = {
-        # SHIPPED-but-DISABLED (2026-08-02): buzz-relay's cargoLock.lockFile =
-        # "${src}/Cargo.lock" pattern (nix-presets/pkgs/buzz-relay.nix) forces
-        # an IFD build of an x86_64-linux-pinned derivation. The container-
-        # manifest promote workflow evaluates all containers on a NATIVE
-        # aarch64 runner, which can't realize that derivation ("platform
-        # mismatch") — the whole manifest step aborts (continue-on-error, so
-        # it doesn't block promotion, but no image gets published for ANY
-        # container that cycle). MinIO->Garage + typesense settings.server
-        # fixes ARE done and CI-verified; this is a separate, pre-existing
-        # bug just never reached before. Re-enable once buzz-relay.nix avoids
-        # the eval-time Cargo.lock read (e.g. a vendored/pre-fetched lockfile)
-        # or the promote workflow gets cross-arch build support.
-        enable = false;
+        # Re-enabled 2026-08-05: the 2026-08-02 SHIPPED-but-DISABLED IFD/
+        # cross-arch bug (buzz-relay's cargoLock.lockFile = "${src}/Cargo.lock"
+        # forced an eval-time realization of an x86_64-linux-pinned derivation,
+        # which the aarch64 container-manifest promote runner couldn't build —
+        # "platform mismatch", aborting manifest publish for every container
+        # that cycle) is fixed: nix-presets/pkgs/buzz-relay.nix now points
+        # cargoLock.lockFile at a vendored ./buzz-Cargo.lock instead of reading
+        # the fetched source, so no IFD happens at eval time.
+        enable = true;
         ip = "${myInventory.network.nodes.buzz.ip}/24";
         hostDataDir = "/var/lib/images/buzz";
         secretsFile = config.sops.templates."buzz.env".path;
