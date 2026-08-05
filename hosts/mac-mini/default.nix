@@ -268,8 +268,18 @@ in
       # already-built/cached artifact (container-updater decouples
       # container updates from full host rebuilds) — only a *fresh*
       # build hits this. Move it once upstream fixes their lockfile.
+      #
+      # agent-zero disabled entirely (not just stopped): confirmed
+      # 2026-08-05 that frdel/agent-zero:latest on Docker Hub currently
+      # resolves to a plain Kali Linux base image, not the actual
+      # application (no run_ui.py, no agent-zero code at all anywhere in
+      # the image) — genuine upstream image drift, outside our control.
+      # A manual `systemctl stop` doesn't survive reboot (still
+      # enable=true, auto-starts and crash-loops trying the same broken
+      # pull forever) — confirmed live after martin rebooted mac-mini.
+      # Re-enable once upstream publishes a real image at this tag again.
       agent-zero = {
-        enable = true;
+        enable = false;
         ip = "10.85.50.5/24";
         hostDataDir = "/var/lib/agent-zero";
         memoryLimit = "1G";
@@ -296,21 +306,74 @@ in
     };
   };
 
-  # agent-zero and anythingllm both run podman nested inside their own
-  # ephemeral nspawn container (my.containers.* above) — that container's
-  # own root is tmpfs, capped small (~3.9G, systemd-nspawn's own default
-  # for --ephemeral, not something my.containers exposes). Both images are
-  # large (agent-zero bundles PyTorch/NumPy) and consistently ran out of
-  # disk mid-unpack on every attempt — confirmed live 2026-08-05, not a
-  # fluke. This gives podman's own storage dir (/var/lib/containers,
-  # confirmed via each container's /etc/containers/storage.conf
+  # Oh My Pi (omp, github.com/can1357/oh-my-pi) — a terminal coding-agent
+  # CLI, not a network service (no ports, operates on local files/stdio).
+  # Not run through the my.containers/mkContainer factory — that's for
+  # long-running network services with a bridge IP + registries/DNS/nested
+  # -podman wiring none of which this needs. Plain nspawn container
+  # instead, same pattern as martin already prefers fleet-wide.
+  # autoStart = false deliberately: martin starts this by hand as needed
+  # (`sudo machinectl start oh-my-pi && sudo machinectl shell oh-my-pi`),
+  # same as his other AI tools here (open-webui/hermes/anythingllm stay
+  # running as services; this one doesn't need to).
+  #
+  # Base tooling only (matches the project's own Dockerfile pi-base stage:
+  # build-essential, pkg-config, libssl-dev, git, curl, openssh-client,
+  # sqlite3, bun) — deliberately NOT running the curl-pipe-to-shell
+  # installer (curl -fsSL https://omp.sh/install | sh) unattended via Nix
+  # activation. Run it yourself the first time you shell in; omp updates
+  # itself after that.
+  containers.oh-my-pi = {
+    ephemeral = true;
+    autoStart = false;
+    privateNetwork = true;
+    hostBridge = config.my.network.bridge;
+    localAddress = "10.85.50.8/24";
+    config =
+      { pkgs, ... }:
+      {
+        system.stateVersion = "25.11";
+        networking = {
+          # Same reasoning as the mkContainer factory fix (nix-presets
+          # lib/factory.nix, 2026-08-05): nothing on the host answers DNS
+          # on the bridge gateway address, confirmed live this session —
+          # query public resolvers directly instead.
+          nameservers = [
+            "1.1.1.1"
+            "8.8.8.8"
+          ];
+          firewall.enable = true;
+        };
+        environment.systemPackages = with pkgs; [
+          git
+          curl
+          bun
+          openssh
+          sqlite
+          gcc
+          pkg-config
+          openssl
+        ];
+      };
+  };
+
+  # anythingllm runs podman nested inside its own ephemeral nspawn
+  # container (my.containers.anythingllm above) — that container's own
+  # root is tmpfs, capped small (~3.9G, systemd-nspawn's own default for
+  # --ephemeral, not something my.containers exposes). Its image
+  # consistently ran out of disk mid-unpack on every attempt — confirmed
+  # live 2026-08-05, not a fluke. This gives podman's own storage dir
+  # (/var/lib/containers, confirmed via /etc/containers/storage.conf
   # graphroot) a dedicated, generously-sized tmpfs mount instead of
   # resizing the whole ephemeral root — mac-mini has 15GB RAM with room to
   # spare. containers.<name>.tmpfs is the plain NixOS nixos-containers
   # option (nspawn's own --tmpfs=PATH:size=X), separate from and merging
   # fine alongside whatever my.containers.<name> (mkContainer) already
-  # sets for the same container name.
-  containers.agent-zero.tmpfs = [ "/var/lib/containers:size=8G" ];
+  # sets for the same container name. NOT agent-zero here anymore — it's
+  # disabled entirely above (broken upstream image), and this attribute
+  # alone (with my.containers.agent-zero.enable = false leaving the rest
+  # of containers.agent-zero unset) breaks eval: "containers.agent-zero
+  # .path was accessed but has no value defined."
   containers.anythingllm.tmpfs = [ "/var/lib/containers:size=8G" ];
 
   # All services.* for this host in one block too (same statix repeated-key

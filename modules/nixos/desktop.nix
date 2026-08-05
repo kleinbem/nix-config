@@ -109,6 +109,7 @@ in
         showtime # Modern Video Player (Successor to Totem)
         amberol # Beautiful, minimal Music Player
         papers # Modern Document/PDF Viewer (Successor to Evince)
+        kdePackages.okular # PDF annotation/form-filling (native Wayland, KDE)
         mission-center # Advanced System Monitoring (Pro Task Manager)
         fragments # Elegant BitTorrent client
         snapshot # Camera
