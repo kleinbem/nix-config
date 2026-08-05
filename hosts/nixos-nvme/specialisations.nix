@@ -49,7 +49,6 @@ let
     fileSystems = {
       "/".neededForBoot = lib.mkForce true;
       "/var".neededForBoot = lib.mkForce true;
-      "/var/lib/images".neededForBoot = lib.mkForce true;
       "/nix".neededForBoot = lib.mkForce true;
       "/nix/persist".neededForBoot = lib.mkForce true;
     };

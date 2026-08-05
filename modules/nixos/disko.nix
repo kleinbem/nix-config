@@ -68,15 +68,13 @@ _:
     lvm_vg = {
       vg0 = {
         type = "lvm_vg";
+        # root/var live on tmpfs (see hardware-boot.nix's mkForce) — no LV
+        # needed. images was a preallocated /var/lib/images volume that never
+        # ended up in use (that path is bind-mounted from the persist
+        # subvolume below instead); reclaimed into nix on 2026-08-05.
         lvs = {
-          root = {
-            size = "50G";
-          };
-          var = {
-            size = "40G";
-          };
           nix = {
-            size = "300G";
+            size = "1190G";
             content = {
               type = "btrfs";
               subvolumes = {
@@ -95,18 +93,6 @@ _:
                   ];
                 };
               };
-            };
-          };
-          images = {
-            size = "800G";
-            content = {
-              type = "filesystem";
-              format = "ext4";
-              mountpoint = "/var/lib/images";
-              mountOptions = [
-                "nofail"
-                "x-systemd.device-timeout=30s"
-              ];
             };
           };
           swap = {
