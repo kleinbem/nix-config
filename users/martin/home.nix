@@ -80,18 +80,18 @@ in
 
       # Obsidian Excalidraw Plugin
       "Documents/Notes/.obsidian/plugins/obsidian-excalidraw-plugin/main.js".source = pkgs.fetchurl {
-        url = "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/2.25.0/main.js";
-        sha256 = "18zlwx6fqpijfz5ib3v6j2dysjm4ksz1srzka53lp1ar4ffkm61j";
+        url = "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/2.26.4/main.js";
+        sha256 = "0nngsir7z0fx7g74wkfav11cdz8az11jxj0iikzgx753rz43yvxj";
       };
       "Documents/Notes/.obsidian/plugins/obsidian-excalidraw-plugin/manifest.json".source =
         pkgs.fetchurl
           {
-            url = "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/2.25.0/manifest.json";
-            sha256 = "1ls2371p0cv906qjzkyn9054lgwhhjgi0vbrqmqgl01iv2yzf2mh";
+            url = "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/2.26.4/manifest.json";
+            sha256 = "00xp43032cilnlxgzwb54kshdn68rlv74bd6f5k118igxbd1gf7n";
           };
       "Documents/Notes/.obsidian/plugins/obsidian-excalidraw-plugin/styles.css".source = pkgs.fetchurl {
-        url = "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/2.25.0/styles.css";
-        sha256 = "1xc4qn0ryaxds707j3ifd78n09j1jq50c2ybp04kxfamfj2kzfv8";
+        url = "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/2.26.4/styles.css";
+        sha256 = "0d97qjq41a08vngwfcq3qi8vq4vrh394867zyd7cmclka465cnv1";
       };
     };
   };
