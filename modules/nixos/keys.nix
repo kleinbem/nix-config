@@ -32,10 +32,10 @@
     #   ssh-keygen -t ed25519 -C "<email>" -f sops/personas/<name>/id_ed25519 -N ""
     #   # then paste the .pub contents below.
     personas = {
-      michael = "";
-      thomas = "";
-      daniel = "";
-      rahul = "";
+      michael = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael@kleinbem.dev";
+      thomas = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas@kleinbem.dev";
+      daniel = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel@kleinbem.dev";
+      rahul = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArxoaUKMOS99lj9nWWgQ5zA9SBcowCWUi63HyPEE0XO rahul@kleinbem.dev";
       juan = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan@kleinbem.dev";
     };
   };
