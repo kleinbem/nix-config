@@ -36,7 +36,7 @@
       thomas = "";
       daniel = "";
       rahul = "";
-      juan = "";
+      juan = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan@kleinbem.dev";
     };
   };
 

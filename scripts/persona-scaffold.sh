@@ -42,8 +42,23 @@ if ! nix eval --raw --file "$PERSONAS_NIX" --apply "p: if p ? \"$NAME\" then \"o
   exit 1
 fi
 
-PERSONA_EMAIL=$(nix eval --raw --file "$PERSONAS_NIX" --apply "p: p.$NAME.email")
-PERSONA_FULLNAME=$(nix eval --raw --file "$PERSONAS_NIX" --apply "p: p.$NAME.\"full-name\"")
+# email/full-name are PII — they live in nix-secrets/personas-contact.nix,
+# not the public personas.nix, and are only available via lib/personas.nix's
+# joined view (see that file's header comment).
+persona_field() {
+  nix eval --impure --raw --expr "
+    let
+      flake = builtins.getFlake (toString \"$NIX_CONFIG\");
+      lib = flake.inputs.nixpkgs.lib;
+      personas = import \"$NIX_CONFIG/lib/personas.nix\" {
+        inherit lib;
+        contact = import \"$SECRETS_REPO/personas-contact.nix\";
+      };
+    in personas.all.$NAME.$1
+  "
+}
+PERSONA_EMAIL=$(persona_field email)
+PERSONA_FULLNAME=$(persona_field '"full-name"')
 
 echo "🎭 Scaffolding persona: $PERSONA_FULLNAME <$PERSONA_EMAIL>"
 
