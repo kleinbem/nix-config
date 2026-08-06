@@ -19,8 +19,13 @@ set working-directory := ".."
 [group("Personas")]
 list:
     @echo "🎭 Personas declared in personas.nix:"
-    @nix eval --raw --file personas.nix --apply \
-        'p: builtins.concatStringsSep "\n" (map (n: "  - " + p.${n}."full-name" + " <" + p.${n}.email + ">  (" + p.${n}.tool + ")") (builtins.attrNames p))'
+    @nix eval --raw --impure --expr \
+        'let \
+            lib = (import <nixpkgs> {}).lib; \
+            contactPath = ../nix-secrets/personas-contact.nix; \
+            contact = if builtins.pathExists contactPath then import contactPath else {}; \
+            p = import ./lib/personas.nix { inherit lib contact; }; \
+         in builtins.concatStringsSep "\n" (map (n: "  - " + p.all.${n}."full-name" + " <" + p.all.${n}.email + ">  (" + p.all.${n}.tool + ")") (builtins.attrNames p.all))'
 
 # Regenerate the team directory page. Output lives in
 # nix-secrets/docs/ (private repo) because it contains personas'
