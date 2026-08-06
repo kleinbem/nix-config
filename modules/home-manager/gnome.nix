@@ -208,7 +208,7 @@
       "org/gnome/shell/extensions/clipboard-indicator" = {
         toggle-menu = [ "<Super>v" ];
         clear-history = [ "<Super><Shift>v" ];
-        paste-on-selection = true;
+        paste-on-select = true;
         notify-on-copy = false;
         history-size = 200;
         move-item-first = true;
@@ -460,6 +460,21 @@
         command = "smile";
         name = "Open up the emoji picker (Alt)";
       };
+    };
+
+    # GNOME's Mutter doesn't implement the zwlr_data_control_manager_v1 Wayland
+    # protocol, so bitwarden-desktop's clipboard.write silently fails and its
+    # X11 fallback then times out (github.com/bitwarden/clients/issues/13431).
+    # Shadow nixpkgs' bitwarden.desktop (same filename wins via the higher-
+    # priority ~/.local/share/applications) and drop NIXOS_OZONE_WL just for
+    # this launch, forcing Bitwarden onto its working plain-X11/XWayland path.
+    xdg.desktopEntries.bitwarden = {
+      name = "Bitwarden";
+      comment = pkgs.bitwarden-desktop.meta.description;
+      exec = "env -u NIXOS_OZONE_WL bitwarden %U";
+      icon = "bitwarden";
+      categories = [ "Utility" ];
+      mimeType = [ "x-scheme-handler/bitwarden" ];
     };
   };
 }

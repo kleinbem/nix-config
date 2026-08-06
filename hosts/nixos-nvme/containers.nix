@@ -248,6 +248,12 @@
     "d /var/lib/images/netdata/lib 0755 root root - -"
     "d /var/lib/images/langfuse 0755 root root - -"
     "d /var/lib/images/langfuse/db 0755 root root - -"
+    "d /var/lib/images/buzz 0755 root root - -"
+    "d /var/lib/images/buzz/postgresql 0755 root root - -"
+    "d /var/lib/images/buzz/redis 0755 root root - -"
+    "d /var/lib/images/buzz/typesense 0755 root root - -"
+    "d /var/lib/images/buzz/garage 0755 root root - -"
+    "d /var/lib/images/buzz/relay 0755 root root - -"
     "d /var/lib/images/github-runner 0755 1000 100 - -"
     "d /var/lib/images/syncthing 0755 root root - -"
   ];
