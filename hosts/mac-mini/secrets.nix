@@ -1,28 +1,8 @@
 {
   inputs,
   config,
-  lib,
   ...
 }:
-let
-  # CI overrides the nix-secrets input with an empty dummy directory — same
-  # workaround hass-pi's secrets.nix uses. lib/personas.nix renders missing
-  # PII fields as "(private)", fine for a CI-only eval that never activates.
-  #
-  # DELIBERATE, TRACKED EXCEPTION (2026-08-07 cutover): still reads from the
-  # nix-secrets-legacy-contact input (== the OLD nix-secrets repo), not the
-  # main nix-secrets input (== kleinbem-secrets as of this cutover).
-  # kleinbem-secrets' personas/contact.nix is sops-encrypted, but this file
-  # is `import`ed directly at Nix eval time — sops ciphertext can't be
-  # imported as Nix source. Properly fixing this means reworking contact
-  # consumption to a sops-nix runtime-decrypt pattern (real PII deserves
-  # that, not a plaintext mirror like initrd/ got) — deferred, separate task.
-  contactFile = inputs.nix-secrets-legacy-contact + "/personas-contact.nix";
-  personas = import ../../lib/personas.nix {
-    inherit lib;
-    contact = if builtins.pathExists contactFile then import contactFile else { };
-  };
-in
 {
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
@@ -54,6 +34,19 @@ in
       # Lives in kleinbem-secrets' per-host scope now (nix/per-host/mac-mini.yaml,
       # cutover 2026-08-07) rather than the old shared secrets.yaml.
       discord_bot_token = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/mac-mini.yaml";
+      };
+
+      # Comma-separated Discord user IDs allowed to talk to the Hermes bot
+      # (see templates."hermes.env" below). A real sops secret as of
+      # 2026-08-08, NOT derived from personas-contact.nix at Nix eval time
+      # anymore — that required importing plaintext PII (names/emails/
+      # Matrix IDs) into the build, which only worked via a deferred
+      # exception (nix-secrets-legacy-contact input, now removed). To add
+      # another persona's discord-id: `sops kleinbem-secrets/nix/per-host/
+      # mac-mini.yaml`, edit hermes_discord_allowed_users to a comma-joined
+      # list.
+      hermes_discord_allowed_users = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/mac-mini.yaml";
       };
 
@@ -94,11 +87,8 @@ in
       mode = "0444";
       content = ''
         DISCORD_BOT_TOKEN=${config.sops.placeholder.discord_bot_token}
-        # Comma-separated Discord user IDs allowed to talk to the bot. Sourced
-        # from nix-secrets/personas-contact.nix (martin.discord-id) via
-        # lib/personas.nix — add more personas' discord-id here as needed.
         # By default the gateway denies everyone not listed here.
-        DISCORD_ALLOWED_USERS=${personas.all.martin.discord-id}
+        DISCORD_ALLOWED_USERS=${config.sops.placeholder.hermes_discord_allowed_users}
       '';
     };
   };

@@ -1,17 +1,23 @@
 # Persona library — joins public identity (personas.nix) with private
-# contact data (nix-secrets/personas-contact.nix) and lifecycle state
-# (personas-state.nix) into a single queryable view.
+# contact data (kleinbem-secrets/personas/contact.nix, sops-encrypted) and
+# lifecycle state (personas-state.nix) into a single queryable view.
 #
-# Callers pass in an optional `contact` attribute set (typically
-# imported from nix-secrets via flake input). Without it, the lib
-# returns a public-only view where PII fields render as the literal
-# string "(private)" — useful in CI / public eval contexts.
+# Callers pass in an optional `contact` attribute set. contact.nix is
+# sops-encrypted (real PII), so it can't be `import`ed directly at Nix
+# eval time the way a flake input can — callers with real sops access
+# (interactive scripts, e.g. .just/personas.just, scripts/persona-scaffold.sh)
+# decrypt it to a tmpfs temp file first and import THAT. Without contact
+# data, the lib returns a public-only view where PII fields render as the
+# literal string "(private)" — useful in CI / public eval contexts, and
+# what hosts/*/secrets.nix use now (no NixOS module imports contact data
+# directly anymore as of 2026-08-08 — see mac-mini/secrets.nix's
+# hermes_discord_allowed_users for how that dependency was removed).
 #
 # Usage:
-#   # With private data:
+#   # With private data (see .just/personas.just for the full decrypt dance):
 #   import ./lib/personas.nix {
 #     inherit lib;
-#     contact = import (inputs.nix-secrets + "/personas-contact.nix");
+#     contact = import /path/to/decrypted/contact.nix;
 #   }
 #
 #   # Public-only:
@@ -26,10 +32,10 @@ let
   state = import ../personas-state.nix;
   names = lib.attrNames publicData;
 
-  # Sentinel for missing private fields when nix-secrets isn't available.
+  # Sentinel for missing private fields when contact data isn't available.
   redacted = "(private)";
 
-  # PII fields that come from nix-secrets/personas-contact.nix. When
+  # PII fields that come from kleinbem-secrets/personas/contact.nix. When
   # contact is empty (public-only eval), these get the redacted string.
   contactFields = [
     "full-name"
@@ -79,7 +85,7 @@ let
     if contactAvailable then
       "${p.full-name} <${p.email}>"
     else
-      throw "lib/personas.nix: author() requires contact data — pass `contact = import inputs.nix-secrets + \"/personas-contact.nix\"`";
+      throw "lib/personas.nix: author() requires contact data — see this file's header comment for how to decrypt kleinbem-secrets/personas/contact.nix";
 
   byTag = tag: lib.filterAttrs (_: p: lib.elem tag (p.role-tags or [ ])) publicData;
 
@@ -253,7 +259,7 @@ let
       in
       lib.assertMsg (
         dups == [ ]
-      ) "duplicate email(s) in personas-contact.nix: ${lib.concatStringsSep ", " dups}";
+      ) "duplicate email(s) in contact data: ${lib.concatStringsSep ", " dups}";
 
   assertUniqueMatrixIds =
     if !contactAvailable then
@@ -264,7 +270,7 @@ let
       in
       lib.assertMsg (
         dups == [ ]
-      ) "duplicate matrix-id(s) in personas-contact.nix: ${lib.concatStringsSep ", " dups}";
+      ) "duplicate matrix-id(s) in contact data: ${lib.concatStringsSep ", " dups}";
 
   assertValid =
     assertComplete && assertUniqueSigningKeys && assertUniqueEmails && assertUniqueMatrixIds;

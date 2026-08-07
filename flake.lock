@@ -1506,22 +1506,6 @@
         "type": "github"
       }
     },
-    "nix-secrets-legacy-contact": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1786115715,
-        "narHash": "sha256-9BYsgMW4CZAzSv0izcncFMD9KdutvFW9zYJ2SGVldSQ=",
-        "owner": "kleinbem",
-        "repo": "nix-secrets",
-        "rev": "294aa1b9ab507dba0d93d96f5975d56ea5035df6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "kleinbem",
-        "repo": "nix-secrets",
-        "type": "github"
-      }
-    },
     "nix-templates": {
       "inputs": {
         "flake-parts": "flake-parts_10",
@@ -2488,7 +2472,6 @@
         "nix-packages": "nix-packages",
         "nix-presets": "nix-presets",
         "nix-secrets": "nix-secrets",
-        "nix-secrets-legacy-contact": "nix-secrets-legacy-contact",
         "nix-templates": "nix-templates",
         "nix-topology": "nix-topology",
         "nix-vscode-extensions": "nix-vscode-extensions_2",

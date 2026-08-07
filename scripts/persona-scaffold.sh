@@ -37,12 +37,11 @@ NIX_CONFIG="$(dirname "$SCRIPT_DIR")"
 META_ROOT="$(dirname "$NIX_CONFIG")"
 PERSONAS_NIX="$NIX_CONFIG/personas.nix"
 KEYS_NIX="$NIX_CONFIG/modules/nixos/keys.nix"
-# kleinbem-secrets holds signing key + mailbox password (cutover 2026-08-07).
-# personas-contact.nix (PII) is a DELIBERATE, TRACKED EXCEPTION that stays on
-# the old nix-secrets repo for now — see nix-config/flake.nix's
-# nix-secrets-legacy-contact input and hosts/mac-mini/secrets.nix's comment.
+# kleinbem-secrets holds signing key + mailbox password (cutover 2026-08-07)
+# AND personas-contact.nix (real PII, sops binary-mode whole-file encryption
+# — decrypted into $WORK below rather than imported directly, since this is
+# an interactive script with real sops access, no Nix-eval-time constraint).
 SECRETS_REPO="$META_ROOT/kleinbem-secrets"
-CONTACT_REPO="$META_ROOT/nix-secrets"
 PERSONA_YAML="$SECRETS_REPO/personas/$NAME.yaml"
 
 WORK="$(mktemp -d /dev/shm/persona-scaffold-XXXXXX)"
@@ -66,9 +65,10 @@ if ! grep -q "&persona_${NAME}\b" "$SECRETS_REPO/.sops.yaml" 2>/dev/null; then
   echo "   README.md's 'Adding a new scope' section to onboard it properly first." >&2
 fi
 
-# email/full-name are PII — they live in nix-secrets/personas-contact.nix,
+# email/full-name are PII — they live in kleinbem-secrets/personas/contact.nix,
 # not the public personas.nix, and are only available via lib/personas.nix's
 # joined view (see that file's header comment).
+sops -d --input-type binary --output-type binary "$SECRETS_REPO/personas/contact.nix" >"$WORK/contact.nix"
 persona_field() {
   nix eval --impure --raw --expr "
     let
@@ -76,7 +76,7 @@ persona_field() {
       lib = flake.inputs.nixpkgs.lib;
       personas = import \"$NIX_CONFIG/lib/personas.nix\" {
         inherit lib;
-        contact = import \"$CONTACT_REPO/personas-contact.nix\";
+        contact = import \"$WORK/contact.nix\";
       };
     in personas.all.$NAME.$1
   "

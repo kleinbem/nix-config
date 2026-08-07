@@ -2,21 +2,21 @@
 #
 # This file contains role/authorisation/operational data only.
 # Personal identity (name, email, matrix-id, bio, location) lives in
-# the PRIVATE `nix-secrets/personas-contact.nix` — kept out of the
-# public repo for GDPR / privacy reasons (real human collaborators)
-# and authenticity reasons (AI personas).
+# the PRIVATE `kleinbem-secrets/personas/contact.nix` (sops-encrypted)
+# — kept out of the public repo for GDPR / privacy reasons (real human
+# collaborators) and authenticity reasons (AI personas).
 #
-# Schema joined at lib-evaluation time by `lib/personas.nix`. If
-# nix-secrets is not on the path, downstream views render with
+# Schema joined at lib-evaluation time by `lib/personas.nix`. Without
+# decrypted contact data available, downstream views render with
 # "(private)" placeholders.
 #
 # Per-persona public fields:
 #
 #   kind          "human" | "agent" — determines provisioning rules.
 #   date-joined   ISO date.
-#   signing-key   Filename in nix-secrets/personas/<key>/ (the
-#                 filename itself is not sensitive; the private key
-#                 inside IS, and lives encrypted in nix-secrets).
+#   signing-key   Persona name key in kleinbem-secrets/personas/<name>.yaml
+#                 (the key name itself is not sensitive; the private key
+#                 value inside IS, and lives encrypted there).
 #   tool          "human" for humans; AI tool name for agents.
 #   model         null for humans; specific LLM for agents.
 #   role-tags     Capability tags consumed by authorization policy.

@@ -40,17 +40,6 @@
       flake = false;
     };
 
-    # TEMPORARY, deferred exception: kleinbem-secrets' personas/contact.nix
-    # is sops-encrypted, but hosts/mac-mini/secrets.nix imports contact data
-    # directly at Nix eval time (like initrd/), which can't consume sops
-    # ciphertext. Real PII (names/emails/Matrix IDs) — properly reworking
-    # this to a runtime-decrypt pattern is deferred, tracked separately.
-    # Remove this input once that's done; only mac-mini/secrets.nix uses it.
-    nix-secrets-legacy-contact = {
-      url = "github:kleinbem/nix-secrets";
-      flake = false;
-    };
-
     # Modules & Configurations (Pulled from local submodules for speed)
     nix-hardware = {
       url = "github:kleinbem/nix-hardware";

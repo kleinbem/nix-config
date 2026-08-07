@@ -16,39 +16,56 @@ set working-directory := ".."
 # The Stalwart/SES Terraform changes don't run on every add — only when
 # DNS/IAM needs updating (rare). Per-persona setup is fast (~30s).
 
+# Both recipes below decrypt kleinbem-secrets/personas/contact.nix (real PII
+# — names/emails/Matrix IDs, whole-file sops binary-mode) into a tmpfs temp
+# file, `import` THAT instead of the ciphertext, then shred it on exit.
+# Interactive recipes (unlike hosts/mac-mini/secrets.nix's old approach) can
+# just shell out to sops directly — no Nix-eval-time constraint here. Fixed
+# 2026-08-08; previously read plaintext from the legacy nix-secrets repo.
 [group("Personas")]
 list:
-    @echo "🎭 Personas declared in personas.nix:"
-    @nix eval --raw --impure --expr \
-        'let \
-            lib = (import <nixpkgs> {}).lib; \
-            contactPath = ../nix-secrets/personas-contact.nix; \
-            contact = if builtins.pathExists contactPath then import contactPath else {}; \
-            p = import ./lib/personas.nix { inherit lib contact; }; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    WORK="$(mktemp -d /dev/shm/personas-list-XXXXXX)"
+    trap 'find "$WORK" -type f -exec shred -u {} \; 2>/dev/null; rm -rf "$WORK"' EXIT
+    sops -d --input-type binary --output-type binary ../kleinbem-secrets/personas/contact.nix > "$WORK/contact.nix"
+    echo "🎭 Personas declared in personas.nix:"
+    CONTACT_PATH="$WORK/contact.nix" nix eval --raw --impure --expr \
+        'let
+            lib = (import <nixpkgs> {}).lib;
+            contactPath = builtins.getEnv "CONTACT_PATH";
+            contact = if contactPath != "" then import contactPath else {};
+            p = import ./lib/personas.nix { inherit lib contact; };
          in builtins.concatStringsSep "\n" (map (n: "  - " + p.all.${n}."full-name" + " <" + p.all.${n}.email + ">  (" + p.all.${n}.tool + ")") (builtins.attrNames p.all))'
 
-# Regenerate the team directory page. Output lives in
-# nix-secrets/docs/ (private repo) because it contains personas'
-# emails / names / matrix-ids — same reason personas-contact.nix
-# is in nix-secrets, not nix-config.
+# Regenerate the team directory page. Output lives in kleinbem-secrets/docs/
+# (private repo, plaintext — not sops-managed, same "repo privacy is the
+# boundary" model as initrd/; a rendered directory page isn't meaningfully
+# re-encryptable the way a discrete secret value is) because it contains
+# personas' emails/names/matrix-ids.
 [group("Personas")]
 team:
-    @echo "👥 Regenerating team page in nix-secrets/docs/ (private)..."
-    @mkdir -p ../nix-secrets/docs
-    @nix eval --raw --impure --expr \
-        'let \
-            lib = (import <nixpkgs> {}).lib; \
-            contactPath = ../nix-secrets/personas-contact.nix; \
-            contact = if builtins.pathExists contactPath then import contactPath else {}; \
-            p = import ./lib/personas.nix { inherit lib contact; }; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    WORK="$(mktemp -d /dev/shm/personas-team-XXXXXX)"
+    trap 'find "$WORK" -type f -exec shred -u {} \; 2>/dev/null; rm -rf "$WORK"' EXIT
+    sops -d --input-type binary --output-type binary ../kleinbem-secrets/personas/contact.nix > "$WORK/contact.nix"
+    echo "👥 Regenerating team page in kleinbem-secrets/docs/ (private)..."
+    mkdir -p ../kleinbem-secrets/docs
+    CONTACT_PATH="$WORK/contact.nix" nix eval --raw --impure --expr \
+        'let
+            lib = (import <nixpkgs> {}).lib;
+            contactPath = builtins.getEnv "CONTACT_PATH";
+            contact = if contactPath != "" then import contactPath else {};
+            p = import ./lib/personas.nix { inherit lib contact; };
          in p.teamMarkdown' \
-        > ../nix-secrets/docs/TEAM.md
-    @nix run nixpkgs#pandoc -- \
+        > ../kleinbem-secrets/docs/TEAM.md
+    nix run nixpkgs#pandoc -- \
         --from=gfm --to=html5 --standalone \
         --metadata title="kleinbem.dev — Team" \
         --css="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2em auto;padding:0 1em;line-height:1.5;color:#222;background:#fafafa}h1{border-bottom:2px solid %23000;padding-bottom:0.3em}h3{margin-top:2em;color:%23005a9c}table{border-collapse:collapse;margin:1em 0}td{padding:4px 12px;border-bottom:1px solid %23ddd}td:first-child{font-weight:600;background:%23eef}hr{border:0;border-top:1px dashed %23ccc;margin:2em 0}code{background:%23eef;padding:2px 6px;border-radius:3px}" \
-        ../nix-secrets/docs/TEAM.md -o ../nix-secrets/docs/TEAM.html
-    @echo "✅ Wrote $(wc -l < ../nix-secrets/docs/TEAM.md) lines to nix-secrets/docs/TEAM.{md,html}"
+        ../kleinbem-secrets/docs/TEAM.md -o ../kleinbem-secrets/docs/TEAM.html
+    echo "✅ Wrote $(wc -l < ../kleinbem-secrets/docs/TEAM.md) lines to kleinbem-secrets/docs/TEAM.{md,html}"
 
 # Scaffold a persona end-to-end: signing key + sops + keys.nix patch +
 # GitHub upload + mailbox. See scripts/persona-scaffold.sh for what runs.
