@@ -50,6 +50,7 @@ in
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.hermes
+    inputs.nix-presets.nixosModules.hermes-juan
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
@@ -302,6 +303,38 @@ in
         ollamaUrl = "https://litellm.internal/v1";
         secretsFile = config.sops.templates."hermes.env".path;
         discord.enable = true;
+      };
+
+      # Juan's persona worker — proof-of-concept for Hermes-as-worker with a
+      # persona's own git identity, interactive-CLI-attachable via herdr
+      # (see nix-presets/containers/hermes-juan.nix's addToSystemPackages
+      # comment). A SEPARATE preset from `hermes` above, not an attrsOf
+      # instance of it — attrsOf-of-submodule + the shared mkContainer
+      # factory reproducibly triggers "infinite recursion encountered" when
+      # evaluated via container-factory's catalogue construction (confirmed
+      # even with a maximally minimal schema, unrelated to gitIdentity/
+      # egress specifically — a real nixpkgs/flake-structure interaction,
+      # not narrowed down further without real effort. See
+      # hosts/container-factory/default.nix's comment on the same host).
+      #
+      # No Discord — this instance isn't reachable by chat yet, just a
+      # `machinectl shell hermes-juan hermes` / herdr-attached session.
+      # Routes through the same LiteLLM gateway as `hermes` above, using
+      # whatever backend is configured there (nixos-nvme/ai.nix) — NOT
+      # actually gemini-2.5-pro (juan's declared tool/model in personas.nix)
+      # since litellm has no cloud Gemini backend configured yet; that's a
+      # real gap, not assumed away.
+      hermes-juan = {
+        enable = true;
+        ip = "10.85.50.8/24";
+        hostDataDir = "/var/lib/hermes-juan";
+        memoryLimit = "2G";
+        ollamaUrl = "https://litellm.internal/v1";
+        gitIdentity = {
+          name = "Juan González";
+          email = "juan@kleinbem.dev";
+          signingKeyFile = config.sops.secrets.juan_signing_key.path;
+        };
       };
     };
   };
@@ -591,6 +624,7 @@ in
         "/var/lib/agent-zero"
         "/var/lib/anythingllm"
         "/var/lib/hermes"
+        "/var/lib/hermes-juan"
 
         # Homarr + AdGuard Home — moved from hass-pi 2026-08-05 (not
         # HA-related, see the my.containers.open-webui / services block

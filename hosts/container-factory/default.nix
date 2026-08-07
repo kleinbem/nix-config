@@ -97,11 +97,20 @@ let
       ip = ip 36;
       hostDataDir = dataDir "anythingllm";
     };
-    hermes = {
-      ip = ip 47;
-      hostDataDir = dataDir "hermes";
-      secretsFile = "/run/secrets/factory-dummy";
-    };
+    # hermes deliberately absent (2026-08-07): it became attrsOf (one
+    # instance per persona) when the persona-fleet needed its own workers.
+    # Reproducibly triggers "infinite recursion encountered" when evaluated
+    # here specifically — confirmed with even a maximally minimal attrsOf
+    # schema (bare enable/ip/hostDataDir), so it's a structural conflict
+    # between attrsOf-of-submodule + the shared mkContainer factory (likely
+    # its `config.my.containers.standaloneRunner or false` sibling-option
+    # read in nix-presets/lib/factory.nix) and this host's specific
+    # catalogue+deployedContainers construction — not something narrowed
+    # down further without real effort. Every other preset here is still a
+    # singular submodule and unaffected. Net effect: hermes containers
+    # aren't CI-pre-cached via the factory; they still build fine directly
+    # on the deploying host (mac-mini). Revisit if/when another preset needs
+    # to go attrsOf too.
     buzz = {
       ip = ip 48;
       hostDataDir = dataDir "buzz";
@@ -178,7 +187,6 @@ in
     inputs.nix-presets.nixosModules.netdata
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
-    inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.buzz
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.agent-team

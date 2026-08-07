@@ -47,6 +47,17 @@ in
       # age recipient (it already decrypts netbird_setup_key/
       # attic_pull_token from this exact file).
       discord_bot_token = { };
+
+      # Juan's persona git-signing identity — separate file from the default
+      # secrets.yaml (personas/<name>/id_ed25519 is its own sops-encrypted
+      # binary blob, see nix-secrets/.sops.yaml's per-persona rule). Consumed
+      # by the juan Hermes instance (hosts/mac-mini/default.nix
+      # my.containers.hermes-juan) for git commit signing as that persona.
+      juan_signing_key = {
+        sopsFile = "${inputs.nix-secrets}/personas/juan/id_ed25519";
+        format = "binary";
+        mode = "0400";
+      };
     };
 
     templates."hermes.env" = {
