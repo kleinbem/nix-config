@@ -42,9 +42,15 @@ in
             # Extra save/open locations beyond the default ~/Downloads whitelist.
             # Keep this list intentional: anything NOT listed here is invisible
             # to Firefox (e.g. ~/Develop, SSH keys, secrets repos stay hidden).
-            "--whitelist=\${HOME}/Documents"
-            "--whitelist=\${HOME}/Pictures"
-            "--whitelist=\${HOME}/Desktop"
+            # Note the triple backslash: the nixpkgs firejail module splices
+            # extraArgs into an UNQUOTED heredoc (programs/firejail.nix's
+            # wrappedBins builder), so a plain "\${HOME}" gets expanded by
+            # the *build sandbox's* shell (HOME=/homeless-shelter) instead
+            # of staying literal for firejail to expand per-user at runtime.
+            # "\\\${HOME}" survives that heredoc pass as a literal ${HOME}.
+            "--whitelist=\\\${HOME}/Documents"
+            "--whitelist=\\\${HOME}/Pictures"
+            "--whitelist=\\\${HOME}/Desktop"
           ];
         };
         firefox-devedition = {
@@ -57,9 +63,15 @@ in
             "--ignore=nogroups"
             "--dbus-user.talk=org.freedesktop.secrets"
             "--dbus-user.talk=org.freedesktop.FileManager1"
-            "--whitelist=\${HOME}/Documents"
-            "--whitelist=\${HOME}/Pictures"
-            "--whitelist=\${HOME}/Desktop"
+            # Note the triple backslash: the nixpkgs firejail module splices
+            # extraArgs into an UNQUOTED heredoc (programs/firejail.nix's
+            # wrappedBins builder), so a plain "\${HOME}" gets expanded by
+            # the *build sandbox's* shell (HOME=/homeless-shelter) instead
+            # of staying literal for firejail to expand per-user at runtime.
+            # "\\\${HOME}" survives that heredoc pass as a literal ${HOME}.
+            "--whitelist=\\\${HOME}/Documents"
+            "--whitelist=\\\${HOME}/Pictures"
+            "--whitelist=\\\${HOME}/Desktop"
           ];
         };
         signal-desktop = {
