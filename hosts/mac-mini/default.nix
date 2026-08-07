@@ -319,17 +319,19 @@ in
       #
       # No Discord — this instance isn't reachable by chat yet, just a
       # `machinectl shell hermes-juan hermes` / herdr-attached session.
-      # Routes through the same LiteLLM gateway as `hermes` above, using
-      # whatever backend is configured there (nixos-nvme/ai.nix) — NOT
-      # actually gemini-2.5-pro (juan's declared tool/model in personas.nix)
-      # since litellm has no cloud Gemini backend configured yet; that's a
-      # real gap, not assumed away.
+      # Real Gemini via hermes-agent's native adapter (not the local
+      # LiteLLM gateway `hermes` above uses) — matches juan's declared
+      # model in personas.nix. GEMINI_API_KEY needs to actually exist at
+      # nix-secrets/personas/juan/gemini_api_key before this works; the
+      # rule is wired, the key itself is a separate step (real credential,
+      # can't be invented).
       hermes-juan = {
         enable = true;
         ip = "10.85.50.8/24";
         hostDataDir = "/var/lib/hermes-juan";
         memoryLimit = "2G";
-        ollamaUrl = "https://litellm.internal/v1";
+        model = "gemini/gemini-2.5-pro";
+        secretsFile = config.sops.templates."hermes-juan.env".path;
         gitIdentity = {
           name = "Juan González";
           email = "juan@kleinbem.dev";

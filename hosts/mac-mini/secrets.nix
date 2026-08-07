@@ -58,6 +58,22 @@ in
         format = "binary";
         mode = "0400";
       };
+
+      # Real Gemini backend for juan's Hermes worker (hermes-agent's native
+      # Gemini adapter, not the local LiteLLM gateway) — see
+      # nix-presets/containers/hermes-juan.nix's settings.model.
+      juan_gemini_api_key = {
+        sopsFile = "${inputs.nix-secrets}/personas/juan/gemini_api_key";
+        format = "binary";
+        mode = "0400";
+      };
+    };
+
+    templates."hermes-juan.env" = {
+      mode = "0444";
+      content = ''
+        GEMINI_API_KEY=${config.sops.placeholder.juan_gemini_api_key}
+      '';
     };
 
     templates."hermes.env" = {
