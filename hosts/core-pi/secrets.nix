@@ -1,7 +1,7 @@
 { inputs, config, ... }:
 {
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
+    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
     defaultSopsFormat = "yaml";
     validateSopsFiles = false;
 
@@ -12,7 +12,9 @@
       authelia_storage_encryption_key = { };
 
       # Attic Binary Cache
-      attic_server_token_rs256 = { };
+      attic_server_token_rs256 = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+      };
       # Read-only pull token — activates modules/nixos/attic-pull.nix (netrc
       # Bearer auth + NetBird routing). Without it the host gets 401 from the
       # private cache and the nightly upgrade rebuilds the linux-rpi kernel
@@ -39,9 +41,15 @@
       };
 
       # Cloudflare Tunnel
-      cloudflare_account_id = { };
-      cloudflare_tunnel_id = { };
-      cloudflare_tunnel_secret = { };
+      cloudflare_account_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+      };
+      cloudflare_tunnel_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+      };
+      cloudflare_tunnel_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+      };
     };
 
     templates = {

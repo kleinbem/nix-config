@@ -13,8 +13,11 @@ HOST_DIR="hosts/$HOST"
 # (see modules/nixos/clevis-initrd.nix consumers, e.g. hosts/*/services.nix
 # or hosts/*/default.nix: "${inputs.nix-secrets}/initrd/cryptroot_${HOST}.jwe").
 # Previously wrote to hosts/$HOST/cryptroot.jwe, a path nothing reads — every
-# real cryptroot_*.jwe in nix-secrets/initrd/ was produced some other way.
-SECRETS_DIR="../nix-secrets/initrd"
+# real cryptroot_*.jwe in kleinbem-secrets/initrd/ was produced some other way.
+# inputs.nix-secrets resolves to kleinbem-secrets as of the 2026-08-07
+# cutover (input NAME unchanged, see nix-config/flake.nix's note) — this
+# sibling-directory path is the local checkout that name now means.
+SECRETS_DIR="../kleinbem-secrets/initrd"
 JWE_FILE="$SECRETS_DIR/cryptroot_${HOST}.jwe"
 
 if [ ! -d "$HOST_DIR" ]; then
@@ -23,7 +26,7 @@ if [ ! -d "$HOST_DIR" ]; then
 fi
 
 if [ ! -d "$SECRETS_DIR" ]; then
-  echo "Error: $SECRETS_DIR does not exist (run from the nix-config repo root, with nix-secrets cloned as a sibling)."
+  echo "Error: $SECRETS_DIR does not exist (run from the nix-config repo root, with kleinbem-secrets cloned as a sibling)."
   exit 1
 fi
 

@@ -12,11 +12,19 @@ ROOT := parent_directory(justfile())
 # Meta-workspace directory (parent of nix-config)
 META := absolute_path(ROOT / "..")
 
-# Sibling sub-flakes that nix-config depends on, discovered at parse time
-SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -printf '%f\n' 2>/dev/null | xargs echo -n")
+# Sibling sub-flakes that nix-config depends on, discovered at parse time.
+# nix-secrets excluded here on purpose — see OVERRIDES below.
+SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
-# `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling
-OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'")
+# `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling.
+#
+# nix-secrets is remapped explicitly, not self-mapped: as of the 2026-08-07
+# cutover, nix-config's flake input keeps the "nix-secrets" NAME (see
+# flake.nix's note) but the repo behind it is now kleinbem-secrets. A plain
+# self-mapped override would point that input at the now-legacy local
+# nix-secrets checkout — silently undoing the cutover for every local
+# build/provisioning recipe that uses {{OVERRIDES}}.
+OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input nix-secrets git+file://" + META + "/kleinbem-secrets"
 
 KEEP      := "3"
 TIMER     := "time "

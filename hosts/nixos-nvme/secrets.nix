@@ -11,7 +11,7 @@
   # SOPS — Secrets Management
   # ==========================================
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
+    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
     defaultSopsFormat = "yaml";
     # Use host SSH keys for automated decryption (avoids YubiKey prompts for background tasks)
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
@@ -20,11 +20,11 @@
 
     # Don't fail the *build* validating secret presence against the sops file —
     # matches core-pi/hass-pi. CI builds this host's toplevel with an empty dummy
-    # secrets.yaml (--override-input nix-secrets /tmp/dummy-secrets, see
+    # nix/shared.yaml (--override-input nix-secrets /tmp/dummy-secrets, see
     # .github/scripts/setup-dummy-secrets.sh), so sops-install-secrets' build-time
     # manifest check would abort on e.g. "key 'martin_password_hash' cannot be
     # found" — the documented sops-nix CI workaround. Real decryption at
-    # activation is unaffected (it uses the real secrets.yaml on the host).
+    # activation is unaffected (it uses the real shared/per-host files on the host).
     validateSopsFiles = false;
     age.plugins = [
       pkgs.age-plugin-yubikey
@@ -32,6 +32,9 @@
     ];
 
     # --- Secret Declarations ---
+    # Secrets below with an explicit sopsFile live in nix/per-host/nixos-nvme.yaml
+    # (only this host + masters can decrypt); everything else falls through to
+    # defaultSopsFile (nix/shared.yaml, every NixOS host can decrypt).
     secrets = {
       netbird_setup_key = { };
       # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so
@@ -56,9 +59,11 @@
       };
       github_runner_nix = {
         owner = "github-runner";
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       github_runner_nix_config = {
         owner = "github-runner";
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       u2f_keys = { };
       # Buzz (Nostr relay) — 32-byte hex Nostr signing key + Garage RPC/admin
@@ -69,20 +74,44 @@
       # Garage S3 API key created via the one-time init documented at the
       # bottom of nix-presets/containers/buzz.nix, added here once you have
       # them. Until then buzz-relay starts but its S3 calls fail.
-      buzz_relay_private_key = { };
-      buzz_garage_rpc_secret = { }; # `openssl rand -hex 32`
-      buzz_garage_admin_token = { }; # `openssl rand -base64 32`
-      buzz_typesense_api_key = { };
+      buzz_relay_private_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      buzz_garage_rpc_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      }; # `openssl rand -hex 32`
+      buzz_garage_admin_token = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      }; # `openssl rand -base64 32`
+      buzz_typesense_api_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
 
       # Service Internal Secrets
-      n8n_encryption_key = { };
-      n8n_basic_auth_password = { };
-      n8n_jwt_secret = { };
-      n8n_user_management_main_user_email = { };
-      n8n_user_management_main_user_password = { };
-      openwebui_secret_key = { };
-      langfuse_nextauth_secret = { };
-      langfuse_salt = { };
+      n8n_encryption_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      n8n_basic_auth_password = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      n8n_jwt_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      n8n_user_management_main_user_email = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      n8n_user_management_main_user_password = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      openwebui_secret_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      langfuse_nextauth_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      langfuse_salt = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
 
       # API Keys
       github_pat = {
@@ -103,12 +132,16 @@
       github_app_private_key = {
         owner = "martin";
       };
-      vllm_huggingface_token = { };
+      vllm_huggingface_token = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
       langfuse_public_key = {
         mode = "0444";
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       langfuse_secret_key = {
         mode = "0444";
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
       # Backup Secrets
@@ -123,8 +156,12 @@
       authelia_storage_encryption_key = { };
 
       # Dashboard Keys
-      homepage_n8n_key = { };
-      homepage_openwebui_key = { };
+      homepage_n8n_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      homepage_openwebui_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
 
       # Syncthing
       # syncthing_gui_password = { };

@@ -424,7 +424,7 @@ orin-update-usb device="/dev/sdb":
 
 
 [group("Provisioning")]
-[doc("Generate/rotate a host's Tang-wrapped LUKS unlock secret (nix-secrets/initrd/cryptroot_<host>.jwe), consumed by my.boot.clevis-initrd.secretFile. Prompts for the LUKS passphrase — must match what's actually set on that host's LUKS container, or the JWE decrypts to the wrong passphrase and auto-unlock fails.")]
+[doc("Generate/rotate a host's Tang-wrapped LUKS unlock secret (kleinbem-secrets/initrd/cryptroot_<host>.jwe), consumed by my.boot.clevis-initrd.secretFile. Prompts for the LUKS passphrase — must match what's actually set on that host's LUKS container, or the JWE decrypts to the wrong passphrase and auto-unlock fails.")]
 generate-jwe host:
     @bash scripts/generate-jwe.sh {{host}}
 
@@ -488,7 +488,7 @@ mac-mini-install-usb device:
     # gets it build-visible right now.
     echo "🔑 Generating Tang JWE with the new passphrase..."
     LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh mac-mini
-    git -C ../nix-secrets add initrd/cryptroot_mac-mini.jwe
+    git -C ../kleinbem-secrets add initrd/cryptroot_mac-mini.jwe
 
     echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
@@ -518,7 +518,11 @@ mac-mini-install-usb device:
     # Same reason the JWE needed `git add` above: the build below resolves
     # inputs.nix-secrets via {{OVERRIDES}}' git+file:// override, which only
     # sees tracked/staged files, not arbitrary untracked/modified ones.
-    git -C ../nix-secrets add .sops.yaml secrets.yaml
+    # pc_sops_add_and_reencrypt may touch .sops.yaml plus ANY content file
+    # that references the mac_mini anchor (nix/per-host/mac-mini.yaml, every
+    # personas/*.yaml — mac_mini is a recipient on all of them) — stage
+    # whatever it actually modified rather than guessing a fixed file list.
+    git -C ../kleinbem-secrets add -u
 
     # my.boot.clevis-initrd.enable is gated on the JWE existing (see
     # hosts/mac-mini/default.nix) — it already does now, so this one build
@@ -566,17 +570,19 @@ mac-mini-install-usb device:
     echo "   are the ones that genuinely can't be scripted (secrets need a real"
     echo "   commit message, the disk needs a human hand to move it):"
     echo ""
-    echo "   1. just jj::save-all 'feat: mac-mini reinstall' mac-mini nix-secrets"
-    echo "        (the JWE + rotated .sops.yaml/secrets.yaml were already"
+    echo "   1. just jj::save-all 'feat: mac-mini reinstall' mac-mini kleinbem-secrets"
+    echo "        (the JWE + rotated .sops.yaml/per-host+personas files were already"
     echo "        'git add'-ed above so the build could see them — this gives"
     echo "        them a proper commit through jj)"
     echo "   2. nix flake lock --update-input nix-secrets   (from nix-config's"
-    echo "        root, THEN commit the flake.lock bump too — every OTHER"
-    echo "        deploy path, e.g. 'just deployment::deploy mac-mini' later,"
-    echo "        builds against this pin, not the local nix-secrets checkout"
-    echo "        this recipe pointed at just now. Skipping this is exactly what"
-    echo "        caused a stale-secrets deploy failure the first time this"
-    echo "        recipe's output was followed, 2026-08-03.)"
+    echo "        root — input identifier is still 'nix-secrets', it now resolves"
+    echo "        to kleinbem-secrets, see flake.nix's note. THEN commit the"
+    echo "        flake.lock bump too — every OTHER deploy path, e.g. 'just"
+    echo "        deployment::deploy mac-mini' later, builds against this pin,"
+    echo "        not the local kleinbem-secrets checkout this recipe pointed at"
+    echo "        just now. Skipping this is exactly what caused a stale-secrets"
+    echo "        deploy failure the first time this recipe's output was"
+    echo "        followed, 2026-08-03.)"
     echo "   3. (cd ../nix/infra/netbird && just remove-peer mac-mini)   (clears"
     echo "        the OLD peer identity from the wiped host BEFORE it re-enrolls"
     echo "        under the same name; skip if this is a first-ever install, not"

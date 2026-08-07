@@ -11,7 +11,7 @@
   ];
 
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
+    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
     defaultSopsFormat = "yaml";
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/host.txt";
 

@@ -1493,11 +1493,27 @@
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1785843354,
-        "narHash": "sha256-pYV2gYDb81Lb1Av6L6shfYxDvNNO7v86AUsOBy8vOCk=",
+        "lastModified": 1786029094,
+        "narHash": "sha256-+hnCFO8LB7/72+6/lm1pIikHZhJLgmsLEoTPozxlzjw=",
+        "owner": "kleinbem",
+        "repo": "kleinbem-secrets",
+        "rev": "d365604027f20442b10557df882c23d127060006",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "repo": "kleinbem-secrets",
+        "type": "github"
+      }
+    },
+    "nix-secrets-legacy-contact": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786115715,
+        "narHash": "sha256-9BYsgMW4CZAzSv0izcncFMD9KdutvFW9zYJ2SGVldSQ=",
         "owner": "kleinbem",
         "repo": "nix-secrets",
-        "rev": "4a04fa1ac349819dff681710e1caa8833a1b1c14",
+        "rev": "294aa1b9ab507dba0d93d96f5975d56ea5035df6",
         "type": "github"
       },
       "original": {
@@ -2472,6 +2488,7 @@
         "nix-packages": "nix-packages",
         "nix-presets": "nix-presets",
         "nix-secrets": "nix-secrets",
+        "nix-secrets-legacy-contact": "nix-secrets-legacy-contact",
         "nix-templates": "nix-templates",
         "nix-topology": "nix-topology",
         "nix-vscode-extensions": "nix-vscode-extensions_2",

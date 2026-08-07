@@ -8,7 +8,16 @@ let
   # CI overrides the nix-secrets input with an empty dummy directory — same
   # workaround hass-pi's secrets.nix uses. lib/personas.nix renders missing
   # PII fields as "(private)", fine for a CI-only eval that never activates.
-  contactFile = inputs.nix-secrets + "/personas-contact.nix";
+  #
+  # DELIBERATE, TRACKED EXCEPTION (2026-08-07 cutover): still reads from the
+  # nix-secrets-legacy-contact input (== the OLD nix-secrets repo), not the
+  # main nix-secrets input (== kleinbem-secrets as of this cutover).
+  # kleinbem-secrets' personas/contact.nix is sops-encrypted, but this file
+  # is `import`ed directly at Nix eval time — sops ciphertext can't be
+  # imported as Nix source. Properly fixing this means reworking contact
+  # consumption to a sops-nix runtime-decrypt pattern (real PII deserves
+  # that, not a plaintext mirror like initrd/ got) — deferred, separate task.
+  contactFile = inputs.nix-secrets-legacy-contact + "/personas-contact.nix";
   personas = import ../../lib/personas.nix {
     inherit lib;
     contact = if builtins.pathExists contactFile then import contactFile else { };
@@ -16,14 +25,14 @@ let
 in
 {
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
+    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
     defaultSopsFormat = "yaml";
 
     # Persistent host key generated during provisioning (provision-common.sh
     # pc_host_identity) — same convention as every other real host.
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
 
-    # Don't fail eval/CI against the dummy secrets.yaml override.
+    # Don't fail eval/CI against the dummy nix/shared.yaml override.
     validateSopsFiles = false;
 
     # martin_password (sops key: martin_password_hash) is already declared by
@@ -42,29 +51,34 @@ in
 
       # Hermes Agent's Discord gateway bot token — moved from hass-pi
       # 2026-08-05, see hosts/mac-mini/default.nix my.containers.hermes.
-      # Same field in the same shared secrets.yaml hass-pi already
-      # decrypted this from; no re-encryption needed for mac-mini's own
-      # age recipient (it already decrypts netbird_setup_key/
-      # attic_pull_token from this exact file).
-      discord_bot_token = { };
+      # Lives in kleinbem-secrets' per-host scope now (nix/per-host/mac-mini.yaml,
+      # cutover 2026-08-07) rather than the old shared secrets.yaml.
+      discord_bot_token = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/mac-mini.yaml";
+      };
 
-      # Juan's persona git-signing identity — separate file from the default
-      # secrets.yaml (personas/<name>/id_ed25519 is its own sops-encrypted
-      # binary blob, see nix-secrets/.sops.yaml's per-persona rule). Consumed
-      # by the juan Hermes instance (hosts/mac-mini/default.nix
+      # Juan's persona git-signing identity. kleinbem-secrets stores personas
+      # one-YAML-per-persona (cutover 2026-08-07) rather than nix-secrets' old
+      # one-file-per-secret layout, so this is now a keyed value inside
+      # personas/juan.yaml, not its own binary-mode sopsFile. Consumed by the
+      # juan Hermes instance (hosts/mac-mini/default.nix
       # my.containers.hermes-juan) for git commit signing as that persona.
       juan_signing_key = {
-        sopsFile = "${inputs.nix-secrets}/personas/juan/id_ed25519";
-        format = "binary";
+        sopsFile = "${inputs.nix-secrets}/personas/juan.yaml";
+        key = "id_ed25519";
         mode = "0400";
       };
 
       # Real Gemini backend for juan's Hermes worker (hermes-agent's native
       # Gemini adapter, not the local LiteLLM gateway) — see
       # nix-presets/containers/hermes-juan.nix's settings.model.
+      # NOT YET REAL: gemini_api_key was never created for juan in either
+      # secrets repo (rule/schema is wired, the actual credential is a
+      # separate manual step — same status quo as before this cutover,
+      # validateSopsFiles = false below keeps the build from failing on it).
       juan_gemini_api_key = {
-        sopsFile = "${inputs.nix-secrets}/personas/juan/gemini_api_key";
-        format = "binary";
+        sopsFile = "${inputs.nix-secrets}/personas/juan.yaml";
+        key = "gemini_api_key";
         mode = "0400";
       };
     };

@@ -20,7 +20,9 @@
   # disabled scaffold never requires frigate_rtsp_env to exist in secrets.yaml
   # yet (create it before flipping enable = true; see the container preset's
   # environmentFile option). Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
-  sops.secrets.frigate_rtsp_env = lib.mkIf config.my.containers.frigate.enable { };
+  sops.secrets.frigate_rtsp_env = lib.mkIf config.my.containers.frigate.enable {
+    sopsFile = "${inputs.nix-secrets}/nix/per-host/orin-nano.yaml";
+  };
 
   # ─── AI Edge Services ──────────────────────────────────────
   my = {

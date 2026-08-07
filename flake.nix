@@ -31,7 +31,22 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     # Private Secrets (GitHub Repo)
+    # NOTE: input identifier kept as "nix-secrets" for historical reasons —
+    # the underlying repo is kleinbem-secrets as of the 2026-08-07 cutover.
+    # Renaming every `inputs.nix-secrets` reference across the tree is a
+    # separate, lower-risk cleanup, not required for this to be correct.
     nix-secrets = {
+      url = "github:kleinbem/kleinbem-secrets";
+      flake = false;
+    };
+
+    # TEMPORARY, deferred exception: kleinbem-secrets' personas/contact.nix
+    # is sops-encrypted, but hosts/mac-mini/secrets.nix imports contact data
+    # directly at Nix eval time (like initrd/), which can't consume sops
+    # ciphertext. Real PII (names/emails/Matrix IDs) — properly reworking
+    # this to a runtime-decrypt pattern is deferred, tracked separately.
+    # Remove this input once that's done; only mac-mini/secrets.nix uses it.
+    nix-secrets-legacy-contact = {
       url = "github:kleinbem/nix-secrets";
       flake = false;
     };

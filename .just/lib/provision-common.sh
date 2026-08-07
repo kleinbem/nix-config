@@ -300,35 +300,41 @@ pc_host_identity() {
   echo "$age_pub"
 }
 
-# Add a host age key to nix-secrets/.sops.yaml (after the last age key) and
-# re-encrypt. Any prior "# Host Key (<label>)" block for the SAME host is removed
-# first, so re-installing a host replaces its key instead of stacking a dead
-# recipient (a wiped disk's private key is gone — encrypting to it is useless).
-# $1=age-public-key  $2=comment-label
+# Rotate a host's age key in kleinbem-secrets/.sops.yaml (cutover 2026-08-07:
+# was nix-secrets/.sops.yaml with a flat key_groups list; kleinbem-secrets uses
+# a `keys:` block of YAML anchors — `&<anchor> age1...` — referenced by name
+# `*<anchor>` from multiple creation_rules, so a host key lives in exactly ONE
+# place regardless of how many files/scopes reference it) and re-encrypt every
+# real content file (not just one secrets.yaml — kleinbem-secrets splits
+# content across nix/shared.yaml, nix/per-host/*.yaml, personas/*.yaml, etc.,
+# and any of them might reference this host's anchor).
+# $1=age-public-key  $2=host-label (hyphenated, e.g. "mac-mini" — converted to
+# the anchor's underscore form, "mac_mini", matching .sops.yaml's convention)
 pc_sops_add_and_reencrypt() {
-  local age_pub="$1" label="$2" sops_yaml="../nix-secrets/.sops.yaml"
+  local age_pub="$1" label="$2" sops_yaml="../kleinbem-secrets/.sops.yaml"
+  local anchor="${label//-/_}"
   if grep -qF "$age_pub" "$sops_yaml"; then
     echo "   Age key already in .sops.yaml — skipping re-encryption."
     return 0
   fi
-  # awk pass: (1) drop an existing "# Host Key (<label>)" comment and the key line
-  # that follows it; (2) collect surviving lines into a compacted array (no gaps
-  # from the removed lines); (3) re-emit, inserting the fresh key after the last
-  # remaining age recipient. index() is a literal match; the trailing ")" anchors
-  # it so label "core" can't match "core-pi".
-  awk -v key="$age_pub" -v label="$label" '
-        index($0, "# Host Key (" label ")") > 0 { skip = 1; next }
-        skip { skip = 0; next }
-        { lines[++n] = $0; if ($0 ~ /^[[:space:]]*- "age1/) last = n }
-        END {
-            for (i = 1; i <= n; i++) {
-                print lines[i]
-                if (i == last) { print "          # Host Key (" label ")"; print "          - \"" key "\"" }
-            }
-        }' "$sops_yaml" >/tmp/sops_updated.yaml && mv /tmp/sops_updated.yaml "$sops_yaml"
-  echo "🔐 Re-encrypting secrets (YubiKey touch may be required)..."
-  (cd ../nix-secrets && sops updatekeys --yes secrets.yaml)
-  echo "✅ Secrets updated — remember to commit nix-secrets + nix-config."
+  if ! grep -qE "&${anchor}[[:space:]]" "$sops_yaml"; then
+    echo "❌ No '&${anchor}' anchor found in $sops_yaml — this host isn't onboarded" >&2
+    echo "   there yet. Add a '&${anchor} age1PLACEHOLDER...' line to the keys: block" >&2
+    echo "   and a creation_rules entry referencing it first (see kleinbem-secrets/README.md)." >&2
+    return 1
+  fi
+  # Replace ONLY the age value after the anchor, preserving any trailing comment
+  # (e.g. "# Host Key (mac-mini)" or the "not yet enabled" placeholder note).
+  sed -i -E "s|(&${anchor}[[:space:]]+)age1[a-zA-Z0-9]+|\\1${age_pub}|" "$sops_yaml"
+  echo "🔐 Re-encrypting every real content file (YubiKey touch may be required per file)..."
+  local f
+  while IFS= read -r -d '' f; do
+    echo "   updatekeys: ${f#../kleinbem-secrets/}"
+    (cd ../kleinbem-secrets && sops updatekeys --yes "${f#../kleinbem-secrets/}")
+  done < <(find ../kleinbem-secrets \
+    \( -path '../kleinbem-secrets/.git' -o -path '../kleinbem-secrets/.jj' -o -path '../kleinbem-secrets/keys.d' \) -prune -o \
+    -type f \( -name '*.yaml' -o -name '*.nix' \) ! -name '.sops.yaml' -print0)
+  echo "✅ Secrets updated — remember to commit kleinbem-secrets + nix-config."
 }
 
 # ── clevis / Tang ─────────────────────────────────────────────────────────────

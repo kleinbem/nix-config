@@ -3,16 +3,21 @@
 #
 # Steps (idempotent — safe to re-run; already-done steps skip):
 #   1. Verify the persona is declared in personas.nix.
-#   2. Generate ed25519 signing key (under nix-secrets/personas/<name>/).
-#   3. Sops-encrypt the private key in place.
-#   4. Patch nix-config/modules/nixos/keys.nix ssh.personas.<name> with pubkey.
-#   5. Upload the pubkey to GitHub as a Signing key (gh auth required).
-#   6. Generate a random mailbox password, store in sops.
-#   7. Create the mailbox via Stalwart admin CLI (only if Stalwart is running).
+#   2. Generate ed25519 signing key + mailbox password (tmpfs-staged), merge
+#      into kleinbem-secrets/personas/<name>.yaml (id_ed25519, id_ed25519_pub,
+#      mailbox_password keys — one YAML per persona, cutover 2026-08-07).
+#   3. Patch nix-config/modules/nixos/keys.nix ssh.personas.<name> with pubkey.
+#   4. Upload the pubkey to GitHub as a Signing key (gh auth required).
+#   5. Create the mailbox via Stalwart admin CLI (only if Stalwart is running).
 #
 # Run AFTER:
 #   - nix-config/personas.nix has the entry
-#   - Stalwart container is up (for step 7; steps 1-6 work without it)
+#   - kleinbem-secrets/.sops.yaml has a &persona_<name> anchor + a
+#     personas/<name>.yaml creation rule (see that repo's README "Adding a
+#     new scope" section) — this script WARNS but does not fail if missing;
+#     without it the new content still encrypts, just to the generic
+#     personas/.+ catch-all (masters-only, no nixos_nvme/mac_mini access).
+#   - Stalwart container is up (for step 5; steps 1-4 work without it)
 #   - `gh auth status` shows you're logged in
 #
 # Usage: just personas::add <name>      (preferred, via the just recipe)
@@ -32,14 +37,33 @@ NIX_CONFIG="$(dirname "$SCRIPT_DIR")"
 META_ROOT="$(dirname "$NIX_CONFIG")"
 PERSONAS_NIX="$NIX_CONFIG/personas.nix"
 KEYS_NIX="$NIX_CONFIG/modules/nixos/keys.nix"
-SECRETS_REPO="$META_ROOT/nix-secrets"
-PERSONA_SECRETS_DIR="$SECRETS_REPO/personas/$NAME"
+# kleinbem-secrets holds signing key + mailbox password (cutover 2026-08-07).
+# personas-contact.nix (PII) is a DELIBERATE, TRACKED EXCEPTION that stays on
+# the old nix-secrets repo for now — see nix-config/flake.nix's
+# nix-secrets-legacy-contact input and hosts/mac-mini/secrets.nix's comment.
+SECRETS_REPO="$META_ROOT/kleinbem-secrets"
+CONTACT_REPO="$META_ROOT/nix-secrets"
+PERSONA_YAML="$SECRETS_REPO/personas/$NAME.yaml"
+
+WORK="$(mktemp -d /dev/shm/persona-scaffold-XXXXXX)"
+cleanup() {
+  find "$WORK" -type f -exec shred -u {} \; 2>/dev/null || true
+  rm -rf "$WORK"
+}
+trap cleanup EXIT
 
 # --- 1. Validate persona exists in manifest ---
 if ! nix eval --raw --file "$PERSONAS_NIX" --apply "p: if p ? \"$NAME\" then \"ok\" else builtins.throw \"persona $NAME not in personas.nix\"" >/dev/null 2>&1; then
   echo "❌ Persona '$NAME' not declared in $PERSONAS_NIX" >&2
   echo "   Add an attribute block first, then re-run." >&2
   exit 1
+fi
+
+if ! grep -q "&persona_${NAME}\b" "$SECRETS_REPO/.sops.yaml" 2>/dev/null; then
+  echo "⚠️  No '&persona_${NAME}' anchor in kleinbem-secrets/.sops.yaml — this" >&2
+  echo "   persona's content will encrypt to the generic personas/.+ catch-all" >&2
+  echo "   (masters-only), NOT to nixos_nvme/mac_mini. See kleinbem-secrets/" >&2
+  echo "   README.md's 'Adding a new scope' section to onboard it properly first." >&2
 fi
 
 # email/full-name are PII — they live in nix-secrets/personas-contact.nix,
@@ -52,7 +76,7 @@ persona_field() {
       lib = flake.inputs.nixpkgs.lib;
       personas = import \"$NIX_CONFIG/lib/personas.nix\" {
         inherit lib;
-        contact = import \"$SECRETS_REPO/personas-contact.nix\";
+        contact = import \"$CONTACT_REPO/personas-contact.nix\";
       };
     in personas.all.$NAME.$1
   "
@@ -62,25 +86,47 @@ PERSONA_FULLNAME=$(persona_field '"full-name"')
 
 echo "🎭 Scaffolding persona: $PERSONA_FULLNAME <$PERSONA_EMAIL>"
 
-# --- 2. Generate signing key (if missing) ---
-mkdir -p "$PERSONA_SECRETS_DIR"
-KEY_PATH="$PERSONA_SECRETS_DIR/id_ed25519"
+# Decrypt the persona's existing kleinbem-secrets content (if any) once, so
+# steps 2/3 below can check what's already present and merge into the same
+# plaintext staging file before a single re-encrypt at the end.
+if [[ -f $PERSONA_YAML ]]; then
+  sops -d "$PERSONA_YAML" >"$WORK/persona.yaml"
+else
+  echo "{}" >"$WORK/persona.yaml"
+fi
+CHANGED=0
 
-if [[ -f "${KEY_PATH}.pub" ]]; then
-  echo "  ✓ Signing key already present at $KEY_PATH"
+# --- 2. Generate signing key (if missing) ---
+if yq -e '.id_ed25519_pub' "$WORK/persona.yaml" >/dev/null 2>&1; then
+  echo "  ✓ Signing key already present in $PERSONA_YAML"
+  PUBKEY="$(yq '.id_ed25519_pub' "$WORK/persona.yaml")"
 else
   echo "  🔑 Generating ed25519 signing key..."
-  ssh-keygen -t ed25519 -C "$PERSONA_EMAIL" -N "" -f "$KEY_PATH" -q
+  ssh-keygen -t ed25519 -C "$PERSONA_EMAIL" -N "" -f "$WORK/id_ed25519" -q
+  PUBKEY="$(cat "$WORK/id_ed25519.pub")"
+  ID_PATH="$WORK/id_ed25519" PUB_PATH="$WORK/id_ed25519.pub" \
+    yq -i '.id_ed25519 = load_str(strenv(ID_PATH)) | .id_ed25519_pub = load_str(strenv(PUB_PATH))' \
+    "$WORK/persona.yaml"
+  CHANGED=1
 fi
 
-PUBKEY=$(cat "${KEY_PATH}.pub")
+# --- 3. Generate mailbox password (if missing) ---
+if yq -e '.mailbox_password' "$WORK/persona.yaml" >/dev/null 2>&1; then
+  echo "  ✓ Mailbox password already present in $PERSONA_YAML"
+else
+  echo "  🔐 Generating mailbox password..."
+  openssl rand -base64 32 >"$WORK/mailbox-password"
+  MB_PATH="$WORK/mailbox-password" \
+    yq -i '.mailbox_password = load_str(strenv(MB_PATH))' "$WORK/persona.yaml"
+  CHANGED=1
+fi
 
-# --- 3. Sops-encrypt the private key (if not already encrypted) ---
-if [[ -f $KEY_PATH ]] && ! grep -q '"sops":' "$KEY_PATH" 2>/dev/null; then
-  if head -1 "$KEY_PATH" | grep -q -- '-----BEGIN'; then
-    echo "  🔐 Encrypting private key with sops..."
-    (cd "$SECRETS_REPO" && sops --encrypt --in-place "personas/$NAME/id_ed25519")
-  fi
+if [[ $CHANGED -eq 1 ]]; then
+  echo "  🔐 Encrypting $PERSONA_YAML..."
+  mkdir -p "$(dirname "$PERSONA_YAML")"
+  sops --config "$SECRETS_REPO/.sops.yaml" --filename-override "$PERSONA_YAML" \
+    -e "$WORK/persona.yaml" >"$WORK/persona-enc.yaml"
+  mv "$WORK/persona-enc.yaml" "$PERSONA_YAML"
 fi
 
 # --- 4. Patch keys.nix with the public key ---
@@ -109,17 +155,7 @@ else
   echo "     gh api -X POST /user/ssh_signing_keys --field title=\"$PERSONA_EMAIL signing\" --field key=\"$PUBKEY\""
 fi
 
-# --- 6. Generate mailbox password (if not already in sops) ---
-MAILBOX_PASS_FILE="$PERSONA_SECRETS_DIR/mailbox-password"
-if [[ -f $MAILBOX_PASS_FILE ]]; then
-  echo "  ✓ Mailbox password already in sops"
-else
-  echo "  🔐 Generating mailbox password..."
-  openssl rand -base64 32 >"$MAILBOX_PASS_FILE"
-  (cd "$SECRETS_REPO" && sops --encrypt --in-place "personas/$NAME/mailbox-password")
-fi
-
-# --- 7. Create mailbox via Stalwart admin CLI (if Stalwart is running) ---
+# --- 6. Create mailbox via Stalwart admin CLI (if Stalwart is running) ---
 if systemctl is-active --quiet container@stalwart.service 2>/dev/null; then
   echo "  📬 Creating mailbox in Stalwart..."
   # The mailbox password isn't passed inline (it's set via the API after
@@ -140,5 +176,5 @@ echo
 echo "Verify with a test commit:"
 echo "  just jj::as $NAME save-all \"feat: smoke test as $PERSONA_FULLNAME\""
 echo
-echo "Remember to commit + push the keys.nix update:"
-echo "  just jj::save-all \"chore(keys): register signing key for $PERSONA_FULLNAME\""
+echo "Remember to commit + push the keys.nix update and kleinbem-secrets:"
+echo "  just jj::save-all \"chore(keys): register signing key for $PERSONA_FULLNAME\" nix-config kleinbem-secrets"

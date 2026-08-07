@@ -2,13 +2,13 @@
 
 {
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/secrets.yaml";
+    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
     defaultSopsFormat = "yaml";
 
     # Use a persistent host key for decryption
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
 
-    # Don't fail the build in CI validating against the dummy secrets.yaml
+    # Don't fail the build in CI validating against the dummy nix/shared.yaml
     validateSopsFiles = false;
 
     # We only need the user password for now
@@ -26,7 +26,9 @@
       # nightly upgrades substitute the CI-built closure instead of compiling
       # jetpack/l4t packages on-device.
       # attic_pull_token = { };
-      attic_push_token = { };
+      attic_push_token = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/orin-nano.yaml";
+      };
       github_pat = {
         owner = "martin";
       };
