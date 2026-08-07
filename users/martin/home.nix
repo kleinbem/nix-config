@@ -26,6 +26,33 @@ in
     workspace-guardian.enable = true;
   };
 
+  # bitwarden-desktop's clipboard.write is broken on GNOME/Mutter (see
+  # gnome.nix's xdg.desktopEntries.bitwarden comment) — Mutter doesn't
+  # implement the zwlr_data_control_manager_v1 protocol Bitwarden's Rust
+  # clipboard lib insists on. A normal user-gesture browser copy uses the
+  # plain wl_data_device protocol instead, which Mutter fully supports, so
+  # the web vault as a PWA sidesteps the bug entirely (same reasoning as the
+  # already-working Firefox extension, just via Chromium for a standalone
+  # app window instead of a browser tab).
+  my.pwa = {
+    enable = true;
+    apps.bitwarden = {
+      name = "Bitwarden";
+      url = "https://vault.bitwarden.com";
+      svg = ''
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+          <rect width="512" height="512" rx="96" fill="#175DDC"/>
+          <path fill="#ffffff" d="M256 96 L384 144 V256 C384 336 328 400 256 424 C184 400 128 336 128 256 V144 Z"/>
+          <path fill="#175DDC" fill-opacity="0.18" d="M256 140 L344 172 V256 C344 316 306 360 256 380 Z"/>
+        </svg>
+      '';
+      categories = [
+        "Utility"
+        "Network"
+      ];
+    };
+  };
+
   # User Details
   home = {
     inherit (my) username;
