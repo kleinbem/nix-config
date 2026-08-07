@@ -38,6 +38,13 @@ in
             "--ignore=nou2f" # Required for YubiKey/WebAuthn access
             "--ignore=nogroups" # Required for some USB hardware access
             "--dbus-user.talk=org.freedesktop.secrets" # Allow access to GNOME Keyring
+            "--dbus-user.talk=org.freedesktop.FileManager1" # Allow "Show in Folder" on downloads (opens Nautilus)
+            # Extra save/open locations beyond the default ~/Downloads whitelist.
+            # Keep this list intentional: anything NOT listed here is invisible
+            # to Firefox (e.g. ~/Develop, SSH keys, secrets repos stay hidden).
+            "--whitelist=\${HOME}/Documents"
+            "--whitelist=\${HOME}/Pictures"
+            "--whitelist=\${HOME}/Desktop"
           ];
         };
         firefox-devedition = {
@@ -49,6 +56,10 @@ in
             "--ignore=nou2f"
             "--ignore=nogroups"
             "--dbus-user.talk=org.freedesktop.secrets"
+            "--dbus-user.talk=org.freedesktop.FileManager1"
+            "--whitelist=\${HOME}/Documents"
+            "--whitelist=\${HOME}/Pictures"
+            "--whitelist=\${HOME}/Desktop"
           ];
         };
         signal-desktop = {
