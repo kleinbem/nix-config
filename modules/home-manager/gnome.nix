@@ -18,10 +18,23 @@
       package = pkgs.kdePackages.breeze;
     };
 
-    # Rofi app launcher, bound to <Super>r below. Wayland layer-shell support
-    # is native to nixpkgs' rofi now (the rofi-wayland fork was merged in).
+    # Rofi app launcher, bound to <Super>r below. GNOME's Mutter doesn't
+    # implement the zwlr_layer_shell_v1 Wayland protocol (same protocol gap
+    # as the bitwarden.desktop clipboard workaround below), so rofi's native
+    # Wayland backend hard-aborts with "requires support for the layer shell
+    # protocol". Wrap the binary to unset WAYLAND_DISPLAY, forcing rofi onto
+    # its working xcb/XWayland backend (programs.xwayland.enable = true in
+    # nixos/desktop.nix) — confirmed live, this is not a compile-time toggle.
     programs.rofi = {
       enable = true;
+      package = pkgs.symlinkJoin {
+        name = "rofi-xwayland-wrapped";
+        paths = [ pkgs.rofi ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/rofi --unset WAYLAND_DISPLAY
+        '';
+      };
       terminal = "${pkgs.ptyxis}/bin/ptyxis";
       extraConfig = {
         modi = "drun,run,window";
