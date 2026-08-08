@@ -18,6 +18,60 @@
       package = pkgs.kdePackages.breeze;
     };
 
+    # Rofi app launcher, bound to <Super>r below. Wayland layer-shell support
+    # is native to nixpkgs' rofi now (the rofi-wayland fork was merged in).
+    programs.rofi = {
+      enable = true;
+      terminal = "${pkgs.ptyxis}/bin/ptyxis";
+      extraConfig = {
+        modi = "drun,run,window";
+        show-icons = true;
+        display-drun = "Apps";
+        display-run = "Run";
+        display-window = "Windows";
+        drun-display-format = "{name}";
+      };
+      theme =
+        let
+          inherit (config.lib.formats.rasi) mkLiteral;
+        in
+        {
+          "*" = {
+            bg = mkLiteral "#1e1e2e";
+            bg-alt = mkLiteral "#313244";
+            fg = mkLiteral "#cdd6f4";
+            accent = mkLiteral "#89b4fa";
+          };
+          window = {
+            background-color = mkLiteral "@bg";
+            border = mkLiteral "1px";
+            border-color = mkLiteral "@accent";
+            border-radius = mkLiteral "8px";
+            width = mkLiteral "600px";
+          };
+          inputbar = {
+            background-color = mkLiteral "@bg-alt";
+            text-color = mkLiteral "@fg";
+            padding = mkLiteral "10px";
+            border-radius = mkLiteral "6px";
+            margin = mkLiteral "10px";
+          };
+          listview = {
+            background-color = mkLiteral "@bg";
+            margin = mkLiteral "10px";
+          };
+          element = {
+            padding = mkLiteral "6px";
+            text-color = mkLiteral "@fg";
+          };
+          "element selected" = {
+            background-color = mkLiteral "@accent";
+            text-color = mkLiteral "@bg";
+            border-radius = mkLiteral "6px";
+          };
+        };
+    };
+
     xdg.configFile."kdeglobals".text = ''
       [General]
       ColorScheme=BreezeDark
@@ -422,7 +476,14 @@
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-smile-alt/"
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-satty/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-rofi/"
         ];
+      };
+
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-rofi" = {
+        binding = "<Super>r";
+        command = "rofi -show drun";
+        name = "App Launcher (Rofi)";
       };
 
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom-satty" = {
