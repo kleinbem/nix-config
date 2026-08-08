@@ -184,7 +184,7 @@ attic-token:
 # create/configure/destroy). Use this for the ATTIC_PUSH_TOKEN stored in CI,
 # NOT the admin token above. Pipe into sops, e.g.:
 #   TOKEN=$(just nixos::attic-ci-token | grep '^eyJ')
-#   sops --set "[\"attic_push_token\"] \"$TOKEN\"" nix-secrets/secrets.yaml
+#   sops --set "[\"attic_push_token\"] \"$TOKEN\"" ../kleinbem-secrets/nix/per-host/orin-nano.yaml
 # Usage: just nixos::attic-ci-token                  # github-ci, system, 1y
 #        just nixos::attic-ci-token github-ci system 10y
 [group("System")]

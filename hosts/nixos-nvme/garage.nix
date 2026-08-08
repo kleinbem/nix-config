@@ -1,11 +1,5 @@
 # Garage S3 object storage — INTERIM single-node on nixos-nvme.
 #
-# DRAFT / NOT YET WIRED IN: this file is not imported by the host yet. To
-# activate: (1) add the two sops secrets below, (2) import this from
-# hosts/nixos-nvme/default.nix, (3) `just apply`, (4) run the one-time init at
-# the bottom. Without the secrets the build will fail (sops template), so don't
-# import until they exist.
-#
 # Data lives on /mnt/data (1.4 TB free, btrfs = CoW+snapshots → mitigates the
 # Garage LMDB single-node crash-fragility caveat). replication_factor = 1 because
 # it's a single node for now; when nasbook comes online, add it as a second node
@@ -15,15 +9,25 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 {
-  # --- Secrets (add to nix-secrets/secrets.yaml, then `sops updatekeys`) -------
-  #   garage_rpc_secret   : `openssl rand -hex 32`  (32-byte hex, REQUIRED format)
-  #   garage_admin_token  : `openssl rand -base64 32` (any opaque string)
+  # --- Secrets ------------------------------------------------------------
+  # garage_rpc_secret/garage_admin_token live in kleinbem-secrets'
+  # infra/terraform.yaml (Terraform/OpenTofu's garage bucket bootstrap also
+  # needs them), not nix/shared.yaml (defaultSopsFile) — the old flat
+  # nix-secrets/secrets.yaml had them accessible to every host by virtue of
+  # being one file; the migration split them into the Terraform-scoped file
+  # only and this override was missed. Explicit sopsFile here instead of
+  # falling through to the default.
   sops = {
-    secrets.garage_rpc_secret = { };
-    secrets.garage_admin_token = { };
+    secrets.garage_rpc_secret = {
+      sopsFile = "${inputs.nix-secrets}/infra/terraform.yaml";
+    };
+    secrets.garage_admin_token = {
+      sopsFile = "${inputs.nix-secrets}/infra/terraform.yaml";
+    };
 
     # Rendered env file injected into the service (keeps secrets OUT of the
     # world-readable /etc/garage.toml in the Nix store). Garage reads these env vars.

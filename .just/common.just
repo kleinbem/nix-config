@@ -13,8 +13,13 @@ ROOT := parent_directory(justfile())
 META := absolute_path(ROOT / "..")
 
 # Sibling sub-flakes that nix-config depends on, discovered at parse time.
-# nix-secrets excluded here on purpose — see OVERRIDES below.
-SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets' -printf '%f\n' 2>/dev/null | xargs echo -n")
+# nix-secrets excluded here on purpose — see OVERRIDES below. Excluded by
+# glob (nix-secrets*), not exact name, so a renamed/archived checkout (e.g.
+# nix-secrets.deleted) can't leak back in as a bogus sibling — nix's flake
+# CLI parses dots in --override-input names as nested attribute paths, so a
+# stray "nix-secrets.deleted" directory here produces an "invalid flake
+# input attribute path element" error instead of silently no-opping.
+SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling.
 #
