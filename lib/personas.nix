@@ -257,9 +257,7 @@ let
       let
         dups = _findDuplicates "email" contact;
       in
-      lib.assertMsg (
-        dups == [ ]
-      ) "duplicate email(s) in contact data: ${lib.concatStringsSep ", " dups}";
+      lib.assertMsg (dups == [ ]) "duplicate email(s) in contact data: ${lib.concatStringsSep ", " dups}";
 
   assertUniqueMatrixIds =
     if !contactAvailable then
