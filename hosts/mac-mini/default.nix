@@ -320,17 +320,21 @@ in
       # No Discord — this instance isn't reachable by chat yet, just a
       # `machinectl shell hermes-juan hermes` / herdr-attached session.
       # Real Gemini via hermes-agent's native adapter (not the local
-      # LiteLLM gateway `hermes` above uses) — matches juan's declared
-      # model in personas.nix. GEMINI_API_KEY needs to actually exist at
-      # nix-secrets/personas/juan/gemini_api_key before this works; the
-      # rule is wired, the key itself is a separate step (real credential,
-      # can't be invented).
+      # LiteLLM gateway `hermes` above uses). Deployed + verified live
+      # 2026-08-08 (real API round-trip via `hermes -z '...'`).
+      #
+      # model override: gemini-2.5-pro (juan's declared model in
+      # personas.nix) has zero quota on kleinbem-ai's free tier — confirmed
+      # live, Google gates Pro behind billing. gemini-flash-latest is what
+      # actually works today; switch back to gemini-2.5-pro (or drop this
+      # override to fall back to the preset default) once/if billing gets
+      # enabled on the project.
       hermes-juan = {
         enable = true;
         ip = "10.85.50.8/24";
         hostDataDir = "/var/lib/hermes-juan";
         memoryLimit = "2G";
-        model = "gemini/gemini-2.5-pro";
+        model = "gemini/gemini-flash-latest";
         secretsFile = config.sops.templates."hermes-juan.env".path;
         gitIdentity = {
           name = "Juan González";
