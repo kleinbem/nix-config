@@ -51,6 +51,7 @@ in
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.hermes-juan
+    inputs.nix-presets.nixosModules.persona-runtime
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
@@ -341,6 +342,37 @@ in
           email = "juan@kleinbem.dev";
           signingKeyFile = config.sops.secrets.juan_signing_key.path;
         };
+      };
+
+      # Generic, persona-agnostic worker — see nix-presets/containers/
+      # persona-runtime.nix's header comment for the full "why one
+      # container, not one per persona" reasoning (up to ~200 personas,
+      # never concurrent, made hermes-juan's standing-container-per-
+      # persona shape the wrong model). scripts/persona-invoke.sh writes
+      # real identity into the three files below immediately before each
+      # `machinectl start persona-runtime`, then shreds them after. Fixed
+      # paths, root:root — the invoke script needs sudo/root to write
+      # them anyway (same requirement as machinectl start/stop itself).
+      #
+      # hostDataDir is intentionally NOT in this host's persistence list
+      # below (unlike hermes-juan's /var/lib/hermes-juan). It's a
+      # host-side bind mount, so the container's own `ephemeral` rootfs
+      # reset does NOT clear it — if it persisted across reboots, one
+      # persona's session/memory state (hermes-agent's state.db) would
+      # bleed into the next persona's context on this SAME shared
+      # runtime. persona-invoke.sh wipes its contents before every
+      # start, which already gives a clean slate per invocation; letting
+      # it survive a reboot with stale content from whoever ran last
+      # would only matter for the narrow case of a mid-session crash,
+      # not worth the persistence-list entry.
+      persona-runtime = {
+        enable = true;
+        ip = "10.85.50.9/24";
+        hostDataDir = "/var/lib/persona-runtime-data";
+        memoryLimit = "2G";
+        secretsEnvFile = "/var/lib/persona-runtime/agent.env";
+        gitConfigFile = "/var/lib/persona-runtime/gitconfig";
+        signingKeyFile = "/var/lib/persona-runtime/signing-key";
       };
     };
   };
