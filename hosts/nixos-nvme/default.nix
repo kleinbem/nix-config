@@ -174,6 +174,9 @@
       # Physical-hardware quirk specific to this desktop's YubiKey — see the
       # file for why it lives here rather than in the shared home.nix.
       ./ssh-fido-recovery.nix
+      # Pulls Caddy's internal root CA over SSH from core-pi (the only host
+      # that runs it) — host-specific because it hardcodes that relationship.
+      ./caddy-ca-refresh.nix
     ];
   };
   home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";

@@ -113,6 +113,17 @@
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
+      # LiteLLM's real admin/management credential — mints virtual keys,
+      # Teams, budgets. Was a hardcoded "sk-1234" placeholder baked
+      # straight into the Nix store (nix-presets/containers/litellm.nix)
+      # until 2026-08-09; the container is still `enable = false` below so
+      # nothing live was ever exposed, but it needed a real value before
+      # turning it on for anything real. Generate with e.g.
+      # `openssl rand -hex 32`, then `sops nix/per-host/nixos-nvme.yaml`.
+      litellm_master_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+
       # API Keys
       github_pat = {
         owner = "martin";
@@ -199,7 +210,12 @@
       "litellm.env" = {
         mode = "0444";
         content = ''
-          # Optional: OpenAI/Anthropic keys for backends
+          LITELLM_MASTER_KEY=${config.sops.placeholder.litellm_master_key}
+          # Per-backend API keys go here as they're added — each backend's
+          # apiKeyEnvVar (my.containers.litellm.backends[].apiKeyEnvVar)
+          # must name a var defined in this file. Current backends
+          # (qwen-32b-ollama, gemma-2b-orin) are unauthenticated local
+          # servers, apiKeyEnvVar = null, nothing needed here for them yet.
         '';
       };
       "agent-team.env" = {

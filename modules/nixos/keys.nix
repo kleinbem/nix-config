@@ -23,6 +23,16 @@
     # Temporary root builder key
     temp-builder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfniLMozPzqGcLeIDEwAsGcG7ndYhqaO6elSjB57HkH root@nixos-nvme";
 
+    # Plain (non-FIDO2) key for nixos-nvme's daily unattended pull of Caddy's
+    # internal root CA from core-pi (hosts/nixos-nvme/caddy-ca-refresh.nix) —
+    # a systemd user timer, so it can't wait for a YubiKey touch the way the
+    # main fido2 key requires. Deliberately not hardware-backed: the
+    # `restrict`+`command=` prefix means this key can do nothing but read one
+    # already-public root certificate, so there's nothing worth protecting
+    # with a touch requirement. Private half lives only at
+    # ~/.ssh/id_ed25519_caddy_ca_refresh on nixos-nvme, never in the nix store.
+    caddy-ca-refresh = ''command="cat /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfu0f4YfeLsHx9CO4BZtgBpx1YJ8Qdv7LwM57zyBVP/ refresh-caddy-ca@nixos-nvme'';
+
     # Per-persona signing public keys. Populated when each persona's
     # private key is generated (Phase 1 — Stalwart provisioning). Until
     # then the entries are empty strings; consumers (allowed_signers
