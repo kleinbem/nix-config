@@ -32,11 +32,14 @@
     #   ssh-keygen -t ed25519 -C "<email>" -f sops/personas/<name>/id_ed25519 -N ""
     #   # then paste the .pub contents below.
     personas = {
-      michael = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael@kleinbem.dev";
-      thomas = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas@kleinbem.dev";
-      daniel = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel@kleinbem.dev";
-      rahul = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArxoaUKMOS99lj9nWWgQ5zA9SBcowCWUi63HyPEE0XO rahul@kleinbem.dev";
-      juan = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan@kleinbem.dev";
+      # Trailing string is just an SSH key comment (cosmetic label, not part
+      # of the key material) — kept in sync with kleinbem-secrets/personas/
+      # contact.nix's email field for readability, not load-bearing.
+      michael = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael.gruber@kleinbem.dev";
+      thomas = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas.schmidt@kleinbem.dev";
+      daniel = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel.meier@kleinbem.dev";
+      rahul = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArxoaUKMOS99lj9nWWgQ5zA9SBcowCWUi63HyPEE0XO rahul.kumar@kleinbem.dev";
+      juan = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan.gonzalez@kleinbem.dev";
     };
   };
 

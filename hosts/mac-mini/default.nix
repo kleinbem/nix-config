@@ -17,23 +17,26 @@
 let
   keys = import "${self}/modules/nixos/keys.nix";
 
-  # Git commit-author identity per invocable persona-runtime persona.
-  # Non-secret (git author name/email is public the moment anything gets
-  # pushed) — same reasoning hermes-juan's gitIdentity block already relies
-  # on below. Which secrets exist (signing key / API key) is derived from
-  # personas.nix + config.sops.secrets in the persona-runtime block itself;
-  # this map only needs an entry for personas actually reachable through
-  # persona-invoke today.
-  personaGitIdentities = {
-    juan = {
-      fullName = "Juan González";
-      email = "juan@kleinbem.dev";
-    };
-    michael = {
-      fullName = "Michael Gruber";
-      email = "michael@kleinbem.dev";
-    };
+  # Persona identity (full-name/email) for git commit authorship, sourced
+  # live from kleinbem-secrets/personas/contact.nix via lib/personas.nix's
+  # joined view, instead of a hand-maintained duplicate map here. That
+  # file is plain Nix since 2026-08-09 (full-name/email become public the
+  # moment a persona commits anything, so encrypting it at rest never
+  # bought real confidentiality) — importable directly, no decrypt dance.
+  # Sourcing live also removes the risk of this file drifting from the
+  # actual source of truth (a near miss: almost shipped a guessed name for
+  # michael before this).
+  personasView = import "${self}/lib/personas.nix" {
+    inherit lib;
+    contact = import "${inputs.nix-secrets}/personas/contact.nix";
   };
+  # Which persona names get their own invocable persona-runtime slot —
+  # currently the two with a tool wired into that container's toolSpecs
+  # (gemini-cli, claude-code). Extend as more tools get wired in there.
+  invocablePersonaNames = [
+    "juan"
+    "michael"
+  ];
 in
 {
   imports = [
@@ -356,8 +359,8 @@ in
         model = "gemini/gemini-flash-latest";
         secretsFile = config.sops.templates."hermes-juan.env".path;
         gitIdentity = {
-          name = "Juan González";
-          email = "juan@kleinbem.dev";
+          name = personasView.all.juan."full-name";
+          email = personasView.all.juan.email;
           signingKeyFile = config.sops.secrets.juan_signing_key.path;
         };
       };
@@ -392,25 +395,27 @@ in
         gitConfigFile = "/var/lib/persona-runtime/gitconfig";
         signingKeyFile = "/var/lib/persona-runtime/signing-key";
 
-        # Built from personaGitIdentities (above) ⋈ the sops secrets
-        # hosts/mac-mini/secrets.nix declares per invocable persona
-        # (personaRuntimeSecrets loop, driven by personas.nix's tool field
-        # — must be a key in nix-presets/containers/persona-runtime.nix's
-        # toolSpecs / this host's toolApiKeyField). No live git checkout /
-        # nix eval / sops shell-out needed on this host at invoke time —
-        # `persona-invoke <name>` (packaged by nix-presets/containers/
-        # persona-runtime.nix, in PATH via environment.systemPackages) just
-        # reads the paths below, already decrypted at activation.
-        personas = lib.mapAttrs (name: ident: {
-          tool = (import ../../personas.nix).${name}.tool;
+        # Built from personasView (above, live from personas.nix +
+        # contact.nix) ⋈ the sops secrets hosts/mac-mini/secrets.nix
+        # declares per invocable persona (personaRuntimeSecrets loop,
+        # driven by personas.nix's tool field — must be a key in
+        # nix-presets/containers/persona-runtime.nix's toolSpecs / this
+        # host's toolApiKeyField). No live git checkout / sops shell-out
+        # needed on this host at invoke time — `persona-invoke <name>`
+        # (packaged by nix-presets/containers/persona-runtime.nix, in PATH
+        # via environment.systemPackages) just reads the paths below,
+        # already decrypted at activation.
+        personas = lib.genAttrs invocablePersonaNames (name: {
+          tool = personasView.all.${name}.tool;
           signingKeyPath = config.sops.secrets."persona_${name}_signing_key".path;
           apiKeyPath =
             if config.sops.secrets ? "persona_${name}_api_key" then
               config.sops.secrets."persona_${name}_api_key".path
             else
               null;
-          inherit (ident) fullName email;
-        }) personaGitIdentities;
+          fullName = personasView.all.${name}."full-name";
+          email = personasView.all.${name}.email;
+        });
       };
     };
   };

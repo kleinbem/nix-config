@@ -16,21 +16,17 @@ set working-directory := ".."
 # The Stalwart/SES Terraform changes don't run on every add — only when
 # DNS/IAM needs updating (rare). Per-persona setup is fast (~30s).
 
-# Both recipes below decrypt kleinbem-secrets/personas/contact.nix (real PII
-# — names/emails/Matrix IDs, whole-file sops binary-mode) into a tmpfs temp
-# file, `import` THAT instead of the ciphertext, then shred it on exit.
-# Interactive recipes (unlike hosts/mac-mini/secrets.nix's old approach) can
-# just shell out to sops directly — no Nix-eval-time constraint here. Fixed
-# 2026-08-08; previously read plaintext from the legacy nix-secrets repo.
+# Both recipes below `import` kleinbem-secrets/personas/contact.nix directly
+# — plain Nix since 2026-08-09 (full-name/email/etc. become public the
+# moment a persona commits anything, so sops-encrypting them at rest never
+# bought real confidentiality; protected by the private repo only now,
+# matching the file's own original design intent).
 [group("Personas")]
 list:
     #!/usr/bin/env bash
     set -euo pipefail
-    WORK="$(mktemp -d /dev/shm/personas-list-XXXXXX)"
-    trap 'find "$WORK" -type f -exec shred -u {} \; 2>/dev/null; rm -rf "$WORK"' EXIT
-    sops -d --input-type binary --output-type binary ../kleinbem-secrets/personas/contact.nix > "$WORK/contact.nix"
     echo "🎭 Personas declared in personas.nix:"
-    CONTACT_PATH="$WORK/contact.nix" nix eval --raw --impure --expr \
+    CONTACT_PATH="../kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
         'let
             lib = (import <nixpkgs> {}).lib;
             contactPath = builtins.getEnv "CONTACT_PATH";
@@ -47,12 +43,9 @@ list:
 team:
     #!/usr/bin/env bash
     set -euo pipefail
-    WORK="$(mktemp -d /dev/shm/personas-team-XXXXXX)"
-    trap 'find "$WORK" -type f -exec shred -u {} \; 2>/dev/null; rm -rf "$WORK"' EXIT
-    sops -d --input-type binary --output-type binary ../kleinbem-secrets/personas/contact.nix > "$WORK/contact.nix"
     echo "👥 Regenerating team page in kleinbem-secrets/docs/ (private)..."
     mkdir -p ../kleinbem-secrets/docs
-    CONTACT_PATH="$WORK/contact.nix" nix eval --raw --impure --expr \
+    CONTACT_PATH="../kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
         'let
             lib = (import <nixpkgs> {}).lib;
             contactPath = builtins.getEnv "CONTACT_PATH";

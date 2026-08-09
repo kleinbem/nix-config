@@ -38,9 +38,11 @@ META_ROOT="$(dirname "$NIX_CONFIG")"
 PERSONAS_NIX="$NIX_CONFIG/personas.nix"
 KEYS_NIX="$NIX_CONFIG/modules/nixos/keys.nix"
 # kleinbem-secrets holds signing key + mailbox password (cutover 2026-08-07)
-# AND personas-contact.nix (real PII, sops binary-mode whole-file encryption
-# — decrypted into $WORK below rather than imported directly, since this is
-# an interactive script with real sops access, no Nix-eval-time constraint).
+# AND personas/contact.nix (public-destined identity data — full-name/email/
+# bio/etc; git commit authorship for a persona becomes public the moment
+# they commit anything, so encrypting it at rest never bought real
+# confidentiality — plain Nix, protected by the private repo only, since
+# 2026-08-09).
 SECRETS_REPO="$META_ROOT/kleinbem-secrets"
 PERSONA_YAML="$SECRETS_REPO/personas/$NAME.yaml"
 
@@ -65,10 +67,10 @@ if ! grep -q "&persona_${NAME}\b" "$SECRETS_REPO/.sops.yaml" 2>/dev/null; then
   echo "   README.md's 'Adding a new scope' section to onboard it properly first." >&2
 fi
 
-# email/full-name are PII — they live in kleinbem-secrets/personas/contact.nix,
-# not the public personas.nix, and are only available via lib/personas.nix's
-# joined view (see that file's header comment).
-sops -d --input-type binary --output-type binary "$SECRETS_REPO/personas/contact.nix" >"$WORK/contact.nix"
+# full-name/email live in kleinbem-secrets/personas/contact.nix (plain Nix,
+# not the public personas.nix), only available via lib/personas.nix's joined
+# view (see that file's header comment). Plain since 2026-08-09 — imported
+# directly, no decrypt step needed.
 persona_field() {
   nix eval --impure --raw --expr "
     let
@@ -76,7 +78,7 @@ persona_field() {
       lib = flake.inputs.nixpkgs.lib;
       personas = import \"$NIX_CONFIG/lib/personas.nix\" {
         inherit lib;
-        contact = import \"$WORK/contact.nix\";
+        contact = import \"$SECRETS_REPO/personas/contact.nix\";
       };
     in personas.all.$NAME.$1
   "

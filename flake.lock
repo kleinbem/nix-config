@@ -1493,11 +1493,11 @@
     "nix-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1786164488,
-        "narHash": "sha256-BFnuCbUWrOrAE7r4V6rm/TLv9+aggznEQnTbJdGPUFs=",
+        "lastModified": 1786272115,
+        "narHash": "sha256-HBcnbVTv1LqgZEUDSVq6f1SzI6Lg3RRsHIUGvT4O4p8=",
         "owner": "kleinbem",
         "repo": "kleinbem-secrets",
-        "rev": "36578a72e8b3ee0590d7f568bc957a8f30d11032",
+        "rev": "bee3aefaaafbd261b999386d1ff223fe5a0c1f7c",
         "type": "github"
       },
       "original": {
