@@ -84,8 +84,17 @@
       buzz_garage_admin_token = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -base64 32`
+      # mode 0444: services.typesense's own module `cat`s apiKeyFile
+      # INSIDE its script=, which runs as the unprivileged static
+      # `typesense` user (after DynamicUser was disabled for the
+      # StateDirectory-vs-bind-mount fix below) — the sops-nix default
+      # 0400/root:root left it unreadable there ("Permission denied",
+      # confirmed live 2026-08-09). No new exposure: the same value is
+      # already sitting in the 0444 buzz.env template two secrets below,
+      # readable by every process in this container regardless.
       buzz_typesense_api_key = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        mode = "0444";
       };
 
       # Service Internal Secrets
