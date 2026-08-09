@@ -10,15 +10,24 @@
 #   nix/per-host/<host>.yaml         per-host sopsFile overrides
 #   initrd/cryptroot_<host>.jwe      my.boot.clevis-initrd secretFile
 #   initrd/ssh_host_ed25519_key_*    rpi5-node + orin-nano initrd SSH host keys
+#   personas/contact.nix             hosts/mac-mini/default.nix's personasView
 #
-# NOT covered here (matches pre-2026-08-07 status quo, not a regression):
-# personas/*.yaml — mac-mini's juan_signing_key/juan_gemini_api_key already
-# tolerated a missing sopsFile before this cutover (validateSopsFiles =
-# false), so mac-mini's dummy build behavior is unchanged either way.
+# personas/*.yaml (sops-encrypted, per-persona signing/API keys) are NOT
+# covered here — mac-mini's persona secrets already tolerate a missing
+# sopsFile (validateSopsFiles = false), so that part of the dummy build
+# behavior is unchanged. personas/contact.nix is different: it's plain Nix
+# (reverted from sops-encrypted 2026-08-09 — full-name/email are git
+# commit-author identity, so they're public the moment a persona commits
+# anything; see kleinbem-secrets/personas/contact.nix's own header), so
+# hosts/mac-mini/default.nix `import`s it directly and unconditionally at
+# eval time — validateSopsFiles doesn't apply to a plain import, so a
+# missing file here fails the BUILD outright ("path ... does not exist"),
+# not just a degraded eval. Names below must match nix-config/personas.nix's
+# attribute names — keep in sync when a persona is added/renamed there.
 set -euo pipefail
 
 out="${1:-/tmp/dummy-secrets}"
-mkdir -p "$out/initrd" "$out/nix/per-host"
+mkdir -p "$out/initrd" "$out/nix/per-host" "$out/personas"
 echo "{}" >"$out/nix/shared.yaml"
 
 for host in nixos-nvme core-pi orin-nano mac-mini; do
@@ -33,3 +42,23 @@ for host in nixos-nvme core-pi hass-pi orin-nano; do
       -f "$out/initrd/ssh_host_ed25519_key_${host}"
   fi
 done
+
+{
+  echo "{"
+  for name in martin michael-gruber thomas-schmidt daniel-meier rahul-kumar juan-gonzalez; do
+    cat <<EOF
+  "${name}" = {
+    full-name = "CI Dummy (${name})";
+    email = "${name}@ci-dummy.invalid";
+    matrix-id = "@${name}:ci-dummy.invalid";
+    github-account = null;
+    discord-id = "0";
+    oidc-subject = "${name}@ci-dummy.invalid";
+    origin = "CI";
+    timezone = "UTC";
+    bio = "CI dummy contact — see setup-dummy-secrets.sh.";
+  };
+EOF
+  done
+  echo "}"
+} >"$out/personas/contact.nix"
