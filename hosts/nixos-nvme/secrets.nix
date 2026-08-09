@@ -68,13 +68,11 @@
       };
       u2f_keys = { };
       # Buzz (Nostr relay) — 32-byte hex Nostr signing key + Garage RPC/admin
-      # creds + Typesense admin key. buzz_typesense_api_key is also used
-      # directly as services.typesense.apiKeyFile (raw value, no template
-      # needed there — see hosts/nixos-nvme/containers.nix).
-      # buzz_s3_access_key/buzz_s3_secret_key don't exist yet — they're a
-      # Garage S3 API key created via the one-time init documented at the
-      # bottom of nix-presets/containers/buzz.nix, added here once you have
-      # them. Until then buzz-relay starts but its S3 calls fail.
+      # creds + Typesense admin key + Garage S3 API key (buzz_s3_access_key/
+      # buzz_s3_secret_key, created via the one-time init documented at the
+      # bottom of nix-presets/containers/buzz.nix, 2026-08-09). buzz_typesense_api_key
+      # is also used directly as services.typesense.apiKeyFile (raw value, no
+      # template needed there — see hosts/nixos-nvme/containers.nix).
       buzz_relay_private_key = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
@@ -95,6 +93,12 @@
       buzz_typesense_api_key = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
         mode = "0444";
+      };
+      buzz_s3_access_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+      buzz_s3_secret_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
       # Service Internal Secrets
@@ -244,12 +248,11 @@
           BUZZ_RELAY_PRIVATE_KEY=${config.sops.placeholder.buzz_relay_private_key}
           GARAGE_RPC_SECRET=${config.sops.placeholder.buzz_garage_rpc_secret}
           GARAGE_ADMIN_TOKEN=${config.sops.placeholder.buzz_garage_admin_token}
-          # TODO: not created yet — see the one-time init at the bottom of
-          # nix-presets/containers/buzz.nix. Until buzz_s3_access_key/
-          # buzz_s3_secret_key exist as sops secrets, buzz-relay starts with
-          # empty S3 creds and its S3 calls fail (Garage itself is fine).
-          BUZZ_S3_ACCESS_KEY=
-          BUZZ_S3_SECRET_KEY=
+          # Created via the one-time init at the bottom of
+          # nix-presets/containers/buzz.nix (garage bucket create buzz-media
+          # + garage key create buzz-relay-key), 2026-08-09.
+          BUZZ_S3_ACCESS_KEY=${config.sops.placeholder.buzz_s3_access_key}
+          BUZZ_S3_SECRET_KEY=${config.sops.placeholder.buzz_s3_secret_key}
           TYPESENSE_API_KEY=${config.sops.placeholder.buzz_typesense_api_key}
         '';
       };
