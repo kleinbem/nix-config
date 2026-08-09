@@ -362,8 +362,15 @@
       monitoring = {
         enabled = true;
         ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
+        # Not proxied through Caddy under a *.kleinbem.dev domain (unlike
+        # n8n/code-server/etc, which pair `port` with a real `externalPort`
+        # + `domain`) — reached directly on this port. A stale
+        # `externalPort = 3001` used to live here with nothing ever bound to
+        # it (Grafana's actual listener is this `port`, set via
+        # server.http_port in nix-presets/containers/monitoring.nix); the
+        # generic `service-launchers` desktop entry prefers externalPort over
+        # port when both exist, so it was silently pointing at a dead port.
         port = 3000;
-        externalPort = 3001;
         auth = true; # Protected by Authelia
         meta = {
           name = "Monitoring";
