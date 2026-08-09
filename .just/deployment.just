@@ -60,7 +60,54 @@ deploy host:
         echo "✅ Host is booted from the SSD."
     fi
 
-    env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on {{host}}
+    # colmena's ssh subprocess bypasses the interactive-shell-only FIDO2
+    # recovery wrapper (hosts/nixos-nvme/ssh-fido-recovery.nix's
+    # home.shellAliases.ssh — aliases don't apply to subprocesses spawned
+    # directly, only to commands typed at an interactive prompt), so it
+    # always hits raw stock ssh. A transient CTAP2/PIN-signing glitch that
+    # wrapper would normally clear via usbreset + ssh-agent restart instead
+    # kills the whole deploy on the first hit, even with correct PIN+touch
+    # (confirmed 2026-08-09, reproduced twice in a row against core-pi).
+    # Mirror that same two-tier recovery here, around colmena itself.
+    yubikey_id="1050:0406"
+    errfile="$(mktemp)"
+    trap 'rm -f "$errfile"' EXIT
+
+    is_fido_glitch() {
+        grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)' "$errfile"
+    }
+
+    try_apply() {
+        : > "$errfile"
+        env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on {{host}} 2> >(tee "$errfile" >&2)
+    }
+
+    if try_apply; then
+        :
+    else
+        status=$?
+        if is_fido_glitch; then
+            echo "⚠️  Detected FIDO2 signing glitch — resetting YubiKey ($yubikey_id) and retrying..." >&2
+            usbreset "$yubikey_id" >/dev/null 2>&1 || true
+            sleep 1
+            if try_apply; then
+                :
+            else
+                status=$?
+                if is_fido_glitch; then
+                    echo "⚠️  Still glitching after USB reset — restarting ssh-agent and retrying once more..." >&2
+                    systemctl --user restart ssh-agent.service 2>/dev/null || true
+                    sleep 1
+                    try_apply
+                else
+                    exit "$status"
+                fi
+            fi
+        else
+            exit "$status"
+        fi
+    fi
+
     just deployment::push-cache {{host}}
 
     # Post-flight sync: Ensure the boot files are fully copied before we report success
