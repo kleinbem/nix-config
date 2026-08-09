@@ -1,8 +1,37 @@
 {
   inputs,
   config,
+  lib,
   ...
 }:
+let
+  # Every persona whose declared tool is wired into the shared
+  # persona-runtime container (nix-presets/containers/persona-runtime.nix
+  # — currently just hermes-agent/gemini-cli). Declaring these via a loop
+  # over personas.nix rather than one-off entries per persona is the point
+  # of the persona-runtime redesign: adding a new invocable persona is
+  # "add them to personas.nix with tool = gemini-cli", not "hand-write a
+  # new sops.secrets block". validateSopsFiles = false below means this is
+  # safe even before a given persona's kleinbem-secrets/personas/<name>.yaml
+  # actually has a gemini_api_key key yet.
+  geminiPersonaNames = builtins.attrNames (
+    lib.filterAttrs (_: p: p.tool == "gemini-cli") (import ../../personas.nix)
+  );
+  personaRuntimeSecrets = lib.listToAttrs (
+    lib.concatMap (name: [
+      (lib.nameValuePair "persona_${name}_signing_key" {
+        sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
+        key = "id_ed25519";
+        mode = "0400";
+      })
+      (lib.nameValuePair "persona_${name}_gemini_api_key" {
+        sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
+        key = "gemini_api_key";
+        mode = "0400";
+      })
+    ]) geminiPersonaNames
+  );
+in
 {
   sops = {
     defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
@@ -64,17 +93,14 @@
 
       # Real Gemini backend for juan's Hermes worker (hermes-agent's native
       # Gemini adapter, not the local LiteLLM gateway) — see
-      # nix-presets/containers/hermes-juan.nix's settings.model.
-      # NOT YET REAL: gemini_api_key was never created for juan in either
-      # secrets repo (rule/schema is wired, the actual credential is a
-      # separate manual step — same status quo as before this cutover,
-      # validateSopsFiles = false below keeps the build from failing on it).
+      # nix-presets/containers/hermes-juan.nix's settings.model. Real key,
+      # provisioned live via Terraform (nix/infra/google.tf) 2026-08-08.
       juan_gemini_api_key = {
         sopsFile = "${inputs.nix-secrets}/personas/juan.yaml";
         key = "gemini_api_key";
         mode = "0400";
       };
-    };
+    } // personaRuntimeSecrets;
 
     templates."hermes-juan.env" = {
       mode = "0444";

@@ -16,6 +16,20 @@
 }:
 let
   keys = import "${self}/modules/nixos/keys.nix";
+
+  # Git commit-author identity per invocable persona-runtime persona.
+  # Non-secret (git author name/email is public the moment anything gets
+  # pushed) — same reasoning hermes-juan's gitIdentity block already relies
+  # on below. Which secrets exist (signing key / API key) is derived from
+  # personas.nix + config.sops.secrets in the persona-runtime block itself;
+  # this map only needs an entry for personas actually reachable through
+  # persona-invoke today.
+  personaGitIdentities = {
+    juan = {
+      fullName = "Juan González";
+      email = "juan@kleinbem.dev";
+    };
+  };
 in
 {
   imports = [
@@ -373,6 +387,24 @@ in
         secretsEnvFile = "/var/lib/persona-runtime/agent.env";
         gitConfigFile = "/var/lib/persona-runtime/gitconfig";
         signingKeyFile = "/var/lib/persona-runtime/signing-key";
+
+        # Built from personaGitIdentities (above) ⋈ the sops secrets
+        # hosts/mac-mini/secrets.nix declares per gemini-cli persona
+        # (personaRuntimeSecrets loop, driven by personas.nix's tool
+        # field). No live git checkout / nix eval / sops shell-out needed
+        # on this host at invoke time — `persona-invoke <name>` (packaged
+        # by nix-presets/containers/persona-runtime.nix, in PATH via
+        # environment.systemPackages) just reads the paths below, already
+        # decrypted at activation.
+        personas = lib.mapAttrs (name: ident: {
+          signingKeyPath = config.sops.secrets."persona_${name}_signing_key".path;
+          apiKeyPath =
+            if config.sops.secrets ? "persona_${name}_gemini_api_key" then
+              config.sops.secrets."persona_${name}_gemini_api_key".path
+            else
+              null;
+          inherit (ident) fullName email;
+        }) personaGitIdentities;
       };
     };
   };
