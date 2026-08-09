@@ -90,11 +90,12 @@ in
       # Juan's persona git-signing identity. kleinbem-secrets stores personas
       # one-YAML-per-persona (cutover 2026-08-07) rather than nix-secrets' old
       # one-file-per-secret layout, so this is now a keyed value inside
-      # personas/juan.yaml, not its own binary-mode sopsFile. Consumed by the
-      # juan Hermes instance (hosts/mac-mini/default.nix
-      # my.containers.hermes-juan) for git commit signing as that persona.
-      juan_signing_key = {
-        sopsFile = "${inputs.nix-secrets}/personas/juan.yaml";
+      # personas/juan-gonzalez.yaml (first-lastname slug as of 2026-08-09),
+      # not its own binary-mode sopsFile. Consumed by the juan Hermes
+      # instance (hosts/mac-mini/default.nix my.containers.hermes-juan) for
+      # git commit signing as that persona.
+      juan_gonzalez_signing_key = {
+        sopsFile = "${inputs.nix-secrets}/personas/juan-gonzalez.yaml";
         key = "id_ed25519";
         mode = "0400";
       };
@@ -103,8 +104,8 @@ in
       # Gemini adapter, not the local LiteLLM gateway) — see
       # nix-presets/containers/hermes-juan.nix's settings.model. Real key,
       # provisioned live via Terraform (nix/infra/google.tf) 2026-08-08.
-      juan_gemini_api_key = {
-        sopsFile = "${inputs.nix-secrets}/personas/juan.yaml";
+      juan_gonzalez_gemini_api_key = {
+        sopsFile = "${inputs.nix-secrets}/personas/juan-gonzalez.yaml";
         key = "gemini_api_key";
         mode = "0400";
       };
@@ -113,7 +114,7 @@ in
     templates."hermes-juan.env" = {
       mode = "0444";
       content = ''
-        GEMINI_API_KEY=${config.sops.placeholder.juan_gemini_api_key}
+        GEMINI_API_KEY=${config.sops.placeholder.juan_gonzalez_gemini_api_key}
       '';
     };
 

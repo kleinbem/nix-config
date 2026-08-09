@@ -35,11 +35,11 @@
       # Trailing string is just an SSH key comment (cosmetic label, not part
       # of the key material) — kept in sync with kleinbem-secrets/personas/
       # contact.nix's email field for readability, not load-bearing.
-      michael = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael.gruber@kleinbem.dev";
-      thomas = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas.schmidt@kleinbem.dev";
-      daniel = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel.meier@kleinbem.dev";
-      rahul = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArxoaUKMOS99lj9nWWgQ5zA9SBcowCWUi63HyPEE0XO rahul.kumar@kleinbem.dev";
-      juan = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan.gonzalez@kleinbem.dev";
+      michael-gruber = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael.gruber@kleinbem.dev";
+      thomas-schmidt = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas.schmidt@kleinbem.dev";
+      daniel-meier = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel.meier@kleinbem.dev";
+      rahul-kumar = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArxoaUKMOS99lj9nWWgQ5zA9SBcowCWUi63HyPEE0XO rahul.kumar@kleinbem.dev";
+      juan-gonzalez = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan.gonzalez@kleinbem.dev";
     };
   };
 

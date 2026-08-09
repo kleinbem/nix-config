@@ -14,9 +14,11 @@
 #
 #   kind          "human" | "agent" — determines provisioning rules.
 #   date-joined   ISO date.
-#   signing-key   Persona name key in kleinbem-secrets/personas/<name>.yaml
-#                 (the key name itself is not sensitive; the private key
-#                 value inside IS, and lives encrypted there).
+#   signing-key   Legacy/uniqueness-check label only — every persona's
+#                 actual signing key lives at the same `id_ed25519` key
+#                 inside kleinbem-secrets/personas/<name>.yaml regardless
+#                 of this field's value. lib/personas.nix's
+#                 assertUniqueSigningKeys is the only real consumer.
 #   tool          "human" for humans; AI tool name for agents.
 #   model         null for humans; specific LLM for agents.
 #   role-tags     Capability tags consumed by authorization policy.
@@ -49,10 +51,10 @@
 
   # ─── AI agents ────────────────────────────────────────────────────
 
-  michael = {
+  michael-gruber = {
     kind = "agent";
     date-joined = "2026-06-16";
-    signing-key = "id_ed25519_michael";
+    signing-key = "id_ed25519_michael-gruber";
     tool = "claude-code";
     model = "claude-opus-4-7";
     role-tags = [
@@ -64,10 +66,10 @@
     active-hours = "08-18";
   };
 
-  thomas = {
+  thomas-schmidt = {
     kind = "agent";
     date-joined = "2026-06-16";
-    signing-key = "id_ed25519_thomas";
+    signing-key = "id_ed25519_thomas-schmidt";
     tool = "aider";
     model = "claude-sonnet-4-6";
     role-tags = [
@@ -77,10 +79,10 @@
     active-hours = "09-17";
   };
 
-  daniel = {
+  daniel-meier = {
     kind = "agent";
     date-joined = "2026-06-16";
-    signing-key = "id_ed25519_daniel";
+    signing-key = "id_ed25519_daniel-meier";
     tool = "antigravity";
     model = "claude-opus-4-7";
     role-tags = [
@@ -90,10 +92,10 @@
     active-hours = "09-18";
   };
 
-  rahul = {
+  rahul-kumar = {
     kind = "agent";
     date-joined = "2026-06-16";
-    signing-key = "id_ed25519_rahul";
+    signing-key = "id_ed25519_rahul-kumar";
     tool = "self-hosted-runner";
     model = "claude-haiku-4-5-20251001";
     role-tags = [
@@ -102,10 +104,10 @@
     active-hours = "00-23";
   };
 
-  juan = {
+  juan-gonzalez = {
     kind = "agent";
     date-joined = "2026-06-16";
-    signing-key = "id_ed25519_juan";
+    signing-key = "id_ed25519_juan-gonzalez";
     tool = "gemini-cli";
     model = "gemini-2.5-pro";
     role-tags = [

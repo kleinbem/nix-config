@@ -37,34 +37,34 @@
     backup = null; # founder; no human backup
   };
 
-  michael = {
+  michael-gruber = {
     status = "active";
     status-since = "2026-06-16";
     status-note = "";
     return-date = null;
     leave-type = null;
-    backup = "thomas";
+    backup = "thomas-schmidt";
   };
 
-  thomas = {
+  thomas-schmidt = {
     status = "active";
     status-since = "2026-06-16";
     status-note = "";
     return-date = null;
     leave-type = null;
-    backup = "michael";
+    backup = "michael-gruber";
   };
 
-  daniel = {
+  daniel-meier = {
     status = "active";
     status-since = "2026-06-16";
     status-note = "";
     return-date = null;
     leave-type = null;
-    backup = "michael";
+    backup = "michael-gruber";
   };
 
-  rahul = {
+  rahul-kumar = {
     status = "active";
     status-since = "2026-06-16";
     status-note = "";
@@ -73,12 +73,12 @@
     backup = null; # CI persona — no human backup needed
   };
 
-  juan = {
+  juan-gonzalez = {
     status = "active";
     status-since = "2026-06-16";
     status-note = "";
     return-date = null;
     leave-type = null;
-    backup = "daniel";
+    backup = "daniel-meier";
   };
 }

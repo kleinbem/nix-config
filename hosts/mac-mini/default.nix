@@ -34,8 +34,8 @@ let
   # currently the two with a tool wired into that container's toolSpecs
   # (gemini-cli, claude-code). Extend as more tools get wired in there.
   invocablePersonaNames = [
-    "juan"
-    "michael"
+    "juan-gonzalez"
+    "michael-gruber"
   ];
 in
 {
@@ -359,9 +359,9 @@ in
         model = "gemini/gemini-flash-latest";
         secretsFile = config.sops.templates."hermes-juan.env".path;
         gitIdentity = {
-          name = personasView.all.juan."full-name";
-          email = personasView.all.juan.email;
-          signingKeyFile = config.sops.secrets.juan_signing_key.path;
+          name = personasView.all."juan-gonzalez"."full-name";
+          email = personasView.all."juan-gonzalez".email;
+          signingKeyFile = config.sops.secrets.juan_gonzalez_signing_key.path;
         };
       };
 
