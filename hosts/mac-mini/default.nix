@@ -29,6 +29,10 @@ let
       fullName = "Juan González";
       email = "juan@kleinbem.dev";
     };
+    michael = {
+      fullName = "Michael Gruber";
+      email = "michael@kleinbem.dev";
+    };
   };
 in
 {
@@ -389,18 +393,20 @@ in
         signingKeyFile = "/var/lib/persona-runtime/signing-key";
 
         # Built from personaGitIdentities (above) ⋈ the sops secrets
-        # hosts/mac-mini/secrets.nix declares per gemini-cli persona
-        # (personaRuntimeSecrets loop, driven by personas.nix's tool
-        # field). No live git checkout / nix eval / sops shell-out needed
-        # on this host at invoke time — `persona-invoke <name>` (packaged
-        # by nix-presets/containers/persona-runtime.nix, in PATH via
-        # environment.systemPackages) just reads the paths below, already
-        # decrypted at activation.
+        # hosts/mac-mini/secrets.nix declares per invocable persona
+        # (personaRuntimeSecrets loop, driven by personas.nix's tool field
+        # — must be a key in nix-presets/containers/persona-runtime.nix's
+        # toolSpecs / this host's toolApiKeyField). No live git checkout /
+        # nix eval / sops shell-out needed on this host at invoke time —
+        # `persona-invoke <name>` (packaged by nix-presets/containers/
+        # persona-runtime.nix, in PATH via environment.systemPackages) just
+        # reads the paths below, already decrypted at activation.
         personas = lib.mapAttrs (name: ident: {
+          tool = (import ../../personas.nix).${name}.tool;
           signingKeyPath = config.sops.secrets."persona_${name}_signing_key".path;
           apiKeyPath =
-            if config.sops.secrets ? "persona_${name}_gemini_api_key" then
-              config.sops.secrets."persona_${name}_gemini_api_key".path
+            if config.sops.secrets ? "persona_${name}_api_key" then
+              config.sops.secrets."persona_${name}_api_key".path
             else
               null;
           inherit (ident) fullName email;

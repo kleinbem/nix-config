@@ -5,31 +5,39 @@
   ...
 }:
 let
-  # Every persona whose declared tool is wired into the shared
-  # persona-runtime container (nix-presets/containers/persona-runtime.nix
-  # — currently just hermes-agent/gemini-cli). Declaring these via a loop
-  # over personas.nix rather than one-off entries per persona is the point
-  # of the persona-runtime redesign: adding a new invocable persona is
-  # "add them to personas.nix with tool = gemini-cli", not "hand-write a
-  # new sops.secrets block". validateSopsFiles = false below means this is
-  # safe even before a given persona's kleinbem-secrets/personas/<name>.yaml
-  # actually has a gemini_api_key key yet.
-  geminiPersonaNames = builtins.attrNames (
-    lib.filterAttrs (_: p: p.tool == "gemini-cli") (import ../../personas.nix)
-  );
+  # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
+  # each tool persona-runtime knows how to run (nix-presets/containers/
+  # persona-runtime.nix's toolSpecs — keep in sync when a new tool gets
+  # wired in there). Declaring secrets via a loop over personas.nix rather
+  # than one-off entries per persona is the point of the persona-runtime
+  # redesign: adding a new invocable persona is "add them to personas.nix
+  # with a tool already in this map", not "hand-write a new sops.secrets
+  # block". validateSopsFiles = false below means this is safe even before
+  # a given persona's yaml actually has that key yet.
+  toolApiKeyField = {
+    gemini-cli = "gemini_api_key";
+    claude-code = "anthropic_api_key";
+  };
+  invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
   personaRuntimeSecrets = lib.listToAttrs (
-    lib.concatMap (name: [
-      (lib.nameValuePair "persona_${name}_signing_key" {
-        sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
-        key = "id_ed25519";
-        mode = "0400";
-      })
-      (lib.nameValuePair "persona_${name}_gemini_api_key" {
-        sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
-        key = "gemini_api_key";
-        mode = "0400";
-      })
-    ]) geminiPersonaNames
+    lib.concatMap (
+      name:
+      let
+        apiField = toolApiKeyField.${invocablePersonas.${name}.tool};
+      in
+      [
+        (lib.nameValuePair "persona_${name}_signing_key" {
+          sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
+          key = "id_ed25519";
+          mode = "0400";
+        })
+        (lib.nameValuePair "persona_${name}_api_key" {
+          sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
+          key = apiField;
+          mode = "0400";
+        })
+      ]
+    ) (builtins.attrNames invocablePersonas)
   );
 in
 {
