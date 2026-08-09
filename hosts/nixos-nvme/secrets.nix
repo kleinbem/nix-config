@@ -2,6 +2,7 @@
   pkgs,
   inputs,
   config,
+  lib,
   myInventory,
   ...
 }:
@@ -113,17 +114,6 @@
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
-      # LiteLLM's real admin/management credential — mints virtual keys,
-      # Teams, budgets. Was a hardcoded "sk-1234" placeholder baked
-      # straight into the Nix store (nix-presets/containers/litellm.nix)
-      # until 2026-08-09; the container is still `enable = false` below so
-      # nothing live was ever exposed, but it needed a real value before
-      # turning it on for anything real. Generate with e.g.
-      # `openssl rand -hex 32`, then `sops nix/per-host/nixos-nvme.yaml`.
-      litellm_master_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
-      };
-
       # API Keys
       github_pat = {
         owner = "martin";
@@ -181,6 +171,25 @@
       paperless_password = {
         neededForUsers = true;
       };
+    }
+    # LiteLLM's real admin/management credential — mints virtual keys,
+    # Teams, budgets. Gated behind the container's own enable flag: a
+    # disabled container must have ZERO activation-time footprint, not
+    # require a real secret value nobody's provisioned yet just because
+    # the declaration exists. Was a hardcoded "sk-1234" placeholder baked
+    # straight into the Nix store (nix-presets/containers/litellm.nix)
+    # until 2026-08-09 — real switch-time activation genuinely requires
+    # the key to exist in kleinbem-secrets regardless of
+    # validateSopsFiles (that only suppresses CI's dummy-file eval-time
+    # check, per this file's header comment) — confirmed live: an
+    # unconditional declaration broke a real `nixos-rebuild switch` on
+    # this host with the key still unprovisioned. Once you actually want
+    # to turn litellm on: generate a value (e.g. `openssl rand -hex 32`),
+    # `sops nix/per-host/nixos-nvme.yaml`, THEN flip the enable flag.
+    // lib.optionalAttrs config.my.containers.litellm.enable {
+      litellm_master_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
     };
 
     # --- Templated Env Files ---
@@ -205,17 +214,6 @@
           NEXTAUTH_SECRET=${config.sops.placeholder.langfuse_nextauth_secret}
           SALT=${config.sops.placeholder.langfuse_salt}
           NEXTAUTH_URL=http://${myInventory.network.nodes.langfuse.ip}:3000
-        '';
-      };
-      "litellm.env" = {
-        mode = "0444";
-        content = ''
-          LITELLM_MASTER_KEY=${config.sops.placeholder.litellm_master_key}
-          # Per-backend API keys go here as they're added — each backend's
-          # apiKeyEnvVar (my.containers.litellm.backends[].apiKeyEnvVar)
-          # must name a var defined in this file. Current backends
-          # (qwen-32b-ollama, gemma-2b-orin) are unauthenticated local
-          # servers, apiKeyEnvVar = null, nothing needed here for them yet.
         '';
       };
       "agent-team.env" = {
@@ -294,6 +292,19 @@
       # "syncthing.env".content = ''
       #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
       # '';
+    }
+    // lib.optionalAttrs config.my.containers.litellm.enable {
+      "litellm.env" = {
+        mode = "0444";
+        content = ''
+          LITELLM_MASTER_KEY=${config.sops.placeholder.litellm_master_key}
+          # Per-backend API keys go here as they're added — each backend's
+          # apiKeyEnvVar (my.containers.litellm.backends[].apiKeyEnvVar)
+          # must name a var defined in this file. Current backends
+          # (qwen-32b-ollama, gemma-2b-orin) are unauthenticated local
+          # servers, apiKeyEnvVar = null, nothing needed here for them yet.
+        '';
+      };
     };
   };
 }
