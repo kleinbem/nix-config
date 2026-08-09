@@ -198,6 +198,7 @@
           "rounded-window-corners@fxgn"
           "weatheroclock@CleoMenezesJr.github.io"
           "mediacontrols@cliffniff.github.com"
+          "flypie@schneegans.github.com"
         ];
         favorite-apps = [
           "firefox-standard.desktop"

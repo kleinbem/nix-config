@@ -100,6 +100,7 @@ in
         gnomeExtensions.quick-settings-audio-panel # Per-app volume + output switcher in QS
         gnomeExtensions.rounded-window-corners-reborn # Completes the blur-my-shell aesthetic
         gnomeExtensions.weather-oclock # Weather beside the clock (surfaces gnome-weather)
+        gnomeExtensions.fly-pie # Pie-menu launcher (Ctrl+Space) — shell-native, no XWayland focus/scaling issues
         gnomeExtensions.media-controls # MPRIS controls in the panel (amberol/browser)
 
         # Modern GNOME Apps & Utilities (Premium Suite)
