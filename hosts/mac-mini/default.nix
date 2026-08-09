@@ -71,7 +71,6 @@ in
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.hermes
-    inputs.nix-presets.nixosModules.hermes-juan
     inputs.nix-presets.nixosModules.persona-runtime
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
@@ -325,44 +324,6 @@ in
         ollamaUrl = "https://litellm.internal/v1";
         secretsFile = config.sops.templates."hermes.env".path;
         discord.enable = true;
-      };
-
-      # Juan's persona worker — proof-of-concept for Hermes-as-worker with a
-      # persona's own git identity, interactive-CLI-attachable via herdr
-      # (see nix-presets/containers/hermes-juan.nix's addToSystemPackages
-      # comment). A SEPARATE preset from `hermes` above, not an attrsOf
-      # instance of it — attrsOf-of-submodule + the shared mkContainer
-      # factory reproducibly triggers "infinite recursion encountered" when
-      # evaluated via container-factory's catalogue construction (confirmed
-      # even with a maximally minimal schema, unrelated to gitIdentity/
-      # egress specifically — a real nixpkgs/flake-structure interaction,
-      # not narrowed down further without real effort. See
-      # hosts/container-factory/default.nix's comment on the same host).
-      #
-      # No Discord — this instance isn't reachable by chat yet, just a
-      # `machinectl shell hermes-juan hermes` / herdr-attached session.
-      # Real Gemini via hermes-agent's native adapter (not the local
-      # LiteLLM gateway `hermes` above uses). Deployed + verified live
-      # 2026-08-08 (real API round-trip via `hermes -z '...'`).
-      #
-      # model override: gemini-2.5-pro (juan's declared model in
-      # personas.nix) has zero quota on kleinbem-ai's free tier — confirmed
-      # live, Google gates Pro behind billing. gemini-flash-latest is what
-      # actually works today; switch back to gemini-2.5-pro (or drop this
-      # override to fall back to the preset default) once/if billing gets
-      # enabled on the project.
-      hermes-juan = {
-        enable = true;
-        ip = "10.85.50.8/24";
-        hostDataDir = "/var/lib/hermes-juan";
-        memoryLimit = "2G";
-        model = "gemini/gemini-flash-latest";
-        secretsFile = config.sops.templates."hermes-juan.env".path;
-        gitIdentity = {
-          name = personasView.all."juan-gonzalez"."full-name";
-          email = personasView.all."juan-gonzalez".email;
-          signingKeyFile = config.sops.secrets.juan_gonzalez_signing_key.path;
-        };
       };
 
       # Generic, persona-agnostic worker — see nix-presets/containers/
@@ -705,7 +666,6 @@ in
         "/var/lib/agent-zero"
         "/var/lib/anythingllm"
         "/var/lib/hermes"
-        "/var/lib/hermes-juan"
 
         # Homarr + AdGuard Home — moved from hass-pi 2026-08-05 (not
         # HA-related, see the my.containers.open-webui / services block

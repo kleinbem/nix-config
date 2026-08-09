@@ -12,13 +12,40 @@ let
   # than one-off entries per persona is the point of the persona-runtime
   # redesign: adding a new invocable persona is "add them to personas.nix
   # with a tool already in this map", not "hand-write a new sops.secrets
-  # block". validateSopsFiles = false below means this is safe even before
-  # a given persona's yaml actually has that key yet.
+  # block".
   toolApiKeyField = {
     gemini-cli = "gemini_api_key";
     claude-code = "anthropic_api_key";
   };
   invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
+  personaSopsFile = name: "${inputs.nix-secrets}/personas/${name}.yaml";
+
+  # sops-install-secrets validates its ENTIRE manifest atomically before
+  # writing anything — one declared secret whose key doesn't exist yet in
+  # its sopsFile fails the install for every OTHER secret on the host too
+  # (signing keys, tokens, unrelated personas), silently, leaving them all
+  # frozen at their previous generation. Confirmed live 2026-08-09:
+  # michael-gruber's anthropic_api_key was declared here before the real
+  # key was added to kleinbem-secrets/personas/michael-gruber.yaml (needs
+  # manual provisioning via the Anthropic Console — can't be automated,
+  # see commit 9b35079) — validateSopsFiles=false does NOT cover this (it
+  # only skips checking the FILE exists, not that the KEY inside it does),
+  # so this silently broke juan-gonzalez's just-renamed signing key too
+  # and crash-looped hermes-juan. sops yaml keeps top-level key NAMES in
+  # cleartext (only values are ENC[...]), so checking for one doesn't need
+  # decryption — skip declaring an api_key secret for a persona whose
+  # sopsFile doesn't have that field yet instead of bricking the host's
+  # other secrets until someone notices. persona-runtime.nix's own
+  # `config.sops.secrets ? "persona_${name}_api_key"` check already
+  # handles the resulting absence gracefully (null apiKeyPath, fails only
+  # if/when that specific persona is invoked).
+  personaHasField =
+    name: field:
+    let
+      file = personaSopsFile name;
+    in
+    builtins.pathExists file && lib.hasInfix "\n${field}:" ("\n" + builtins.readFile file);
+
   personaRuntimeSecrets = lib.listToAttrs (
     lib.concatMap (
       name:
@@ -27,16 +54,18 @@ let
       in
       [
         (lib.nameValuePair "persona_${name}_signing_key" {
-          sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
+          sopsFile = personaSopsFile name;
           key = "id_ed25519";
           mode = "0400";
         })
-        (lib.nameValuePair "persona_${name}_api_key" {
-          sopsFile = "${inputs.nix-secrets}/personas/${name}.yaml";
+      ]
+      ++ lib.optional (personaHasField name apiField) (
+        lib.nameValuePair "persona_${name}_api_key" {
+          sopsFile = personaSopsFile name;
           key = apiField;
           mode = "0400";
-        })
-      ]
+        }
+      )
     ) (builtins.attrNames invocablePersonas)
   );
 in
@@ -87,36 +116,8 @@ in
         sopsFile = "${inputs.nix-secrets}/nix/per-host/mac-mini.yaml";
       };
 
-      # Juan's persona git-signing identity. kleinbem-secrets stores personas
-      # one-YAML-per-persona (cutover 2026-08-07) rather than nix-secrets' old
-      # one-file-per-secret layout, so this is now a keyed value inside
-      # personas/juan-gonzalez.yaml (first-lastname slug as of 2026-08-09),
-      # not its own binary-mode sopsFile. Consumed by the juan Hermes
-      # instance (hosts/mac-mini/default.nix my.containers.hermes-juan) for
-      # git commit signing as that persona.
-      juan_gonzalez_signing_key = {
-        sopsFile = "${inputs.nix-secrets}/personas/juan-gonzalez.yaml";
-        key = "id_ed25519";
-        mode = "0400";
-      };
-
-      # Real Gemini backend for juan's Hermes worker (hermes-agent's native
-      # Gemini adapter, not the local LiteLLM gateway) — see
-      # nix-presets/containers/hermes-juan.nix's settings.model. Real key,
-      # provisioned live via Terraform (nix/infra/google.tf) 2026-08-08.
-      juan_gonzalez_gemini_api_key = {
-        sopsFile = "${inputs.nix-secrets}/personas/juan-gonzalez.yaml";
-        key = "gemini_api_key";
-        mode = "0400";
-      };
-    } // personaRuntimeSecrets;
-
-    templates."hermes-juan.env" = {
-      mode = "0444";
-      content = ''
-        GEMINI_API_KEY=${config.sops.placeholder.juan_gonzalez_gemini_api_key}
-      '';
-    };
+    }
+    // personaRuntimeSecrets;
 
     templates."hermes.env" = {
       mode = "0444";
