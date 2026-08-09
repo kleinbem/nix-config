@@ -142,10 +142,21 @@ fi
 
 # --- 5. Upload pubkey to GitHub as a Signing key ---
 if command -v gh &>/dev/null && gh auth status &>/dev/null; then
-  # Check if a key with this title already exists (idempotency)
-  EXISTING=$(gh api /user/ssh_signing_keys --jq ".[] | select(.title == \"$PERSONA_EMAIL signing\") | .id" 2>/dev/null || true)
+  # Idempotency check matches on the KEY MATERIAL (the base64 blob, field 2
+  # of the pubkey string), not the title. Matching by title (as this used
+  # to) breaks the moment a persona's email changes — the title embeds
+  # "$PERSONA_EMAIL signing", so a rename makes this script blind to the
+  # already-uploaded key and it uploads a duplicate instead of recognizing
+  # it. The key material itself is what's cryptographically stable across
+  # a rename; the title is just a label. GitHub's API has no update
+  # endpoint for an existing signing key's title (create/delete only), so
+  # a stale title on an already-uploaded key is left as a harmless cosmetic
+  # mismatch rather than deleting/recreating — signature verification goes
+  # by key material, not title.
+  PUBKEY_BLOB=$(awk '{print $2}' <<<"$PUBKEY")
+  EXISTING=$(gh api /user/ssh_signing_keys --jq ".[] | select((.key | split(\" \")[1]) == \"$PUBKEY_BLOB\") | .id" 2>/dev/null || true)
   if [[ -n $EXISTING ]]; then
-    echo "  ✓ GitHub already has signing key '$PERSONA_EMAIL signing'"
+    echo "  ✓ GitHub already has this signing key (id $EXISTING)"
   else
     echo "  📤 Uploading pubkey to GitHub as signing key..."
     gh api -X POST /user/ssh_signing_keys \
