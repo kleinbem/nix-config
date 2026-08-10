@@ -4,7 +4,6 @@
   config,
   inputs,
   self,
-  myInventory,
   ...
 }:
 
@@ -54,19 +53,7 @@
 
   environment = {
     etc = { };
-    variables = {
-      # buzz-desktop (systemPackages below) needs this to connect to the
-      # self-hosted relay — was never wired in anywhere permanent, only
-      # ever passed ad hoc as `env BUZZ_RELAY_URL=... buzz-desktop` during
-      # testing 2026-08-10, so a plain `buzz-desktop` launch (as the user
-      # actually runs it) got no relay URL at all and sat logging "relay
-      # unreachable" forever, silently blocking everything downstream of
-      # it (including Builderlab sign-in, which looked like an unrelated
-      # browser bug but wasn't). Reuses the same inventory-driven value
-      # containers.nix already uses for the container's own relayUrl, so
-      # this can't drift from the actual relay address.
-      BUZZ_RELAY_URL = "ws://${myInventory.network.nodes.buzz.ip}:3000";
-    };
+    variables = { };
     systemPackages = with pkgs; [
       sops
       age
