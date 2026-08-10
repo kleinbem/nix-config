@@ -37,6 +37,7 @@ in
       services.gnome = {
         core-apps.enable = true;
         gnome-keyring.enable = true;
+        gnome-remote-desktop.enable = true;
       };
 
       # Disable GDM smartcard login to show normal user list when YubiKey is plugged in

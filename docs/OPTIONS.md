@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 59  
-**Consumer files scanned:** 16
+**Declarations indexed:** 60  
+**Consumer files scanned:** 18
 
 ---
 
@@ -64,13 +64,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/agent-zero.nix:14`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
-- **Consumed by:** `host:hass-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
 ### `my.containers.anythingllm`
 
 - **Declared:** `nix-presets/containers/anythingllm.nix:12`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `llmUrl`, `memoryLimit`, `modelName`
-- **Consumed by:** `host:hass-pi`
+- **Consumed by:** `host:mac-mini`
 
 ### `my.containers.attic`
 
@@ -98,7 +98,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.buzz`
 
-- **Declared:** `nix-presets/containers/buzz.nix:32`
+- **Declared:** `nix-presets/containers/buzz.nix:39`
 - **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -160,7 +160,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/hermes.nix:14`
 - **Sub-options:** `discord.enable`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
-- **Consumed by:** `host:hass-pi`
+- **Consumed by:** `host:mac-mini`
 
 ### `my.containers.home-assistant`
 
@@ -183,7 +183,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.litellm`
 
 - **Declared:** `nix-presets/containers/litellm.nix:13`
-- **Sub-options:** `autoStart`, `backends`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
+- **Sub-options:** `autoStart`, `backends`, `enable`, `hostDataDir`, `ip`, `masterKeyEnvVar`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.llama-cpp`
@@ -202,7 +202,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/monitoring.nix:13`
 - **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `hostDataDir`, `ip`, `nodeTargets`, `ollamaTargets`, `vllmTargets`
-- **Consumed by:** `host:core-pi`, `host:nasbook`, `host:nixos-nvme`
+- **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.n8n`
 
@@ -244,7 +244,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/open-webui.nix:14`
 - **Sub-options:** `enable`, `enableAudio`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
-- **Consumed by:** `host:hass-pi`, `host:nixos-nvme`
+- **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
 ### `my.containers.openclaw`
 
@@ -257,6 +257,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/paperless.nix:12`
 - **Sub-options:** `enable`, `hostConsumptionDir`, `hostDataDir`, `ip`, `memoryLimit`, `passwordFile`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
+
+### `my.containers.persona-runtime`
+
+- **Declared:** `nix-presets/containers/persona-runtime.nix:187`
+- **Sub-options:** `autoStart`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `gitConfigFile`, `hostDataDir`, `ip`, `memoryLimit`, `personas`, `secretsEnvFile`, `signingKeyFile`
+- **Consumed by:** `host:mac-mini`
 
 ### `my.containers.playground`
 
@@ -338,9 +344,9 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.pwa`
 
-- **Declared:** `nix-presets/pwa.nix:61`
+- **Declared:** `nix-presets/pwa.nix:76`
 - **Sub-options:** `apps`, `defaultFlags`, `enable`, `package`
-- **Consumed by:** `preset:nix-presets/desktop.nix`
+- **Consumed by:** `preset:nix-presets/desktop.nix`, `preset:nix-presets/pwa.nix`, `user:martin`
 
 ## `my.security`
 
@@ -395,5 +401,5 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
 - **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
-- **Explicit overrides:** `host:nixos-nvme`
+- **Explicit overrides:** `host:mac-mini`, `host:nixos-nvme`
 
