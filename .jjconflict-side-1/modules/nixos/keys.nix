@@ -1,0 +1,62 @@
+{
+  # Cachix Public Keys
+  cachix = {
+    nix-community = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=";
+    devenv = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    cuda-maintainers = "cuda-maintainers.cachix.org-1:0dq3Anpl63anx7FsVnefPGowuE6gj7KE8txarwKScsu=";
+    anduril = "anduril.cachix.org-1:0KJgGiAgDtCE9Pl0wvvyALRJlPhQMLRMMt+43JExFlY=";
+  };
+
+  # SSH Public Keys
+  ssh = {
+    yubikey = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFLSRkt7uoF1c2iWpwt7mJi2krEtmpdUD4wLUm0XTn5JbGIBce+avhSqY02YRe3dpRVqo7KGE8upe11xI8IcEjk= PIV AUTH pubkey";
+    # FIDO2 resident key (id_ed25519_sk) — works without PKCS11 and is offered by ssh-agent automatically
+    fido2 = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPbkLwSKFiip5e/0j9aHzIDr+4srK7s9C/aLbNOl7xJQAAAABHNzaDo=";
+    # FIDO2 backup resident key
+    fido2-backup = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINYunZXaiafJQO6qnCPsiQkaaZvZEBDLkgx4ygjVFP+6AAAABHNzaDo= ssh:";
+    # FIDO2 *truly* no-touch SK key — used for git/jj commit signing without
+    # YubiKey touch prompts. V2 because the original "NoTouch" key was generated
+    # without -O no-touch-required and silently required touch for every sign
+    # (eating a full day of friction before we caught it). Lives at
+    # ~/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.
+    fido2-notouch = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIBZ4U3wGwDb7DDfBsT4wH208lzSiQRhFb+CN3tJc+HIHAAAAE3NzaDpHaXRIdWJOb1RvdWNoVjI= ssh:GitHubNoTouchV2";
+    # Temporary root builder key
+    temp-builder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfniLMozPzqGcLeIDEwAsGcG7ndYhqaO6elSjB57HkH root@nixos-nvme";
+
+    # Plain (non-FIDO2) key for nixos-nvme's daily unattended pull of Caddy's
+    # internal root CA from core-pi (hosts/nixos-nvme/caddy-ca-refresh.nix) —
+    # a systemd user timer, so it can't wait for a YubiKey touch the way the
+    # main fido2 key requires. Deliberately not hardware-backed: the
+    # `restrict`+`command=` prefix means this key can do nothing but read one
+    # already-public root certificate, so there's nothing worth protecting
+    # with a touch requirement. Private half lives only at
+    # ~/.ssh/id_ed25519_caddy_ca_refresh on nixos-nvme, never in the nix store.
+    caddy-ca-refresh = ''command="cat /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfu0f4YfeLsHx9CO4BZtgBpx1YJ8Qdv7LwM57zyBVP/ refresh-caddy-ca@nixos-nvme'';
+
+    # Per-persona signing public keys. Populated when each persona's
+    # private key is generated (Phase 1 — Stalwart provisioning). Until
+    # then the entries are empty strings; consumers (allowed_signers
+    # generator in lib/personas.nix) skip missing entries.
+    #
+    # Generation pattern per persona, run once per name in personas.nix:
+    #   ssh-keygen -t ed25519 -C "<email>" -f sops/personas/<name>/id_ed25519 -N ""
+    #   # then paste the .pub contents below.
+    personas = {
+      # Trailing string is just an SSH key comment (cosmetic label, not part
+      # of the key material) — kept in sync with kleinbem-secrets/personas/
+      # contact.nix's email field for readability, not load-bearing.
+      michael-gruber = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael.gruber@kleinbem.dev";
+      thomas-schmidt = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas.schmidt@kleinbem.dev";
+      daniel-meier = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel.meier@kleinbem.dev";
+      rahul-kumar = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArxoaUKMOS99lj9nWWgQ5zA9SBcowCWUi63HyPEE0XO rahul.kumar@kleinbem.dev";
+      juan-gonzalez = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKbZOI7NAi8Q2AVucHIJEFNPSi5/rxKtnyZvN2BjNIK9 juan.gonzalez@kleinbem.dev";
+    };
+  };
+
+  # Age/SOPS Public Keys (Recipients)
+  age = {
+    yubikey-primary = "age1yubikey1q2lhmqc0h6verf025hn62tkjkz25d760h54pdej7a55q4m2hszm8kwssfn0";
+    yubikey-backup = "age1yubikey1qg379rzgajvstx6vhk2fsvc0eu9zyjjk7q24pd3pf5dq22xvlqew23e08l2";
+    host-nvme = "age1tag1qg5qj4sam725ez6a53hkp5mnerf8m9dq4wy4nsfaraj3y5v6x8h0qexzvt7";
+  };
+}

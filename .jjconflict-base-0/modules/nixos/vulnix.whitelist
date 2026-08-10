@@ -1,0 +1,33 @@
+# Vulnix Whitelist - Accepted Infrastructure Risks
+# Format: Package name or derivation path
+# Rationale: Filter out build-time only or minor vulnerabilities that don't impact runtime security.
+
+# --- Build Tools & Helpers ---
+ninja
+yasm
+binutils
+gcc
+jam
+perl
+python-2.7.18.12 # Used by legacy build scripts
+
+# --- Documentation & Text Processing ---
+commonmark
+gutenberg
+typst
+libarchive
+
+# --- Low-Risk Infrastructure ---
+libtpms
+jbig2dec
+capstone
+ada
+
+# --- Known upstream delays (Nixos-Unstable) ---
+# These are kept here instead of nixpkgs-master to avoid unstable builds.
+# They will be removed once the unstable channel updates.
+shellcheck
+zlib
+curl
+openssh
+vim

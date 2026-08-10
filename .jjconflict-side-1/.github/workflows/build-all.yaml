@@ -1,0 +1,441 @@
+name: "Build & Cache All (Fast)"
+
+# Mirror of the meta-workspace build-all workflow, building from nix-config
+# directly. Runs alongside the meta version during the meta-flake →
+# nix-config root migration; meta's copy will be retired once this one is
+# proven green for a full cycle.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'terraform/**'
+      - 'LICENSE'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'terraform/**'
+      - 'LICENSE'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-all:
+    name: "Build (${{ matrix.system }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        system: [x86_64-linux, aarch64-linux]
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      statuses: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Determine Cache Push
+        id: cache
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "push_cache=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "push_cache=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Nix fleet setup
+        uses: ./.github/actions/nix-fleet-setup
+        with:
+          enable-cache: ${{ steps.cache.outputs.push_cache }}
+          # Prefer the ephemeral key (one-shot runner peers auto-expire ~10 min
+          # after the run, so they stop accumulating against the peer cap); fall
+          # back to the persistent key until the ephemeral secret is distributed.
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL || secrets.NETBIRD_SETUP_KEY }}
+          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
+          configure-auto-gc: 'true'
+          free-disk-space: 'true'
+
+      - name: Initialize Commit Statuses for best-effort builds
+        if: steps.cache.outputs.push_cache == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SYSTEM="${{ matrix.system }}"
+          SHA="${{ github.sha }}"
+          
+          # Initialize container-factory on both systems
+          gh api "repos/${{ github.repository }}/statuses/$SHA" \
+            -f state="pending" \
+            -f context="CI/container-factory ($SYSTEM)" \
+            -f description="Container factory build is pending" \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            
+          if [ "$SYSTEM" = "x86_64-linux" ]; then
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state="pending" \
+              -f context="CI/nixos-nvme" \
+              -f description="Workstation toplevel build is pending" \
+              -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          
+          if [ "$SYSTEM" = "aarch64-linux" ]; then
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state="pending" \
+              -f context="CI/orin-nano" \
+              -f description="Orin Nano toplevel build is pending" \
+              -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+
+      - name: Run nix-fast-build
+        run: |
+          set -o pipefail
+          # Construct build arguments.
+          # --eval-workers 2: cap parallel eval-jobs forks. Default = nproc,
+          # which on the 7 GiB hosted runner has been OOM-killing the runner
+          # before the build step produces any output (visible as the
+          # "hosted runner lost communication" error). Same issue hits meta's
+          # build-all; this is the conservative first-pass fix.
+          # Check enumeration via `nix eval` + attrNames, NOT `nix flake show`:
+          # flake show evaluates every output of every system just to list
+          # names, and on the CI (Determinate) Nix it emitted `"checks": null`
+          # instead of failing — with stderr discarded, CI_CHECKS was silently
+          # EMPTY and this job built zero checks for months (run 29467089940
+          # and earlier). Hence also the emptiness guard: an empty list is
+          # always an enumeration bug, never a real state, so fail loud.
+          #
+          # Exclusions:
+          # - VM-based NixOS tests (caddy/code-server/mobile-link/recovery) run
+          #   in the dedicated vm-tests.yaml workflow; they remain in .#checks
+          #   for local runs.
+          # - host-* checks: hosts are targeted EXPLICITLY below (hass-pi +
+          #   core-pi hardcoded native on aarch64, mac-mini hardcoded native
+          #   on x86_64 — it pulls production via my.deploy.autoUpgrade with
+          #   requireCache = true, same "must never build on-device" contract
+          #   as the RPi5 pair; nixos-nvme is a separate best-effort step
+          #   because its ~8.6 GiB eval needs swap + isolation; Orin/routers
+          #   deliberately never build in CI — jetpack/bespoke kernels).
+          #   Enumerating them here would re-add those giant builds blocking.
+          # What this restores is the real checks — pre-commit-check and the
+          # flake-lock-no-file-url reproducibility guard, which must gate
+          # every PR.
+          SYSTEM="${{ matrix.system }}"
+          mapfile -t CI_CHECKS < <(nix eval ".#checks.$SYSTEM" \
+              --apply builtins.attrNames --json $NIX_OVERRIDES \
+            | jq -r '.[] | select(test("(caddy|code-server|mobile-link|recovery)-test|^host-") | not)')
+          if [ "${#CI_CHECKS[@]}" -eq 0 ]; then
+            echo "::error::.#checks.$SYSTEM enumeration came back empty — enumeration is broken (it can never legitimately be empty)."
+            exit 1
+          fi
+          echo "CI checks to build: ${CI_CHECKS[*]}"
+
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "2"
+            "--systems" "$SYSTEM"
+            # Retry failed builds twice — the Attic push rides NetBird, so a
+            # transient network/SSH hiccup retries instead of failing the target.
+            "--retries" "2"
+          )
+          # If pushing to cache, tell nix-fast-build to use Attic directly.
+          if [ "${{ steps.cache.outputs.push_cache }}" == "true" ]; then
+            COMMON+=("--attic-cache" "system")
+          fi
+
+          # IMPORTANT: nix-fast-build's `--flake` is SINGLE-VALUED (argparse
+          # store — the LAST one wins). Passing multiple `--flake` silently
+          # builds only the last target, which is why the cache was badly
+          # under-populated (only `.#devShells` ever built). So we invoke
+          # nix-fast-build ONCE PER target.
+          #
+          # Build only what hosts actually DEPLOY: their system toplevels (native
+          # arch) + devShells + non-VM checks. We deliberately do NOT build
+          # `.#packages` — it exposes cross-arch install IMAGES (e.g.
+          # router-1-image, an aarch64 image that gets cross-built on the x86_64
+          # runner) and standalone packages that no host deploys. Everything a
+          # host actually uses is already in its toplevel closure, so building
+          # toplevels caches it natively without the cross-build waste.
+          #
+          # The bare `.#nixosConfigurations` does NOT materialize host toplevels,
+          # so name them explicitly. Each host builds on its native-arch runner
+          # (matrix), so no emulation. RPi5 hosts carry the custom linux-rpi
+          # kernel (absent from cache.nixos.org). Excluded: routers (bespoke
+          # Banana Pi R4 kernel) — add once they're confirmed to build in CI.
+          TARGETS=()
+          for c in "${CI_CHECKS[@]}"; do
+            TARGETS+=(".#checks.$SYSTEM.$c")
+          done
+          # devShells are for DEVELOPMENT on the x86_64 workstation. Edge
+          # (aarch64) hosts are headless and never run `nix develop`, so don't
+          # waste a runner building them there.
+          if [ "$SYSTEM" = "x86_64-linux" ]; then
+            TARGETS+=(
+              ".#devShells"
+              ".#nixosConfigurations.mac-mini.config.system.build.toplevel"
+            )
+          fi
+          if [ "$SYSTEM" = "aarch64-linux" ]; then
+            TARGETS+=(
+              ".#nixosConfigurations.hass-pi.config.system.build.toplevel"
+              ".#nixosConfigurations.core-pi.config.system.build.toplevel"
+            )
+          fi
+
+          rc=0
+          for t in "${TARGETS[@]}"; do
+            echo "::group::nix-fast-build $t"
+            nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" --flake "$t" $NIX_OVERRIDES || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
+
+      # Workstation (nixos-nvme) toplevel: CI is the main builder, so warm the
+      # cache for the workstation too — `just apply` and its nightly autoUpgrade
+      # then substitute instead of compiling locally.
+      #
+      # Own step with continue-on-error (NOT `|| true` inside the main script):
+      # the eval peaks ~8.6 GiB and first attempt (run 28756798387) got
+      # SIGTERM'd (exit 143) by the runner under memory pressure — a kill that
+      # no shell-level guard can catch but step-level continue-on-error can.
+      # Swap below is the actual fix; the isolation keeps a regression from
+      # blocking `Promote → production` (which gates the whole fleet).
+      # Harden into the main target list once green for a full cycle.
+      # Skipped on PRs: without a cache push the artifacts are thrown away.
+      - name: Add swap for heavy evals
+        # Workstation + container-factory evals run near the hosted runner's
+        # memory ceiling; spill to the SSD instead of getting SIGTERM'd.
+        # Unconditional (PRs included) because the blocking factory eval below
+        # runs on PRs too.
+        run: |
+          sudo fallocate -l 12G /swapfile-ci
+          sudo chmod 600 /swapfile-ci
+          sudo mkswap /swapfile-ci
+          sudo swapon /swapfile-ci
+          free -h
+
+      - name: Build nixos-nvme toplevel (best-effort)
+        id: nvme-build
+        if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "1"
+            "--systems" "${{ matrix.system }}"
+            "--retries" "2"
+            "--attic-cache" "system"
+          )
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake ".#nixosConfigurations.nixos-nvme.config.system.build.toplevel" $NIX_OVERRIDES
+
+      # Orin Nano (Jetson) toplevel: warm the cache so the workstation's
+      # `just apply` / nightly autoUpgrade SUBSTITUTE the jetpack/L4T kernel
+      # instead of emulating an hours-long aarch64 build under qemu locally.
+      # Runs on the NATIVE ubuntu-24.04-arm runner (no emulation), same as the
+      # hass-pi / core-pi toplevels above. BEST-EFFORT for the same reason as
+      # nvme/factory: a jetpack/nixpkgs breakage must warn, never block
+      # `Promote → production`.
+      #
+      # This stays green only while hardware.nvidia-jetpack.firmware.autoUpdate
+      # = false — with firmware ON, the edk2/OP-TEE capsule chain fails to build
+      # (edk2-pytool-extensions → `import pkg_resources`, removed in setuptools
+      # 81+) and fails the toplevel. The KERNEL is a separate derivation, so
+      # even a red toplevel still warms it here (nix-fast-build builds the DAG
+      # node-by-node and pushes each success); add an explicit
+      # `.config.system.build.kernel` target if you want a green kernel signal
+      # independent of firmware state.
+      - name: Build orin-nano toplevel (best-effort)
+        id: orin-build
+        if: matrix.system == 'aarch64-linux' && steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "1"
+            "--systems" "${{ matrix.system }}"
+            "--retries" "2"
+            "--attic-cache" "system"
+          )
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake ".#nixosConfigurations.orin-nano.config.system.build.toplevel" $NIX_OVERRIDES
+
+      # Container factory eval is BLOCKING (and runs on PRs, unlike the build
+      # below): if the factory toplevel doesn't evaluate, nix-fast-build reports
+      # "0 successes", NOTHING is built or pushed, and the container manifest
+      # can never converge — new/changed container closures silently drop out
+      # of it cycle after cycle. That exact failure hid inside the best-effort
+      # build step for a day (nix-presets 61352e5 hardcoded a sops path the
+      # factory can't eval; core-pi's monitoring container couldn't stage).
+      # Eval breakage is a code bug that must fail CI loudly at PR time;
+      # build/push flakiness (the reason the BUILD is best-effort) is not.
+      - name: Eval container-factory toplevel (blocking)
+        id: factory-eval
+        run: |
+          set -o pipefail
+          FACTORY="container-factory"
+          if [ "${{ matrix.system }}" = "aarch64-linux" ]; then
+            FACTORY="container-factory-aarch64"
+          fi
+          echo "FACTORY=$FACTORY" >> "$GITHUB_ENV"
+          nix eval --raw \
+            ".#nixosConfigurations.$FACTORY.config.system.build.toplevel.drvPath" \
+            $NIX_OVERRIDES
+
+      # Turn a red factory eval into a phone notification instead of a red run
+      # someone has to go diagnose. The most common cause is a nixpkgs bump
+      # moving an insecure-marked package (openclaw) past its pinned re-ack in
+      # nix-presets lib/factory.nix — a deliberate checkpoint, fixed by bumping
+      # one version string there. Best-effort: no secret / unreachable ntfy
+      # never affects the job result. NTFY_ALERT_TOPIC is separate from
+      # NTFY_DEPLOY_TOPIC on purpose — the deploy topic is machine-consumed
+      # (any message triggers host upgrade polls); this one is for humans.
+      - name: Alert factory eval failure via ntfy (best-effort)
+        if: failure() && steps.factory-eval.outcome == 'failure'
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_ALERT_TOPIC secret not set — skipping alert."
+            exit 0
+          fi
+          curl -fsS --max-time 15 \
+            -H "Title: container-factory eval failed (${{ matrix.system }})" \
+            -H "Tags: rotating_light" \
+            -H "Priority: high" \
+            -d "Blocking factory eval is red on ${{ matrix.system }}. Likely an insecure re-ack (openclaw version bump → update the pin in nix-presets lib/factory.nix) or a preset regression. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
+
+      # Container factory toplevel: ONE build materializes every standalone
+      # container closure for this arch (they are NOT part of any host closure
+      # anymore — standalone containers boot from a profile symlink, so nothing
+      # else would ever push them to Attic). The promote workflow evals the
+      # same factories to publish the container manifest devices consume.
+      # BEST-EFFORT: a red factory BUILD must not block host promotion; the
+      # manifest gate in promote-production refuses to publish a manifest whose
+      # paths aren't fully cached, so a failed factory build just means
+      # "manifest stays at the previous rev" — devices keep serving the old
+      # closures. Eval correctness is enforced by the blocking step above.
+      - name: Build container-factory toplevel (best-effort)
+        id: factory-build
+        if: steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          COMMON=(
+            "--no-nom"
+            "--skip-cached"
+            "--eval-workers" "1"
+            "--systems" "${{ matrix.system }}"
+            "--retries" "2"
+            "--attic-cache" "system"
+          )
+          # $FACTORY is exported by the blocking eval step above.
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake ".#nixosConfigurations.$FACTORY.config.system.build.toplevel" $NIX_OVERRIDES
+
+      # The two builds above are continue-on-error so a from-source break (a
+      # nixpkgs test regression, a sops manifest drift) never blocks promotion.
+      # But that also means such a break is INVISIBLE — the run stays green while
+      # the cache silently goes cold and hosts fall back to compiling locally.
+      # This step turns a red best-effort build into a phone alert instead: it
+      # reads the steps' `outcome` (which records the real failure even though
+      # continue-on-error sets `conclusion` to success) and pings the human topic.
+      # Itself best-effort — a missing/unreachable ntfy never affects the result.
+      - name: Alert best-effort toplevel build failure via ntfy
+        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure' || steps.orin-build.outcome == 'failure')
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_ALERT_TOPIC secret not set — skipping alert."
+            exit 0
+          fi
+          failed=""
+          [ "${{ steps.nvme-build.outcome }}" = "failure" ] && failed="nixos-nvme"
+          [ "${{ steps.factory-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }container-factory"
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }orin-nano"
+          curl -fsS --max-time 15 \
+            -H "Title: best-effort toplevel build failed (${{ matrix.system }})" \
+            -H "Tags: warning" \
+            -H "Priority: default" \
+            -d "Run stayed green but these toplevels failed to build from source on ${{ matrix.system }}: $failed. Cache is not being warmed for them — hosts will compile locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
+
+      - name: Report Best-Effort Failures to GitHub Summary
+        if: always() && (steps.nvme-build.outcome == 'failure' || steps.factory-build.outcome == 'failure' || steps.orin-build.outcome == 'failure')
+        continue-on-error: true
+        run: |
+          echo "## ⚠️ Best-Effort Builds Failed" >> $GITHUB_STEP_SUMMARY
+          echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. These packages were **not pushed to the cache** and your hosts will build them locally:" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.nvme-build.outcome }}" = "failure" ] && echo "- \`nixos-nvme\` toplevel" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel (jetpack/L4T kernel — check firmware.autoUpdate is false)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the detailed logs of the failed steps above to see exactly which package (e.g., Electron) ran out of memory or failed to compile." >> $GITHUB_STEP_SUMMARY
+
+      - name: Update Commit Statuses for best-effort builds
+        if: always() && steps.cache.outputs.push_cache == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SYSTEM="${{ matrix.system }}"
+          SHA="${{ github.sha }}"
+          
+          update_status() {
+            local context="$1"
+            local outcome="$2"
+            local desc_prefix="$3"
+            local state="success"
+            local desc="${desc_prefix} succeeded"
+            
+            if [ "$outcome" = "failure" ]; then
+              state="failure"
+              desc="${desc_prefix} failed"
+            elif [ "$outcome" = "skipped" ] || [ -z "$outcome" ]; then
+              state="error"
+              desc="${desc_prefix} was skipped or errored"
+            fi
+            
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state="$state" \
+              -f context="CI/$context" \
+              -f description="$desc" \
+              -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+
+          # Update container-factory status
+          update_status "container-factory ($SYSTEM)" "${{ steps.factory-build.outcome }}" "Container factory build"
+
+          if [ "$SYSTEM" = "x86_64-linux" ]; then
+            update_status "nixos-nvme" "${{ steps.nvme-build.outcome }}" "Workstation toplevel build"
+          fi
+
+          if [ "$SYSTEM" = "aarch64-linux" ]; then
+            update_status "orin-nano" "${{ steps.orin-build.outcome }}" "Orin Nano toplevel build"
+          fi

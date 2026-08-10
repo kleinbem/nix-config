@@ -1,0 +1,58 @@
+# One-off debug artifacts (build logs, applied patches, scratch evals) —
+# root-anchored so intentional patches in subdirectories stay trackable.
+/*.log
+/*.patch
+/*.diff
+/test-*.nix
+/test.txt
+
+# Nix / Direnv
+result
+result-*
+.direnv/
+.cache/
+.devenv/
+
+# Development Tools
+.pre-commit-config.yaml
+.agent/
+_
+*.swp
+*~
+.DS_Store
+.envrc
+
+# Preserve VSCode settings
+!.vscode/
+
+# Legacy Agent Paths
+.agent/aider/aider*
+.agent/workspaces/
+.agent/logs/
+.agent/temp/
+.agent/browser/
+
+# Filesystem / Images
+tmp/
+*.qcow2
+*.iso
+
+# Workspace
+!nixos.code-workspace
+
+# -------------------------
+# Infrastructure (Terranix)
+# -------------------------
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+config.tf.json
+*.tar
+*.tar.xz
+
+# Rendered persona views — contain PII; live in nix-secrets/docs/ instead.
+docs/TEAM.md
+docs/TEAM.html
+
+docs/personas-changelog.md

@@ -1,0 +1,266 @@
+import 'common.just'
+
+set working-directory := ".."
+
+# --- NixOS Operations ---
+
+[group("System")]
+switch auth="" mode="" *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ACTUAL_MODE="{{mode}}"
+    if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
+        sudo -v
+        while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+        SUDO_PID=$!
+        trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
+    else
+        if [ -n "{{auth}}" ]; then
+            ACTUAL_MODE="{{auth}}"
+        fi
+    fi
+    echo "🏗️ Switching System Configuration..."
+    if [ -n "$ACTUAL_MODE" ]; then
+        {{LOCK_CMD}} {{TIMER}} nh os switch . --specialisation "$ACTUAL_MODE" -- {{OVERRIDES}} {{args}}
+    else
+        {{LOCK_CMD}} {{TIMER}} nh os switch . -- {{OVERRIDES}} {{args}}
+    fi
+    just deployment::push-cache "$(hostname)"
+
+[group("System")]
+build *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🔨 Building System Configuration..."
+    {{LOCK_CMD}} {{TIMER}} nh os build . -- {{OVERRIDES}} {{args}}
+    just deployment::push-cache "$(hostname)"
+
+[group("Development")]
+dry-run *args="":
+    @echo "🧪 Dry Run: Testing configuration activation..."
+    @{{LOCK_CMD}} {{TIMER}} nh os test . --dry -- {{OVERRIDES}} {{args}}
+
+[group("Development")]
+test *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🚦 Testing System Configuration (Activation Only)..."
+    {{LOCK_CMD}} {{TIMER}} nh os test . -- {{OVERRIDES}} {{args}}
+    just deployment::push-cache "$(hostname)"
+
+[group("System")]
+[confirm("👢 This will make the current configuration the DEFAULT at boot. Proceed?")]
+switch-boot auth="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
+        sudo -v
+        while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+        SUDO_PID=$!
+        trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
+    fi
+    echo "👢 Building and setting as boot default..."
+    {{LOCK_CMD}} nh os boot . -- {{OVERRIDES}}
+    just deployment::push-cache "$(hostname)"
+
+[group("Debugging")]
+switch-debug auth="" mode="" *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ACTUAL_MODE="{{mode}}"
+    if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
+        sudo -v
+        while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+        SUDO_PID=$!
+        trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
+    else
+        if [ -n "{{auth}}" ]; then
+            ACTUAL_MODE="{{auth}}"
+        fi
+    fi
+    echo "🐛 Switching with trace output..."
+    if [ -n "$ACTUAL_MODE" ]; then
+        {{LOCK_CMD}} nh os switch . --specialisation "$ACTUAL_MODE" -- --show-trace --verbose {{OVERRIDES}} {{args}}
+    else
+        {{LOCK_CMD}} nh os switch . -- --show-trace --verbose {{OVERRIDES}} {{args}}
+    fi
+    just deployment::push-cache "$(hostname)"
+
+[group("Debugging")]
+switch-boot-debug auth="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{auth}}" = "sudo" ] || [ "{{auth}}" = "preauth" ] || [ "{{auth}}" = "auth" ]; then
+        sudo -v
+        while true; do sudo -nv; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+        SUDO_PID=$!
+        trap 'kill $SUDO_PID 2>/dev/null || true' EXIT
+    fi
+    echo "👢 Debugging bootloader generation..."
+    {{LOCK_CMD}} nh os boot . -- --show-trace --verbose {{OVERRIDES}}
+    just deployment::push-cache "$(hostname)"
+
+[group("Development")]
+sys-plan:
+    @echo "📋 Reviewing system derivation changes..."
+    @{{LOCK_CMD}} nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel --no-link --print-out-paths {{OVERRIDES}} > /tmp/new-system
+    @{{LOCK_CMD}} nvd diff /run/current-system $(cat /tmp/new-system)
+
+[group("Development")]
+build-pkg pkg_name:
+    @echo "📦 Building package: {{pkg_name}}..."
+    @{{LOCK_CMD}} {{TIMER}} nix build .#{{pkg_name}} {{OVERRIDES}}
+
+[group("Development")]
+test-integration *args="":
+    @echo "🧪 Running ALL integration tests..."
+    @{{LOCK_CMD}} {{TIMER}} nix flake check . --system x86_64-linux {{OVERRIDES}} {{args}}
+
+[group("Development")]
+test-caddy *args="":
+    @echo "🧪 Running TARGETED Caddy integration test..."
+    @{{LOCK_CMD}} nix build .#checks.x86_64-linux.caddy-test {{OVERRIDES}} {{args}}
+
+[group("Development")]
+test-recovery *args="":
+    @echo "🧪 Running Recovery & Restore integration test..."
+    @{{LOCK_CMD}} nix build .#checks.x86_64-linux.recovery-test {{OVERRIDES}} {{args}}
+
+[group("Development")]
+test-vm *args="":
+    @echo "🖥️ Building and launching test VM..."
+    @{{LOCK_CMD}} {{TIMER}} nix build .#nixosConfigurations.nixos-nvme.config.system.build.vm {{OVERRIDES}} {{args}}
+    @mkdir -p /var/lib/qemu/images
+    NIX_DISK_IMAGE=/var/lib/qemu/images/nixos-nvme.qcow2 ./result/bin/run-nixos-nvme-vm
+
+# --- Workload Profile Management (Specialisations) ---
+
+[group("Modes")]
+modes:
+    @echo "🎭 Available System Modes:"
+    @nix eval .#nixosConfigurations.nixos-nvme.config.specialisation --keys
+
+[group("Modes")]
+mode name:
+    @just nixos::switch {{name}}
+
+[group("Modes")]
+reset-mode *args="":
+    @{{LOCK_CMD}} nh os switch . -- {{OVERRIDES}} {{args}}
+    @just deployment::push-cache "$(hostname)"
+
+[group("Debugging")]
+verify-caddy:
+    @echo "🔍 Verifying Caddy Gateway..."
+    @for i in {1..5}; do curl -k -s https://10.85.46.107 > /dev/null && echo "✅ Caddy is responsive" && exit 0 || echo "⏳ Waiting for Caddy... ($i/5)" && sleep 2; done
+    @echo "❌ Caddy is NOT responsive. Checking status..."
+    @systemctl status container@caddy.service --no-pager || true
+    @echo "📜 Recent Logs:"
+    @journalctl -u container@caddy.service -n 20 --no-pager
+
+[group("Development")]
+topology:
+    @echo "🗺️ Rendering Infrastructure Topology..."
+    @nix build .#topology.x86_64-linux.config.build.svg --no-link --print-out-paths > /tmp/topo-path
+    @echo "✅ Rendered to: $(cat /tmp/topo-path)/main.svg"
+    @if [ -n "$DISPLAY" ]; then xdg-open "$(cat /tmp/topo-path)/main.svg"; else echo "🔗 File path: $(cat /tmp/topo-path)/main.svg"; fi
+
+[group("System")]
+attic-token:
+    @echo "🔑 Generating new Attic Admin Token (Valid for 1y)..."
+    #!/usr/bin/env bash
+    ssh core-pi "sudo nixos-container run attic -- sh -c ' \\
+      set -a; \\
+      . /etc/atticd-env; \\
+      if [ -z \"\$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64\" ]; then \\
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"; \\
+      fi; \\
+      ATTICADM=\$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1); \\
+      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1); \\
+      \$ATTICADM -f \$CONFIG make-token --sub \"admin\" --validity \"1y\" --pull \"*\" --push \"*\" --create-cache \"*\" --configure-cache \"*\" --configure-cache-retention \"*\" --destroy-cache \"*\" \\
+    '"
+
+# Mint a LEAST-PRIVILEGE Attic token for CI (push/pull on one cache only — no
+# create/configure/destroy). Use this for the ATTIC_PUSH_TOKEN stored in CI,
+# NOT the admin token above. Pipe into sops, e.g.:
+#   TOKEN=$(just nixos::attic-ci-token | grep '^eyJ')
+#   sops --set "[\"attic_push_token\"] \"$TOKEN\"" ../kleinbem-secrets/nix/per-host/orin-nano.yaml
+# Usage: just nixos::attic-ci-token                  # github-ci, system, 1y
+#        just nixos::attic-ci-token github-ci system 10y
+[group("System")]
+attic-ci-token sub="github-ci" cache="system" validity="1y":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ssh core-pi "sudo nixos-container run attic -- sh -c '
+      set -a; . /etc/atticd-env
+      [ -z \"\${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}\" ] && \
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"
+      ATTICADM=\$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1)
+      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
+      \"\$ATTICADM\" -f \"\$CONFIG\" make-token \
+        --sub \"{{ sub }}\" --validity \"{{ validity }}\" --pull \"{{ cache }}\" --push \"{{ cache }}\"
+    '"
+
+# Run a one-shot Attic garbage-collection sweep in the cache container.
+#
+# Attic has NO per-path/per-generation delete — retention + GC is the ONLY
+# reclaim mechanism (see nix-presets/containers/attic.nix). This fires a single
+# sweep on demand, equivalent to `atticd --mode garbage-collector-once`.
+#
+# What it reclaims:
+#   • ALWAYS — orphaned chunks/NARs no longer referenced by any cache entry
+#     (e.g. after an entry was overwritten). Safe regardless of retention.
+#   • AGE-BASED — entries whose created_at AND last_accessed_at are both older
+#     than the cache's retention window. Steady-state config sets this to
+#     90 days (nix-presets/containers/attic.nix), and the container's own 12h
+#     timer already applies it — so this recipe is mostly a way to force that
+#     sweep NOW (e.g. right after lowering the window) rather than wait for the
+#     timer. Actively-pulled paths renew last_accessed and survive; an evicted
+#     non-upstream path is refilled by the next build-all and gated by
+#     promote-production's verify-cache, so this never causes a device build.
+#
+# To reclaim harder on demand WITHOUT a rebuild (e.g. disk pressure): lower the
+# retention temporarily, sweep, then restore. Do it only after a confirmed
+# full-fleet rebuild so everything live is fresh and can't be evicted:
+#   TOKEN=$(just nixos::attic-token | grep '^eyJ')
+#   attic login kleinbem https://cache.kleinbem.dev "$TOKEN"   # needs mesh/Caddy reachable
+#   attic cache configure system --retention-period 30d
+#   just nixos::attic-gc
+#   attic cache configure system --retention-period 90d        # restore steady-state
+#
+# CAUTION: this spawns a second atticd process against the same DB as the
+# running server. Fine for Postgres; on SQLite a busy server can briefly report
+# "database is locked" — just re-run, or `sudo machinectl stop attic` for a cold
+# sweep and restart after. UNVERIFIED against the live container — confirm the
+# binary/config globs resolve on first run.
+[group("System")]
+attic-gc:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🧹 Running one-shot Attic GC sweep in the cache container…"
+    ssh core-pi "sudo nixos-container run attic -- sh -c '
+      set -a; . /etc/atticd-env
+      [ -z \"\${ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64:-}\" ] && \
+        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"
+      ATTICD=\$(ls -1 /nix/store/*-attic-*/bin/atticd | head -n 1)
+      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1)
+      echo \"── storage BEFORE ──\"; du -sh /var/lib/atticd/storage 2>/dev/null || true
+      echo \"▶ \$ATTICD --mode garbage-collector-once -f \$CONFIG\"
+      \"\$ATTICD\" --mode garbage-collector-once -f \"\$CONFIG\"
+      echo \"── storage AFTER ──\";  du -sh /var/lib/atticd/storage 2>/dev/null || true
+    '"
+    echo "✅ Attic GC sweep complete."
+
+# On-demand run of the orphaned-chunk reaper (the same host service the weekly
+# `autoReap` timer fires). atticd's retention GC marks superseded chunks deleted
+# but never unlinks the files on core-pi; this reclaims them (+VACUUMs the DB).
+# Safe: refuses if any deleted-marked chunk is still referenced, and defers if a
+# push is writing chunks. `systemctl start` blocks until the oneshot finishes.
+[group("System")]
+attic-reap:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🧹 Running attic-reap on core-pi (reclaims orphaned chunks + VACUUM)…"
+    ssh core-pi "sudo systemctl start attic-reap.service"
+    ssh core-pi "sudo journalctl -u attic-reap.service -n 15 --no-pager --output cat"
+    echo "✅ attic-reap complete."
