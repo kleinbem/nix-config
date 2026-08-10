@@ -72,6 +72,7 @@
       efibootmgr # EFI NVRAM entry management (recovery + boot guard)
       bind.dnsutils # provides nslookup, dig
       google-antigravity-ide-no-fhs # Google Antigravity IDE
+      buzz-desktop # Client for the self-hosted Buzz relay (containers.nix)
 
       # RDP clients for mac-mini's GNOME Remote Desktop (reached via
       # `ssh -L 3389:localhost:3389 mac-mini`, see hosts/mac-mini/default.nix).
