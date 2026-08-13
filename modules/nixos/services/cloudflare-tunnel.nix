@@ -14,6 +14,7 @@
           noTLSVerify = true;
         };
         ingress = {
+          "kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "home.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "chat.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "code.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";

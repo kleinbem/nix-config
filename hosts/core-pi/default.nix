@@ -111,6 +111,13 @@ in
         ip = "${myInventory.network.nodes.caddy.ip}/24";
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
+        # kleinbem.dev — static Astro build (kleinbem/kleinbem-site), packaged
+        # in nix-packages. hostPath is a Nix store path: every switch that
+        # picks up a newer kleinbem-site build re-points the bind-mount at
+        # the new output, no manual redeploy step.
+        staticSites."kleinbem.dev" = {
+          hostPath = "${pkgs.kleinbem-site}";
+        };
       };
 
       crowdsec = {
@@ -186,6 +193,28 @@ in
   # container-host module handles container data persistence
   # (auto-derived from each enabled container's hostDataDir, incl.
   # /var/lib/ente). Add only non-container directories here.
+
+  # kleinbem.dev static site bind-mount, wired here (a real, separate
+  # `containers.caddy.bindMounts` definition) rather than through
+  # my.containers.caddy.staticSites' own wiring — that path is dead:
+  # nix-presets/containers/caddy/default.nix combines
+  # `lib.mkIf (hostDataDir != null) {...}` with plain `//`, and since
+  # mkIf's result carries a `_type = "if"` marker, the module system's
+  # dischargeProperties collapses the WHOLE merged value down to just that
+  # mkIf's own `content` (`/var/lib/caddy`), silently dropping everything
+  # merged in after it — including the module's own PKI-cert mounts, which
+  # means those have likely never actually applied either. Not fixed here:
+  # that's shared code fronting every live public service on this host —
+  # fix it in nix-presets separately, verify the PKI-cert host paths
+  # actually exist first, then this workaround (and the
+  # my.containers.caddy.staticSites option's own bindMounts logic) can be
+  # revisited. The staticSites option itself still IS used above, for the
+  # Caddy vhost it generates (that half of the module isn't affected by
+  # this bug).
+  containers.caddy.bindMounts."/var/www/kleinbem.dev" = {
+    hostPath = "${pkgs.kleinbem-site}";
+    isReadOnly = true;
+  };
 
   services.crowdsec-firewall-bouncer = {
     enable = true;
