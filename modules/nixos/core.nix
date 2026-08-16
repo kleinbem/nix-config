@@ -208,45 +208,50 @@ in
     nix-index.enable = true;
   };
 
-  environment.systemPackages = with pkgs; [
-    # Core Tools
-    git
-    curl
-    wget
-    btop
-    ouch
-    file
-    pciutils
+  environment.systemPackages =
+    with pkgs;
+    [
+      # Core Tools
+      git
+      curl
+      wget
+      btop
+      ouch
+      file
+      pciutils
 
-    # Modern CLI Tools
-    # gh # Removed temporarily to fix aarch64 cross-compilation failure (unrecognized option '-m64' via CGO)
-    just
-    jq
-    ripgrep
-    fd
-    eza
-    nh
-    nix-output-monitor
-    nvd
+      # Modern CLI Tools
+      # gh # Removed temporarily to fix aarch64 cross-compilation failure (unrecognized option '-m64' via CGO)
+      just
+      jq
+      ripgrep
+      fd
+      eza
+      nh
+      nix-output-monitor
+      nvd
 
-    # Nix Tooling
-    nixfmt
-    deadnix
-    statix
-    manix # Fast terminal search for Nix/NixOS/HM options
+      # Nix Tooling
+      nixfmt
+      deadnix
+      statix
+      manix # Fast terminal search for Nix/NixOS/HM options
 
-    android-tools # ADB & Fastboot
-    lm_sensors # Hardware heat sensors
-    waypipe # Forward Wayland apps from this host over SSH (useful for remote GUI debug on headless boxes)
-
-    # Network & system diagnostics (fleet-wide debug floor)
-    bind.dnsutils # dig, nslookup — resolved/NetBird/hosts-file DNS issues will come up
-    mtr # traceroute + ping merged; debug NetBird mesh / container-bridge reachability
-    lsof # "what's using port/file/LV?" — recurring need (LUKS unmount, port conflicts)
-    iotop # disk I/O perpetrator finder (Frigate / paperless / syncthing)
-    tcpdump # packet capture — last-resort network debugging
-    lnav # TUI log navigator; much better than `journalctl | less` for spelunking
-  ];
+      android-tools # ADB & Fastboot
+      lm_sensors # Hardware heat sensors
+    ]
+    ++ lib.optionals (pkgs.stdenv.hostPlatform.system != "aarch64-linux") [
+      waypipe # Forward Wayland apps from this host over SSH (useful for remote GUI debug on headless boxes)
+    ]
+    ++ [
+      # Network & system diagnostics (fleet-wide debug floor)
+      bind.dnsutils # dig, nslookup — resolved/NetBird/hosts-file DNS issues will come up
+      mtr # traceroute + ping merged; debug NetBird mesh / container-bridge reachability
+      lsof # "what's using port/file/LV?" — recurring need (LUKS unmount, port conflicts)
+      iotop # disk I/O perpetrator finder (Frigate / paperless / syncthing)
+      tcpdump # packet capture — last-resort network debugging
+      lnav # TUI log navigator; much better than `journalctl | less` for spelunking
+    ];
 
   environment.sessionVariables = {
     FLAKE = "${config.my.developDir}/nix-config";
