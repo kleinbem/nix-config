@@ -41,6 +41,7 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 | [MODULE-ORGANIZATION.md](MODULE-ORGANIZATION.md) | Module patterns & import strategies | ✅ Current (2026-08-17) |
 | [CONTAINER-HOST-SETUP.md](CONTAINER-HOST-SETUP.md) | Container hosting module & setup | ✅ Current (2026-08-17) |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Current (2026-08-17) |
+| [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md) | Secure secrets with sops + age | ✅ Current (2026-08-17) |
 | [IMPORTS.md](IMPORTS.md) | Module imports & flake structure | ✅ Active (2026-08-10) |
 | [OPTIONS.md](OPTIONS.md) | Custom `my.*` option reference | ✅ Active (2026-08-10) |
 | [SYSTEM_REFERENCE.md](SYSTEM_REFERENCE.md) | System-level config overview | ✅ Active (2026-08-10) |
@@ -179,6 +180,9 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 
 **"Something broke, where do I start?"**
 → TROUBLESHOOTING.md (diagnosis checklist, common issues)
+
+**"How do I manage secrets securely?"**
+→ SECRETS-MANAGEMENT.md (sops + age, rotation, integration)
 
 ---
 
