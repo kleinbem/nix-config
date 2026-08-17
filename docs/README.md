@@ -39,6 +39,8 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 |------|---------|--------|
 | [DEVICE-TIERS.md](DEVICE-TIERS.md) | Device tier definitions & setup checklist | ✅ Current (2026-08-17) |
 | [MODULE-ORGANIZATION.md](MODULE-ORGANIZATION.md) | Module patterns & import strategies | ✅ Current (2026-08-17) |
+| [CONTAINER-HOST-SETUP.md](CONTAINER-HOST-SETUP.md) | Container hosting module & setup | ✅ Current (2026-08-17) |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Current (2026-08-17) |
 | [IMPORTS.md](IMPORTS.md) | Module imports & flake structure | ✅ Active (2026-08-10) |
 | [OPTIONS.md](OPTIONS.md) | Custom `my.*` option reference | ✅ Active (2026-08-10) |
 | [SYSTEM_REFERENCE.md](SYSTEM_REFERENCE.md) | System-level config overview | ✅ Active (2026-08-10) |
@@ -94,6 +96,22 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 **Read when:** Confused about module imports, adding modules to a device
 
 **Example:** "Why doesn't audio work?" → Check MODULE-ORGANIZATION.md gotchas
+
+---
+
+### TROUBLESHOOTING.md (10 KB)
+**What:** Diagnostic guide for common fleet issues.
+
+**Covers:**
+- Network connectivity (SSH, DNS)
+- Storage/persistence (data loss, reboot issues)
+- Build failures and performance
+- Container issues
+- Secrets & encryption
+- Performance troubleshooting
+- Debug checklist and issue reporting
+
+**Read when:** Something breaks, system behaving oddly
 
 ---
 
@@ -155,6 +173,12 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 
 **"What's the current fleet status?"**
 → DEVICE-TIERS.md (status matrix at bottom)
+
+**"How do I set up a container host?"**
+→ CONTAINER-HOST-SETUP.md (new module for container hosting)
+
+**"Something broke, where do I start?"**
+→ TROUBLESHOOTING.md (diagnosis checklist, common issues)
 
 ---
 
