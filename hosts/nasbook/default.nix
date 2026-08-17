@@ -11,9 +11,9 @@ let
 in
 {
   imports = [
-    # IMPORTANT: You must run `nixos-generate-config` on the physical NASbook
-    # and replace/create `./hardware-configuration.nix` with the output.
-    ./hardware-configuration.nix
+    # Disk setup via disko (replaces legacy hardware-configuration.nix, see ./disko.nix)
+    inputs.disko.nixosModules.disko
+    ./disko.nix
     "${self}/modules/nixos/base.nix" # foundational, imported by every entry-point bundle
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
