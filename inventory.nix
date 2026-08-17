@@ -72,7 +72,7 @@
       ];
     };
     hass-pi = {
-      ip = "10.0.0.21"; # Raspberry Pi — not yet active
+      ip = "10.0.0.21"; # Raspberry Pi — not yet deployed
       netbirdIp = "100.117.163.227"; # Mesh IP (stable per enrollment)
       system = "aarch64-linux";
       deployType = "ssh";
@@ -80,6 +80,17 @@
         "raspberry-pi"
         "home-assistant"
       ];
+      # Status: Configuration ready (hosts/hass-pi/default.nix), hardware prepared
+      # but not deployed. Deploy when home automation becomes priority.
+      # Currently hosts: home-assistant, openclaw (pnpm-deps hash issue keeps
+      # it here; see hosts/hass-pi/default.nix line 17-23). Other AI services
+      # moved to mac-mini 2026-08-05 (RAM and power constraints).
+      #
+      # To deploy:
+      # 1. Power on Raspberry Pi 5
+      # 2. Boot NixOS installer, follow bootstrap steps in docs/DEVICE-TIERS.md
+      # 3. Run: sudo nixos-install --flake .#hass-pi
+      # 4. Update this comment to remove "not yet deployed"
     };
     phone = {
       system = "aarch64-linux";
