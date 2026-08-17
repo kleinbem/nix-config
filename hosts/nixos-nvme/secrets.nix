@@ -1,3 +1,16 @@
+# nixos-nvme Secrets Management
+#
+# This file handles core host secrets (database passwords, API keys, etc.).
+# Additional secrets are defined in:
+#   - ai.nix (LLM/AI API keys, litellm config — gated behind my.ai.enable)
+#   - specialisations.nix (secrets only needed for alternative boot profiles)
+#
+# Rationale for splitting: Secrets are scoped to features that use them.
+# This avoids decrypting unnecessary secrets at activation and keeps each
+# feature's configuration self-contained. Persona contact info was moved to
+# kleinbem-secrets/personas/contact.nix (plain Nix, re-encrypted at deployment).
+#
+# See also: modules/nixos/keys.nix (public SSH keys)
 {
   pkgs,
   inputs,
