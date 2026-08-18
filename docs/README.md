@@ -1,6 +1,6 @@
 # NixOS Configuration Documentation Index
 
-**Last Updated:** 2026-08-17
+**Last Updated:** 2026-08-18
 
 Quick navigation for the kleinbem fleet NixOS configuration.
 
@@ -40,6 +40,7 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 | [DEVICE-TIERS.md](DEVICE-TIERS.md) | Device tier definitions & setup checklist | ✅ Current (2026-08-17) |
 | [MODULE-ORGANIZATION.md](MODULE-ORGANIZATION.md) | Module patterns & import strategies | ✅ Current (2026-08-17) |
 | [CONTAINER-HOST-SETUP.md](CONTAINER-HOST-SETUP.md) | Container hosting module & setup | ✅ Current (2026-08-17) |
+| [HOME-MANAGER-SETUP.md](HOME-MANAGER-SETUP.md) | User environment & dotfiles configuration | ✅ Current (2026-08-18) |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Current (2026-08-17) |
 | [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md) | Secure secrets with sops + age | ✅ Current (2026-08-17) |
 | [IMPORTS.md](IMPORTS.md) | Module imports & flake structure | ✅ Active (2026-08-10) |
@@ -79,6 +80,26 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 **Read when:** Setting up a new device, understanding tier architecture
 
 **Example:** Want to add a new Edge Node? Go here first.
+
+---
+
+### HOME-MANAGER-SETUP.md (400+ lines)
+**What:** User environment and dotfiles configuration guide.
+
+**Covers:**
+- User setup (adding new users, user templates)
+- Home-Manager module structure
+- Module enable/disable patterns
+- Common customizations (tools, aliases, env vars)
+- Secrets integration (credentials, API keys)
+- Dotfiles management strategies
+- Troubleshooting user config issues
+- Advanced patterns (conditional config, shared modules)
+- Migration and updates
+
+**Read when:** Setting up a new user, customizing dev environment, fixing home config issues
+
+**Example:** Want to add a development tool? Go here for the pattern.
 
 ---
 
