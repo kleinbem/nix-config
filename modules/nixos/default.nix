@@ -1,26 +1,11 @@
 { ... }:
 {
   imports = [
-    ./base.nix # foundational, imported by every entry-point bundle
+    # Base tier (required by all configs)
+    ./base.nix
 
-    ./kernel.nix
-    ./audit.nix
-    ./audio.nix
-    ./desktop.nix
-    ./users.nix
-    ./security
-    ./snapper.nix
-    ./printing.nix
-    ./threed-printing.nix
-    ./firejail.nix
-    ./ai-hardening.nix
-    ./ananicy.nix
-    ./android.nix
-
-    # Services
-    ./scripts.nix
-    ./services/tang.nix
-    ./clevis-initrd.nix
-    ./initrd-fan.nix
+    # Workstation-specific bundle (GUI, development, multimedia, etc.)
+    # See workstation-bundle.nix for details.
+    ./workstation-bundle.nix
   ];
 }
