@@ -7,6 +7,7 @@
 #
 #   imports = [
 #     "${self}/modules/nixos/container-host.nix"
+#     "${self}/modules/nixos/services/container-updater.nix"  # Must also import this
 #   ];
 #
 #   my.container-host = {
@@ -93,6 +94,7 @@ in
     # ─── Container Auto-Update Orchestration (ADR 002) ──────────
     # Containers are decoupled from host generation and refreshed
     # nightly from CI-published manifest (eval-free on edge devices).
+    # NOTE: Requires services/container-updater.nix to be imported.
     my.services.container-updater = {
       enable = true;
       containers =

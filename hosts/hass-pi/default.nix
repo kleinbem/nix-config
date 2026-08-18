@@ -1,7 +1,5 @@
 # hass-pi — Raspberry Pi 5 (Smart Home & Automation)
 {
-  config,
-  lib,
   inputs,
   self,
   myInventory,
@@ -10,6 +8,7 @@
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
+    "${self}/modules/nixos/container-host.nix"
     "${self}/modules/nixos/services/container-updater.nix"
     ./disko.nix
     ./secrets.nix
@@ -47,8 +46,9 @@
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # ─── Container Network ──────────────────────────────────────
-    network = {
+    # ─── Container Hosting (via reusable module) ────────────────
+    container-host = {
+      enable = true;
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";
     };
@@ -74,19 +74,10 @@
       };
     };
 
-    # ─── Standalone container auto-update (ADR 002) ─────────────
+    # ─── Container auto-update (ADR 002) ────────────────────────
+    # Configured via container-host module (see above).
     # HA is decoupled from the host generation and refreshed nightly from
-    # the CI-published manifest — eval-free on the Pi. Unchanged closures
-    # are NOT restarted, so HA only blips when there is an actual update.
-    services.container-updater = {
-      enable = true;
-      containers =
-        let
-          excludeFromUpdater = [ ];
-          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
-        in
-        lib.subtractLists excludeFromUpdater allEnabled;
-    };
+    # the CI-published manifest — eval-free on the Pi.
   };
 
   # ─── Direct LAN access to Home Assistant ────────────────────

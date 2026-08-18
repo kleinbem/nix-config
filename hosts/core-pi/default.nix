@@ -21,6 +21,7 @@ in
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
+    "${self}/modules/nixos/container-host.nix"
     "${self}/modules/nixos/services/container-updater.nix"
     ./disko.nix
     ./secrets.nix
@@ -89,10 +90,16 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # ─── Container Network ──────────────────────────────────────
-    network = {
+    # ─── Container Hosting (via reusable module) ────────────────
+    container-host = {
+      enable = true;
       subnet = "10.85.48.0/24";
       hostAddress = "10.85.48.1";
+      excludeFromUpdater = [
+        "attic"
+        "caddy"
+        "crowdsec"
+      ];
     };
 
     services.tang.enable = true;
@@ -169,32 +176,15 @@ in
     # wt0 PREROUTING DNAT (see modules/nixos/attic-pull.nix).
     atticPull.cacheHostIp = myInventory.network.nodes.caddy.ip;
 
-    # ─── Standalone container auto-update (ADR 002) ─────────────
-    # Same model as nixos-nvme: containers are decoupled from the host
-    # generation and refreshed nightly from the CI-published manifest —
-    # eval-free on the Pi. The bulk updater stages everything first and
-    # activates attic LAST so the cache keeps serving mid-update.
-    services.container-updater = {
-      enable = true;
-      # Exclude critical infrastructure from the nightly decoupled updates.
-      # core-pi uses impermanence, so /var/lib/machines is wiped on reboot.
-      # If attic/caddy are decoupled, they must be downloaded from the cache
-      # at boot, but the cache IS attic/caddy, creating a bootstrap deadlock.
-      # By excluding them, they are built into the host closure and start reliably.
-      containers =
-        let
-          excludeFromUpdater = [
-            "attic"
-            "caddy"
-            "crowdsec"
-          ];
-          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
-        in
-        lib.subtractLists excludeFromUpdater allEnabled;
-    };
+    # ─── Container auto-update (ADR 002) ────────────────────────
+    # Configured via container-host module's excludeFromUpdater list (see above).
+    # Containers are decoupled from the host generation and refreshed nightly
+    # from the CI-published manifest — eval-free on the Pi.
   };
 
-  # ─── Persistence ─────────────────────────────────────────────
+  # ─── Persistence (Additional) ───────────────────────────────
+  # container-host module handles container data persistence;
+  # this block handles additional (non-container) directories.
   environment.persistence."/nix/persist" = {
     directories = [
       "/var/lib/ente"

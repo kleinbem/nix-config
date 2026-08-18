@@ -49,6 +49,7 @@ in
     "${self}/modules/nixos/clevis-initrd.nix"
 
     "${self}/users/martin/nixos.nix"
+    "${self}/modules/nixos/container-host.nix"
     "${self}/modules/nixos/services/container-updater.nix"
     "${self}/modules/nixos/desktop.nix"
     # firejail.nix is a separate file from desktop.nix, only pulled in
@@ -218,23 +219,16 @@ in
       # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
     };
 
-    # Fixes network-routing.nix (fleet-wide via base.nix) silently targeting a
-    # nonexistent "wlo1" (the my.network.externalInterface default) on every
-    # boot/5min timer — harmless (the enforce-container-routes script has
-    # `|| true`) but pointless without the real interface name.
-    #
-    # subnet/hostAddress: this host's own slice of the fleet's container
-    # network (modules/nixos/network-routing.nix's subnets map has a
-    # matching "mac-mini" entry) — same pattern core-pi/nixos-nvme/hass-pi
-    # use. Deliberately NOT sourced from inventory.nix's
-    # hosts.mac-mini.ip (that field is colmena's real SSH deploy target,
-    # currently the LAN IP — repointing it at this bridge address would
-    # break deployment: colmena couldn't reach a brand-new bridge address
-    # to deploy the very change that creates it, and cross-host routing to
-    # it depends on a route that itself only exists after a successful
-    # deploy). Hardcoded here instead, same as core-pi's own hostAddress.
-    network = {
-      externalInterface = "enp2s0f0";
+    # Container hosting via reusable module (see container-host.nix).
+    # externalInterface: Fixes network-routing.nix (fleet-wide via base.nix)
+    # silently targeting a nonexistent "wlo1" (the default) on every boot/5min timer.
+    # subnet/hostAddress: this host's own slice of the fleet's container network
+    # (modules/nixos/network-routing.nix's subnets map has a "mac-mini" entry).
+    # Same pattern core-pi/nixos-nvme/hass-pi use.
+    network.externalInterface = "enp2s0f0";
+
+    container-host = {
+      enable = true;
       subnet = "10.85.50.0/24";
       hostAddress = "10.85.50.1";
     };
