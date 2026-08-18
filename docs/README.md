@@ -1,6 +1,6 @@
 # NixOS Configuration Documentation Index
 
-**Last Updated:** 2026-08-18
+**Last Updated:** 2026-08-18 (BACKUP-RECOVERY added)
 
 Quick navigation for the kleinbem fleet NixOS configuration.
 
@@ -43,6 +43,7 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 | [HOME-MANAGER-SETUP.md](HOME-MANAGER-SETUP.md) | User environment & dotfiles configuration | ✅ Current (2026-08-18) |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Current (2026-08-17) |
 | [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md) | Secure secrets with sops + age | ✅ Current (2026-08-17) |
+| [BACKUP-RECOVERY.md](BACKUP-RECOVERY.md) | Backup strategy & disaster recovery procedures | ✅ Current (2026-08-18) |
 | [IMPORTS.md](IMPORTS.md) | Module imports & flake structure | ✅ Active (2026-08-10) |
 | [OPTIONS.md](OPTIONS.md) | Custom `my.*` option reference | ✅ Active (2026-08-10) |
 | [SYSTEM_REFERENCE.md](SYSTEM_REFERENCE.md) | System-level config overview | ✅ Active (2026-08-10) |
@@ -100,6 +101,27 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 **Read when:** Setting up a new user, customizing dev environment, fixing home config issues
 
 **Example:** Want to add a development tool? Go here for the pattern.
+
+---
+
+### BACKUP-RECOVERY.md (500+ lines)
+**What:** Backup strategy and disaster recovery procedures.
+
+**Covers:**
+- Quick start (daily, weekly, recovery procedures)
+- Backup strategy (what, how, when)
+- Per-device backup plans
+- Encryption and key management
+- Cloud backup options
+- Disaster recovery scenarios (5 detailed cases)
+- Device failure, secrets exposed, repo compromised, network outage, data loss
+- Backup verification and testing
+- Tools and utilities
+- Compliance and legal requirements
+
+**Read when:** Setting up backups, disaster strikes, planning recovery, testing procedures
+
+**Example:** Lost a device? Go here for step-by-step recovery process.
 
 ---
 
