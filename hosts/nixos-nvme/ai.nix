@@ -46,6 +46,17 @@
       };
     };
 
+    # NOT enabled — monitoring already lives on mac-mini (moved there
+    # 2026-08-04 for RAM headroom) and this exact option is ALSO declared
+    # `enable = false` in this host's own containers.nix (hosts/nixos-nvme/
+    # containers.nix:111) — a leftover duplicate stub from before ai.nix
+    # was split out. Flipping either copy to `true` without reconciling
+    # the other throws a conflicting-definition eval error (confirmed
+    # 2026-08-19), and even if forced, it'd stand up a second Grafana/
+    # Prometheus instance fighting mac-mini's for the same
+    # myInventory.network.nodes.monitoring.ip. Needs the duplicate
+    # removed (probably drop the containers.nix stub) before this can be
+    # touched again.
     monitoring = {
       enable = false;
       ip = "${myInventory.network.nodes.monitoring.ip}/24";

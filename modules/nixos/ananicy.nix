@@ -1,5 +1,18 @@
 { pkgs, ... }:
 
+let
+  # ananicy-cpp 1.2.0 fails to build against current nixpkgs libc++: several
+  # source files use std::memset/std::int32_t etc. without including
+  # <cstring>/<cstdint> (relying on transitive includes that newer libc++
+  # no longer provides). Prepend both headers to every .cpp file rather than
+  # tracking down each individual missing include. Fix upstream via a patch
+  # once released; drop this override then.
+  ananicy-cpp-fixed = pkgs.ananicy-cpp.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      find src -name '*.cpp' -exec sed -i '1i #include <cstring>\n#include <cstdint>' {} +
+    '';
+  });
+in
 {
   # ==========================================
   # ANANICY-CPP — Auto-Nice Daemon
@@ -9,8 +22,8 @@
 
   services.ananicy = {
     enable = true;
-    package = pkgs.ananicy-cpp;
-    rulesProvider = pkgs.ananicy-cpp;
+    package = ananicy-cpp-fixed;
+    rulesProvider = ananicy-cpp-fixed;
     settings.apply_cgroups = false;
     extraRules = [
       # Prioritize the GNOME desktop environment

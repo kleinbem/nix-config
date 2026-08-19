@@ -7,6 +7,28 @@
 
 let
   cfg = config.my.desktop;
+
+  # metadata-cleaner's mat2 dependency fails its test suite on build: a
+  # ffmpeg-version-dependent MP4 TimeScale assertion in
+  # test_libmat2.py::TestCleaning::test_all_parametred flakes against
+  # whatever ffmpeg happens to be pinned right now. Not a real regression
+  # in mat2 or metadata-cleaner — deselect just that parametrized test
+  # rather than disabling the whole suite.
+  metadata-cleaner-fixed = pkgs.metadata-cleaner.overrideAttrs (old: {
+    # buildPythonPackage's `dependencies` arg is translated into
+    # `propagatedBuildInputs` before mkDerivation ever sees it — that's the
+    # attribute overrideAttrs's `old` exposes and the one that actually
+    # drives the build, so patch that instead of `dependencies`.
+    propagatedBuildInputs = map (
+      dep:
+      if (dep.pname or null) == "mat2" then
+        dep.overridePythonAttrs (o: {
+          disabledTests = (o.disabledTests or [ ]) ++ [ "test_all_parametred" ];
+        })
+      else
+        dep
+    ) old.propagatedBuildInputs;
+  });
 in
 {
   options.my.desktop = {
@@ -128,7 +150,7 @@ in
 
         # Utilities (homelab / privacy / imaging)
         impression # GUI USB/SD image writer (Orin/OpenWrt installer flashing)
-        metadata-cleaner # Strip EXIF/metadata before sharing (privacy)
+        metadata-cleaner-fixed # Strip EXIF/metadata before sharing (privacy)
         switcheroo # Batch image format/resize converter (GTK4)
         dialect # Translation front-end (self-hostable backend)
         eyedropper # Color picker / palette builder

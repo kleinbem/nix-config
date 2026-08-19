@@ -178,6 +178,9 @@
       # Pulls Caddy's internal root CA over SSH from core-pi (the only host
       # that runs it) — host-specific because it hardcodes that relationship.
       ./caddy-ca-refresh.nix
+      # Keeps the Obsidian vault self-maintaining (organize/distill-flag/
+      # link-docs) instead of relying on manual `just os notes::*` runs.
+      ./notes-maintenance.nix
     ];
   };
   home-manager.users.dhirujaan = import "${self}/users/dhirujaan/home.nix";

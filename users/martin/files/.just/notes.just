@@ -11,7 +11,9 @@ add message="":
 open:
     @obsidian &
 
-# Run the Obsidian vault organizer (Nushell script).
+# Run the Obsidian vault organizer (Nushell script): PARA foldering,
+# flags Areas/Resources notes overdue for distillation (CODE workflow),
+# and regenerates AGENTS.md — the vault's LLM orientation file.
 organize:
     @nu {{SCRIPTS}}/organize-notes.nu
 

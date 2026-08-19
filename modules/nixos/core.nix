@@ -7,6 +7,17 @@
 }:
 let
   keys = import ./keys.nix;
+
+  # waypipe 0.11.0's video-hwaccel feature fails to build against current
+  # nixpkgs ffmpeg: its Rust bindings hardcode `nb_encode_queues`/
+  # `nb_decode_queues` on AVVulkanDeviceContext, fields ffmpeg's Vulkan
+  # hwcontext struct no longer has. That's an optional acceleration path
+  # (`-Dwith_video`) for streaming video buffers over waypipe, not needed
+  # for its actual use here (remote GUI debug over SSH) — disable it
+  # instead of chasing ffmpeg's Vulkan API through waypipe's Rust FFI.
+  waypipe-novideo = pkgs.waypipe.overrideAttrs (old: {
+    mesonFlags = (old.mesonFlags or [ ]) ++ [ "-Dwith_video=disabled" ];
+  });
 in
 {
   # Wraps nix-index/nix-locate with the prebuilt weekly database, so the
@@ -241,7 +252,7 @@ in
       lm_sensors # Hardware heat sensors
     ]
     ++ lib.optionals (pkgs.stdenv.hostPlatform.system != "aarch64-linux") [
-      waypipe # Forward Wayland apps from this host over SSH (useful for remote GUI debug on headless boxes)
+      waypipe-novideo # Forward Wayland apps from this host over SSH (useful for remote GUI debug on headless boxes)
     ]
     ++ [
       # Network & system diagnostics (fleet-wide debug floor)
