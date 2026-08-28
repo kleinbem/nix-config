@@ -31,9 +31,18 @@ PASS_COUNT=0
 FAIL_COUNT=0
 WARN_COUNT=0
 
-check_pass() { ((PASS_COUNT++)); log_pass "$@"; }
-check_fail() { ((FAIL_COUNT++)); log_fail "$@"; }
-check_warn() { ((WARN_COUNT++)); log_warn "$@"; }
+check_pass() {
+  ((PASS_COUNT++))
+  log_pass "$@"
+}
+check_fail() {
+  ((FAIL_COUNT++))
+  log_fail "$@"
+}
+check_warn() {
+  ((WARN_COUNT++))
+  log_warn "$@"
+}
 
 # ════════════════════════════════════════════════════════════════
 # 1. CONFIGURATION CHECKS
@@ -54,7 +63,8 @@ check_flake_inputs() {
   echo ""
   echo "Checking flake.nix inputs..."
 
-  local inputs=$(nix eval '.#nixosConfigurations.nixos-nvme.config.system.nixos.version' 2>&1 | grep -c "error" || true)
+  local inputs
+  inputs=$(nix eval '.#nixosConfigurations.nixos-nvme.config.system.nixos.version' 2>&1 | grep -c "error" || true)
 
   if [ "$inputs" -eq 0 ]; then
     check_pass "All flake inputs resolve"
@@ -131,13 +141,13 @@ check_devices() {
   # If a specific device is requested, check only that one
   if [ -n "$TARGET_DEVICE" ]; then
     case "$TARGET_DEVICE" in
-      nixos-nvme) check_device "nixos-nvme" "10.0.0.5" ;;
-      core-pi) check_device "core-pi" "10.0.0.22" ;;
-      mac-mini) check_device "mac-mini" "10.0.0.16" ;;
-      orin-nano) check_device "orin-nano" "10.0.0.15" ;;
-      nasbook) check_device "nasbook" "10.0.0.30" ;;
-      hass-pi) check_device "hass-pi" "10.0.0.21" ;;
-      *) log_warn "Unknown device: $TARGET_DEVICE" ;;
+    nixos-nvme) check_device "nixos-nvme" "10.0.0.5" ;;
+    core-pi) check_device "core-pi" "10.0.0.22" ;;
+    mac-mini) check_device "mac-mini" "10.0.0.16" ;;
+    orin-nano) check_device "orin-nano" "10.0.0.15" ;;
+    nasbook) check_device "nasbook" "10.0.0.30" ;;
+    hass-pi) check_device "hass-pi" "10.0.0.21" ;;
+    *) log_warn "Unknown device: $TARGET_DEVICE" ;;
     esac
   else
     # Check all active devices
@@ -158,7 +168,8 @@ check_git_status() {
   echo "Checking git status..."
 
   if git status >/dev/null 2>&1; then
-    local uncommitted=$(git status --short | wc -l)
+    local uncommitted
+    uncommitted=$(git status --short | wc -l)
 
     if [ "$uncommitted" -eq 0 ]; then
       check_pass "No uncommitted changes"
@@ -167,7 +178,8 @@ check_git_status() {
     fi
 
     # Check if ahead of origin
-    local ahead=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)
+    local ahead
+    ahead=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)
     if [ "$ahead" -gt 0 ]; then
       check_warn "Commits ahead of origin: $ahead"
     else
@@ -187,7 +199,8 @@ check_secrets() {
   echo "Checking secrets management..."
 
   # Check for plaintext secrets in repo
-  local plaintext=$(find . -name "*.nix" -o -name "*.yaml" | xargs grep -l "password.*=" 2>/dev/null | wc -l || true)
+  local plaintext
+  plaintext=$(grep -rl --include="*.nix" --include="*.yaml" "password.*=" . 2>/dev/null | wc -l || true)
 
   if [ "$plaintext" -eq 0 ]; then
     check_pass "No plaintext secrets in repo"
@@ -197,7 +210,8 @@ check_secrets() {
 
   # Check for sops files
   if [ -d "hosts" ]; then
-    local sops_files=$(find hosts -name "secrets.yaml" | wc -l || true)
+    local sops_files
+    sops_files=$(find hosts -name "secrets.yaml" | wc -l || true)
     if [ "$sops_files" -gt 0 ]; then
       check_pass "Found sops secrets: $sops_files files"
     fi
@@ -239,12 +253,14 @@ check_modules() {
   echo "Checking NixOS modules..."
 
   if [ -d "$SCRIPT_DIR/modules/nixos" ]; then
-    local module_count=$(find "$SCRIPT_DIR/modules/nixos" -name "*.nix" | wc -l || true)
+    local module_count
+    module_count=$(find "$SCRIPT_DIR/modules/nixos" -name "*.nix" | wc -l || true)
     check_pass "Found $module_count NixOS modules"
   fi
 
   if [ -d "$SCRIPT_DIR/modules/home-manager" ]; then
-    local hm_count=$(find "$SCRIPT_DIR/modules/home-manager" -name "*.nix" | wc -l || true)
+    local hm_count
+    hm_count=$(find "$SCRIPT_DIR/modules/home-manager" -name "*.nix" | wc -l || true)
     check_pass "Found $hm_count Home-Manager modules"
   fi
 }
