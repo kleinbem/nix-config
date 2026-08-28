@@ -23,7 +23,9 @@
       "/var/lib/docker"
       "/var/lib/flatpak"
       "/var/lib/libvirt"
-      "/var/lib/caddy"
+      # /var/lib/caddy is a container hostDataDir — the container-host module
+      # auto-derives its persistence entry; listing it here too trips
+      # impermanence's duplicate-directory assertion.
       "/var/lib/cups"
       "/var/lib/fwupd"
       "/var/lib/fail2ban"

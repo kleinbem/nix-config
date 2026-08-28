@@ -110,10 +110,12 @@
   '';
 
   # ─── Persistence ─────────────────────────────────────────────
+  # /var/lib/home-assistant and /var/lib/openclaw are container
+  # hostDataDirs — the container-host module auto-derives their
+  # persistence entries; listing them here too trips impermanence's
+  # duplicate-directory assertion.
   environment.persistence."/nix/persist" = {
     directories = [
-      "/var/lib/home-assistant"
-      "/var/lib/openclaw"
       # Native Services. DynamicUser services keep real state in
       # /var/lib/private/<name> (systemd makes /var/lib/<name> a symlink to it),
       # so we must persist the private path — bind-mounting onto the symlink

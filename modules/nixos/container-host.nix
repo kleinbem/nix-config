@@ -119,7 +119,7 @@ in
                   container = config.my.containers.${name};
                 in
                 if container.enable or false then
-                  lib.optional (container ? hostDataDir) container.hostDataDir
+                  lib.optional ((container.hostDataDir or null) != null) container.hostDataDir
                 else
                   [ ]
               )

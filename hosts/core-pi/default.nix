@@ -183,13 +183,9 @@ in
   };
 
   # ─── Persistence (Additional) ───────────────────────────────
-  # container-host module handles container data persistence;
-  # this block handles additional (non-container) directories.
-  environment.persistence."/nix/persist" = {
-    directories = [
-      "/var/lib/ente"
-    ];
-  };
+  # container-host module handles container data persistence
+  # (auto-derived from each enabled container's hostDataDir, incl.
+  # /var/lib/ente). Add only non-container directories here.
 
   services.crowdsec-firewall-bouncer = {
     enable = true;
