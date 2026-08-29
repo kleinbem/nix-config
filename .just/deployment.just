@@ -108,13 +108,27 @@ deploy host:
         fi
     fi
 
-    just deployment::push-cache {{host}}
+    # The activation above is the part that matters and it has now succeeded.
+    # Everything below (Attic cache warming, RPi bootloader sync) is
+    # best-effort housekeeping — a network blip, an Attic auth hiccup or a
+    # transient `nix run` failure in here must NOT flip a green deploy to a
+    # red one. Each step is guarded so its exit code can't abort the recipe
+    # under `set -e`.
+    if just deployment::push-cache {{host}}; then
+        :
+    else
+        echo "⚠️  Warning: Attic cache push failed (rc $?) — deploy itself SUCCEEDED."
+        echo "    Re-run later with: just deployment::push-cache {{host}}"
+    fi
 
-    # Post-flight sync: Ensure the boot files are fully copied before we report success
+    # Post-flight sync: nudge the boot files fully into place.
     if [[ "{{host}}" == "core-pi" || "{{host}}" == "hass-pi" ]]; then
         echo "⏳ Forcing Raspberry Pi bootloader sync..."
-        colmena exec -f ./flake.nix --impure --on "{{host}}" -- systemctl restart sync-rpi-boot.service || echo "⚠️ Warning: Could not force bootloader sync, it may run in the background."
+        colmena exec -f ./flake.nix --impure --on "{{host}}" -- systemctl restart sync-rpi-boot.service \
+            || echo "⚠️  Warning: Could not force bootloader sync — it may run in the background. Deploy SUCCEEDED."
     fi
+
+    echo "✅ Deploy to {{host}} complete."
 
 [group("Fleet")]
 deploy-orin:
@@ -155,7 +169,12 @@ deploy-edge:
 [doc("Push built closure(s) to Attic cache. E.g. 'just deployment::push-cache core-pi' or 'just deployment::push-cache --remote orin-nano'")]
 push-cache +args:
     #!/usr/bin/env bash
-    set -euo pipefail
+    # NOT `set -e`: this recipe is best-effort cache warming, frequently run
+    # as the tail of a `deploy` whose activation already succeeded. A flaky
+    # `nix run` / `nix path-info` / Attic timeout here must degrade to a
+    # warning, never abort — every load-bearing failure below is handled
+    # explicitly (|| echo / continue / exit).
+    set -uo pipefail
 
     # Attic is a SPARSE OVERLAY on the public caches (see the design note in
     # nix-presets/containers/attic.nix): it must hold ONLY paths no public cache
@@ -178,9 +197,9 @@ push-cache +args:
             ($keys | split(" ")) as $uk
             | to_entries[]
             | select((.value.signatures // []) | any(. as $s | $uk | any(. as $k | ($s | startswith($k + ":")))) | not)
-            | .key')
+            | .key' || true)
         if [ -z "$to_push" ]; then
-            echo "  ✓ $label: fully covered upstream — nothing to push."
+            echo "  ✓ $label: nothing to push (fully covered upstream, or closure not realised locally)."
             return 0
         fi
         echo "  ☁️ $label: pushing $(printf '%s\n' "$to_push" | wc -l) non-upstream path(s) to Attic..."
@@ -207,11 +226,12 @@ push-cache +args:
     for h in "${HOSTS[@]}"; do
         if [ "$h" = "all" ]; then
             echo "☁️ Pushing all Colmena nodes to Attic cache..."
-            HOSTLIST=$(env SSH_AUTH_SOCK="" colmena -f ./flake.nix eval -E '{ nodes, ... }: builtins.attrNames nodes' 2>/dev/null | tail -n1 | jq -r '.[]')
+            HOSTLIST=$(env SSH_AUTH_SOCK="" colmena -f ./flake.nix eval -E '{ nodes, ... }: builtins.attrNames nodes' 2>/dev/null | tail -n1 | jq -r '.[]' || true)
+            [ -z "$HOSTLIST" ] && { echo "⚠️ Warning: could not enumerate Colmena nodes — skipping."; continue; }
             for node in $HOSTLIST; do
                 echo "  Pushing $node..."
-                OUT_PATH=$(nix build .#nixosConfigurations.$node.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null)
-                push_filtered "$OUT_PATH" "$node"
+                OUT_PATH=$(nix build .#nixosConfigurations.$node.config.system.build.toplevel --impure --no-link --print-out-paths 2>/dev/null || true)
+                [ -n "$OUT_PATH" ] && push_filtered "$OUT_PATH" "$node" || echo "  ⚠️ Warning: skipped $node (no closure path)"
             done
         else
             echo "☁️ Pushing $h to Attic cache..."
