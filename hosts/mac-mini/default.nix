@@ -647,19 +647,17 @@ in
         # credentials regenerate every boot.
         "/var/lib/gnome-remote-desktop"
 
-        # Monitoring container's actual state (VictoriaMetrics DB + Grafana
-        # DB/dashboards) — moved from core-pi 2026-08-04, see the
-        # my.containers.monitoring comment above for why. Same pattern
-        # core-pi used for the same directory.
-        "/var/lib/monitoring"
-
-        # AI stack containers' state — moved from hass-pi 2026-08-05, see
-        # the my.containers.open-webui comment above for why. Same
-        # directories hass-pi used.
-        "/var/lib/open-webui"
+        # NOTE: enabled-container hostDataDirs — /var/lib/monitoring
+        # (moved from core-pi 2026-08-04), /var/lib/open-webui,
+        # /var/lib/anythingllm, /var/lib/hermes (moved from hass-pi
+        # 2026-08-05) — are NOT listed here: the container-host module
+        # auto-derives a persistence entry from each enabled container's
+        # hostDataDir, and impermanence hard-asserts on duplicate directory
+        # entries. /var/lib/agent-zero stays (its my.containers.agent-zero
+        # is disabled, so nothing auto-derives it); /var/lib/homarr stays
+        # (a plain virtualisation.oci-containers container, not
+        # my.containers.*).
         "/var/lib/agent-zero"
-        "/var/lib/anythingllm"
-        "/var/lib/hermes"
 
         # Homarr + AdGuard Home — moved from hass-pi 2026-08-05 (not
         # HA-related, see the my.containers.open-webui / services block
