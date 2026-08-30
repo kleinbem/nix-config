@@ -16,13 +16,27 @@
     };
   };
 
-  # RTSP creds for Frigate — decrypted only when Frigate is enabled, so this
-  # disabled scaffold never requires frigate_rtsp_env to exist in secrets.yaml
-  # yet (create it before flipping enable = true; see the container preset's
-  # environmentFile option). Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
-  sops.secrets.frigate_rtsp_env = lib.mkIf config.my.containers.frigate.enable {
+  # RTSP creds for Frigate — only required once a camera env-file is actually
+  # wired (containers.frigate.environmentFile != null). Gating on `.enable` alone
+  # meant a camera-less bring-up still demanded this key exist; gating on the
+  # env-file lets Frigate run with `cameras = {}` while this stays absent.
+  # Create it before setting environmentFile back to a path; see the container
+  # preset's environmentFile option. Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
+  sops.secrets.frigate_rtsp_env = lib.mkIf (config.my.containers.frigate.environmentFile != null) {
     sopsFile = "${inputs.nix-secrets}/nix/per-host/orin-nano.yaml";
   };
+
+  # ─── Frigate data disk (second SSD, nvme1n1) ────────────────
+  # Stage-2 unlock for orin_frigate_crypt. disko (disko.nix) formats the disk
+  # and declares the /mnt/data/frigate mount, but with initrdUnlock = false it
+  # emits nothing to actually open the LUKS device — that's this crypttab entry.
+  # It must run in stage 2, not initrd: the keyfile sits on /nix, which lives
+  # inside the clevis/Tang-unlocked orin_crypt root and isn't mounted until
+  # after initrd. nofail + requires/after nix.mount: never wedge boot if the
+  # disk is absent (e.g. pre-provisioning) or /nix is late.
+  environment.etc.crypttab.text = ''
+    orin_frigate_crypt /dev/disk/by-partlabel/disk-second-frigate /nix/persist/etc/crypt/frigate.key luks,discard,nofail,x-systemd.requires=nix.mount,x-systemd.after=nix.mount
+  '';
 
   # ─── AI Edge Services ──────────────────────────────────────
   my = {
@@ -68,13 +82,18 @@
         memoryLimit = "5G";
       };
       frigate = {
-        # Phase-1 scaffold (GPU TensorRT detection + CPU decode). Keep OFF
-        # until the SSD is provisioned AND the Tegra device list + on-device
-        # TensorRT engine are validated on the real Orin (see frigate.nix).
-        enable = false;
+        # SMOKE-TEST bring-up (2026-08-30): SSD is provisioned, so Frigate is on,
+        # but running camera-less and CPU-only to prove the container + the
+        # /mnt/data/frigate mount + the web UI (port 5000) come up cleanly.
+        #   To go to Phase 1 (GPU TensorRT detection): set enableGPU = true,
+        #   jetson = true, detector = "tensorrt" (after building the engine
+        #   on-device and confirming the jetsonDevices set), add cameras, create
+        #   the frigate_rtsp_env secret and point environmentFile back at it.
+        enable = true;
         ip = "${myInventory.network.nodes.frigate.ip}/24";
-        detector = "tensorrt";
-        jetson = true; # Tegra device passthrough; no desktop DRI node / VAAPI
+        detector = "cpu"; # temp — bundled CPU model; target is "tensorrt"
+        enableGPU = false; # temp — no GPU passthrough during the smoke test
+        jetson = false; # temp — no Tegra /dev/nv* binds (target is true)
         # Validated on the real Orin 2026-07-23 (JetPack 6 / r36). The preset's
         # default list has 4 nodes THIS board does not expose (nvhost-ctrl,
         # -nvdec, -vic, -nvjpg) — binding a missing node fails container start —
@@ -98,43 +117,30 @@
         hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
         memoryLimit = "3G"; # leave room for llama-cpp + syncthing + system on 8GB host
         # Camera RTSP creds: sops secret → env-file → Frigate {VAR} substitution.
-        # Literal path (= sops default /run/secrets/<name>) rather than
-        # config.sops.secrets.….path, so nothing references the secret while
-        # Frigate is OFF — the secret itself is declared below, gated on enable.
-        environmentFile = "/run/secrets/frigate_rtsp_env";
+        # null during the camera-less smoke test (nothing to substitute, and it
+        # keeps sops.secrets.frigate_rtsp_env from being required — see the gate
+        # near the top of this file). Set back to "/run/secrets/frigate_rtsp_env"
+        # when adding real cameras.
+        environmentFile = null;
         innerConfig.services.frigate.settings = {
-          # --- MQTT is required for Home Assistant integration ---
+          # MQTT → Home Assistant. Off during the smoke test (hass-pi broker not
+          # wired yet); the target values are kept here for when it goes on.
           mqtt = {
-            host = "10.85.46.10"; # Pointing to hass-pi for now, assuming MQTT is there or integrated
-            enabled = true;
+            host = "10.85.46.10"; # hass-pi
+            enabled = false;
           };
 
-          # --- Sample Camera Configuration ---
-          # Cameras live in the cameras VLAN (10.0.30.0/24, NO WAN — see the
-          # openwrt NETWORK_PLAN). orin is in infra, which the firewall matrix
-          # lets reach cameras, so Frigate can pull the stream. Credentials use
-          # Frigate's {FRIGATE_RTSP_*} env substitution — the real values come
-          # from a sops secret injected into the container env (nix-secrets),
-          # NEVER inline here. Pin the camera to 10.0.30.100 via a DHCP
-          # reservation (MAC) in openwrt-secrets ansible-vars.yaml.
-          cameras = {
-            front_door = {
-              ffmpeg.inputs = [
-                {
-                  path = "rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.0.30.100:554/stream1";
-                  roles = [
-                    "detect"
-                    "record"
-                  ];
-                }
-              ];
-              detect.enabled = true;
-              record.enabled = true;
-              # Phase 1: CPU decode (no hwaccel_args). Do NOT use preset-nvidia-*
-              # (discrete-GPU/nvcodec path) on Tegra. Phase 2 will add a
-              # jetson decode preset once an L4T (nvmpi) ffmpeg is packaged.
-            };
-          };
+          # No cameras yet. Frigate 0.17 starts fine with an empty set — the web
+          # UI comes up and cameras can be added there / here later. The target
+          # camera (front_door on the cameras VLAN, 10.0.30.100, DHCP-reserved in
+          # openwrt-secrets, {FRIGATE_RTSP_*} env substitution — never inline):
+          #   cameras.front_door.ffmpeg.inputs = [{
+          #     path = "rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.0.30.100:554/stream1";
+          #     roles = [ "detect" "record" ];
+          #   }];
+          #   cameras.front_door.detect.enabled = true;
+          #   cameras.front_door.record.enabled = true;
+          cameras = { };
 
           # --- Detection settings ---
           objects.track = [

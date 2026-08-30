@@ -68,17 +68,38 @@
                   content = {
                     type = "luks";
                     name = "orin_frigate_crypt";
+                    # The keyfile lives on /nix — i.e. INSIDE the clevis/Tang-unlocked
+                    # orin_crypt root, which is not mounted during initrd. So this
+                    # device cannot be unlocked in stage 1: initrdUnlock = false, and
+                    # the stage-2 crypttab entry that actually opens it is declared in
+                    # services.nix (disko emits nothing for the LUKS device itself when
+                    # initrdUnlock is false). Leaving this at its default (true) wires
+                    # an initrd luks.devices entry whose keyFile can never be read →
+                    # unattended boot stalls on a passphrase prompt.
+                    initrdUnlock = false;
                     settings = {
                       allowDiscards = true;
                       # Unlock using a keyfile stored on the main encrypted root.
                       # This avoids prompting for a password twice and fixes the TPM2 bug
-                      # (Jetson has no /dev/tpm0).
+                      # (Jetson has no /dev/tpm0). See the stage-2 crypttab in services.nix.
                       keyFile = "/nix/persist/etc/crypt/frigate.key";
                     };
                     content = {
                       type = "filesystem";
-                      format = "xfs";
+                      # ext4, not xfs: the L4T/Jetson kernel ships no XFS module
+                      # ("unknown filesystem type 'xfs'" on mount). ext4 is what
+                      # root uses here and is Frigate's own recommended fs.
+                      format = "ext4";
                       mountpoint = "/mnt/data/frigate";
+                      # nofail + short device timeout: this is a remote headless host,
+                      # and a missing/failed second disk must never wedge boot or block
+                      # anything that needs /mnt/data (the btrfs parent). noatime:
+                      # this disk takes constant Frigate recording writes.
+                      mountOptions = [
+                        "nofail"
+                        "noatime"
+                        "x-systemd.device-timeout=15s"
+                      ];
                     };
                   };
                 };

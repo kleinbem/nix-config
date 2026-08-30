@@ -170,8 +170,14 @@ in
 
   security.tpm2.enable = true;
 
-  # Disko handles all fileSystems (/, /boot, /mnt/data)
+  # Disko handles all fileSystems (/, /boot, /mnt/data, and /mnt/data/frigate
+  # on the second SSD — see disko.nix + the stage-2 crypttab in services.nix)
   disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1";
   _module.args.device = "/dev/nvme0n1"; # Passed to disko.nix function argument
-  _module.args.secondDiskDevice = null;
+  # Dedicated Frigate storage SSD (Seagate FireCuda, installed 2026-08-30).
+  # LUKS (orin_frigate_crypt) → ext4 → /mnt/data/frigate. Keyfile-unlocked in
+  # stage 2 (not initrd — see disko.nix). Provision the raw disk to match
+  # before deploying: create /nix/persist/etc/crypt/frigate.key, then run
+  # disko's format step scoped to this disk (partlabel disk-second-frigate).
+  _module.args.secondDiskDevice = "/dev/nvme1n1";
 }
