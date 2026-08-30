@@ -123,6 +123,14 @@ let
     frigate.ip = ip 39;
     home-assistant.ip = ip 40;
     paperless.ip = ip 41;
+    stalwart = {
+      ip = ip 47;
+      hostDataDir = dataDir "stalwart";
+      # Non-null so the closure includes the fallback-admin block (its
+      # secret path is a fixed /run/credentials/... macro, not this
+      # value). Real bind mount is supplied by the deploying host.
+      adminPasswordFile = "/run/secrets/factory-dummy";
+    };
     authelia = {
       hostDataDir = dataDir "authelia";
       # Host-level bind mounts; not in closure. The factory has no sops-nix,
@@ -174,6 +182,7 @@ in
     inputs.nix-presets.nixosModules.open-webui
     inputs.nix-presets.nixosModules.qdrant
     inputs.nix-presets.nixosModules.ntfy
+    inputs.nix-presets.nixosModules.stalwart
     inputs.nix-presets.nixosModules.playground
     inputs.nix-presets.nixosModules.caddy
     inputs.nix-presets.nixosModules.comfyui

@@ -66,31 +66,36 @@ team:
 add name:
     @./scripts/persona-scaffold.sh {{name}}
 
-# Apply persona-related Terraform resources only (DNS, SES, etc.) without
-# touching the rest of the Cloudflare/GitHub state. Run after editing
-# personas.nix if it requires DNS changes (per-persona DKIM, Access apps).
+# Apply the persona/mail DNS records only, without touching the rest of
+# the Cloudflare/GitHub state. Run after editing personas.nix if it needs
+# DNS changes (per-persona DKIM, Access apps). The real Terraform root is
+# nix/infra — driven by nix/tools/tf-apply.sh (sops decrypt + R2 backend).
+#
+# SES resources (aws-ses.tf) are NOT targeted here: that file is currently
+# `aws-ses.tf.disabled` (no AWS creds). Re-enable it and add its targets
+# back once outbound relay is provisioned — see
+# nix-config/docs/PHASE1_STALWART_STATUS.md.
 [group("Personas")]
 tf-apply: tf-export
-    @cd ../terraform && tofu apply \
+    @cd ../nix && tools/tf-apply.sh -- \
         -target=cloudflare_record.mail_a \
         -target=cloudflare_record.mail_mx \
         -target=cloudflare_record.mail_spf \
         -target=cloudflare_record.mail_dmarc \
         -target=cloudflare_record.mail_mta_sts \
         -target=cloudflare_record.mail_tlsrpt \
-        -target=aws_sesv2_email_identity.primary_domain \
-        -target=aws_iam_user.stalwart_smtp \
-        -target=aws_iam_access_key.stalwart_smtp
+        -target=cloudflare_record.stalwart_dkim \
+        -auto-approve
 
 # Plan persona-related Terraform without applying. Use to preview the
 # infrastructure delta after editing personas.nix.
 [group("Personas")]
 tf-plan: tf-export
-    @cd ../terraform && tofu plan
+    @cd ../nix && tools/tf-apply.sh --plan-only
 
-# Export personas.nix → terraform/personas.json so Terraform can consume
-# the same source of truth. Idempotent — run before any tf-apply/plan.
+# Export personas.nix ⊕ contact.nix → nix/infra/personas.json so Terraform
+# consumes the same source of truth. Idempotent — run before tf-apply/plan.
 [group("Personas")]
 [private]
 tf-export:
-    @../scripts/export-personas.sh
+    @../nix/tools/export-personas.sh

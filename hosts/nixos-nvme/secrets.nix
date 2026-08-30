@@ -216,6 +216,17 @@
       litellm_master_key = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
+    }
+    # Stalwart mail admin password hash (`mkpasswd -m sha-512`). Same
+    # gating rationale as litellm_master_key above: the Stalwart preset's
+    # adminPasswordFile must resolve to a real, present secret at
+    # activation, so the declaration only exists while the container is
+    # enabled. Provision the value in nix/per-host/nixos-nvme.yaml before
+    # flipping my.containers.stalwart.enable — see containers.nix.
+    // lib.optionalAttrs config.my.containers.stalwart.enable {
+      stalwart_admin_password_hash = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
     };
 
     # --- Templated Env Files ---

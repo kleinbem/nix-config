@@ -222,6 +222,34 @@
         # vhost set up yet. Switch to wss://buzz.kleinbem.dev once that's wired.
         relayUrl = "ws://${myInventory.network.nodes.buzz.ip}:3000";
       };
+
+      # Persona-fleet mail server (Phase 1 — see docs/PHASE1_STALWART.md
+      # and docs/PHASE1_STALWART_STATUS.md). Mailboxes are generated from
+      # nix-config/personas.nix: one <name>@kleinbem.dev per persona.
+      #
+      # Kept disabled until the admin-password hash is provisioned: an
+      # enabled Stalwart with adminPasswordFile pointing at a
+      # not-yet-present secret would fail real activation (same footgun
+      # as litellm_master_key — see secrets.nix). To bring it up:
+      #   1. mkpasswd -m sha-512  →  put under `stalwart_admin_password_hash`
+      #      in nix/per-host/nixos-nvme.yaml  (`sops` that file).
+      #   2. Flip `enable = true` here, `just apply`.
+      #   3. Provision mailboxes: for each persona,
+      #      `just personas::add <name>` (its step 6 runs once Stalwart is up).
+      #
+      # relaySecretFile is intentionally unset: no AWS SES creds yet, so
+      # outbound goes direct (fine for mesh-internal persona↔persona mail;
+      # external delivery needs the relay — see the STATUS doc).
+      stalwart = {
+        enable = false;
+        ip = "${myInventory.network.nodes.stalwart.ip}/24";
+        hostDataDir = "/var/lib/images/stalwart";
+        domain = "kleinbem.dev";
+        memoryLimit = "1G";
+        adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable (
+          config.sops.secrets.stalwart_admin_password_hash.path
+        );
+      };
     };
 
   };
@@ -256,6 +284,7 @@
     "d /var/lib/images/buzz/relay 0755 root root - -"
     "d /var/lib/images/github-runner 0755 1000 100 - -"
     "d /var/lib/images/syncthing 0755 root root - -"
+    "d /var/lib/images/stalwart 0755 root root - -"
   ];
 
 }

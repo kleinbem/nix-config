@@ -581,6 +581,23 @@
           description = "E2E Encrypted 2FA & Authenticator Server.";
         };
       };
+      # Persona-fleet mail (Phase 1). One mailbox per persona at
+      # <name>@kleinbem.dev, generated from personas.nix by the preset in
+      # nix-presets/containers/stalwart.nix. Not Caddy-proxied — SMTP/IMAP
+      # can't be Cloudflare-proxied; personas reach it directly on this IP
+      # over the mesh. JMAP (8080) is the only HTTP surface. See
+      # docs/PHASE1_STALWART.md + docs/PHASE1_STALWART_STATUS.md.
+      stalwart = {
+        ip = "10.85.46.140";
+        port = 8080;
+        domain = "mail.kleinbem.dev";
+        meta = {
+          name = "Stalwart Mail";
+          category = "Infrastructure";
+          icon = "📬";
+          description = "Persona-fleet mail server (SMTP/IMAP/JMAP).";
+        };
+      };
     };
   };
 }
