@@ -246,9 +246,7 @@
         hostDataDir = "/var/lib/images/stalwart";
         domain = "kleinbem.dev";
         memoryLimit = "1G";
-        adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable (
-          config.sops.secrets.stalwart_admin_password_hash.path
-        );
+        adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
       };
     };
 
