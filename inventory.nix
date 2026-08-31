@@ -243,6 +243,7 @@
         port = 4444;
         externalPort = 443;
         domain = "code.kleinbem.dev";
+        auth = true; # Mesh-only now — Cloudflare Access was its only gate; Authelia replaces it
         meta = {
           name = "Code Server";
           category = "Dev";
@@ -529,7 +530,9 @@
       frigate = {
         ip = "10.85.46.130";
         port = 5000;
-        externalPort = 5000;
+        externalPort = 443;
+        domain = "frigate.kleinbem.dev";
+        auth = true; # Authelia in front; mesh-only (NVR — never on the public tunnel)
         meta = {
           name = "Frigate NVR";
           category = "Security";
