@@ -264,7 +264,18 @@ in
             browserPolicies = builtins.toJSON {
               ClearSiteDataOnExit = false;
               BlockThirdPartyCookies = false;
-              SignInAllowed = false;
+              # Chrome sign-in is allowed (was false). Gemini in Chrome ("Glic"),
+              # Help me write, tab organiser etc. all require a signed-in Google
+              # account, so the old lockdown silently disabled every built-in AI
+              # feature. Sync stays opt-in; password manager / autofill / metrics
+              # below remain off.
+              SignInAllowed = true;
+              # Permit the built-in GenAI features. 1 = allowed, but no data sent
+              # to Google for model training. Individual GenAI policies inherit
+              # this when unset. The Gemini panel still depends on Google's
+              # per-account rollout + region + Chrome version — this only stops
+              # managed Chrome from blocking it.
+              GenAiDefaultSettings = 1;
               DeveloperToolsAvailability = 1;
               MetricsReportingEnabled = false;
               SpellCheckServiceEnabled = false;
