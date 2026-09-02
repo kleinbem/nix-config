@@ -21,6 +21,7 @@
           "n8n.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "cache.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "ntfy.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
         default = "http_status:404";
       };

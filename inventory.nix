@@ -581,6 +581,23 @@
           description = "E2E Encrypted 2FA & Authenticator Server.";
         };
       };
+      # Self-hosted Bitwarden-compatible password vault for people + personas.
+      # core-pi slice (10.85.48.0/24); .135 free. NOT Authelia/Access-gated —
+      # forward-auth breaks Bitwarden apps, the CLI and browser extensions;
+      # Vaultwarden's own master-password + 2FA is the gate, /admin by token.
+      vaultwarden = {
+        ip = "10.85.48.135";
+        port = 8222;
+        externalPort = 443;
+        domain = "vault.kleinbem.dev";
+        auth = false;
+        meta = {
+          name = "Vaultwarden";
+          category = "Identity";
+          icon = "🔐";
+          description = "Self-hosted password manager (people + personas).";
+        };
+      };
       # Persona-fleet mail (Phase 1). One mailbox per persona at
       # <name>@kleinbem.dev, generated from personas.nix by the preset in
       # nix-presets/containers/stalwart.nix. Not Caddy-proxied — SMTP/IMAP

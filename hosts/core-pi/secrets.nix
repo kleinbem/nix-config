@@ -11,6 +11,13 @@
       authelia_jwt_secret = { };
       authelia_storage_encryption_key = { };
 
+      # Vaultwarden — Argon2 PHC hash for the /admin page (ADMIN_TOKEN).
+      # Generate: `nix run nixpkgs#vaultwarden -- hash --preset owasp`.
+      # Add the value to kleinbem-secrets/nix/shared.yaml (defaultSopsFile).
+      # validateSopsFiles = false here, so eval passes before the key exists;
+      # activation (sops-install-secrets) needs it present.
+      vaultwarden_admin_token = { };
+
       # Attic Binary Cache
       attic_server_token_rs256 = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";

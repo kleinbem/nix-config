@@ -27,6 +27,7 @@ in
     ./secrets.nix
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ente
+    inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.authelia
@@ -138,6 +139,17 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.ente.ip}/24";
         hostDataDir = "/var/lib/ente";
+      };
+
+      vaultwarden = {
+        enable = true;
+        ip = "${myInventory.network.nodes.vaultwarden.ip}/24";
+        hostDataDir = "/var/lib/vaultwarden";
+        inherit (myInventory.network.nodes.vaultwarden) domain port;
+        # Argon2 PHC hash — add `vaultwarden_admin_token` to
+        # kleinbem-secrets/nix/shared.yaml before the first deploy (needs
+        # YubiKey). Until then /admin is disabled; the service still runs.
+        adminTokenFile = config.sops.secrets.vaultwarden_admin_token.path;
       };
 
       dashboard = {

@@ -156,6 +156,13 @@ let
       ip = ip 46;
       hostDataDir = dataDir "ente";
     };
+    vaultwarden = {
+      ip = ip 49;
+      hostDataDir = dataDir "vaultwarden";
+      # Non-null so the cached closure includes the env-setup + admin branch.
+      # Real bind mount is supplied by the deploying host (sops path).
+      adminTokenFile = "/run/secrets/factory-dummy";
+    };
     ntfy.ip = ip 45;
     agent-team = { };
     netdata = { };
@@ -211,6 +218,7 @@ in
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ente
+    inputs.nix-presets.nixosModules.vaultwarden
     # NOTE: dashboard-homer / dashboard-homepage are alternate frontends that
     # re-declare the same `my.containers.dashboard` option slot, so they cannot
     # coexist with `dashboard` in one host. Their closures are near-identical
