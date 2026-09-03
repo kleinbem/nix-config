@@ -117,6 +117,21 @@ in
       };
 
     }
+    // lib.optionalAttrs config.my.containers.stalwart.enable {
+      # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
+      # plaintext — Stalwart accepts either). Per-CONTAINER scope, not
+      # per-host: the mail server is a fleet service that could migrate
+      # hosts, so `nix/per-container/stalwart.yaml` (already encrypted to
+      # martin + nixos_nvme + mac_mini via the .sops.yaml catch-all) keeps
+      # the secret's location independent of which host runs it. Gated
+      # behind `enable` for the same reason as nixos-nvme's
+      # litellm_master_key: sops-install-secrets validates the whole
+      # manifest atomically, so one declared-but-unprovisioned secret
+      # freezes every other secret on the host.
+      stalwart_admin_password_hash = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/stalwart.yaml";
+      };
+    }
     // personaRuntimeSecrets;
 
     templates."hermes.env" = {

@@ -1,185 +1,141 @@
-# Phase 1 — Stalwart Mail: status & decisions (2026-08-30)
+# Phase 1 — Stalwart Mail: status & runbook
 
-Companion to `PHASE1_STALWART.md` (the original scaffold). That doc lists 7
-manual steps; this one records **where we actually are**, which decisions
-are now made, and the three things that still need a human call.
+Companion to `PHASE1_STALWART.md` (the original scaffold). This tracks the
+current wired state and what's left.
 
 ## TL;DR
 
-- **Is the mailserver set up?** Config is fully wired and eval-validated
-  (the container OS closure builds), but **`enable = false` — nothing is
-  deployed**. No `stalwart` container is running on any host.
-- **Do the personas have email addresses?** As **identities**, yes — all 6
-  (`martin` + 5 agents) have `<first>.<last>@kleinbem.dev` in
-  `kleinbem-secrets/personas/contact.nix`, already used as git commit
-  authorship. As **working mailboxes** you can send/receive on, no.
+- **Wired, `enable = true`, committed.** The Stalwart container is defined
+  on **mac-mini** (24/7 host). Once CI builds + promotes its closure and
+  mac-mini switches, it comes up.
+- **Personas have email identities** (`<first>.<last>@kleinbem.dev`, all 6,
+  in `kleinbem-secrets/personas/contact.nix` — already used for git commit
+  authorship). Working **mailboxes** exist only after the deploy + the
+  `persona-scaffold.sh` loop below.
 
-## Validation done (this change)
+## What's wired
 
-- `nixos-nvme` full toplevel evaluates to a `.drv` with the new container
-  block at `enable = false` — the gated secret is absent, zero activation
-  footprint (verified against both the currently-pinned and the local
-  preset).
-- `container-factory` (the ADR-002 standalone build host) with `stalwart`
-  in `preWarm`: the container's `services.stalwart` closure builds — real
-  `stalwart.toml` generated, **no failed assertions**, `stateVersion` +
-  `directory.internal` (persistent RocksDB `db` store) + 4 listeners +
-  `authentication.fallback-admin` + systemd `LoadCredential` all correct.
-  `nix build …container-factory…containers.stalwart.config.system.build.toplevel`
-  → `/nix/store/…-nixos-system-stalwart-26.11…` built clean.
-- `pkgs.stalwart` is **0.15.5** on the pinned nixpkgs.
-
-## What is now decided & wired (this change)
-
-| Decision | Value | Where |
+| Thing | Value | Where |
 |---|---|---|
-| Host | **nixos-nvme** — already runs the whole container fleet + `container-updater` auto-derivation; Stalwart is ~200 MB–1 G RAM | `hosts/nixos-nvme/containers.nix` |
-| Container IP | **10.85.46.140** on `cbr0` | `inventory.nix` (`network.nodes.stalwart`), `containers.nix` |
-| Data dir | `/var/lib/images/stalwart` (+ tmpfiles rule); RocksDB at `/var/lib/stalwart/db` inside | `containers.nix` |
-| Mail domain / MX target | `kleinbem.dev` / `mail.kleinbem.dev` (preset sets `server.hostname` automatically) | preset default |
-| Mailbox set | one `<first>.<last>@kleinbem.dev` per persona, created imperatively by `persona-scaffold.sh` (see "Preset bug fixed" below) | `scripts/persona-scaffold.sh` |
-| Admin | fallback-admin `admin` / secret from `stalwart_admin_password_hash`, via systemd `LoadCredential` → `%{file:…}%` macro. Secret **gated behind `my.containers.stalwart.enable`** (same footgun-avoidance as `litellm_master_key`) | `secrets.nix` + preset |
-| Outbound relay | **none for now** (`relaySecretFile` unset) → Stalwart's built-in direct delivery; fine for mesh-internal persona↔persona mail | `containers.nix` |
-| Standalone build | added to `hosts/container-factory/default.nix` (import + catalogue, dummy `adminPasswordFile`); once nixos-nvme's `enable = true`, `deployedContainers` picks it up automatically | `container-factory/default.nix` |
-| `enable` | **`false`** — flips on once the admin hash is provisioned | `containers.nix` |
+| Host | **mac-mini** — always-on; nixos-nvme was rejected (workstation, not 24/7) | `hosts/mac-mini/default.nix` |
+| Container IP | `10.85.50.8/24` (mac-mini's `.50` container subnet) | `inventory.nix` `network.nodes.stalwart` |
+| Data dir | host `/var/lib/stalwart` → container `/var/lib/stalwart`; RocksDB `db` store at `/var/lib/stalwart/db` | preset + `default.nix` |
+| Mail domain | `kleinbem.dev`; `server.hostname = mail.kleinbem.dev` (preset) | preset |
+| Listeners | smtp 25, submission 587, imap 143, http 8080 (JMAP + webadmin) | preset |
+| Admin | fallback-admin `admin`; secret `stalwart_admin_password_hash` via systemd `LoadCredential` → `%{file:…}%` macro | preset + `mac-mini/secrets.nix` |
+| Admin secret scope | **per-container**: `kleinbem-secrets/nix/per-container/stalwart.yaml` (not per-host — the mail server is a fleet service that can migrate; `.sops.yaml` catch-all already encrypts it to martin + nixos_nvme + mac_mini) | `mac-mini/secrets.nix` |
+| Mailboxes | one `<first>.<last>@kleinbem.dev` per persona, created **imperatively** by `scripts/persona-scaffold.sh` (`stalwart-cli`), not declared in Nix | `scripts/persona-scaffold.sh` |
+| Outbound relay | none (`relaySecretFile` unset) → Stalwart direct delivery; fine for mesh-internal persona↔persona mail | preset |
+| Standalone build | catalogue + import in `hosts/container-factory/default.nix`; mac-mini is a `deploySources` host so `deployedContainers` picks it up | `container-factory/default.nix` |
 
-### Preset bug fixed (`nix-presets/containers/stalwart.nix`)
+### Preset rewrite (`nix-presets/containers/stalwart.nix`)
 
-The preset used to `import ../../nix-config/personas.nix` and build a
-static `directory.internal` principal list from `p.email` / `p.full-name`.
-Both wrong: nix-presets must not import nix-config (its own CLAUDE.md
-"Don't"; the path also doesn't resolve when nix-presets is a store-fetched
-input), and `email`/`full-name` aren't in the public manifest — they're in
-`kleinbem-secrets/personas/contact.nix`. Enabling the container would have
-failed eval on the missing attrs.
+The old preset couldn't be enabled: it `import`ed `nix-config/personas.nix`
+(forbidden cross-repo dep; the path also doesn't resolve store-fetched) and
+read `p.email`/`p.full-name` which aren't in the public manifest; it used
+`services.stalwart-mail` (renamed to `services.stalwart` upstream) and
+`queue.*.next-hop` (now a build-time assertion failure — v0.13 replaced it
+with `queue.strategy.route`); `directory.internal type = "memory"` is
+read-only so `stalwart-cli` can't create accounts; and `stateVersion`
+(required, no default) was unset.
 
-**Decision — mailbox provisioning is imperative, not declarative.** The
-persona import + principal list are gone. Accounts are created by
-`scripts/persona-scaffold.sh` step 6 (`stalwart-cli account create
-<email> <full-name>`), which already resolves identity from the joined
-`lib/personas.nix` view at script runtime — no `contact.nix` in NixOS
-module eval (keeps the "no module imports contact data" rule intact).
+Rewritten to the **Stalwart 0.15** schema: `services.stalwart`, explicit
+`stateVersion = "26.05"`, four listeners, fallback-admin via
+`LoadCredential`, storage/directory left to the module's RocksDB defaults,
+outbound relay in the v0.13+ `queue.strategy.route` shape gated behind
+`relaySecretFile`. Verified by building the container toplevel through
+`container-factory`: real `stalwart.toml`, no failed assertions.
 
-The whole preset was rewritten to the **Stalwart 0.15 `services.stalwart`
-schema** (option renamed from `services.stalwart-mail` in nixpkgs; the old
-preset's `queue.*.next-hop` is now a build-time assertion failure, so
-outbound relay moved to the v0.13+ `queue.strategy.route` shape, gated
-behind `relaySecretFile`). Storage/directory/store are left to the NixOS
-module defaults (RocksDB `db` store, `directory.internal.type =
-"internal"`) — verified correct by building the closure. `stateVersion =
-"26.05"` is set explicitly (the module requires it, no default).
+Also fixed: `.just/personas.just` `tf-apply`/`tf-plan`/`tf-export` pointed
+at a non-existent `../terraform` + `../scripts/export-personas.sh`; now
+delegate to `nix/tools/*` against `nix/infra`, SES targets dropped.
 
-Also fixed in passing: `.just/personas.just` `tf-apply` / `tf-plan` /
-`tf-export` pointed at a non-existent `../terraform` and
-`../scripts/export-personas.sh`. They now delegate to the real
-`nix/tools/tf-apply.sh` + `nix/tools/export-personas.sh` against
-`nix/infra`, and no longer target the disabled SES resources.
+## Deploy — your steps
 
-## The three calls that still need a human
-
-### 1. Inbound mail reachability — **architectural, unsolved**
-
-The fleet is entirely on `10.x`; web ingress is via Cloudflare Tunnel,
-which **cannot carry SMTP** (port 25). So today nothing external can
-deliver to `@kleinbem.dev`. Options:
-
-| Option | Effort | Notes |
-|---|---|---|
-| **A. Internal-only mail (recommended now)** | zero | Personas email each other + `martin` over the mesh. No inbound MX needed. Enough for agent coordination / CI notifications consumed internally. |
-| B. Cheap VPS as MX smarthost | ~half a day | VPS holds the public IP, runs as inbound relay, forwards over NetBird to Stalwart. Also solves outbound reputation (see #2). |
-| C. Inbound relay service (mxroute/purelymail/…) | ~1 h + $ | They hold the MX; Stalwart pulls or receives forwarded mail. |
-
-Until B or C, leave the `mail.kleinbem.dev` A record unset
-(`var.mail_host_ip = ""` — already the default, record is count-gated) and
-don't rely on external delivery.
-
-### 2. Outbound relay — **blocked on AWS creds (or pick another provider)**
-
-`nix/infra/aws-ses.tf.disabled` is disabled "until AWS creds exist".
-Direct send from a residential IP will be spam-filtered. Decide:
-enable SES (needs an AWS account + IAM user + SMTP creds → sops
-`stalwart/ses-smtp-credentials`), or swap in a transactional provider
-(Brevo / MailerSend / Mailgun) — `relaySecretFile` takes any
-`username=/password=` SMTP pair, so the Nix side doesn't care.
-
-Not urgent: personas don't send outward yet.
-
-### 3. Deploy + mailbox init — **needs YubiKey + a running container**
+sops is **done** (`stalwart_admin_password_hash` is in
+`kleinbem-secrets/nix/per-container/stalwart.yaml`).
 
 ```bash
-# 0. ALREADY DONE — the preset (nix-presets c054a41) is pushed and
-#    nix-config's flake.lock is pinned to it. Nothing to do here.
+# 1. wait for CI on the enable commit, on mac-mini's arch (x86_64):
+#      Build & Cache All (Fast)  → builds stalwart's closure → Attic
+#      Promote → production      → publishes it into the manifest
+cd ~/Develop/github.com/kleinbem/nix && just jj::remote-ci   # or GitHub Actions
+
+# 2. deploy mac-mini (YubiKey). It's headless — deploy remotely:
 cd ~/Develop/github.com/kleinbem/nix-config
+just in nix-config nixos::switch            # if run ON mac-mini
+#   otherwise your usual remote path for mac-mini (colmena / deploy script)
+#   container-updater-bootstrap then stages stalwart from the manifest.
+#   If you switch before Promote finished:
+#      ssh mac-mini 'sudo systemctl start update-container@stalwart'
 
-# 1. admin secret — the fallback-admin PASSWORD, stored as a sha-512 hash.
-#    Generate/keep the plaintext in Bitwarden (see "Bitwarden entry" below);
-#    only the hash goes in sops.
-#      The secrets repo on disk is kleinbem-secrets/ (the flake input is still
-#      *named* nix-secrets for compat, but points at github:kleinbem/kleinbem-secrets).
-mkpasswd -m sha-512                     # paste your Bitwarden-generated password when prompted
-sops ~/Develop/github.com/kleinbem/kleinbem-secrets/nix/per-host/nixos-nvme.yaml
-#   add:  stalwart_admin_password_hash: "<the $6$… hash>"
+# 3. check it's up
+ssh mac-mini 'machinectl status stalwart; journalctl -u container@stalwart -n 30'
 
-# 2. enable + deploy
-sed -i 's/    stalwart = {\n      enable = false;/    stalwart = {\n      enable = true;/' \
-  hosts/nixos-nvme/containers.nix          # or edit by hand
-just in nix-config nixos::switch            # touches YubiKey; builds the container closure + activates
-
-# 3. mailboxes — one per persona (idempotent)
+# 4. mailboxes — one per persona (idempotent)
+#    First confirm the 0.15 stalwart-cli auth flags:
+ssh mac-mini 'machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli --help'
+#      likely: -u https://localhost:8080 -c admin:<password>
 for p in martin michael-gruber thomas-schmidt daniel-meier rahul-kumar juan-gonzalez; do
   just personas::add "$p"
 done
-#   step 6 of persona-scaffold.sh runs `stalwart-cli account create`. VERIFY the
-#   0.15 stalwart-cli auth flags first: `machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli --help`
-#   — it likely needs `-u https://localhost:8080 -c admin:<secret>` or a CREDENTIALS env.
-
-# 4. (optional, external delivery only) DKIM
-machinectl shell stalwart /run/current-system/sw/bin/bash -c \
-  'stalwart-cli dkim create kleinbem.dev || journalctl -u stalwart | grep -i dkim'
-#   take the base64 pubkey → TF_VAR_stalwart_dkim_pubkey_b64 → `just personas::tf-apply`
+ssh mac-mini 'machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli account list'
 
 # 5. smoke test
 just jj::as michael-gruber save-all "chore: mail smoke test"
-machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli account list
 ```
 
-Remaining runtime unknowns (all discoverable once it's up, none block the build):
-`stalwart-cli` 0.15 auth flags (step 3 note); the `queue.route` relay shape
-(only when SES/relay is added — TODO in the preset); a real TLS cert
-(self-signed STARTTLS is fine on the trusted `cbr0` bridge).
+Runtime unknowns (discoverable once up, none block the build): `stalwart-cli`
+0.15 auth flags (step 4); the `queue.route` relay shape (only when a relay
+is added — TODO in the preset); a real TLS cert (self-signed STARTTLS is
+fine on the trusted `cbr0` bridge).
 
-### Bitwarden entry (the fallback-admin password)
+## Bitwarden entry (the fallback-admin password)
 
-sops only stores the **hash** — the plaintext password (needed to log into
-the webadmin UI and to run `stalwart-cli`) isn't recoverable from it, so
-keep it in Bitwarden.
+sops holds only the **hash**; the plaintext (webadmin login + `stalwart-cli`)
+isn't recoverable from it — keep it in Bitwarden.
 
 | Field | Value |
 |---|---|
 | Type | Login |
 | Name | `Stalwart Mail — admin` |
 | Username | `admin` |
-| Password | *generate in Bitwarden, 24+ chars.* This exact string is what you feed to `mkpasswd -m sha-512` for the sops `stalwart_admin_password_hash`. |
-| URI | `https://10.85.46.140:8080` (webadmin; self-signed cert for now). Add `https://mail.kleinbem.dev:8080` later. |
-| Folder/Collection | your infra/fleet one |
-| Notes | Fallback admin for the Stalwart mail container on nixos-nvme (persona fleet, Phase 1). sha-512 hash of this password lives in `kleinbem-secrets/nix/per-host/nixos-nvme.yaml` as `stalwart_admin_password_hash`. To rotate: new password here → `mkpasswd -m sha-512` → update that sops key → `just in nix-config nixos::switch`. |
+| Password | the plaintext you generated (its `mkpasswd -m sha-512` hash is the sops value) |
+| URI | `https://10.85.50.8:8080` (webadmin; self-signed cert). Add `https://mail.kleinbem.dev:8080` later. |
+| Notes | Fallback admin for the Stalwart mail container on **mac-mini** (persona fleet, Phase 1). Hash lives in `kleinbem-secrets/nix/per-container/stalwart.yaml` as `stalwart_admin_password_hash`. Rotate: new password → `mkpasswd -m sha-512` → update that sops key → redeploy mac-mini. |
 
-Custom fields (type "text"):
+Custom fields (text):
 
 | Name | Value |
 |---|---|
-| sops-key | `stalwart_admin_password_hash` in `kleinbem-secrets/nix/per-host/nixos-nvme.yaml` |
-| host | nixos-nvme · container `stalwart` · 10.85.46.140 |
-| cli | `machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli -u https://localhost:8080 -c admin:<password> …` (verify flags with `--help`) |
+| sops-key | `stalwart_admin_password_hash` in `kleinbem-secrets/nix/per-container/stalwart.yaml` |
+| host | mac-mini · container `stalwart` · 10.85.50.8 |
+| cli | `machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli -u https://localhost:8080 -c admin:<password>` (verify flags) |
 | hash-cmd | `mkpasswd -m sha-512` |
 
 Also add a line to `kleinbem-secrets/ROTATIONS.md`.
 
+## Later, only if personas need EXTERNAL mail
+
+### Inbound reachability — architectural
+
+The fleet is all-`10.x`; web ingress is Cloudflare Tunnel, which can't
+carry SMTP. Nothing external can deliver to `@kleinbem.dev` today. Options:
+(A) internal-only, nothing to do; (B) cheap VPS as MX smarthost over
+NetBird; (C) an inbound relay service. Until B/C, leave
+`var.mail_host_ip = ""` (default; the A record is count-gated).
+
+### Outbound relay
+
+`nix/infra/aws-ses.tf.disabled` — needs an AWS account, or swap in
+Brevo/Mailgun/etc. (`relaySecretFile` takes any `USERNAME=`/`PASSWORD=`
+SMTP pair). Set `relaySecretFile` on **both** the mac-mini container block
+and the `container-factory` catalogue entry (dummy on the factory).
+
 ## Follow-ups gated on Phase 1 completion
 
-- `inventory.nix` `git.email` is deliberately still `…@gmail.com` — switch
-  to `martin.kleinberger@kleinbem.dev` only after that mailbox exists AND
-  is verified on the GitHub account, or signed pushes to branch-protected
-  repos break.
-- `MEMORY.md` → "AI + second-brain plan": aider (thomas-schmidt) is blocked
-  on persona signing keys / mailboxes; unblocked by step 4 above.
+- `inventory.nix` `git.email` stays `…@gmail.com` until a real
+  `@kleinbem.dev` mailbox exists AND is verified on the GitHub account
+  (switching early breaks signed pushes to branch-protected repos).
+- aider / thomas-schmidt in `[[project_ai_second_brain_plan]]` is unblocked
+  once the persona mailboxes exist (step 4).

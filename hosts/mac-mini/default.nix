@@ -73,6 +73,7 @@ in
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.persona-runtime
+    inputs.nix-presets.nixosModules.stalwart
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
@@ -371,6 +372,23 @@ in
           fullName = personasView.all.${name}."full-name";
           email = personasView.all.${name}.email;
         });
+      };
+
+      # Persona-fleet mail server (Phase 1 — docs/PHASE1_STALWART_STATUS.md).
+      # Lives here because a mailserver must be 24/7 and mac-mini is; the
+      # personas it serves are fleet-wide, so its admin secret is scoped
+      # per-container (kleinbem-secrets/nix/per-container/stalwart.yaml),
+      # not to this host. Mailboxes are created imperatively by
+      # scripts/persona-scaffold.sh (stalwart-cli), not declared in Nix.
+      # relaySecretFile unset → direct delivery (fine for mesh-internal
+      # persona↔persona mail; external delivery needs a relay — STATUS doc).
+      stalwart = {
+        enable = true;
+        ip = "${myInventory.network.nodes.stalwart.ip}/24";
+        hostDataDir = "/var/lib/stalwart";
+        domain = "kleinbem.dev";
+        memoryLimit = "1G";
+        adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
       };
     };
   };
