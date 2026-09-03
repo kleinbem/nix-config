@@ -28,6 +28,7 @@ in
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
+    inputs.nix-presets.nixosModules.kleinbem-auth
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.authelia
@@ -150,6 +151,27 @@ in
         # kleinbem-secrets/nix/shared.yaml before the first deploy (needs
         # YubiKey). Until then /admin is disabled; the service still runs.
         adminTokenFile = config.sops.secrets.vaultwarden_admin_token.path;
+      };
+
+      # better-auth social login for kleinbem.dev visitors (kleinbem-auth repo).
+      # Staged disabled — better-auth hard-exits without BETTER_AUTH_SECRET, so
+      # there is no useful half-enabled state. To turn on:
+      #   1. kleinbem-secrets: add nix/per-container/kleinbem-auth.yaml
+      #      (better_auth_secret + Google/Facebook client id+secret) — the
+      #      .sops.yaml rule scopes it to core_pi.
+      #   2. Uncomment the sops.secrets.kleinbem_auth_* block in ./secrets.nix
+      #      and the *File lines below.
+      #   3. enable = true; deploy.
+      kleinbem-auth = {
+        enable = false;
+        ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24";
+        hostDataDir = "/var/lib/kleinbem-auth";
+        inherit (myInventory.network.nodes.kleinbem-auth) domain;
+        # betterAuthSecretFile = config.sops.secrets.kleinbem_auth_better_auth_secret.path;
+        # googleClientIdFile = config.sops.secrets.kleinbem_auth_google_client_id.path;
+        # googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;
+        # facebookClientIdFile = config.sops.secrets.kleinbem_auth_facebook_client_id.path;
+        # facebookClientSecretFile = config.sops.secrets.kleinbem_auth_facebook_client_secret.path;
       };
 
       dashboard = {

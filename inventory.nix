@@ -601,6 +601,22 @@
           description = "Self-hosted password manager (people + personas).";
         };
       };
+      # better-auth social login for kleinbem.dev visitors (container staged
+      # disabled on core-pi until kleinbem-secrets + OAuth apps exist).
+      # auth = false: this IS the public sign-in surface — never Authelia-gated.
+      kleinbem-auth = {
+        ip = "10.85.48.140";
+        port = 3000;
+        externalPort = 443;
+        domain = "login.kleinbem.dev";
+        auth = false;
+        meta = {
+          name = "Login";
+          category = "Identity";
+          icon = "🔑";
+          description = "Social login (Google/Facebook) for kleinbem.dev.";
+        };
+      };
       # Persona-fleet mail (Phase 1). One mailbox per persona at
       # <name>@kleinbem.dev, generated from personas.nix by the preset in
       # nix-presets/containers/stalwart.nix. Not Caddy-proxied — SMTP/IMAP

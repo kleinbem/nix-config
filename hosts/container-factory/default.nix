@@ -163,6 +163,13 @@ let
       # Real bind mount is supplied by the deploying host (sops path).
       adminTokenFile = "/run/secrets/factory-dummy";
     };
+    kleinbem-auth = {
+      ip = ip 50;
+      hostDataDir = dataDir "kleinbem-auth";
+      # Non-null so the cached closure includes the env-setup branch. Real
+      # bind mounts (sops paths) come from the deploying host (core-pi).
+      betterAuthSecretFile = "/run/secrets/factory-dummy";
+    };
     ntfy.ip = ip 45;
     agent-team = { };
     netdata = { };
@@ -219,6 +226,7 @@ in
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
+    inputs.nix-presets.nixosModules.kleinbem-auth
     # NOTE: dashboard-homer / dashboard-homepage are alternate frontends that
     # re-declare the same `my.containers.dashboard` option slot, so they cannot
     # coexist with `dashboard` in one host. Their closures are near-identical

@@ -27,6 +27,8 @@
           "cache.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "ntfy.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          # 502 until the kleinbem-auth container is enabled on core-pi.
+          "login.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
         default = "http_status:404";
       };
