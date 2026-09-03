@@ -234,6 +234,11 @@ in
     # cache a specific skin, swap the import above for that variant.
   ];
 
+  # This host doesn't import base.nix, but container presets that run a
+  # nix-packages-built service in their innerConfig (kleinbem-auth) need
+  # pkgs.<name> to resolve during the factory's closure eval.
+  nixpkgs.overlays = [ inputs.nix-packages.overlays.default ];
+
   # Minimal host scaffolding to satisfy NixOS assertions during evaluation.
   fileSystems."/" = {
     device = "dummy";

@@ -18,6 +18,31 @@
       # activation (sops-install-secrets) needs it present.
       vaultwarden_admin_token = { };
 
+      # kleinbem-auth (better-auth login for kleinbem.dev). Per-container file,
+      # scoped to core_pi in kleinbem-secrets/.sops.yaml. better_auth_secret is
+      # populated; google_/facebook_ are empty until the OAuth apps exist — the
+      # service starts fine with no providers (see nix-presets preset).
+      kleinbem_auth_better_auth_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "better_auth_secret";
+      };
+      kleinbem_auth_google_client_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "google_client_id";
+      };
+      kleinbem_auth_google_client_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "google_client_secret";
+      };
+      kleinbem_auth_facebook_client_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "facebook_client_id";
+      };
+      kleinbem_auth_facebook_client_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "facebook_client_secret";
+      };
+
       # Attic Binary Cache
       attic_server_token_rs256 = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";

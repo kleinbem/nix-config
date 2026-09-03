@@ -154,24 +154,21 @@ in
       };
 
       # better-auth social login for kleinbem.dev visitors (kleinbem-auth repo).
-      # Staged disabled — better-auth hard-exits without BETTER_AUTH_SECRET, so
-      # there is no useful half-enabled state. To turn on:
-      #   1. kleinbem-secrets: add nix/per-container/kleinbem-auth.yaml
-      #      (better_auth_secret + Google/Facebook client id+secret) — the
-      #      .sops.yaml rule scopes it to core_pi.
-      #   2. Uncomment the sops.secrets.kleinbem_auth_* block in ./secrets.nix
-      #      and the *File lines below.
-      #   3. enable = true; deploy.
+      # better_auth_secret is populated in kleinbem-secrets; google_/facebook_
+      # are still empty — the service runs healthy with zero providers until the
+      # OAuth apps exist (fill them via `sops nix/per-container/kleinbem-auth.yaml`
+      # then redeploy). The kleinbem-site AuthNav island stays unshipped until
+      # then (its nix-packages pin is not yet bumped).
       kleinbem-auth = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24";
         hostDataDir = "/var/lib/kleinbem-auth";
         inherit (myInventory.network.nodes.kleinbem-auth) domain;
-        # betterAuthSecretFile = config.sops.secrets.kleinbem_auth_better_auth_secret.path;
-        # googleClientIdFile = config.sops.secrets.kleinbem_auth_google_client_id.path;
-        # googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;
-        # facebookClientIdFile = config.sops.secrets.kleinbem_auth_facebook_client_id.path;
-        # facebookClientSecretFile = config.sops.secrets.kleinbem_auth_facebook_client_secret.path;
+        betterAuthSecretFile = config.sops.secrets.kleinbem_auth_better_auth_secret.path;
+        googleClientIdFile = config.sops.secrets.kleinbem_auth_google_client_id.path;
+        googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;
+        facebookClientIdFile = config.sops.secrets.kleinbem_auth_facebook_client_id.path;
+        facebookClientSecretFile = config.sops.secrets.kleinbem_auth_facebook_client_secret.path;
       };
 
       dashboard = {
