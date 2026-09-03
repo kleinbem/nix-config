@@ -166,9 +166,17 @@ let
     kleinbem-auth = {
       ip = ip 50;
       hostDataDir = dataDir "kleinbem-auth";
-      # Non-null so the cached closure includes the env-setup branch. Real
-      # bind mounts (sops paths) come from the deploying host (core-pi).
+      # All non-null so the cached closure's env-setup writes every secret
+      # line (each reads a fixed in-container path; the real sops files are
+      # bind-mounted onto those paths by the deploying host, core-pi). The
+      # OAuth ones matter now-vs-later: with them present the closure is
+      # already complete, so wiring Google/Facebook is a sops edit + redeploy
+      # with no container rebuild.
       betterAuthSecretFile = "/run/secrets/factory-dummy";
+      googleClientIdFile = "/run/secrets/factory-dummy";
+      googleClientSecretFile = "/run/secrets/factory-dummy";
+      facebookClientIdFile = "/run/secrets/factory-dummy";
+      facebookClientSecretFile = "/run/secrets/factory-dummy";
     };
     ntfy.ip = ip 45;
     agent-team = { };
