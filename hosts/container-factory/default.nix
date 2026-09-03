@@ -26,8 +26,12 @@
 # dummy-but-valid values are sufficient for building & caching.
 # ---------------------------------------------------------------------------
 let
-  # Assign each container a unique address in the factory subnet purely to keep
-  # evaluation clean; uniqueness is irrelevant to the built closure.
+  # Dummy .46 address for containers that ONLY ever deploy to nixos-nvme
+  # (the .46 subnet). mkContainer now derives the container's baked default
+  # gateway from `.1` of this address's /24, so any container that deploys
+  # to another host's subnet MUST pass its real address here (see the .48/
+  # .49/.50 entries below) — a dummy .46 would bake a 10.85.46.1 gateway
+  # that doesn't exist on that host. Source of truth: inventory.nix.
   ip = n: "10.85.46.${toString n}/24";
   dataDir = name: "/var/lib/factory/${name}";
 
@@ -50,7 +54,7 @@ let
       hostDataDir = dataDir "code-server";
     };
     open-webui = {
-      ip = ip 23;
+      ip = "10.85.50.3/24"; # mac-mini
       hostDataDir = dataDir "open-webui";
     };
     qdrant = {
@@ -82,11 +86,11 @@ let
       hostDataDir = dataDir "ollama";
     };
     openclaw = {
-      ip = ip 33;
+      ip = "10.85.49.112/24"; # hass-pi
       hostDataDir = dataDir "openclaw";
     };
     monitoring = {
-      ip = ip 34;
+      ip = "10.85.50.2/24"; # mac-mini
       hostDataDir = dataDir "monitoring";
     };
     agent-zero = {
@@ -94,7 +98,7 @@ let
       hostDataDir = dataDir "agent-zero";
     };
     anythingllm = {
-      ip = ip 36;
+      ip = "10.85.50.6/24"; # mac-mini
       hostDataDir = dataDir "anythingllm";
     };
     # hermes deliberately absent (2026-08-07): it became attrsOf (one
@@ -119,12 +123,21 @@ let
       relayUrl = "wss://buzz.example.invalid";
     };
     caddy.ip = ip 37;
+    # cups: inventory node still has a .46 IP but it deploys on core-pi (.48)
+    # — pre-existing inventory inconsistency, tracked separately. Leaving the
+    # dummy; cups's gateway is wrong either way until that's fixed.
     cups.ip = ip 38;
     frigate.ip = ip 39;
-    home-assistant.ip = ip 40;
+    home-assistant.ip = "10.85.49.10/24"; # hass-pi
     paperless.ip = ip 41;
     stalwart = {
-      ip = ip 47;
+      # REAL deployment IP, not a dummy — mkContainer now derives the
+      # container's baked default gateway from its own address (.1 of the
+      # /24), so a standalone closure must be built with the address it
+      # will actually run on. Stalwart runs on mac-mini (10.85.50.0/24);
+      # a .46 dummy would bake a 10.85.46.1 gateway that doesn't exist
+      # there. Source of truth: inventory.nix network.nodes.stalwart.
+      ip = "10.85.50.8/24";
       hostDataDir = dataDir "stalwart";
       # Non-null so the closure includes the fallback-admin block (its
       # secret path is a fixed /run/credentials/... macro, not this
@@ -149,22 +162,22 @@ let
       modelPath = "/var/lib/factory/llama/model.gguf"; # host-level; not in closure
     };
     dashboard = {
-      ip = ip 44;
-      hostBridgeIp = "10.85.46.1";
+      ip = "10.85.48.103/24"; # core-pi
+      hostBridgeIp = "10.85.48.1";
     };
     ente = {
-      ip = ip 46;
+      ip = "10.85.48.133/24"; # core-pi
       hostDataDir = dataDir "ente";
     };
     vaultwarden = {
-      ip = ip 49;
+      ip = "10.85.48.135/24"; # core-pi
       hostDataDir = dataDir "vaultwarden";
       # Non-null so the cached closure includes the env-setup + admin branch.
       # Real bind mount is supplied by the deploying host (sops path).
       adminTokenFile = "/run/secrets/factory-dummy";
     };
     kleinbem-auth = {
-      ip = ip 50;
+      ip = "10.85.48.140/24"; # core-pi
       hostDataDir = dataDir "kleinbem-auth";
       # All non-null so the cached closure's env-setup writes every secret
       # line (each reads a fixed in-container path; the real sops files are
@@ -178,7 +191,7 @@ let
       facebookClientIdFile = "/run/secrets/factory-dummy";
       facebookClientSecretFile = "/run/secrets/factory-dummy";
     };
-    ntfy.ip = ip 45;
+    ntfy.ip = "10.85.48.131/24"; # core-pi
     agent-team = { };
     netdata = { };
     syncthing = { };
