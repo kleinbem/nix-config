@@ -241,7 +241,7 @@
       # outbound goes direct (fine for mesh-internal persona↔persona mail;
       # external delivery needs the relay — see the STATUS doc).
       stalwart = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.stalwart.ip}/24";
         hostDataDir = "/var/lib/images/stalwart";
         domain = "kleinbem.dev";
