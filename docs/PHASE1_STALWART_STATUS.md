@@ -107,18 +107,18 @@ Not urgent: personas don't send outward yet.
 ### 3. Deploy + mailbox init — **needs YubiKey + a running container**
 
 ```bash
-# 0. land the preset — nix-config's flake.lock still pins the OLD nix-presets
-#    (buggy stalwart preset; harmless only while enable = false).
-cd ~/Develop/github.com/kleinbem/nix-presets
-just jj::save-all "feat(stalwart): 0.15 schema, imperative mailboxes, fix persona import" nix-presets
-just jj::push-all nix-presets
+# 0. ALREADY DONE — the preset (nix-presets c054a41) is pushed and
+#    nix-config's flake.lock is pinned to it. Nothing to do here.
 cd ~/Develop/github.com/kleinbem/nix-config
-nix flake update nix-presets            # pull the pushed preset
 
-# 1. admin secret (fallback-admin password; hash or plaintext both work)
-mkpasswd -m sha-512 > /tmp/h && sops --set '["stalwart_admin_password_hash"] "'"$(cat /tmp/h)"'"' \
-  ~/Develop/github.com/kleinbem/nix-secrets/nix/per-host/nixos-nvme.yaml ; shred -u /tmp/h
-#   (or just: sops ~/…/nix-secrets/nix/per-host/nixos-nvme.yaml  and add the key by hand)
+# 1. admin secret — the fallback-admin PASSWORD, stored as a sha-512 hash.
+#    Generate/keep the plaintext in Bitwarden (see "Bitwarden entry" below);
+#    only the hash goes in sops.
+#      The secrets repo on disk is kleinbem-secrets/ (the flake input is still
+#      *named* nix-secrets for compat, but points at github:kleinbem/kleinbem-secrets).
+mkpasswd -m sha-512                     # paste your Bitwarden-generated password when prompted
+sops ~/Develop/github.com/kleinbem/kleinbem-secrets/nix/per-host/nixos-nvme.yaml
+#   add:  stalwart_admin_password_hash: "<the $6$… hash>"
 
 # 2. enable + deploy
 sed -i 's/    stalwart = {\n      enable = false;/    stalwart = {\n      enable = true;/' \
@@ -147,6 +147,33 @@ Remaining runtime unknowns (all discoverable once it's up, none block the build)
 `stalwart-cli` 0.15 auth flags (step 3 note); the `queue.route` relay shape
 (only when SES/relay is added — TODO in the preset); a real TLS cert
 (self-signed STARTTLS is fine on the trusted `cbr0` bridge).
+
+### Bitwarden entry (the fallback-admin password)
+
+sops only stores the **hash** — the plaintext password (needed to log into
+the webadmin UI and to run `stalwart-cli`) isn't recoverable from it, so
+keep it in Bitwarden.
+
+| Field | Value |
+|---|---|
+| Type | Login |
+| Name | `Stalwart Mail — admin` |
+| Username | `admin` |
+| Password | *generate in Bitwarden, 24+ chars.* This exact string is what you feed to `mkpasswd -m sha-512` for the sops `stalwart_admin_password_hash`. |
+| URI | `https://10.85.46.140:8080` (webadmin; self-signed cert for now). Add `https://mail.kleinbem.dev:8080` later. |
+| Folder/Collection | your infra/fleet one |
+| Notes | Fallback admin for the Stalwart mail container on nixos-nvme (persona fleet, Phase 1). sha-512 hash of this password lives in `kleinbem-secrets/nix/per-host/nixos-nvme.yaml` as `stalwart_admin_password_hash`. To rotate: new password here → `mkpasswd -m sha-512` → update that sops key → `just in nix-config nixos::switch`. |
+
+Custom fields (type "text"):
+
+| Name | Value |
+|---|---|
+| sops-key | `stalwart_admin_password_hash` in `kleinbem-secrets/nix/per-host/nixos-nvme.yaml` |
+| host | nixos-nvme · container `stalwart` · 10.85.46.140 |
+| cli | `machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli -u https://localhost:8080 -c admin:<password> …` (verify flags with `--help`) |
+| hash-cmd | `mkpasswd -m sha-512` |
+
+Also add a line to `kleinbem-secrets/ROTATIONS.md`.
 
 ## Follow-ups gated on Phase 1 completion
 
