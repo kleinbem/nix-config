@@ -10,10 +10,41 @@
 # via ZFS/mdadm and mounted at /mnt/data. This layout only handles the OS drive.
 # See: https://wiki.nixos.org/wiki/ZFS or https://wiki.nixos.org/wiki/RAID
 {
+  lib,
   device ? "/dev/sda",
   ...
 }:
 {
+  # ─── Stateless Root (Impermanence) ──────────────────────────
+  # disko only mounts /boot, /nix, /nix/persist above — it never defined
+  # a root filesystem (a longstanding gap, only surfaced once an unrelated
+  # journald assertion stopped masking it; nasbook likely hasn't rebuilt
+  # since the hardware-configuration.nix→disko migration). Matches the
+  # RPi5 (rpi5-node.nix) / nixos-nvme (hardware-boot.nix) pattern: real
+  # state lives under /nix/persist via persistence.nix, bind-mounted back
+  # in by hostname-agnostic module — see default.nix's import of it.
+  fileSystems = {
+    "/" = lib.mkForce {
+      device = "none";
+      fsType = "tmpfs";
+      options = [
+        "defaults"
+        "size=2G"
+        "mode=755"
+      ];
+      neededForBoot = true;
+    };
+    "/var" = lib.mkForce {
+      device = "none";
+      fsType = "tmpfs";
+      options = [
+        "defaults"
+        "size=2G"
+        "mode=755"
+      ];
+      neededForBoot = true;
+    };
+  };
   disko.devices = {
     disk = {
       primary = {

@@ -17,6 +17,9 @@ in
     "${self}/modules/nixos/base.nix" # foundational, imported by every entry-point bundle
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+    # Root is stateless tmpfs (disko.nix) — this binds /var/lib/* service
+    # state back from the persistent /nix/persist btrfs subvolume.
+    "${self}/modules/nixos/persistence.nix"
 
     # ─── Services moved from Workstation ─────────────────────
     inputs.nix-presets.nixosModules.paperless
