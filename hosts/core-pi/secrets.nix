@@ -10,6 +10,11 @@
       authelia_session_secret = { };
       authelia_jwt_secret = { };
       authelia_storage_encryption_key = { };
+      # Real seed users.yml (argon2id-hashed accounts) -- per-container, not
+      # shared.yaml, since it's genuinely unique to this one container.
+      authelia_users_file = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+      };
 
       # Vaultwarden — Argon2 PHC hash for the /admin page (ADMIN_TOKEN).
       # Generate: `nix run nixpkgs#vaultwarden -- hash --preset owasp`.
