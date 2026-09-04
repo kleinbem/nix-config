@@ -626,6 +626,14 @@
       stalwart = {
         ip = "10.85.50.8";
         port = 8080;
+        # externalPort → the Caddy preset auto-generates a reverse-proxy
+        # vhost (mail.kleinbem.dev + stalwart.local → 10.85.50.8:8080,
+        # `tls internal`). This is the webadmin/JMAP HTTP surface only —
+        # SMTP/IMAP/submission stay on the container's own 25/143/587.
+        # Reachable via Caddy on the LAN/mesh; NOT added to Cloudflare DNS
+        # (a mail admin console shouldn't be on the public internet — do
+        # that explicitly + behind CF Access if ever wanted).
+        externalPort = 443;
         domain = "mail.kleinbem.dev";
         meta = {
           name = "Stalwart Mail";
