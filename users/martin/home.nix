@@ -41,8 +41,8 @@ in
     homeDirectory = my.home;
     stateVersion = "25.11";
     sessionVariables = {
-      DEFAULT_BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
-      BROWSER = "${pkgs.firefox-beta}/bin/firefox -P standard";
+      DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
+      BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
       # mkForce: the neovim wrapper module also sets EDITOR (nvim); nano wins
       # so sops/git/etc. open a friendlier editor.
       EDITOR = lib.mkForce "nano";

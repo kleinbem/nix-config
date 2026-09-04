@@ -1,5 +1,7 @@
-# Keeps ~/.pki/caddy-root.crt (trusted into Chromium's NSS db by
-# nix-presets/pwa.nix's `trustFleetInternalCas` activation, and into
+# Keeps ~/.pki/caddy-root.crt (trusted into Chrome/Chromium's NSS db directly
+# by this file's own certutil calls below — nix-presets/pwa.nix's
+# `trustFleetInternalCas` activation did this too before the PWA framework
+# was removed (2026-09-04), but this script never depended on it, and into
 # Firefox's policies.Certificates.Install) in sync with the Caddy container's
 # actual local CA, which only ever lives on core-pi (the one host that runs
 # it — see nix-config/modules/nixos/core.nix's PKI comment). Unlike core-pi,
@@ -49,6 +51,16 @@ let
     if ! cmp -s "$tmp" "${localCert}" 2>/dev/null; then
       cp "$tmp" "${localCert}"
       echo "Caddy internal root CA updated from core-pi"
+    fi
+
+    # This used to be pwa.nix's job (home.activation, ran once at build
+    # activation, well before this timer's first tick). Now this script is
+    # the only thing that touches the NSS db, so it has to be able to
+    # create it from nothing too — a fresh profile (or one where Chrome
+    # hasn't run yet) has no ~/.pki/nssdb at all.
+    mkdir -p "${config.home.homeDirectory}/.pki"
+    if [ ! -f "${config.home.homeDirectory}/.pki/nssdb/cert9.db" ]; then
+      ${pkgs.nss.tools}/bin/certutil -N -d "${nssdb}" --empty-password
     fi
 
     ${pkgs.nss.tools}/bin/certutil -D -d "${nssdb}" -n "Caddy Internal CA" 2>/dev/null || true

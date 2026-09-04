@@ -268,7 +268,6 @@ in
         systemPackages = with pkgs; [
           qt5.qtwayland
           qt6.qtwayland
-          nyxt
           bleachbit
           just
         ];
