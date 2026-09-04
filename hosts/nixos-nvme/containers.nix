@@ -17,6 +17,7 @@
           let
             excludeFromUpdater = [
               "caddy" # reverse proxy — restart briefly kills every other container's traffic
+              "github-runner" # opt-in debug runner — build embedded so `runners` cfg applies directly
             ];
             allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
           in
@@ -147,11 +148,25 @@
         ip = "${myInventory.network.nodes.cups.ip}/24";
       };
 
+      # Opt-in CI runner. No standing GitHub-hosted workflow targets self-hosted
+      # (every runs-on: is ubuntu-*), so this stays OFF and is toggled on only
+      # for occasional debug / heavy local builds, then off again. It's excluded
+      # from container-updater (below) so it builds embedded on this host —
+      # `runners` here then takes effect directly, no CI/manifest round-trip.
+      # To use: add `github_runner_pat` to nix/per-host/nixos-nvme.yaml, flip
+      # enable, `just apply`, point a workflow at `runs-on: [self-hosted, debug]`.
       github-runner = {
-        enable = false; # Moved to workload profiles
+        enable = false;
         ip = "${myInventory.network.nodes.github-runner.ip}/24";
         hostDataDir = "/var/lib/images/github-runner";
         secretsFile = config.sops.secrets.github_runner_pat.path;
+        runners.nix-config = {
+          url = "https://github.com/kleinbem/nix-config";
+          extraLabels = [
+            "nixos"
+            "debug"
+          ];
+        };
       };
 
       ollama = {
@@ -259,7 +274,6 @@
     "d /var/lib/images/buzz/typesense 0755 root root - -"
     "d /var/lib/images/buzz/garage 0755 root root - -"
     "d /var/lib/images/buzz/relay 0755 root root - -"
-    "d /var/lib/images/github-runner 0755 1000 100 - -"
     "d /var/lib/images/syncthing 0755 root root - -"
   ];
 

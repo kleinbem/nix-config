@@ -152,11 +152,8 @@ let
       sessionSecretFile = "/run/secrets/factory-dummy";
       storageEncryptionKeyFile = "/run/secrets/factory-dummy";
     };
-    github-runner = {
-      ip = ip 42;
-      hostDataDir = dataDir "github-runner";
-      secretsFile = "/run/secrets/factory-dummy"; # host-level bind mount; not in closure
-    };
+    # github-runner: opt-in debug runner, built embedded on nixos-nvme
+    # (excludeFromUpdater) so it's not a factory target.
     llama-cpp = {
       ip = ip 43;
       modelPath = "/var/lib/factory/llama/model.gguf"; # host-level; not in closure
@@ -235,7 +232,6 @@ in
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.agent-team
     inputs.nix-presets.nixosModules.cups
-    inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.ollama
     inputs.nix-presets.nixosModules.syncthing
     inputs.nix-presets.nixosModules.backup

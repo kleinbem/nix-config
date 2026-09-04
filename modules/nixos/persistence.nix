@@ -37,7 +37,6 @@
       "/var/lib/sbctl"
       # --- Added Missing Service & System State ---
       "/var/lib/netbird" # Identity and registration
-      "/var/lib/github-runners" # GitHub Actions runner state
       "/var/account" # Process accounting logs (Lynis/Security Audit)
       "/var/lib/systemd/backlight" # Screen brightness
       "/var/lib/systemd/rfkill" # Airplane mode state

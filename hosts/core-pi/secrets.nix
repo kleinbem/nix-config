@@ -66,12 +66,6 @@
       # instead by infra/netbird/peers.tf disabling login expiration for core-pi.
       netbird_setup_key = { };
 
-      # GitHub Runner (optional)
-      github_runner_pat = {
-        mode = "0440";
-        group = "wheel";
-      };
-
       # Cloudflare Tunnel
       cloudflare_account_id = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";

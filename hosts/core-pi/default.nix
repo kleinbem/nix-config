@@ -30,7 +30,6 @@ in
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.kleinbem-auth
     inputs.nix-presets.nixosModules.cups
-    inputs.nix-presets.nixosModules.github-runner
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.ntfy
@@ -181,13 +180,6 @@ in
       cups = {
         enable = true;
         ip = "${myInventory.network.nodes.cups.ip}/24";
-      };
-
-      github-runner = {
-        enable = false; # Disabled until core-pi is physically online
-        ip = "${myInventory.network.nodes.github-runner.ip}/24"; # Need to ensure this doesn't conflict if nvme also runs one
-        hostDataDir = "/var/lib/github-runner";
-        # secretsFile = config.sops.secrets.github_runner_pat.path;
       };
 
       authelia = {

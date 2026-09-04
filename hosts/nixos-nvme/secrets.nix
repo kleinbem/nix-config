@@ -67,18 +67,6 @@
         # The nix-daemon needs to be able to read this file
         group = "wheel";
       };
-      github_runner_pat = {
-        mode = "0440";
-        group = "wheel";
-      };
-      github_runner_nix = {
-        owner = "github-runner";
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
-      };
-      github_runner_nix_config = {
-        owner = "github-runner";
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
-      };
       u2f_keys = { };
       # Buzz (Nostr relay) — 32-byte hex Nostr signing key + Garage RPC/admin
       # creds + Typesense admin key + Garage S3 API key (buzz_s3_access_key/
@@ -143,7 +131,7 @@
       # API Keys
       github_pat = {
         owner = "martin";
-        group = "github-runner";
+        group = "wheel";
         mode = "0440";
       };
       brave_api_key = {
@@ -214,6 +202,13 @@
     # `sops nix/per-host/nixos-nvme.yaml`, THEN flip the enable flag.
     // lib.optionalAttrs config.my.containers.litellm.enable {
       litellm_master_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+    }
+    # GitHub runner registration token — only declared while the opt-in
+    # runner container is enabled (same footgun-avoidance as litellm above).
+    // lib.optionalAttrs config.my.containers.github-runner.enable {
+      github_runner_pat = {
         sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
       };
     };

@@ -22,7 +22,6 @@
     # Edge hosts keep selective imports — they eval their own config nightly.
     inputs.nix-presets.nixosModules.all
 
-    "${self}/modules/nixos/services/github-runner.nix"
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"
