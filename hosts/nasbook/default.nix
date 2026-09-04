@@ -20,6 +20,10 @@ in
     # Root is stateless tmpfs (disko.nix) — this binds /var/lib/* service
     # state back from the persistent /nix/persist btrfs subvolume.
     "${self}/modules/nixos/persistence.nix"
+    # ADR-002: containers below are decoupled/pulled, not built on this weak
+    # host (see container-factory's catalogue for their pre-built closures).
+    "${self}/modules/nixos/container-host.nix"
+    "${self}/modules/nixos/services/container-updater.nix"
 
     # ─── Services moved from Workstation ─────────────────────
     inputs.nix-presets.nixosModules.paperless
@@ -60,10 +64,17 @@ in
       requireCache = true;
     };
 
-    network = {
+    network.externalInterface = "enp2s0";
+
+    # ─── Container Hosting (via reusable module) ─────────────
+    # Supplies my.network.subnet/.hostAddress (externalInterface stays
+    # above — container-host.nix doesn't set it) plus the container-updater
+    # auto-derivation and persistence wiring every other container-hosting
+    # node already uses (core-pi, mac-mini, hass-pi).
+    container-host = {
+      enable = true;
       subnet = "10.85.47.0/24";
       hostAddress = "10.85.47.1";
-      externalInterface = "enp2s0";
     };
 
     # ─── Data & Analytics Hub Services ───────────────────────

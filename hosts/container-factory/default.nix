@@ -29,8 +29,8 @@ let
   # Dummy .46 address for containers that ONLY ever deploy to nixos-nvme
   # (the .46 subnet). mkContainer now derives the container's baked default
   # gateway from `.1` of this address's /24, so any container that deploys
-  # to another host's subnet MUST pass its real address here (see the .48/
-  # .49/.50 entries below) — a dummy .46 would bake a 10.85.46.1 gateway
+  # to another host's subnet MUST pass its real address here (see the .47/
+  # .48/.49/.50 entries below) — a dummy .46 would bake a 10.85.46.1 gateway
   # that doesn't exist on that host. Source of truth: inventory.nix.
   ip = n: "10.85.46.${toString n}/24";
   dataDir = name: "/var/lib/factory/${name}";
@@ -58,7 +58,7 @@ let
       hostDataDir = dataDir "open-webui";
     };
     qdrant = {
-      ip = ip 24;
+      ip = "10.85.47.105/24"; # nasbook
       hostDataDir = dataDir "qdrant";
     };
     playground = {
@@ -74,7 +74,7 @@ let
       hostDataDir = dataDir "litellm";
     };
     loki = {
-      ip = ip 30;
+      ip = "10.85.47.116/24"; # nasbook
       hostDataDir = dataDir "loki";
     };
     crowdsec = {
@@ -129,7 +129,7 @@ let
     cups.ip = ip 38;
     frigate.ip = ip 39;
     home-assistant.ip = "10.85.49.10/24"; # hass-pi
-    paperless.ip = ip 41;
+    paperless.ip = "10.85.47.131/24"; # nasbook
     stalwart = {
       # REAL deployment IP, not a dummy — mkContainer now derives the
       # container's baked default gateway from its own address (.1 of the
@@ -189,10 +189,10 @@ let
       facebookClientSecretFile = "/run/secrets/factory-dummy";
     };
     ntfy.ip = "10.85.48.131/24"; # core-pi
-    agent-team = { };
+    agent-team.ip = "10.85.47.118/24"; # nasbook
     netdata = { };
-    syncthing = { };
-    backup = { };
+    syncthing.ip = "10.85.47.127/24"; # nasbook
+    backup.ip = "10.85.47.128/24"; # nasbook
     # OCI/podman containers (comfyui, vllm, langflow) are deliberately absent:
     # they run via virtualisation.oci-containers, pull upstream images at
     # runtime, and produce no `config.containers.<name>` closure to cache.

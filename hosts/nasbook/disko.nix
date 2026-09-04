@@ -44,6 +44,11 @@
       ];
       neededForBoot = true;
     };
+    # impermanence asserts every fileSystem backing environment.persistence
+    # has neededForBoot — the disko-declared /nix/persist subvolume above
+    # doesn't set it by default.
+    "/nix".neededForBoot = true;
+    "/nix/persist".neededForBoot = true;
   };
   disko.devices = {
     disk = {
