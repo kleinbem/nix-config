@@ -6,12 +6,22 @@
     validateSopsFiles = false;
 
     secrets = {
-      # Identity (Authelia)
-      authelia_session_secret = { };
-      authelia_jwt_secret = { };
-      authelia_storage_encryption_key = { };
-      # Real seed users.yml (argon2id-hashed accounts) -- per-container, not
-      # shared.yaml, since it's genuinely unique to this one container.
+      # Identity (Authelia) — all 4 secrets live in one per-container file,
+      # scoped to core_pi in kleinbem-secrets/.sops.yaml (only the host that
+      # actually runs the container can decrypt them). The 3 crypto secrets
+      # used to live in shared.yaml (decryptable by every fleet host) before
+      # this consolidation — that was a legacy artifact predating the
+      # per-container convention (see kleinbem-auth.yaml/stalwart.yaml), not
+      # a deliberate choice, so they moved here alongside the seed users.yml.
+      authelia_session_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+      };
+      authelia_jwt_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+      };
+      authelia_storage_encryption_key = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+      };
       authelia_users_file = {
         sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
       };
