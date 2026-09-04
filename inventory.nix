@@ -445,7 +445,8 @@
       authelia = {
         ip = "10.85.48.123";
         port = 9091;
-        externalPort = 9091;
+        externalPort = 443;
+        domain = "authelia.kleinbem.dev"; # mesh-only (nix/infra/netbird) — never the tunnel; it's the SSO gate itself
         meta = {
           name = "Authelia SSO";
           category = "Identity";
