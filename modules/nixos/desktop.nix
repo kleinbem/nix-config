@@ -254,48 +254,16 @@ in
       };
 
       environment = {
+        # Ozone/Wayland works without a managed policy — the package's own
+        # commandLineArgs (nix-presets/desktop.nix) carries browser-specific
+        # flags now. Deliberately UNMANAGED (2026-09-04): no
+        # /etc/{chromium,opt/chrome}/policies/managed/ — that's what disables
+        # sign-in, sync, GenAI features, etc. Lost along with it: force-
+        # installed uBlock Origin (cjpalhdlnbpafiamejdnhcphjbkeiagm — install
+        # manually once), and the enforced privacy defaults (password
+        # manager/autofill/metrics/spellcheck were off; now whatever you set
+        # in chrome://settings).
         sessionVariables.NIXOS_OZONE_WL = "1";
-
-        # Browser managed policies — deploy to both Chromium and Google Chrome paths.
-        # Chromium reads from /etc/chromium/policies/managed/
-        # Google Chrome reads from /etc/opt/chrome/policies/managed/
-        etc =
-          let
-            browserPolicies = builtins.toJSON {
-              ClearSiteDataOnExit = false;
-              BlockThirdPartyCookies = false;
-              # Chrome sign-in is allowed (was false). Gemini in Chrome ("Glic"),
-              # Help me write, tab organiser etc. all require a signed-in Google
-              # account, so the old lockdown silently disabled every built-in AI
-              # feature. Sync stays opt-in; password manager / autofill / metrics
-              # below remain off.
-              SignInAllowed = true;
-              # Permit the built-in GenAI features. 1 = allowed, but no data sent
-              # to Google for model training. Individual GenAI policies inherit
-              # this when unset. The Gemini panel still depends on Google's
-              # per-account rollout + region + Chrome version — this only stops
-              # managed Chrome from blocking it.
-              GenAiDefaultSettings = 1;
-              DeveloperToolsAvailability = 1;
-              MetricsReportingEnabled = false;
-              SpellCheckServiceEnabled = false;
-              SystemTheme = 1;
-              UseSystemTitleBar = true;
-              ExtensionSettings = {
-                "cjpalhdlnbpafiamejdnhcphjbkeiagm" = {
-                  installation_mode = "force_installed";
-                  update_url = "https://clients2.google.com/service/update2/crx";
-                };
-              };
-              PasswordManagerEnabled = false;
-              AutofillAddressEnabled = false;
-              AutofillCreditCardEnabled = false;
-            };
-          in
-          {
-            "chromium/policies/managed/lab_policies.json".text = browserPolicies;
-            "opt/chrome/policies/managed/lab_policies.json".text = browserPolicies;
-          };
 
         systemPackages = with pkgs; [
           qt5.qtwayland
