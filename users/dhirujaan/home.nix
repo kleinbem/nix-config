@@ -16,7 +16,7 @@
   programs.alacritty.enable = true;
 
   home.packages = with pkgs; [
-    firefox-beta
+    google-chrome
     wofi # Wayland App Launcher
     pavucontrol # Audio control
     grim # Screenshot
