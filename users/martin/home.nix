@@ -136,12 +136,15 @@ in
 
   xdg.mimeApps = {
     enable = true;
-    defaultApplications = {
-      "text/html" = [ "firefox-standard.desktop" ];
-      "x-scheme-handler/http" = [ "firefox-standard.desktop" ];
-      "x-scheme-handler/https" = [ "firefox-standard.desktop" ];
-      "x-scheme-handler/about" = [ "firefox-standard.desktop" ];
-      "x-scheme-handler/unknown" = [ "firefox-standard.desktop" ];
+    # mkForce: nix-presets/desktop.nix (shared across users, incl. dhirujaan)
+    # sets these same keys to Firefox — force wins the merge for martin
+    # specifically without touching that shared preset.
+    defaultApplications = lib.mkForce {
+      "text/html" = [ "google-chrome-stable.desktop" ];
+      "x-scheme-handler/http" = [ "google-chrome-stable.desktop" ];
+      "x-scheme-handler/https" = [ "google-chrome-stable.desktop" ];
+      "x-scheme-handler/about" = [ "google-chrome-stable.desktop" ];
+      "x-scheme-handler/unknown" = [ "google-chrome-stable.desktop" ];
     };
   };
 

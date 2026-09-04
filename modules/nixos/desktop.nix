@@ -246,11 +246,11 @@ in
 
       # System-wide Default Browser
       xdg.mime.defaultApplications = {
-        "text/html" = "firefox-standard.desktop";
-        "x-scheme-handler/http" = "firefox-standard.desktop";
-        "x-scheme-handler/https" = "firefox-standard.desktop";
-        "x-scheme-handler/about" = "firefox-standard.desktop";
-        "x-scheme-handler/unknown" = "firefox-standard.desktop";
+        "text/html" = "google-chrome-stable.desktop";
+        "x-scheme-handler/http" = "google-chrome-stable.desktop";
+        "x-scheme-handler/https" = "google-chrome-stable.desktop";
+        "x-scheme-handler/about" = "google-chrome-stable.desktop";
+        "x-scheme-handler/unknown" = "google-chrome-stable.desktop";
       };
 
       environment = {
