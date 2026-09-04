@@ -52,13 +52,15 @@
 
     # ─── Journal (tighter than core.nix's 4G default) ───────────
     # core.nix sets SystemMaxUse=4G for workstations. RPi nodes / routers
-    # have tighter storage, so we override with a smaller cap. types.lines
-    # concatenates, and journald takes the last duplicate key, so our value
-    # wins on hosts that load both.
-    journald.extraConfig = ''
-      SystemMaxUse=256M
-      MaxRetentionSec=1month
-    '';
+    # have tighter storage, so we override with a smaller cap.
+    # settings.Journal is a real attrset (unlike the old types.lines
+    # extraConfig, which string-concatenated and let journald resolve the
+    # last duplicate key) — SystemMaxUse needs mkForce to win over core.nix's
+    # default; MaxRetentionSec isn't set there, so no conflict.
+    journald.settings.Journal = {
+      SystemMaxUse = lib.mkForce "256M";
+      MaxRetentionSec = "1month";
+    };
   };
 
   # ─── User ───────────────────────────────────────────────────
