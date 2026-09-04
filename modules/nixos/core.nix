@@ -123,10 +123,7 @@ in
     # Prevent /var/log/journal from growing indefinitely. 1G rotated out in
     # under a day on the workstation (runners + fluent-bit churn), leaving
     # incidents un-diagnosable; headless.nix overrides tighter for RPi nodes.
-    # journald.extraConfig (types.lines, string-concatenated) is removed
-    # upstream — .settings.Journal is a real attrset, so overriders now need
-    # lib.mkForce instead of relying on "last line wins".
-    journald.settings.Journal.SystemMaxUse = "4G";
+    journald.extraConfig = "SystemMaxUse=4G";
 
     # = hardware monitoring =
     smartd.enable = true;

@@ -110,15 +110,11 @@
   services = {
     # 4G, matching core.nix: 500M rotated out in hours on this host (runner +
     # fluent-bit churn), which made the 2026-07-15 freeze un-diagnosable.
-    # SystemMaxUse restates core.nix's own default (via mkForce, to avoid a
-    # module-system conflict now that settings.Journal is a real attrset,
-    # not the old string-concatenated extraConfig) purely so this block
-    # reads standalone; SystemMaxFileSize/MaxRetentionSec aren't set there.
-    journald.settings.Journal = {
-      SystemMaxUse = lib.mkForce "4G";
-      SystemMaxFileSize = "128M";
-      MaxRetentionSec = "1month";
-    };
+    journald.extraConfig = ''
+      SystemMaxUse=4G
+      SystemMaxFileSize=128M
+      MaxRetentionSec=1month
+    '';
     pcscd.enable = true;
     fprintd.enable = true;
   };
