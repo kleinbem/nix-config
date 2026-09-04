@@ -201,7 +201,7 @@
           "flypie@schneegans.github.com"
         ];
         favorite-apps = [
-          "firefox-standard.desktop"
+          "google-chrome-stable.desktop"
           "org.gnome.Nautilus.desktop"
           "org.gnome.Software.desktop"
           "org.gnome.Console.desktop"
