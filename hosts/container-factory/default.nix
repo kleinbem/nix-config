@@ -151,6 +151,7 @@ let
       jwtSecretFile = "/run/secrets/factory-dummy";
       sessionSecretFile = "/run/secrets/factory-dummy";
       storageEncryptionKeyFile = "/run/secrets/factory-dummy";
+      usersFile = "/run/secrets/factory-dummy";
     };
     # github-runner: opt-in debug runner, built embedded on nixos-nvme
     # (excludeFromUpdater) so it's not a factory target.
