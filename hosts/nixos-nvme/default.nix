@@ -4,6 +4,7 @@
   config,
   inputs,
   self,
+  options,
   ...
 }:
 
@@ -110,11 +111,26 @@
   services = {
     # 4G, matching core.nix: 500M rotated out in hours on this host (runner +
     # fluent-bit churn), which made the 2026-07-15 freeze un-diagnosable.
-    journald.extraConfig = ''
-      SystemMaxUse=4G
-      SystemMaxFileSize=128M
-      MaxRetentionSec=1month
-    '';
+    # SystemMaxUse restates core.nix's own value (mkForce in the settings
+    # branch, to resolve the attrset merge conflict); the other two keys
+    # aren't set there. See core.nix for why both branches exist.
+    journald =
+      if options.services.journald ? settings then
+        {
+          settings.Journal = {
+            SystemMaxUse = lib.mkForce "4G";
+            SystemMaxFileSize = "128M";
+            MaxRetentionSec = "1month";
+          };
+        }
+      else
+        {
+          extraConfig = ''
+            SystemMaxUse=4G
+            SystemMaxFileSize=128M
+            MaxRetentionSec=1month
+          '';
+        };
     pcscd.enable = true;
     fprintd.enable = true;
   };

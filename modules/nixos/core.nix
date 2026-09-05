@@ -3,6 +3,7 @@
   inputs,
   lib,
   config,
+  options,
   ...
 }:
 let
@@ -123,7 +124,17 @@ in
     # Prevent /var/log/journal from growing indefinitely. 1G rotated out in
     # under a day on the workstation (runners + fluent-bit churn), leaving
     # incidents un-diagnosable; headless.nix overrides tighter for RPi nodes.
-    journald.extraConfig = "SystemMaxUse=4G";
+    #
+    # Newer nixpkgs removed the string-concat `journald.extraConfig` (hard
+    # assertion) in favour of the `settings.Journal` attrset; the pinned
+    # nixpkgs still only has `extraConfig`. Straddle both until the flake
+    # pin floor is past the removal, then drop the `else` branch here and in
+    # headless.nix / hosts/nixos-nvme.
+    journald =
+      if options.services.journald ? settings then
+        { settings.Journal.SystemMaxUse = "4G"; }
+      else
+        { extraConfig = "SystemMaxUse=4G"; };
 
     # = hardware monitoring =
     smartd.enable = true;
