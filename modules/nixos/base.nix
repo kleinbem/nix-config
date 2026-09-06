@@ -61,6 +61,15 @@
         config.allowUnfree = true;
       };
 
+      # flashrom 1.8.0's cmocka test suite fails on aarch64
+      # (`write_chip_bad_status_test`), which breaks raspberrypi-eeprom →
+      # rpi-eeprom-update.service → the whole core-pi/hass-pi toplevel.
+      # Upstream-flaky, not our bug; skip the check until nixpkgs fixes it.
+      flashrom = prev.flashrom.overrideAttrs (_: {
+        doCheck = false;
+        doInstallCheck = false;
+      });
+
       # Fix pygount build failure in nix-hardware (strict chardet bound)
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (_python-final: python-prev: {
