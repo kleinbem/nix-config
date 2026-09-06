@@ -1,0 +1,81 @@
+name: "Check Vaultwarden Version"
+
+# Daily nag when the Vaultwarden the fleet ships (pinned nixpkgs) falls behind
+# the latest upstream release. Vaultwarden is an internet-facing credential
+# store on the public Cloudflare tunnel, so it gets a faster, louder signal
+# than the generic weekly flake-lock-age check. This workflow does NOT bump
+# anything — `nix flake update` (maintain.yml) owns the actual version bump.
+# On drift it opens (or refreshes) a single deduplicated tracking issue.
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # daily 06:00 UTC, after the 03:00 Maintain Flake run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: "Compare shipped vs upstream"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: cachix/install-nix-action@v31.10.6
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Run version check
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/check-vaultwarden-version.sh
+          ./scripts/check-vaultwarden-version.sh
+
+      - name: Open or refresh tracking issue
+        if: steps.check.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT: ${{ steps.check.outputs.current }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          SECURITY: ${{ steps.check.outputs.security }}
+          RELEASE_URL: ${{ steps.check.outputs.release_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          TITLE="Vaultwarden ${LATEST} available (fleet ships ${CURRENT})"
+          BODY=$(cat <<EOF
+          The fleet ships **Vaultwarden \`${CURRENT}\`** (from the pinned nixpkgs in \`flake.lock\`).
+          Upstream latest is **[\`${LATEST}\`](${RELEASE_URL})**.
+
+          - Release note mentions security / advisory / CVE: **${SECURITY}**
+          - Fix path: let the daily \`Maintain Flake\` PR land a newer nixpkgs, or if it's
+            stuck, unblock \`main\` (or \`nix flake update\` + merge manually). No code change
+            here — nixpkgs owns the \`vaultwarden\` package version.
+          - Vaultwarden is on the public Cloudflare tunnel (\`vault.kleinbem.dev\`); treat a
+            security-worded release as priority.
+
+          _Auto-filed by \`.github/workflows/check-vaultwarden-version.yaml\`. This issue is
+          deduplicated on the \`vaultwarden-version\` label and its title is rewritten as new
+          releases land. Close it once \`flake.lock\` catches up._
+          EOF
+          )
+
+          # Ensure the dedupe label exists (ignore "already exists").
+          gh label create vaultwarden-version --color BFD4F2 \
+            --description "Auto-filed: shipped Vaultwarden is behind upstream" 2>/dev/null || true
+
+          EXISTING=$(gh issue list --repo "$REPO" --state open --label vaultwarden-version \
+            --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --repo "$REPO" --title "$TITLE" --body "$BODY"
+            echo "Refreshed issue #$EXISTING"
+          else
+            gh issue create --repo "$REPO" --title "$TITLE" --body "$BODY" \
+              --label vaultwarden-version --label security --label dependencies
+          fi
