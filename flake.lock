@@ -2457,6 +2457,10 @@
         "flake-parts": "flake-parts_2",
         "ghostty": "ghostty",
         "git-hooks": "git-hooks_2",
+        "hermes": [
+          "nix-presets",
+          "hermes"
+        ],
         "home-manager": "home-manager_3",
         "impermanence": "impermanence",
         "jetpack-nixos": "jetpack-nixos",

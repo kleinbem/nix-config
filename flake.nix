@@ -68,6 +68,12 @@
         nix-devshells.follows = "nix-devshells";
       };
     };
+
+    # Hermes Agent (Nous Research) CLI — for interactive use inside Herdr
+    # panes on nixos-nvme (see nix-presets/herdr.nix). Follows nix-presets'
+    # pin so this workstation CLI and the mac-mini `services.hermes-agent`
+    # gateway container (my.containers.hermes) stay on the same version.
+    hermes.follows = "nix-presets/hermes";
     nix-templates = {
       url = "github:kleinbem/nix-templates";
       inputs = {
