@@ -35,16 +35,16 @@ NIXPKGS_REV=$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock)
 [[ -n $NIXPKGS_REV && $NIXPKGS_REV != "null" ]] || err "no .nodes.nixpkgs.locked.rev in flake.lock"
 log "pinned nixpkgs: $NIXPKGS_REV"
 
-CURRENT=$(nix eval --raw "github:NixOS/nixpkgs/${NIXPKGS_REV}#vaultwarden.version" 2>/dev/null) \
-  || err "could not eval vaultwarden.version at $NIXPKGS_REV"
+CURRENT=$(nix eval --raw "github:NixOS/nixpkgs/${NIXPKGS_REV}#vaultwarden.version" 2>/dev/null) ||
+  err "could not eval vaultwarden.version at $NIXPKGS_REV"
 log "shipped Vaultwarden: $CURRENT"
 
 # ── 2. Latest upstream release ──────────────────────────────────────────────
 GH_API=(-fsSL -H "Accept: application/vnd.github+json")
 [[ -n ${GH_TOKEN:-} ]] && GH_API+=(-H "Authorization: Bearer ${GH_TOKEN}")
 
-REL_JSON=$(curl "${GH_API[@]}" "https://api.github.com/repos/${REPO_SLUG}/releases/latest") \
-  || err "GitHub releases API call failed"
+REL_JSON=$(curl "${GH_API[@]}" "https://api.github.com/repos/${REPO_SLUG}/releases/latest") ||
+  err "GitHub releases API call failed"
 LATEST=$(jq -r '.tag_name' <<<"$REL_JSON")
 [[ -n $LATEST && $LATEST != "null" ]] || err "could not read .tag_name"
 REL_URL=$(jq -r '.html_url' <<<"$REL_JSON")
