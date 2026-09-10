@@ -93,9 +93,10 @@ tf-apply: tf-export
 tf-plan: tf-export
     @cd ../nix && tools/tf-apply.sh --plan-only
 
-# Export personas.nix ⊕ contact.nix → nix/infra/personas.json so Terraform
-# consumes the same source of truth. Idempotent — run before tf-apply/plan.
+# Regenerate nix/infra/{personas,inventory}.json from personas.nix ⊕
+# contact.nix + inventory.nix so OpenTofu consumes the same source of truth.
+# Idempotent — run before tf-apply/plan.
 [group("Personas")]
 [private]
 tf-export:
-    @../nix/tools/export-personas.sh
+    @../nix/tools/gen-iac-data.sh

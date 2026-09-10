@@ -173,6 +173,7 @@
         ./modules/flake/hosts.nix
         ./modules/flake/colmena.nix
         ./modules/flake/nix-on-droid.nix
+        ./modules/flake/iac-data.nix
       ];
       systems = [
         "x86_64-linux"

@@ -122,6 +122,34 @@
     };
   };
 
+  # ─── NetBird mesh groups ────────────────────────────────────
+  # Membership for the NetBird control-plane groups managed by the
+  # `nix/infra/netbird` OpenTofu root (groups.tf). This is the single
+  # source of truth — the root reads it via the generated
+  # `nix/infra/inventory.json` (see iac/data.nix). Until 2026-09-07 these
+  # lists were duplicated as `variable ... { default = [...] }` blocks in
+  # groups.tf, drifting silently from the fleet.
+  #
+  # Names must exist in `hosts` above (iac/data.nix asserts this). Peers
+  # still self-register on the data plane (`netbird up`); this only drives
+  # which control-plane group each enrolled peer lands in.
+  meshGroups = {
+    # Trusted personal machines — the only peers allowed to SSH infra and
+    # use the buzz-relay route. Mirrors the `desktop`-tagged hosts.
+    personal-devices = [
+      "nixos-nvme"
+      "mac-mini"
+    ];
+    # Smart-home / automation nodes (SSH-reachable from personal-devices).
+    smart-home = [
+      "hass-pi"
+      "orin-nano"
+    ];
+    # The attic/caddy cache entrypoint — exactly one host (the `central`
+    # peer). CI runners may reach this and nothing else.
+    cache = [ "core-pi" ];
+  };
+
   git = {
     name = "kleinbem";
     # Stays on gmail until Phase 1 (Stalwart) provides a real kleinbem.dev
