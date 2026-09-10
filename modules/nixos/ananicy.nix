@@ -38,10 +38,6 @@ in
 
       # Prioritize Browsers for smooth scrolling during builds
       {
-        name = "firefox";
-        type = "Web_Browser";
-      }
-      {
         name = "chrome";
         type = "Web_Browser";
       }

@@ -91,7 +91,7 @@ in
   ];
 
   # Same GNOME look/feel/keybindings/extensions martin uses on nixos-nvme
-  # (theme, dash-to-panel, blur-my-shell, workspace shortcuts, etc.) —
+  # (blur-my-shell, dash-to-dock, workspace shortcuts, etc.) —
   # base.nix already pulls in the home-manager NixOS module fleet-wide, so
   # this only needs a per-host opt-in. Deliberately NOT users/martin/home.nix
   # (nixos-nvme's full profile) — that pulls in dev tooling, pentesting,
@@ -120,6 +120,43 @@ in
       inherit (config.my) username;
       homeDirectory = config.my.home;
       stateVersion = "25.11";
+
+      # Chrome. nixos-nvme gets this from the nix-presets/desktop.nix bundle,
+      # which this host deliberately doesn't import (see above) — so declare
+      # it directly. Same Wayland-decorations override as the bundle. Not
+      # firejailed (see modules/nixos/firejail.nix's Chrome note).
+      packages = [
+        (pkgs.google-chrome.override {
+          commandLineArgs = "--enable-features=WaylandWindowDecorations";
+        })
+      ];
+    };
+
+    # Matches nixos-nvme's users/martin/home.nix entry: upstream ships
+    # google-chrome.desktop, but Chrome's Wayland app_id is
+    # "google-chrome-stable" — GNOME can't match them, so the dash favorite
+    # (gnome.nix favorite-apps) and per-window icon grouping break without a
+    # desktop file whose name matches the app_id.
+    xdg.desktopEntries."google-chrome-stable" = {
+      name = "Google Chrome";
+      genericName = "Web Browser";
+      exec = "google-chrome-stable %U";
+      icon = "google-chrome";
+      terminal = false;
+      categories = [
+        "Network"
+        "WebBrowser"
+      ];
+      mimeType = [
+        "text/html"
+        "application/xhtml+xml"
+        "x-scheme-handler/http"
+        "x-scheme-handler/https"
+      ];
+      settings = {
+        StartupNotify = "true";
+        StartupWMClass = "google-chrome-stable";
+      };
     };
   };
 
@@ -651,8 +688,7 @@ in
       # /nix and /nix/persist) — it lives under the tmpfs "/" declared near
       # the bottom of this file, so it's wiped every reboot by default.
       users.martin.directories = [
-        ".mozilla" # Firefox profile
-        ".config" # GNOME/dconf settings, GTK, mimeapps.list
+        ".config" # GNOME/dconf settings, GTK, mimeapps.list, google-chrome
       ];
 
       directories = [
@@ -691,13 +727,9 @@ in
       sops
       age
       libfido2
-      # NOT firefox here: my.desktop.gnome.enable (above) pulls in
-      # modules/nixos/firejail.nix, which already wraps a sandboxed
-      # firefox-beta under the plain "firefox" binary name — same as
-      # nixos-nvme. An explicit plain pkgs.firefox here would shadow that
-      # wrapper; confirmed live 2026-08-03 that it was doing exactly that
-      # (firefox resolved to the unsandboxed store path) before this was
-      # removed — leftover from before this host ran GNOME at all.
+      # Browser (google-chrome) is declared in the home-manager block above,
+      # not here — installed plain, not firejailed (see the Chrome note in
+      # modules/nixos/firejail.nix).
     ];
   };
 

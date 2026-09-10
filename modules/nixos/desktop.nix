@@ -99,12 +99,14 @@ in
         dconf-editor
         gnome-extension-manager
 
-        # Premium Extensions for GNOME 50
+        # GNOME 50 extensions — GNOME-native workflow: keep the stock top bar +
+        # overview, use dash-to-dock (auto-hide) instead of a full bottom panel.
+        # Dropped 2026-09-10: dash-to-panel, arcmenu, desktop-icons-ng-ding,
+        # logo-menu, user-themes, quick-settings-tweaker, fly-pie — either
+        # redundant with the native shell or the highest-churn extensions on
+        # each shell bump. See modules/home-manager/gnome.nix for the rationale.
         gnomeExtensions.blur-my-shell
-        gnomeExtensions.dash-to-panel
-        gnomeExtensions.dash-to-dock # installed but disabled — toggle via gnome-extensions-app
-        gnomeExtensions.arcmenu
-        gnomeExtensions.desktop-icons-ng-ding
+        gnomeExtensions.dash-to-dock # Auto-hiding bottom dock (intellihide)
         gnomeExtensions.appindicator
         gnomeExtensions.just-perfection
         gnomeExtensions.vitals
@@ -115,15 +117,11 @@ in
         gnomeExtensions.search-light
         gnomeExtensions.removable-drive-menu
         gnomeExtensions.tiling-assistant
-        gnomeExtensions.logo-menu
-        gnomeExtensions.user-themes
-        gnomeExtensions.quick-settings-tweaker
         gnomeExtensions.custom-command-list # Top-bar shortcuts to `just` recipes
         gnomeExtensions.bluetooth-quick-connect # Connect paired BT devices from Quick Settings
         gnomeExtensions.quick-settings-audio-panel # Per-app volume + output switcher in QS
         gnomeExtensions.rounded-window-corners-reborn # Completes the blur-my-shell aesthetic
         gnomeExtensions.weather-oclock # Weather beside the clock (surfaces gnome-weather)
-        gnomeExtensions.fly-pie # Pie-menu launcher (Ctrl+Space) — shell-native, no XWayland focus/scaling issues
         gnomeExtensions.media-controls # MPRIS controls in the panel (amberol/browser)
 
         # Modern GNOME Apps & Utilities (Premium Suite)
@@ -192,7 +190,8 @@ in
         # app-grid entry, icons, the biometric-unlock polkit policy
         # (share/polkit-1/actions/com.bitwarden.Bitwarden.policy) and the
         # libexec/desktop_proxy native-messaging bridge all need to land in the
-        # system profile. Firefox integration is wired in nix-presets/firefox.nix.
+        # system profile (the bridge backs the Chrome extension <-> desktop-app
+        # integration).
         bitwarden-desktop
       ];
 

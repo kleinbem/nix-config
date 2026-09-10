@@ -406,7 +406,7 @@ home-manager/default.nix (aggregator, like nixos/default.nix)
 ├─ security.nix (security tools)
 ├─ syncthing.nix (file sync)
 ├─ workspace-guardian.nix (productivity)
-└─ + from nix-presets (git, terminal, firefox, etc.)
+└─ + from nix-presets (git, terminal, desktop, etc.)
 ```
 
 ---

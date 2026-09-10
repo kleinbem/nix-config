@@ -22,6 +22,7 @@ in
     service-launchers.enable = true;
     mcp.enable = true;
     opencode.enable = true;
+    ai-agents.enable = true;
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet
     workspace-guardian.enable = true;
@@ -117,9 +118,10 @@ in
 
   xdg.mimeApps = {
     enable = true;
-    # mkForce: nix-presets/desktop.nix (shared across users, incl. dhirujaan)
-    # sets these same keys to Firefox — force wins the merge for martin
-    # specifically without touching that shared preset.
+    # mkForce: nix-presets/desktop.nix sets these same keys to the stock
+    # google-chrome.desktop — force wins the merge so martin gets the custom
+    # google-chrome-stable.desktop entry (with the StartupWMClass fix, see
+    # xdg.desktopEntries below) instead.
     defaultApplications = lib.mkForce {
       "text/html" = [ "google-chrome-stable.desktop" ];
       "x-scheme-handler/http" = [ "google-chrome-stable.desktop" ];
@@ -130,7 +132,6 @@ in
   };
 
   programs = {
-    firefox-browser.enable = true;
     home-manager.enable = true;
 
     # Inject hardware-protected signing keys from centralized proxy

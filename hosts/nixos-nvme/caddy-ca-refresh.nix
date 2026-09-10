@@ -1,9 +1,9 @@
 # Keeps ~/.pki/caddy-root.crt (trusted into Chrome/Chromium's NSS db directly
 # by this file's own certutil calls below — nix-presets/pwa.nix's
 # `trustFleetInternalCas` activation did this too before the PWA framework
-# was removed (2026-09-04), but this script never depended on it, and into
-# Firefox's policies.Certificates.Install) in sync with the Caddy container's
-# actual local CA, which only ever lives on core-pi (the one host that runs
+# was removed (2026-09-04), but this script never depended on it) in sync
+# with the Caddy container's actual local CA, which only ever lives on
+# core-pi (the one host that runs
 # it — see nix-config/modules/nixos/core.nix's PKI comment). Unlike core-pi,
 # which can just copy the file locally in its own container postStart hook,
 # nixos-nvme has to pull it over SSH since Caddy runs on a different physical

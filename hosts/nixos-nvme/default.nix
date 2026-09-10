@@ -184,6 +184,15 @@
     };
   };
 
+  # Override core.nix's fleet-wide zramSwap.memoryPercent = 50. This is the
+  # only workstation and routinely holds a large Chrome tab set + local AI
+  # workloads; zstd compresses idle anon pages ~2-3x, so a zram device sized
+  # at 100% of the 62 GiB RAM still only costs a few GiB of real RAM for its
+  # own bookkeeping while roughly doubling the effective swap headroom that
+  # idle tabs get parked in before systemd-oomd/earlyoom have to kill
+  # anything. Pis keep the 50% default (they can't spare the overhead).
+  zramSwap.memoryPercent = lib.mkForce 100;
+
   home-manager.users.${config.my.username} = {
     imports = [
       "${self}/users/martin/home.nix"

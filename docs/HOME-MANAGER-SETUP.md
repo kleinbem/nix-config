@@ -161,10 +161,10 @@ programs.ssh = {
 };
 ```
 
-### Add Firefox Profile
+### Add a PWA
 
 ```nix
-# Firefox PWA setup (example from martin/home.nix)
+# PWA setup (example from martin/home.nix)
 my.pwa.enable = true;
 my.pwa.apps.bitwarden = {
   name = "Bitwarden";
@@ -181,7 +181,7 @@ my.pwa.apps.bitwarden = {
 ```nix
 home.sessionVariables = {
   EDITOR = "nano";
-  BROWSER = "${pkgs.firefox}/bin/firefox";
+  BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
   # Custom service endpoints
   SERVICE_URL = "https://api.internal";
 };
@@ -479,8 +479,8 @@ home-manager generations
   
   # Minimal setup, no dev tools, no system access
   home.packages = with pkgs; [
-    firefox     # Browser only
-    xdg-utils   # Desktop integration
+    google-chrome   # Browser only
+    xdg-utils       # Desktop integration
   ];
 }
 ```

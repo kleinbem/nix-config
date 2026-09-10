@@ -174,11 +174,19 @@
 
       "org/gnome/shell" = {
         disable-user-extensions = false;
+        # GNOME-native workflow: stock top bar + overview, auto-hide dock instead
+        # of a persistent bottom panel. Trimmed 24 → 18 extensions on 2026-09-10.
+        # Removed:
+        #   dash-to-panel  → dash-to-dock (auto-hide); top bar comes back natively
+        #   arcmenu        → the overview / search-light is the app menu
+        #   ding           → no desktop icons
+        #   logo-menu      → its launchers already exist as keybindings below
+        #   user-theme     → inert, no custom shell theme is shipped
+        #   quick-settings-tweaks → broadest shell patcher; media dup'd mediacontrols
+        #   flypie         → search-light (<Super>space) + rofi (<Super>r) are enough
         enabled-extensions = [
           "blur-my-shell@aunetx"
-          "dash-to-panel@jderose9.github.com"
-          "arcmenu@arcmenu.com"
-          "ding@rastersoft.com"
+          "dash-to-dock@micxgx.gmail.com"
           "appindicatorsupport@rgcjonas.gmail.com"
           "just-perfection-desktop@just-perfection"
           "Vitals@corecoding.com"
@@ -189,16 +197,12 @@
           "search-light@icedman.github.com"
           "drive-menu@gnome-shell-extensions.gcampax.github.com"
           "tiling-assistant@leleat-on-github"
-          "logo-menu@pauguic.github.io"
-          "user-theme@gnome-shell-extensions.gcampax.github.com"
-          "quick-settings-tweaks@qwreey"
           "custom-command-list@storageb.github.com"
           "bluetooth-quick-connect@bjarosze.gmail.com"
           "quick-settings-audio-panel@rayzeq.github.io"
           "rounded-window-corners@fxgn"
           "weatheroclock@CleoMenezesJr.github.io"
           "mediacontrols@cliffniff.github.com"
-          "flypie@schneegans.github.com"
         ];
         favorite-apps = [
           "google-chrome-stable.desktop"
@@ -219,10 +223,12 @@
         sigma = 30;
       };
 
-      "org/gnome/shell/extensions/blur-my-shell/dash-to-panel" = {
+      "org/gnome/shell/extensions/blur-my-shell/dash-to-dock" = {
         blur = true;
         brightness = 0.6;
         sigma = 30;
+        static-blur = true;
+        style-dash-to-dock = 0;
       };
 
       "org/gnome/shell/extensions/blur-my-shell/panel" = {
@@ -231,30 +237,38 @@
         corner-radius = 0;
       };
 
-      "org/gnome/shell/extensions/dash-to-panel" = {
-        panel-position = "BOTTOM";
-        appicon-margin = 4;
-        appicon-padding = 4;
-        dot-position = "BOTTOM";
-        show-apps-icon-file = "";
-        trans-use-dynamic-opacity = true;
-        leftbox-padding = -1;
-        tray-padding = -1;
-        window-preview-title-position = "TOP";
-        # Center the taskbar (app icons) on the panel instead of leaving it
-        # stacked at the left edge; all other elements keep their defaults.
-        panel-element-positions = ''{"0":[{"element":"showAppsButton","visible":true,"position":"stackedTL"},{"element":"activitiesButton","visible":false,"position":"stackedTL"},{"element":"leftBox","visible":true,"position":"stackedTL"},{"element":"taskbar","visible":true,"position":"centerMonitor"},{"element":"centerBox","visible":true,"position":"stackedBR"},{"element":"rightBox","visible":true,"position":"stackedBR"},{"element":"dateMenu","visible":true,"position":"stackedBR"},{"element":"systemMenu","visible":true,"position":"stackedBR"},{"element":"desktopButton","visible":true,"position":"stackedBR"}]}'';
+      "org/gnome/shell/extensions/blur-my-shell/overview" = {
+        blur = true;
+        brightness = 0.6;
+        sigma = 30;
       };
 
-      "org/gnome/shell/extensions/arcmenu" = {
-        menu-layout = "Windows";
-        position-in-panel = "Left";
-      };
-
-      "org/gnome/shell/extensions/ding" = {
-        show-home = true;
-        show-trash = true;
-        icon-size = "small";
+      # Dock: auto-hiding bottom dock, not a full-width panel. intellihide keeps
+      # it hidden until the focused window stops overlapping it (or the pointer
+      # pushes into the screen edge). hot-keys = false so Super+1..9 stay bound
+      # to workspace switching (wm/keybindings below), not dock-item activation.
+      "org/gnome/shell/extensions/dash-to-dock" = {
+        dock-position = "BOTTOM";
+        dock-fixed = false;
+        intellihide = true;
+        intellihide-mode = "FOCUS_APPLICATION_WINDOWS";
+        autohide = true;
+        autohide-in-fullscreen = false;
+        require-pressure-to-show = true;
+        extend-height = false;
+        height-fraction = 0.9;
+        dash-max-icon-size = 44;
+        show-apps-at-top = true;
+        show-show-apps-button = true;
+        show-mounts = false;
+        show-trash = false;
+        isolate-workspaces = false;
+        click-action = "minimize-or-previews";
+        scroll-action = "cycle-windows";
+        running-indicator-style = "DOTS";
+        custom-theme-shrink = true;
+        transparency-mode = "DYNAMIC";
+        hot-keys = false;
       };
 
       "org/gnome/shell/extensions/just-perfection" = {
@@ -262,7 +276,7 @@
         search = true;
         animation = 1; # Fast animations
         window-demanding-attention-focus = true;
-        startup-status = 0; # Startup status: Desktop (no overview)
+        startup-status = 1; # Startup status: Overview (GNOME-native flow)
         panel-size = 28; # Sleeker top bar height
         panel-button-padding-size = 6; # Closer top bar item spacing
       };
@@ -301,16 +315,6 @@
         border-thickness = 1;
         scale-height = 0.15;
         scale-width = 0.10;
-      };
-
-      "org/gnome/shell/extensions/logo-menu" = {
-        hide-forcequit = true;
-        menu-button-icon-image = 30;
-        menu-button-icon-size = 20;
-        menu-button-system-monitor = "${pkgs.mission-center}/bin/missioncenter";
-        menu-button-terminal = "ptyxis";
-        show-activities-button = false;
-        symbolic-icon = true;
       };
 
       "org/gnome/shell/extensions/tiling-assistant" = {
