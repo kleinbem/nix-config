@@ -25,6 +25,7 @@ in
     "${self}/modules/nixos/services/container-updater.nix"
     ./disko.nix
     ./secrets.nix
+    ./backup.nix
     inputs.nix-presets.nixosModules.dashboard
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
