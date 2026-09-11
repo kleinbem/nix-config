@@ -171,8 +171,7 @@ let
 in
 {
   options.modules.ai-agents = {
-    enable = lib.mkEnableOption
-      "Omarchy-style cross-agent AI integration (default-agent launcher, fleet skill fan-out, crash-to-agent handoff)";
+    enable = lib.mkEnableOption "Omarchy-style cross-agent AI integration (default-agent launcher, fleet skill fan-out, crash-to-agent handoff)";
 
     defaultAgent = lib.mkOption {
       type = lib.types.enum (lib.attrNames agents);
@@ -218,36 +217,38 @@ in
     # opencode is the one agent this module doesn't package itself.
     assertions = [
       {
-        assertion =
-          !(builtins.elem "opencode" wantedAgents) || (config.modules.opencode.enable or false);
+        assertion = !(builtins.elem "opencode" wantedAgents) || (config.modules.opencode.enable or false);
         message = "modules.ai-agents: opencode is selected but modules.opencode.enable is false — nothing puts `opencode` on PATH.";
       }
     ];
 
-    home.packages =
-      [ agentBin ]
+    home = {
+      packages = [
+        agentBin
+      ]
       ++ agentPackages
       ++ lib.optionals cfg.crashHandler.enable [
         crashToAgentBin
         pkgs.libnotify
       ];
 
-    home.shellAliases.a = "agent";
+      shellAliases.a = "agent";
 
-    home.sessionVariables.OMNI_DEFAULT_AGENT = defaultExe;
+      sessionVariables.OMNI_DEFAULT_AGENT = defaultExe;
 
-    # One skill file, symlinked into each agent's skills directory.
-    home.file = lib.mkIf cfg.skills.enable (
-      lib.mkMerge (
-        lib.mapAttrsToList (_: a: {
-          "${a.skillDir}/kleinbem-fleet/SKILL.md".source = fleetSkill;
-        }) agents
-        ++ [
-          # Emerging cross-agent convention (AGENTS.md ecosystem).
-          { ".agents/skills/kleinbem-fleet/SKILL.md".source = fleetSkill; }
-        ]
-      )
-    );
+      # One skill file, symlinked into each agent's skills directory.
+      file = lib.mkIf cfg.skills.enable (
+        lib.mkMerge (
+          lib.mapAttrsToList (_: a: {
+            "${a.skillDir}/kleinbem-fleet/SKILL.md".source = fleetSkill;
+          }) agents
+          ++ [
+            # Emerging cross-agent convention (AGENTS.md ecosystem).
+            { ".agents/skills/kleinbem-fleet/SKILL.md".source = fleetSkill; }
+          ]
+        )
+      );
+    };
 
     # Follow the system journal for coredumps and nudge toward crash-to-agent.
     # No privilege needed: martin is in `wheel`, which can read the journal.
