@@ -174,39 +174,58 @@
 
       "org/gnome/shell" = {
         disable-user-extensions = false;
-        # GNOME-native workflow: stock top bar + overview, auto-hide dock instead
-        # of a persistent bottom panel. Trimmed 24 → 18 extensions on 2026-09-10.
-        # Removed:
-        #   dash-to-panel  → dash-to-dock (auto-hide); top bar comes back natively
-        #   arcmenu        → the overview / search-light is the app menu
+        # GNOME-native workflow: stock top bar + overview, fast-autohide bottom
+        # dock (see extensions/dash-to-dock below) instead of a full bottom
+        # panel. Trimmed 24 → 18 extensions on 2026-09-10. Removed:
+        #   dash-to-panel  → dash-to-dock (autohide); top bar comes back natively
         #   ding           → no desktop icons
         #   logo-menu      → its launchers already exist as keybindings below
         #   user-theme     → inert, no custom shell theme is shipped
         #   quick-settings-tweaks → broadest shell patcher; media dup'd mediacontrols
         #   flypie         → search-light (<Super>space) + rofi (<Super>r) are enough
+        # Removed 2026-09-11 (still installed upstream, but broken on this shell):
+        #   search-light   → packaged v42 only declares shell-version 48/49
+        #   mediacontrols  → packaged v47 only declares shell-version 46-49
+        #   both show State: OUT OF DATE on GNOME Shell 50.4 — re-add once nixpkgs
+        #   ships a version whose metadata.json lists "50".
+        # Removed 2026-09-11: weatheroclock — GNOME's weather backend
+        # (org/gnome/shell/weather) needs a location and location-services is
+        # off system-wide; libgweather's location DB also has no entry for
+        # Watergrasshill or any nearby town, only "Cork Airport" ~18km out.
+        # With no location it just spun forever next to the clock. Dropped
+        # rather than pinning an inexact/mislabeled location.
+        # Re-added 2026-09-11: arcmenu — wanted a top-bar app menu; verified
+        # shell-version 50 support (v73) before adding this time, unlike the
+        # search-light/mediacontrols mistake above.
         enabled-extensions = [
           "blur-my-shell@aunetx"
           "dash-to-dock@micxgx.gmail.com"
+          "arcmenu@arcmenu.com"
           "appindicatorsupport@rgcjonas.gmail.com"
           "just-perfection-desktop@just-perfection"
-          "Vitals@corecoding.com"
+          "Vitals@CoreCoding.com"
           "caffeine@patapon.info"
           "clipboard-indicator@tudmotu.com"
           "gsconnect@andyholmes.github.io"
           "space-bar@luchrioh"
-          "search-light@icedman.github.com"
           "drive-menu@gnome-shell-extensions.gcampax.github.com"
           "tiling-assistant@leleat-on-github"
           "custom-command-list@storageb.github.com"
           "bluetooth-quick-connect@bjarosze.gmail.com"
           "quick-settings-audio-panel@rayzeq.github.io"
           "rounded-window-corners@fxgn"
-          "weatheroclock@CleoMenezesJr.github.io"
-          "mediacontrols@cliffniff.github.com"
         ];
+        # Explicit empty list: GNOME writes disabled UUIDs here whenever an
+        # extension errors out (or a user disables one via the Extensions app),
+        # and that key isn't cleared by anything else — it silently overrides
+        # enabled-extensions above and survives across home-manager switches.
+        # Declaring it empty makes every switch self-heal that state instead
+        # of a broken/manually-disabled extension staying stuck disabled.
+        disabled-extensions = [ ];
         favorite-apps = [
           "google-chrome-stable.desktop"
           "org.gnome.Nautilus.desktop"
+          "org.gnome.Ptyxis.desktop"
           "org.gnome.Software.desktop"
           "org.gnome.Console.desktop"
         ];
@@ -243,21 +262,25 @@
         sigma = 30;
       };
 
-      # Dock: persistent bottom dock (dock-fixed=true), reserving screen space
-      # like the old dash-to-panel bar instead of auto-hiding. hot-keys = false
-      # so Super+1..9 stay bound to workspace switching (wm/keybindings below),
-      # not dock-item activation.
+      # Dock: bottom, plain autohide (not "intelligent" — hides regardless of
+      # window overlap) reserving no screen space while hidden. Tuned for a
+      # fast reaction: no pressure-barrier push needed, short show/hide delays,
+      # quick slide animation. hot-keys = false so Super+1..9 stay bound to
+      # workspace switching (wm/keybindings below), not dock-item activation.
       "org/gnome/shell/extensions/dash-to-dock" = {
         dock-position = "BOTTOM";
-        dock-fixed = true;
-        intellihide = true;
-        intellihide-mode = "FOCUS_APPLICATION_WINDOWS";
+        dock-fixed = false;
         autohide = true;
+        intellihide = false;
+        require-pressure-to-show = false;
+        show-delay = 0.05;
+        hide-delay = 0.1;
+        animation-time = 0.1;
         autohide-in-fullscreen = false;
-        require-pressure-to-show = true;
         extend-height = false;
         height-fraction = 0.9;
-        dash-max-icon-size = 44;
+        dash-max-icon-size = 32; # Slimmer than the nixpkgs default (48/44)
+        icon-size-fixed = true; # Don't let it creep back up when scrolling/scaling
         show-apps-at-top = true;
         show-show-apps-button = true;
         show-mounts = false;
@@ -294,27 +317,6 @@
         notify-on-copy = false;
         history-size = 200;
         move-item-first = true;
-      };
-
-      "org/gnome/shell/extensions/search-light" = {
-        shortcut-search = [ "<Super>space" ];
-        width-percentage = 35;
-        background-color = [
-          0.0
-          0.0
-          0.0
-          0.8
-        ];
-        border-color = [
-          0.23
-          0.23
-          0.23
-          1.0
-        ];
-        border-radius = 1.65;
-        border-thickness = 1;
-        scale-height = 0.15;
-        scale-width = 0.10;
       };
 
       "org/gnome/shell/extensions/tiling-assistant" = {
@@ -413,6 +415,8 @@
           "Development"
           "Productivity"
           "Utilities"
+          "FleetServices"
+          "Media"
         ];
       };
 
@@ -444,6 +448,39 @@
       "org/gnome/desktop/app-folders/folders/Utilities" = {
         name = "Utilities";
         categories = [ "X-GNOME-Utilities" ];
+        # GNOME's factory app-folders default seeds this folder's own "apps"
+        # list (Decibels, Connections, Papers, font-viewer, Loupe — found live
+        # in dconf, never written by this file). folder-children ordering
+        # means Utilities is matched before Media below, so that stale list
+        # was silently stealing apps (e.g. Decibels) from Media's AudioVideo
+        # category match. Declare empty to override it, same self-healing
+        # pattern as disabled-extensions above.
+        apps = [ ];
+      };
+
+      # Category-driven folders (2026-09-11): rather than hand-listing apps,
+      # match on freedesktop Categories. Only using categories narrow enough
+      # to stay meaningful — "Utility" and "Graphics" are far too promiscuous
+      # (most GNOME apps carry Utility as a secondary tag) and would swallow
+      # half the grid, including apps already pinned to the dock.
+      "org/gnome/desktop/app-folders/folders/FleetServices" = {
+        name = "Fleet Services";
+        categories = [ "WebBrowser" ];
+        # The ~30 self-hosted service PWA launchers (Attic, Authelia, Frigate,
+        # Home Assistant, n8n, Netdata, Paperless, Qdrant, Syncthing, etc.)
+        # all declare Categories=Network;WebBrowser. Exclude the actual
+        # browsers so Chrome doesn't get folded in alongside them.
+        excluded-apps = [
+          "google-chrome-stable.desktop"
+          "google-chrome.desktop"
+          "com.google.Chrome.desktop"
+          "chromium-pentest.desktop"
+        ];
+      };
+
+      "org/gnome/desktop/app-folders/folders/Media" = {
+        name = "Media";
+        categories = [ "AudioVideo" ]; # mpv, Amberol, Decibels, Showtime, Snapshot
       };
 
       "org/gnome/desktop/privacy" = {

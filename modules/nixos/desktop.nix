@@ -100,13 +100,21 @@ in
         gnome-extension-manager
 
         # GNOME 50 extensions — GNOME-native workflow: keep the stock top bar +
-        # overview, use dash-to-dock (auto-hide) instead of a full bottom panel.
-        # Dropped 2026-09-10: dash-to-panel, arcmenu, desktop-icons-ng-ding,
-        # logo-menu, user-themes, quick-settings-tweaker, fly-pie — either
-        # redundant with the native shell or the highest-churn extensions on
-        # each shell bump. See modules/home-manager/gnome.nix for the rationale.
+        # overview, use dash-to-dock (fast autohide) instead of a full bottom
+        # panel. Dropped 2026-09-10: dash-to-panel, arcmenu,
+        # desktop-icons-ng-ding, logo-menu, user-themes, quick-settings-tweaker,
+        # fly-pie — either redundant with the native shell or the highest-churn
+        # extensions on each shell bump. Dropped 2026-09-11: search-light,
+        # media-controls — both OUT OF DATE (metadata.json shell-version caps
+        # at 49) on GNOME Shell 50.4; re-add once nixpkgs bumps them. Also
+        # dropped weather-oclock — no usable location (Watergrasshill isn't
+        # in libgweather's DB and location-services is off), it just spun.
+        # Re-added 2026-09-11: arcmenu — wanted a top-bar app menu after all;
+        # verified shell-version 50 support (v73) before adding this time.
+        # See modules/home-manager/gnome.nix for the enable/dconf rationale.
         gnomeExtensions.blur-my-shell
-        gnomeExtensions.dash-to-dock # Auto-hiding bottom dock (intellihide)
+        gnomeExtensions.dash-to-dock # Fast autohide bottom dock
+        gnomeExtensions.arcmenu # Top-bar app menu (search, categories, pinned/recent apps)
         gnomeExtensions.appindicator
         gnomeExtensions.just-perfection
         gnomeExtensions.vitals
@@ -114,15 +122,12 @@ in
         gnomeExtensions.clipboard-indicator # Clipboard manager (pano removed upstream 2026-07)
         gnomeExtensions.gsconnect
         gnomeExtensions.space-bar
-        gnomeExtensions.search-light
         gnomeExtensions.removable-drive-menu
         gnomeExtensions.tiling-assistant
         gnomeExtensions.custom-command-list # Top-bar shortcuts to `just` recipes
         gnomeExtensions.bluetooth-quick-connect # Connect paired BT devices from Quick Settings
         gnomeExtensions.quick-settings-audio-panel # Per-app volume + output switcher in QS
         gnomeExtensions.rounded-window-corners-reborn # Completes the blur-my-shell aesthetic
-        gnomeExtensions.weather-oclock # Weather beside the clock (surfaces gnome-weather)
-        gnomeExtensions.media-controls # MPRIS controls in the panel (amberol/browser)
 
         # Modern GNOME Apps & Utilities (Premium Suite)
         ptyxis # Container-aware terminal
