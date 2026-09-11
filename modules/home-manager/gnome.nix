@@ -243,13 +243,13 @@
         sigma = 30;
       };
 
-      # Dock: auto-hiding bottom dock, not a full-width panel. intellihide keeps
-      # it hidden until the focused window stops overlapping it (or the pointer
-      # pushes into the screen edge). hot-keys = false so Super+1..9 stay bound
-      # to workspace switching (wm/keybindings below), not dock-item activation.
+      # Dock: persistent bottom dock (dock-fixed=true), reserving screen space
+      # like the old dash-to-panel bar instead of auto-hiding. hot-keys = false
+      # so Super+1..9 stay bound to workspace switching (wm/keybindings below),
+      # not dock-item activation.
       "org/gnome/shell/extensions/dash-to-dock" = {
         dock-position = "BOTTOM";
-        dock-fixed = false;
+        dock-fixed = true;
         intellihide = true;
         intellihide-mode = "FOCUS_APPLICATION_WINDOWS";
         autohide = true;
