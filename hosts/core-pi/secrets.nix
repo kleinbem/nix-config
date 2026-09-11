@@ -1,10 +1,8 @@
 { inputs, config, ... }:
 {
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
-    defaultSopsFormat = "yaml";
-    validateSopsFiles = false;
-
+    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
+    # fleet-wide in modules/nixos/base.nix.
     secrets = {
       # Identity (Authelia) — all 4 secrets live in one per-container file,
       # scoped to core_pi in kleinbem-secrets/.sops.yaml (only the host that

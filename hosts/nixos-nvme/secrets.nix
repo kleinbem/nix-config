@@ -25,21 +25,13 @@
   # SOPS — Secrets Management
   # ==========================================
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
-    defaultSopsFormat = "yaml";
+    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
+    # fleet-wide in modules/nixos/base.nix.
+
     # Use host SSH keys for automated decryption (avoids YubiKey prompts for background tasks)
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
     gnupg.sshKeyPaths = [ ]; # No GPG keys used
     useSystemdActivation = true;
-
-    # Don't fail the *build* validating secret presence against the sops file —
-    # matches core-pi/hass-pi. CI builds this host's toplevel with an empty dummy
-    # nix/shared.yaml (--override-input nix-secrets /tmp/dummy-secrets, see
-    # .github/scripts/setup-dummy-secrets.sh), so sops-install-secrets' build-time
-    # manifest check would abort on e.g. "key 'martin_password_hash' cannot be
-    # found" — the documented sops-nix CI workaround. Real decryption at
-    # activation is unaffected (it uses the real shared/per-host files on the host).
-    validateSopsFiles = false;
     age.plugins = [
       pkgs.age-plugin-yubikey
       pkgs.age-plugin-tpm

@@ -1,15 +1,18 @@
 {
   inputs,
   config,
+  lib,
   myInventory,
   ...
 }:
 # Foundational modules every deployed NixOS host should pull in by default.
 #
-# Imported by `modules/nixos/default.nix`, `modules/nixos/rpi5-node.nix`,
-# `hosts/nasbook/default.nix`, and the router LXC guests — every entry-point
-# bundle the fleet uses. To add a new fleet-wide foundational concern, add it
-# here once instead of touching every entry point.
+# Imported by `modules/nixos/default.nix`, `modules/nixos/rpi5-node.nix`, and
+# directly by `hosts/{mac-mini,nasbook,orin-nano}/default.nix` (Pattern B
+# devices — see docs/MODULE-ORGANIZATION.md), plus the router LXC guests —
+# every entry-point bundle the fleet uses. To add a new fleet-wide
+# foundational concern, add it here once instead of touching every entry
+# point.
 #
 # Excluded by design:
 #   - phone (nix-on-droid, different module system)
@@ -48,6 +51,22 @@
     ./zero-trust.nix
     ./services/timesync.nix
   ];
+
+  # Fleet-wide sops defaults — every host used to repeat these 3 lines
+  # verbatim in its own secrets.nix; hoisted here 2026-09-11. mkDefault so a
+  # host can still override (none currently need to).
+  sops = {
+    defaultSopsFile = lib.mkDefault "${inputs.nix-secrets}/nix/shared.yaml";
+    defaultSopsFormat = lib.mkDefault "yaml";
+    # Don't fail the *build* validating secret presence against the sops
+    # file. CI builds every host's toplevel with an empty dummy
+    # nix/shared.yaml (--override-input nix-secrets /tmp/dummy-secrets),
+    # so sops-install-secrets' build-time manifest check would otherwise
+    # abort on "key '<foo>' cannot be found" — the documented sops-nix CI
+    # workaround. Real decryption at activation is unaffected (it uses the
+    # real shared/per-host files on the host).
+    validateSopsFiles = lib.mkDefault false;
+  };
 
   # Custom-packages overlay — used by every host. Workstation-only overlays
   # (NUR, vscode-extensions, nix-topology, nixpkgs-master) stay in

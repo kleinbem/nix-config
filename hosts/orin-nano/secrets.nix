@@ -2,14 +2,11 @@
 
 {
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
-    defaultSopsFormat = "yaml";
+    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
+    # fleet-wide in modules/nixos/base.nix.
 
     # Use a persistent host key for decryption
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
-
-    # Don't fail the build in CI validating against the dummy nix/shared.yaml
-    validateSopsFiles = false;
 
     # We only need the user password for now
     secrets = {

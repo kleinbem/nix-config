@@ -71,15 +71,12 @@ let
 in
 {
   sops = {
-    defaultSopsFile = "${inputs.nix-secrets}/nix/shared.yaml";
-    defaultSopsFormat = "yaml";
+    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
+    # fleet-wide in modules/nixos/base.nix.
 
     # Persistent host key generated during provisioning (provision-common.sh
     # pc_host_identity) — same convention as every other real host.
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
-
-    # Don't fail eval/CI against the dummy nix/shared.yaml override.
-    validateSopsFiles = false;
 
     # martin_password (sops key: martin_password_hash) is already declared by
     # users/martin/nixos.nix, imported below.
