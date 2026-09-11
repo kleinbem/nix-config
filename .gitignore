@@ -8,6 +8,13 @@
 
 # Nix / Direnv
 result
+
+# Python bytecode cache (scripts/, scripts/tests/) — 7 stale .pyc files
+# across multiple python/pytest versions were tracked here by mistake,
+# discovered because pytest regenerating them made the pytest-nix-options
+# pre-commit hook think it had "modified files" on every run.
+__pycache__/
+*.pyc
 result-*
 .direnv/
 .cache/
