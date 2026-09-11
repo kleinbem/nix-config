@@ -9,6 +9,10 @@
   ...
 }:
 let
+  # Single source of truth for this host's LUKS volume name — feeds both
+  # rpi5-disko.nix (via _module.args below) and my.boot.clevis-initrd.
+  luksVolumeName = "core_crypt";
+
   caddyPortsList = [
     80
     443
@@ -23,7 +27,7 @@ in
     "${self}/modules/nixos/rpi5-node.nix"
     "${self}/modules/nixos/container-host.nix"
     "${self}/modules/nixos/services/container-updater.nix"
-    ./disko.nix
+    "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
     ./backup.nix
     inputs.nix-presets.nixosModules.dashboard
@@ -39,6 +43,8 @@ in
     inputs.nix-presets.nixosModules.herdr-remote-client
     "${self}/modules/nixos/services/cloudflare-tunnel.nix"
   ];
+
+  _module.args.luksName = luksVolumeName;
 
   # Additive to rpi5-node.nix's martin.openssh.authorizedKeys.keys (list
   # options merge across modules) — scoped here rather than there because
@@ -82,7 +88,7 @@ in
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
       enable = true;
-      luksDevice = "core_crypt";
+      luksDevice = luksVolumeName;
       hostIp = "10.0.0.22";
       secretFile = "${inputs.nix-secrets}/initrd/cryptroot_core-pi.jwe";
     };

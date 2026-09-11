@@ -5,12 +5,17 @@
   myInventory,
   ...
 }:
+let
+  # Single source of truth for this host's LUKS volume name — feeds both
+  # rpi5-disko.nix (via _module.args below) and my.boot.clevis-initrd.
+  luksVolumeName = "hass_crypt";
+in
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
     "${self}/modules/nixos/container-host.nix"
     "${self}/modules/nixos/services/container-updater.nix"
-    ./disko.nix
+    "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
     # openclaw stays here (not moved with the rest of the AI stack to
@@ -24,6 +29,8 @@
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
 
+  _module.args.luksName = luksVolumeName;
+
   networking = {
     hostName = "hass-pi";
     firewall = {
@@ -36,7 +43,7 @@
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
       enable = true;
-      luksDevice = "hass_crypt";
+      luksDevice = luksVolumeName;
       hostIp = "10.0.0.21";
       secretFile = "${inputs.nix-secrets}/initrd/cryptroot_hass-pi.jwe";
     };
