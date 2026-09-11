@@ -114,73 +114,6 @@ lib.mkIf enable {
     };
   };
 
-  systemd.tmpfiles.rules = [
-    "d ${stateDir} 0700 root root - -"
-  ];
-
-  # ─── VAULT: consistent dump → age → two off-sites ──────────────────────────
-  systemd.services.backup-vault = {
-    description = "Encrypted off-site backup of Vaultwarden (age → R2 + gdrive)";
-    onFailure = [ "backup-notify-failure@backup-vault.service" ];
-    path = toolPkgs;
-    serviceConfig = {
-      Type = "oneshot";
-      # `full` (not `strict`): leaves /var + /root writable so rclone's config
-      # cache doesn't trip; still protects /usr /boot /etc. Runs as root — it
-      # has to read the container's root-owned data dir.
-      ProtectSystem = "full";
-      PrivateTmp = true;
-    };
-    script = ''
-      set -euo pipefail
-      umask 077
-      src=/var/lib/vaultwarden
-      conf=${config.sops.secrets.backup_rclone_config.path}
-      ts=$(date -u +%Y%m%dT%H%M%SZ)
-      work=$(mktemp -d)
-      trap 'rm -rf "$work"' EXIT
-
-      # 1. crash-consistent copy of the live sqlite db (WAL mode → plain .backup)
-      install -d -m700 "$work/bundle"
-      sqlite3 "$src/db.sqlite3" ".backup '$work/bundle/db.sqlite3'"
-
-      # 2. everything else Vaultwarden persists (rsa keys, attachments, sends,
-      #    config.json), minus regenerable caches and the live db files.
-      rsync -a \
-        --exclude 'db.sqlite3' --exclude 'db.sqlite3-wal' --exclude 'db.sqlite3-shm' \
-        --exclude 'icon_cache/' --exclude 'tmp/' \
-        "$src"/ "$work/bundle"/
-
-      # 3. single archive, encrypted to both YubiKeys
-      tar -C "$work/bundle" -czf "$work/vault.tar.gz" .
-      age ${lib.concatMapStringsSep " " (r: "-r ${r}") ageRecipients} \
-        -o "$work/vault-$ts.tar.gz.age" "$work/vault.tar.gz"
-      sha256sum "$work/vault-$ts.tar.gz.age" | cut -d' ' -f1 > "$work/vault-$ts.sha256"
-
-      # 4a. R2 — MUST succeed
-      for f in "vault-$ts.tar.gz.age" "vault-$ts.sha256"; do
-        rclone --config "$conf" copyto "$work/$f" "r2:kleinbem-backup/vault/$f"
-      done
-
-      # 4b. gdrive — best effort
-      for f in "vault-$ts.tar.gz.age" "vault-$ts.sha256"; do
-        rclone --config "$conf" copyto "$work/$f" "gdrive:backups/vault/$f" \
-          || echo "WARN: gdrive leg failed for $f" >&2
-      done
-
-      date -u +%FT%TZ > ${stateDir}/vault.last-success
-      echo "vault backup $ts ok ($(du -h "$work/vault-$ts.tar.gz.age" | cut -f1))"
-    '';
-  };
-  systemd.timers.backup-vault = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "*-*-* 02:30:00";
-      Persistent = true;
-      RandomizedDelaySec = "20m";
-    };
-  };
-
   # ─── BULK: restic of the larger, lower-stakes state → R2 ───────────────────
   services.restic.backups.bulk = {
     initialize = true;
@@ -207,46 +140,119 @@ lib.mkIf enable {
       RandomizedDelaySec = "30m";
     };
   };
-  # Notify on restic failure too (the NixOS module names the unit restic-backups-<name>).
-  systemd.services."restic-backups-bulk".onFailure = [
-    "backup-notify-failure@restic-backups-bulk.service"
-  ];
 
-  # ─── Freshness watchdog — catches "the timer silently stopped" (the nasbook
-  #     failure mode), not just "a run errored" ─────────────────────────────
-  systemd.services.backup-freshness-check = {
-    description = "Alert if the newest successful vault backup is stale";
-    path = toolPkgs;
-    serviceConfig.Type = "oneshot";
-    script = ''
-      set -uo pipefail
-      marker=${stateDir}/vault.last-success
-      if [ ! -f "$marker" ]; then
-        ${notify} high "core-pi backup" "no vault backup has ever succeeded"
-        exit 0
-      fi
-      age_s=$(( $(date +%s) - $(date -r "$marker" +%s) ))
-      if [ "$age_s" -gt 172800 ]; then
-        ${notify} high "core-pi backup" \
-          "vault backup STALE: last success $(cat "$marker") ($((age_s/3600))h ago)"
-      fi
-    '';
-  };
-  systemd.timers.backup-freshness-check = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "*-*-* 08:00:00";
-      Persistent = true;
+  systemd = {
+    tmpfiles.rules = [
+      "d ${stateDir} 0700 root root - -"
+    ];
+
+    services = {
+      # ─── VAULT: consistent dump → age → two off-sites ──────────────────────
+      backup-vault = {
+        description = "Encrypted off-site backup of Vaultwarden (age → R2 + gdrive)";
+        onFailure = [ "backup-notify-failure@backup-vault.service" ];
+        path = toolPkgs;
+        serviceConfig = {
+          Type = "oneshot";
+          # `full` (not `strict`): leaves /var + /root writable so rclone's config
+          # cache doesn't trip; still protects /usr /boot /etc. Runs as root — it
+          # has to read the container's root-owned data dir.
+          ProtectSystem = "full";
+          PrivateTmp = true;
+        };
+        script = ''
+          set -euo pipefail
+          umask 077
+          src=/var/lib/vaultwarden
+          conf=${config.sops.secrets.backup_rclone_config.path}
+          ts=$(date -u +%Y%m%dT%H%M%SZ)
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+
+          # 1. crash-consistent copy of the live sqlite db (WAL mode → plain .backup)
+          install -d -m700 "$work/bundle"
+          sqlite3 "$src/db.sqlite3" ".backup '$work/bundle/db.sqlite3'"
+
+          # 2. everything else Vaultwarden persists (rsa keys, attachments, sends,
+          #    config.json), minus regenerable caches and the live db files.
+          rsync -a \
+            --exclude 'db.sqlite3' --exclude 'db.sqlite3-wal' --exclude 'db.sqlite3-shm' \
+            --exclude 'icon_cache/' --exclude 'tmp/' \
+            "$src"/ "$work/bundle"/
+
+          # 3. single archive, encrypted to both YubiKeys
+          tar -C "$work/bundle" -czf "$work/vault.tar.gz" .
+          age ${lib.concatMapStringsSep " " (r: "-r ${r}") ageRecipients} \
+            -o "$work/vault-$ts.tar.gz.age" "$work/vault.tar.gz"
+          sha256sum "$work/vault-$ts.tar.gz.age" | cut -d' ' -f1 > "$work/vault-$ts.sha256"
+
+          # 4a. R2 — MUST succeed
+          for f in "vault-$ts.tar.gz.age" "vault-$ts.sha256"; do
+            rclone --config "$conf" copyto "$work/$f" "r2:kleinbem-backup/vault/$f"
+          done
+
+          # 4b. gdrive — best effort
+          for f in "vault-$ts.tar.gz.age" "vault-$ts.sha256"; do
+            rclone --config "$conf" copyto "$work/$f" "gdrive:backups/vault/$f" \
+              || echo "WARN: gdrive leg failed for $f" >&2
+          done
+
+          date -u +%FT%TZ > ${stateDir}/vault.last-success
+          echo "vault backup $ts ok ($(du -h "$work/vault-$ts.tar.gz.age" | cut -f1))"
+        '';
+      };
+
+      # Notify on restic failure too (the NixOS module names the unit restic-backups-<name>).
+      "restic-backups-bulk".onFailure = [
+        "backup-notify-failure@restic-backups-bulk.service"
+      ];
+
+      # ─── Freshness watchdog — catches "the timer silently stopped" (the nasbook
+      #     failure mode), not just "a run errored" ─────────────────────────────
+      backup-freshness-check = {
+        description = "Alert if the newest successful vault backup is stale";
+        path = toolPkgs;
+        serviceConfig.Type = "oneshot";
+        script = ''
+          set -uo pipefail
+          marker=${stateDir}/vault.last-success
+          if [ ! -f "$marker" ]; then
+            ${notify} high "core-pi backup" "no vault backup has ever succeeded"
+            exit 0
+          fi
+          age_s=$(( $(date +%s) - $(date -r "$marker" +%s) ))
+          if [ "$age_s" -gt 172800 ]; then
+            ${notify} high "core-pi backup" \
+              "vault backup STALE: last success $(cat "$marker") ($((age_s/3600))h ago)"
+          fi
+        '';
+      };
+
+      # ─── Shared OnFailure notifier ────────────────────────────────────────────
+      "backup-notify-failure@" = {
+        description = "ntfy alert for failed backup unit %i";
+        serviceConfig.Type = "oneshot";
+        scriptArgs = "%i";
+        script = ''
+          ${notify} high "core-pi backup FAILED" "unit $1 failed — check journalctl -u $1"
+        '';
+      };
     };
-  };
 
-  # ─── Shared OnFailure notifier ────────────────────────────────────────────
-  systemd.services."backup-notify-failure@" = {
-    description = "ntfy alert for failed backup unit %i";
-    serviceConfig.Type = "oneshot";
-    scriptArgs = "%i";
-    script = ''
-      ${notify} high "core-pi backup FAILED" "unit $1 failed — check journalctl -u $1"
-    '';
+    timers.backup-vault = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 02:30:00";
+        Persistent = true;
+        RandomizedDelaySec = "20m";
+      };
+    };
+    timers.backup-freshness-check = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 08:00:00";
+        Persistent = true;
+      };
+    };
   };
 }
