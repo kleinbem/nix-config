@@ -294,6 +294,15 @@
         hot-keys = false;
       };
 
+      # ArcMenu: centered top-bar app menu with a separate Activities button
+      # (stock top bar has neither, since dash-to-dock's autohide replaced
+      # dash-to-panel above) using the Pop!_OS-style "pop" menu layout.
+      "org/gnome/shell/extensions/arcmenu" = {
+        position-in-panel = "Center";
+        show-activities-button = true;
+        menu-layout = "pop";
+      };
+
       "org/gnome/shell/extensions/just-perfection" = {
         accessibility-menu = false;
         search = true;
@@ -411,7 +420,7 @@
 
       "org/gnome/desktop/app-folders" = {
         folder-children = [
-          "Containers"
+          "Virtualization"
           "Development"
           "Productivity"
           "Utilities"
@@ -420,20 +429,30 @@
         ];
       };
 
-      "org/gnome/desktop/app-folders/folders/Containers" = {
-        name = "Containers";
+      # Renamed from "Containers" (2026-09-11): virt-manager (Categories:
+      # System;Emulator) and Connections (Categories: ...RemoteAccess;Network)
+      # checked out as VM/remote-access tools, not "Development" or
+      # "Productivity" — they sit closer to BoxBuddy/Pods than to code.desktop
+      # or Papers/SimpleScan. No shared category narrow enough to auto-match
+      # all four (BoxBuddy is bare "Utility"), so still hand-listed.
+      "org/gnome/desktop/app-folders/folders/Virtualization" = {
+        name = "Virtualization";
         apps = [
           "io.github.dvlv.boxbuddyrs.desktop"
           "com.github.marhkb.Pods.desktop"
+          "virt-manager.desktop"
+          "org.gnome.Connections.desktop"
         ];
       };
 
+      # category-driven (2026-09-11): code.desktop already declares
+      # Categories=Utility;TextEditor;Development;IDE — "IDE" is narrow enough
+      # that nothing else installed matches it (Pods has "Development" too,
+      # which would've pulled it in), so this now auto-grows for any future
+      # IDE instead of needing a hand-added entry each time.
       "org/gnome/desktop/app-folders/folders/Development" = {
         name = "Development";
-        apps = [
-          "virt-manager.desktop"
-          "code.desktop"
-        ];
+        categories = [ "IDE" ];
       };
 
       "org/gnome/desktop/app-folders/folders/Productivity" = {
@@ -441,7 +460,6 @@
         apps = [
           "org.gnome.Papers.desktop"
           "org.gnome.SimpleScan.desktop"
-          "org.gnome.Connections.desktop"
         ];
       };
 
