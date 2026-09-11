@@ -195,8 +195,8 @@ gpg keys.txt.txt.gpg -o ~/.config/sops/age/keys.txt
 openssl enc -d -aes-256-cbc -in keys.txt.enc \
   -out ~/.config/sops/age/keys.txt
 
-# Verify
-sops -d hosts/core-pi/secrets.yaml | head
+# Verify (from ~/Develop/github.com/kleinbem/kleinbem-secrets)
+sops -d nix/per-host/core-pi.yaml | head
 # Should decrypt successfully
 ```
 
@@ -338,39 +338,45 @@ aws s3 cp /var/lib/archives/ s3://my-glacier/ \
 
 2. **Rotate credentials** (if API tokens exposed)
    ```bash
-   # Edit sops file
-   sops hosts/DEVICE/secrets.yaml
-   
-   # Update exposed secrets
-   # (e.g., database_password, api_token)
-   
-   # Commit
-   jj describe -m "chore: rotate credentials after incident"
-   
-   # Deploy immediately
-   nixos-rebuild switch -h DEVICE
+   # Edit the sops file, in the kleinbem-secrets repo
+   cd ~/Develop/github.com/kleinbem/kleinbem-secrets
+   sops nix/per-host/DEVICE.yaml   # or nix/shared.yaml / nix/per-container/NAME.yaml
+
+   # Update exposed secrets (e.g. database_password, api_token)
+
+   # Commit + push
+   just save-all "chore: rotate credentials after incident" kleinbem-secrets
+   just push-all kleinbem-secrets
+
+   # Deploy immediately (from nix/)
+   cd ~/Develop/github.com/kleinbem/nix && just apply
    ```
 
 3. **Re-encrypt secrets** (if age keys exposed)
    ```bash
+   cd ~/Develop/github.com/kleinbem/kleinbem-secrets
+
    # Generate NEW age key
-   age-keygen -o > ~/.config/sops/age/keys.txt.new
-   
-   # Add to .sops.yaml
-   keys:
-     - &age_key_new <NEW_KEY_PUBLIC>
-   
-   # Re-encrypt all secrets
-   sops updatekeys hosts/*/secrets.yaml
-   sops updatekeys modules/home-manager/secrets.yaml
-   
+   age-keygen -o ~/.config/sops/age/keys.txt.new
+
+   # Add to .sops.yaml (NOT encrypted itself — public keys only, edit directly)
+   sops .sops.yaml
+   # keys:
+   #   - &age_key_new <NEW_KEY_PUBLIC>
+
+   # Re-encrypt the affected files (see .sops.yaml's creation_rules for the
+   # real list — shared.yaml + every per-host/per-container file that key
+   # was a recipient on)
+   sops updatekeys nix/shared.yaml
+   sops updatekeys nix/per-host/*.yaml
+
    # Test decryption
-   sops -d hosts/core-pi/secrets.yaml | head
-   
-   # Commit
-   jj describe -m "chore: rotate age key after exposure"
-   jj git push
-   
+   sops -d nix/per-host/core-pi.yaml | head
+
+   # Commit + push
+   just save-all "chore: rotate age key after exposure" kleinbem-secrets
+   just push-all kleinbem-secrets
+
    # Deploy to all devices
    colmena apply -s switch
    ```
@@ -581,9 +587,8 @@ rm -rf /tmp/test-restore* /tmp/keys-test.txt
 | **git** | Version control | Primary |
 | **sops** | Secret encryption | Secret management |
 | **age** | Modern encryption | Sops backend |
-| **restic** | Incremental backups | Optional, backup-systems.nix |
-| **rclone** | Cloud sync | Optional, sync-systems.nix |
-| **rsync** | File sync | Optional, file-systems.nix |
+| **restic** | Incremental backups | Per-host, e.g. `hosts/core-pi/backup.nix` |
+| **rclone** | Cloud sync (R2/gdrive) | Per-host, e.g. `hosts/core-pi/backup.nix` |
 
 ### Backup Storage Options
 

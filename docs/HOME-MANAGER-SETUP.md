@@ -500,17 +500,19 @@ nixos-rebuild switch -h 10.0.0.15  # Deploy to orin-nano
 
 ### Sharing Config Across Devices
 
-Users configured on multiple devices (e.g., martin on nixos-nvme and mac-mini):
+Users configured on multiple devices don't need identical imports — each host pulls in only what fits its tier. martin's full workstation profile only applies where it's wanted:
 
 ```nix
-# hosts/nixos-nvme/default.nix
+# hosts/nixos-nvme/default.nix — full workstation profile
 home-manager.users.martin = {
   imports = [ "${self}/users/martin/home.nix" ];
 };
 
-# hosts/mac-mini/default.nix (identical)
-home-manager.users.martin = {
-  imports = [ "${self}/users/martin/home.nix" ];
+# hosts/mac-mini/default.nix — deliberately NOT users/martin/home.nix
+# (headless tier; only wants the GNOME dconf bits for its remote-desktop
+# session, not the full workstation dev/CLI profile)
+home-manager.users.${config.my.username} = {
+  imports = [ "${self}/modules/home-manager/gnome.nix" ];
 };
 ```
 

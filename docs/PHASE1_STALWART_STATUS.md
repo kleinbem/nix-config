@@ -1,7 +1,9 @@
 # Phase 1 — Stalwart Mail: status & runbook
 
-Companion to `PHASE1_STALWART.md` (the original scaffold). This tracks the
-current wired state and what's left.
+Tracks the current wired state and what's left. (Supersedes the original
+`PHASE1_STALWART.md` scaffold, removed once this doc covered everything it
+did — see `persona-scaffold.sh` for the signing-key generation it used to
+document manually.)
 
 ## TL;DR
 

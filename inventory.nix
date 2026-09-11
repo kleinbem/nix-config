@@ -651,7 +651,7 @@
       # Runs on mac-mini (24/7 host) — .50 subnet. Not Caddy-proxied —
       # SMTP/IMAP can't be Cloudflare-proxied; personas reach it directly
       # on this IP over the mesh. http/8080 (JMAP + webadmin) is the only
-      # HTTP surface. See docs/PHASE1_STALWART.md + docs/PHASE1_STALWART_STATUS.md.
+      # HTTP surface. See docs/PHASE1_STALWART_STATUS.md.
       stalwart = {
         ip = "10.85.50.8";
         port = 8080;

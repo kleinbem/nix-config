@@ -1,6 +1,6 @@
 # NixOS Configuration Documentation Index
 
-**Last Updated:** 2026-08-18 (BACKUP-RECOVERY added)
+**Last Updated:** 2026-09-11 (Core Configuration docs fact-checked against actual repo state — several had stale paths/commands from before the kleinbem-secrets consolidation; PHASE1_STALWART.md removed, superseded by PHASE1_STALWART_STATUS.md)
 
 Quick navigation for the kleinbem fleet NixOS configuration.
 
@@ -37,12 +37,12 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 
 | File | Purpose | Status |
 |------|---------|--------|
-| [DEVICE-TIERS.md](DEVICE-TIERS.md) | Device tier definitions & setup checklist | ✅ Current (2026-08-17) |
-| [MODULE-ORGANIZATION.md](MODULE-ORGANIZATION.md) | Module patterns & import strategies | ✅ Current (2026-08-17) |
-| [CONTAINER-HOST-SETUP.md](CONTAINER-HOST-SETUP.md) | Container hosting module & setup | ✅ Current (2026-08-17) |
-| [HOME-MANAGER-SETUP.md](HOME-MANAGER-SETUP.md) | User environment & dotfiles configuration | ✅ Current (2026-08-18) |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Current (2026-08-17) |
-| [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md) | Secure secrets with sops + age | ✅ Current (2026-08-17) |
+| [DEVICE-TIERS.md](DEVICE-TIERS.md) | Device tier definitions & setup checklist | ✅ Verified (2026-09-11) |
+| [MODULE-ORGANIZATION.md](MODULE-ORGANIZATION.md) | Module patterns & import strategies | ✅ Verified (2026-09-11) |
+| [CONTAINER-HOST-SETUP.md](CONTAINER-HOST-SETUP.md) | Container hosting module & setup | ✅ Verified (2026-09-11) |
+| [HOME-MANAGER-SETUP.md](HOME-MANAGER-SETUP.md) | User environment & dotfiles configuration | ✅ Verified (2026-09-11) |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Verified (2026-09-11) |
+| [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md) | Secure secrets with sops + age | ✅ Verified (2026-09-11) |
 | [BACKUP-RECOVERY.md](BACKUP-RECOVERY.md) | Backup strategy & disaster recovery procedures | ✅ Current (2026-08-18) |
 | [IMPORTS.md](IMPORTS.md) | Module imports & flake structure | ✅ Active (2026-08-10) |
 | [OPTIONS.md](OPTIONS.md) | Custom `my.*` option reference | ✅ Active (2026-08-10) |
@@ -56,7 +56,7 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 | home_manager_gap_analysis.md | Home Manager coverage analysis | ✅ Completed |
 | implementation_plan*.md | Task planning (various) | ⏸️ Historical |
 | phone_deployment.md | Nix on Droid setup | ✅ Completed |
-| PHASE1_STALWART.md | Stalwart email integration | 📅 In progress |
+| PHASE1_STALWART_STATUS.md | Stalwart email integration | ✅ Shipped 2026-09-03 |
 | PHASE3_AUTHENTIK.md | Authentik SSO deployment | 📅 Future |
 | PHASE45_HRIS_COLLAB.md | HRIS/collaboration stack | 📅 Future |
 | rpi-kernel-caching-followups.md | Raspberry Pi kernel caching | ✅ Completed |
@@ -263,5 +263,4 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 ---
 
 **For maintenance automation, see:** kleinbem/docs/MAINTENANCE-AUTOMATION.md  
-**For fleet infrastructure audit, see:** [FLEET-INFRA-AUDIT.md (in scratchpad)](../../docs/FLEET-INFRA-AUDIT.md)  
 **For deployment workflow, see:** [DEVICE-TIERS.md → Deployment Strategy](DEVICE-TIERS.md#deployment-strategy)

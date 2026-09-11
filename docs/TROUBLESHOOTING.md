@@ -103,7 +103,7 @@ grep "openssh.authorizedKeys" hosts/<device>/default.nix
 1. **Re-deploy with correct keys:**
    ```bash
    cd nix-config
-   just nixos::deploy-<device>
+   just deployment::deploy <device>
    ```
 
 2. **Manual fix (via console/serial):**

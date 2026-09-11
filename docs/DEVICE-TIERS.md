@@ -182,9 +182,9 @@ my = {
 **Devices:**
 - **orin-nano** — NVIDIA Jetson (AI/inference node)
 - **nasbook** — QNAP NAS (storage hub, data services, backups)
-- **hass-pi** — Home Assistant (home automation, not yet deployed)
+- **hass-pi** — Home Assistant + container host (live; Homarr/AdGuard/monitoring/AI-stack have since been moved off it onto mac-mini, but HA itself runs here)
 
-**Current Status:** ⚠️ orin-nano ✅, nasbook ✅ (just converted), hass-pi ⏸️ (pending deployment)
+**Current Status:** orin-nano ✅, nasbook ✅, hass-pi ✅ (all deployed and live)
 
 ---
 
@@ -358,7 +358,7 @@ in
 | core-pi | Edge Hub | ✅ Active | Container pattern could be extracted |
 | orin-nano | Edge Node | ✅ Active | None |
 | nasbook | Edge Node | ✅ Active | ✅ Just converted to disko |
-| hass-pi | Edge Node | ⏸️ Planned | None (config ready) |
+| hass-pi | Edge Node | ✅ Active | None |
 | phone | Mobile | ⚠️ Minimal | None (acceptable for mobile) |
 
 ---
@@ -379,9 +379,8 @@ in
 - **Tier bundles:** `modules/nixos/rpi5-node.nix` (Edge Hub), `modules/nixos/workstation.nix` (Workstation)
 - **Base module:** `modules/nixos/base.nix` (required by all)
 - **Inventory:** `inventory.nix` (master device registry)
-- **Disko examples:** `hosts/core-pi/disko.nix`, `hosts/orin-nano/disko.nix`, `hosts/mac-mini/disko.nix`
+- **Disko examples:** `modules/nixos/rpi5-disko.nix` (shared by core-pi + hass-pi), `hosts/orin-nano/disko.nix`, `hosts/mac-mini/disko.nix`
 
 ---
 
-**Last Updated:** 2026-08-17  
-**Ref:** FLEET-INFRA-AUDIT.md (Gap #1 - Incomplete Tier Definitions)
+**Last Updated:** 2026-09-11
