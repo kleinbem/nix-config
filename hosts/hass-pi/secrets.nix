@@ -24,8 +24,7 @@
 # fatal — but do step 1 first to avoid a failed autoUpgrade cycle.
 # NOTE: confirm netbird_setup_key in nix/shared.yaml is a *reusable* key (it's
 # shared with nixos-nvme/orin-nano); a one-time key already consumed won't join.
-{ inputs, ... }:
-{
+_: {
   sops = {
     # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
     # fleet-wide in modules/nixos/base.nix.
