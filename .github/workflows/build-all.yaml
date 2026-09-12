@@ -328,16 +328,28 @@ jobs:
             -d "Blocking factory eval is red on ${{ matrix.system }}. Likely an insecure re-ack (openclaw version bump → update the pin in nix-presets lib/factory.nix) or a preset regression. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
-      # Container factory toplevel: ONE build materializes every standalone
-      # container closure for this arch (they are NOT part of any host closure
-      # anymore — standalone containers boot from a profile symlink, so nothing
-      # else would ever push them to Attic). The promote workflow evals the
-      # same factories to publish the container manifest devices consume.
+      # Container factory: materializes every standalone container closure for
+      # this arch (they are NOT part of any host closure anymore — standalone
+      # containers boot from a profile symlink, so nothing else would ever push
+      # them to Attic). The promote workflow evals the same factories to
+      # publish the container manifest devices consume.
       # BEST-EFFORT: a red factory BUILD must not block host promotion; the
       # manifest gate in promote-production refuses to publish a manifest whose
       # paths aren't fully cached, so a failed factory build just means
       # "manifest stays at the previous rev" — devices keep serving the old
       # closures. Eval correctness is enforced by the blocking step above.
+      #
+      # Built PER CONTAINER (`.config.containers.<name>.path`, same attribute
+      # promote-production's manifest step already uses), not the combined
+      # `.config.system.build.toplevel`. The toplevel bundles every
+      # container's etc/system-units/activate into one derivation graph, so
+      # one container failing to build from source (e.g. a from-source
+      # package regression — this is what actually happened: qdrant 1.18.2
+      # failing to build took code-server/netdata/buzz/syncthing down with it,
+      # nothing repushed for ANY of them for days) previously failed the
+      # WHOLE build. Looping isolates that: a broken container only drops
+      # itself from this cycle's cache refresh, same as it already silently
+      # drops itself from the manifest when its OWN closure isn't cached.
       - name: Build container-factory toplevel (best-effort)
         id: factory-build
         if: steps.cache.outputs.push_cache == 'true'
@@ -353,8 +365,24 @@ jobs:
             "--attic-cache" "system"
           )
           # $FACTORY is exported by the blocking eval step above.
-          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
-            --flake ".#nixosConfigurations.$FACTORY.config.system.build.toplevel" $NIX_OVERRIDES
+          mapfile -t CONTAINERS < <(nix eval \
+              ".#nixosConfigurations.$FACTORY.config.containers" \
+              --apply builtins.attrNames --json $NIX_OVERRIDES \
+            | jq -r '.[]')
+          if [ "${#CONTAINERS[@]}" -eq 0 ]; then
+            echo "::error::$FACTORY.config.containers enumeration came back empty — enumeration is broken (it can never legitimately be empty)."
+            exit 1
+          fi
+          echo "Containers to build: ${CONTAINERS[*]}"
+
+          rc=0
+          for c in "${CONTAINERS[@]}"; do
+            echo "::group::nix-fast-build container: $c"
+            nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+              --flake ".#nixosConfigurations.$FACTORY.config.containers.\"$c\".path" $NIX_OVERRIDES || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
 
       # The two builds above are continue-on-error so a from-source break (a
       # nixpkgs test regression, a sops manifest drift) never blocks promotion.
