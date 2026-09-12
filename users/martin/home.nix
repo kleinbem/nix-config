@@ -74,7 +74,7 @@ in
       };
 
       # Declarative ~/.ssh/allowed_signers. Git resolves signatures
-      # against this file (see nix-presets/git.nix: gpg.ssh.allowedSignersFile).
+      # against this file (see nix-presets/vcs.nix: gpg.ssh.allowedSignersFile).
       #
       # Principal `*` matches any committer email — so Martin's hardware
       # keys verify regardless of which identity (gmail / kleinbem.dev)

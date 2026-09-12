@@ -1,7 +1,7 @@
 { inputs, ... }:
 {
   imports = [
-    inputs.nix-presets.homeManagerModules.git
+    inputs.nix-presets.homeManagerModules.vcs
     inputs.nix-presets.homeManagerModules.terminal
     ./dev.nix
     ./ai-agents.nix
