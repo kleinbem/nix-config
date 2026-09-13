@@ -170,6 +170,14 @@ in
         ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24";
         hostDataDir = "/var/lib/kleinbem-auth";
         inherit (myInventory.network.nodes.kleinbem-auth) domain;
+        # The preset's default is just the bare apex — kleinbem-site moved to
+        # www.kleinbem.dev (Cloudflare Pages), so the actual site origin needs
+        # adding explicitly or every social sign-in CORS-preflight-fails again,
+        # silently, the same way the original bare-apex bug did.
+        trustedOrigins = [
+          "https://kleinbem.dev"
+          "https://www.kleinbem.dev"
+        ];
         betterAuthSecretFile = config.sops.secrets.kleinbem_auth_better_auth_secret.path;
         googleClientIdFile = config.sops.secrets.kleinbem_auth_google_client_id.path;
         googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;
