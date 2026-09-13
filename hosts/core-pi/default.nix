@@ -159,25 +159,18 @@ in
         adminTokenFile = config.sops.secrets.vaultwarden_admin_token.path;
       };
 
-      # better-auth social login for kleinbem.dev visitors (kleinbem-auth repo).
-      # better_auth_secret is populated in kleinbem-secrets; google_/facebook_
-      # are still empty — the service runs healthy with zero providers until the
-      # OAuth apps exist (fill them via `sops nix/per-container/kleinbem-auth.yaml`
-      # then redeploy). The kleinbem-site AuthNav island stays unshipped until
-      # then (its nix-packages pin is not yet bumped).
+      # better-auth social login for kleinbem.dev visitors (kleinbem-auth repo,
+      # live at /login there). google_/facebook_ OAuth credentials, the
+      # session secret, and trustedOrigins are all populated — see
+      # hosts/container-factory/default.nix for trustedOrigins specifically:
+      # it's baked into the closure at build time, not a secret/bind-mount,
+      # so it has to be set there, not here (core-pi never builds its own
+      # container closures — ADR-002).
       kleinbem-auth = {
         enable = true;
         ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24";
         hostDataDir = "/var/lib/kleinbem-auth";
         inherit (myInventory.network.nodes.kleinbem-auth) domain;
-        # The preset's default is just the bare apex — kleinbem-site moved to
-        # www.kleinbem.dev (Cloudflare Pages), so the actual site origin needs
-        # adding explicitly or every social sign-in CORS-preflight-fails again,
-        # silently, the same way the original bare-apex bug did.
-        trustedOrigins = [
-          "https://kleinbem.dev"
-          "https://www.kleinbem.dev"
-        ];
         betterAuthSecretFile = config.sops.secrets.kleinbem_auth_better_auth_secret.path;
         googleClientIdFile = config.sops.secrets.kleinbem_auth_google_client_id.path;
         googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;

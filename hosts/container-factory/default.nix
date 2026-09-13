@@ -177,6 +177,15 @@ let
     kleinbem-auth = {
       ip = "10.85.48.140/24"; # core-pi
       hostDataDir = dataDir "kleinbem-auth";
+      # Baked into the closure at build time (not a secret/bind-mount), so
+      # unlike the *File options below, setting this on core-pi itself is a
+      # no-op — core-pi never builds its own container closures (ADR-002),
+      # it only pulls whatever container-factory already built. This IS the
+      # value that ends up in the running container's TRUSTED_ORIGINS.
+      trustedOrigins = [
+        "https://kleinbem.dev"
+        "https://www.kleinbem.dev"
+      ];
       # All non-null so the cached closure's env-setup writes every secret
       # line (each reads a fixed in-container path; the real sops files are
       # bind-mounted onto those paths by the deploying host, core-pi). The
