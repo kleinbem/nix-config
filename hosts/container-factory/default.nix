@@ -197,6 +197,12 @@ let
       googleClientSecretFile = "/run/secrets/factory-dummy";
       facebookClientIdFile = "/run/secrets/factory-dummy";
       facebookClientSecretFile = "/run/secrets/factory-dummy";
+      githubClientIdFile = "/run/secrets/factory-dummy";
+      githubClientSecretFile = "/run/secrets/factory-dummy";
+      linkedinClientIdFile = "/run/secrets/factory-dummy";
+      linkedinClientSecretFile = "/run/secrets/factory-dummy";
+      microsoftClientIdFile = "/run/secrets/factory-dummy";
+      microsoftClientSecretFile = "/run/secrets/factory-dummy";
     };
     ntfy.ip = "10.85.48.131/24"; # core-pi
     agent-team.ip = "10.85.47.118/24"; # nasbook

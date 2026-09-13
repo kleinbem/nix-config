@@ -55,6 +55,30 @@
         sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "facebook_client_secret";
       };
+      kleinbem_auth_github_client_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "github_client_id";
+      };
+      kleinbem_auth_github_client_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "github_client_secret";
+      };
+      kleinbem_auth_linkedin_client_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "linkedin_client_id";
+      };
+      kleinbem_auth_linkedin_client_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "linkedin_client_secret";
+      };
+      kleinbem_auth_microsoft_client_id = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "microsoft_client_id";
+      };
+      kleinbem_auth_microsoft_client_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "microsoft_client_secret";
+      };
 
       # Attic Binary Cache
       attic_server_token_rs256 = {

@@ -176,6 +176,12 @@ in
         googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;
         facebookClientIdFile = config.sops.secrets.kleinbem_auth_facebook_client_id.path;
         facebookClientSecretFile = config.sops.secrets.kleinbem_auth_facebook_client_secret.path;
+        githubClientIdFile = config.sops.secrets.kleinbem_auth_github_client_id.path;
+        githubClientSecretFile = config.sops.secrets.kleinbem_auth_github_client_secret.path;
+        linkedinClientIdFile = config.sops.secrets.kleinbem_auth_linkedin_client_id.path;
+        linkedinClientSecretFile = config.sops.secrets.kleinbem_auth_linkedin_client_secret.path;
+        microsoftClientIdFile = config.sops.secrets.kleinbem_auth_microsoft_client_id.path;
+        microsoftClientSecretFile = config.sops.secrets.kleinbem_auth_microsoft_client_secret.path;
       };
 
       dashboard = {
