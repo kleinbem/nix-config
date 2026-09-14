@@ -203,6 +203,10 @@ let
       linkedinClientSecretFile = "/run/secrets/factory-dummy";
       microsoftClientIdFile = "/run/secrets/factory-dummy";
       microsoftClientSecretFile = "/run/secrets/factory-dummy";
+      # Ready like the OAuth ones above (not deferred like the still-unset-up
+      # SMTP pair) — the Turnstile secret has no external provisioning
+      # dependency, so once it's sops-set this activates on redeploy alone.
+      turnstileSecretKeyFile = "/run/secrets/factory-dummy";
     };
     ntfy.ip = "10.85.48.131/24"; # core-pi
     agent-team.ip = "10.85.47.118/24"; # nasbook
