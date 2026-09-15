@@ -182,6 +182,7 @@ in
         linkedinClientSecretFile = config.sops.secrets.kleinbem_auth_linkedin_client_secret.path;
         microsoftClientIdFile = config.sops.secrets.kleinbem_auth_microsoft_client_id.path;
         microsoftClientSecretFile = config.sops.secrets.kleinbem_auth_microsoft_client_secret.path;
+        turnstileSecretKeyFile = config.sops.secrets.kleinbem_auth_turnstile_secret.path;
       };
 
       dashboard = {

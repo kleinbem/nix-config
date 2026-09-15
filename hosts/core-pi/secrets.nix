@@ -79,6 +79,10 @@
         sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "microsoft_client_secret";
       };
+      kleinbem_auth_turnstile_secret = {
+        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        key = "turnstile_secret_key";
+      };
 
       # Attic Binary Cache
       attic_server_token_rs256 = {
