@@ -362,11 +362,16 @@ pc_sops_add_and_reencrypt() {
 # one doesn't lock the box out (same redundancy as martin_primary/backup in
 # kleinbem-secrets). Each enrollment authenticates non-interactively via the
 # existing passphrase keyfile; only the physical FIDO2 touch needs a human.
-# $1=crypt-name  $2=passphrase-keyfile
+# MUST run against a CLOSED device (call pc_teardown first, capturing the raw
+# partition path beforehand) — running it while the mapping is still active
+# failed with "Unlocking via keyfile failed: Operation not permitted" during
+# nasbook's onboarding, 2026-09-16: systemd-cryptenroll verifies the
+# passphrase via its own crypt_activate_by_passphrase check, which conflicts
+# with the device already being active/mounted elsewhere. $1=raw LUKS
+# partition device (e.g. /dev/sdc2, NOT the crypt name)  $2=passphrase-keyfile
 pc_fido2_enroll_dual() {
-  local crypt="$1" pass_file="$2" luks_dev
-  luks_dev="$(sudo cryptsetup status "$crypt" | awk '/device:/ {print $2}')"
-  [ -n "$luks_dev" ] || { echo "❌ Could not resolve the mapped LUKS device for $crypt."; return 1; }
+  local luks_dev="$1" pass_file="$2"
+  [ -b "$luks_dev" ] || { echo "❌ $luks_dev is not a block device."; return 1; }
   echo ""
   echo "🔐 Enrolling FIDO2 YubiKeys on ${luks_dev} for boot-time LUKS unlock."
   echo "   Plug in your PRIMARY YubiKey, then press Enter here..."

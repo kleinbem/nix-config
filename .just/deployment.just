@@ -908,9 +908,15 @@ nasbook-install-usb device:
     sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
     rm -f /tmp/nasbook-system
 
-    pc_fido2_enroll_dual "$CRYPT" "$PASS_FILE"
+    # Capture the raw partition path BEFORE closing — pc_fido2_enroll_dual
+    # must run against a closed device (see its own comment for why), but
+    # `cryptsetup status` only works while the mapping is still active.
+    LUKS_DEV="$(sudo cryptsetup status "$CRYPT" | awk '/device:/ {print $2}')"
+    [ -n "$LUKS_DEV" ] || { echo "❌ Could not resolve the mapped LUKS device for $CRYPT."; exit 1; }
 
     pc_teardown "$MNT" "$CRYPT"
+    pc_fido2_enroll_dual "$LUKS_DEV" "$PASS_FILE"
+
     echo ""
     echo "✅ nasbook SSD install complete. Remaining steps:"
     echo ""
