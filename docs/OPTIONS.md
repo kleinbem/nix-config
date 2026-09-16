@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 60  
-**Consumer files scanned:** 18
+**Declarations indexed:** 61  
+**Consumer files scanned:** 15
 
 ---
 
@@ -51,6 +51,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `kernelModules`, `pwm`
 - **Consumed by:** `host:orin-nano`
 
+## `my.container-host`
+
+### `my.container-host`
+
+- **Declared:** `nix-config/modules/nixos/container-host.nix:39`
+- **Sub-options:** `bridge`, `enable`, `enablePersistence`, `excludeFromUpdater`, `hostAddress`, `subnet`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`
+
 ## `my.containers`
 
 ### `my.containers.agent-team`
@@ -81,7 +89,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.authelia`
 
 - **Declared:** `nix-presets/containers/authelia.nix:14`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `sessionSecretFile`, `storageEncryptionKeyFile`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `sessionSecretFile`, `storageEncryptionKeyFile`, `usersFile`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.authentik`
@@ -150,12 +158,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `environmentFile`, `hostDataDir`, `innerConfig`, `ip`, `jetson`, `jetsonDevices`, `mediaDir`, `memoryLimit`
 - **Consumed by:** `host:orin-nano`
 
-### `my.containers.github-runner`
-
-- **Declared:** `nix-presets/containers/github-runner.nix:42`
-- **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
-- **Consumed by:** `host:core-pi`, `host:nixos-nvme`
-
 ### `my.containers.hermes`
 
 - **Declared:** `nix-presets/containers/hermes.nix:14`
@@ -167,6 +169,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/home-assistant.nix:12`
 - **Sub-options:** `enable`, `enableBluetooth`, `enableUSB`, `hostDataDir`, `ip`, `memoryLimit`
 - **Consumed by:** `host:hass-pi`
+
+### `my.containers.kleinbem-auth`
+
+- **Declared:** `nix-presets/containers/kleinbem-auth.nix:54`
+- **Sub-options:** `betterAuthSecretFile`, `cookieDomain`, `domain`, `enable`, `facebookClientIdFile`, `facebookClientSecretFile`, `githubClientIdFile`, `githubClientSecretFile`, `googleClientIdFile`, `googleClientSecretFile`, `hostDataDir`, `ip`, `linkedinClientIdFile`, `linkedinClientSecretFile`, `memoryLimit`, `microsoftClientIdFile`, `microsoftClientSecretFile`, `port`, `smtpFrom`, `smtpHost`, `smtpPasswordFile`, `smtpPort`, `smtpUserFile`, `trustedOrigins`, `turnstileSecretKeyFile`
+- **Consumed by:** `host:core-pi`
 
 ### `my.containers.langflow`
 
@@ -260,7 +268,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.persona-runtime`
 
-- **Declared:** `nix-presets/containers/persona-runtime.nix:187`
+- **Declared:** `nix-presets/containers/persona-runtime.nix:195`
 - **Sub-options:** `autoStart`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `gitConfigFile`, `hostDataDir`, `ip`, `memoryLimit`, `personas`, `secretsEnvFile`, `signingKeyFile`
 - **Consumed by:** `host:mac-mini`
 
@@ -278,15 +286,21 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.stalwart`
 
-- **Declared:** `nix-presets/containers/stalwart.nix:23`
+- **Declared:** `nix-presets/containers/stalwart.nix:35`
 - **Sub-options:** `adminPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relaySecretFile`
-- **Consumed by:** _(no opt-ins detected)_
+- **Consumed by:** `host:mac-mini`
 
 ### `my.containers.syncthing`
 
 - **Declared:** `nix-presets/containers/syncthing.nix:12`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`, `user`, `vaults`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+
+### `my.containers.vaultwarden`
+
+- **Declared:** `nix-presets/containers/vaultwarden.nix:21`
+- **Sub-options:** `adminTokenFile`, `domain`, `enable`, `hostDataDir`, `invitationsAllowed`, `ip`, `memoryLimit`, `port`, `signupsAllowed`, `smtp`
+- **Consumed by:** `host:core-pi`
 
 ### `my.containers.vllm`
 
@@ -306,7 +320,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop`
 
-- **Declared:** `nix-config/modules/nixos/desktop.nix:12`
+- **Declared:** `nix-config/modules/nixos/desktop.nix:34`
 - **Sub-options:** `gnome.enable`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
@@ -340,14 +354,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`
 - **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
-## `my.pwa`
-
-### `my.pwa`
-
-- **Declared:** `nix-presets/pwa.nix:76`
-- **Sub-options:** `apps`, `defaultFlags`, `enable`, `package`
-- **Consumed by:** `preset:nix-presets/desktop.nix`, `preset:nix-presets/pwa.nix`, `user:martin`
-
 ## `my.security`
 
 ### `my.security.ai-hardening`
@@ -362,7 +368,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/container-updater.nix:17`
 - **Sub-options:** `containers`, `enable`, `manifestUrl`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.printing`
 

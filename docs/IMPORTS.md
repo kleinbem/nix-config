@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 9  
-**Distinct imports:** 82
+**Distinct imports:** 85
 
 ---
 
@@ -15,38 +15,39 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `container-factory`
 
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:github-runner`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:syncthing`, `nix-presets:vllm`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:home-assistant`, `nix-presets:kleinbem-auth`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`, `nix-presets:vllm`
 - **Local:** `../../modules/nixos/options.nix`
 
 ### `core-pi`
 
-- **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:github-runner`, `nix-presets:herdr-remote-client`, `nix-presets:ntfy`
-- **Local:** `./disko.nix`, `./secrets.nix`
+- **Modules:** `modules/nixos/container-host.nix`, `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`
+- **Presets:** `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:herdr-remote-client`, `nix-presets:kleinbem-auth`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
+- **Local:** `./backup.nix`, `./secrets.nix`
 
 ### `hass-pi`
 
-- **Modules:** `modules/nixos/rpi5-node.nix`, `modules/nixos/services/container-updater.nix`
+- **Modules:** `modules/nixos/container-host.nix`, `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:herdr-remote-client`, `nix-presets:home-assistant`, `nix-presets:openclaw`
-- **Local:** `./disko.nix`, `./secrets.nix`
+- **Local:** `./secrets.nix`
 
 ### `mac-mini`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:stalwart`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`
 - **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `nasbook`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/container-host.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qdrant`, `nix-presets:syncthing`
-- **Local:** `./hardware-configuration.nix`, `./secrets.nix`
+- **Other inputs:** `disko:disko`
+- **Local:** `./disko.nix`, `./secrets.nix`
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/services/github-runner.nix`, `modules/nixos/workstation.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
@@ -76,17 +77,17 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 - `../../modules/nixos/options.nix` ← container-factory
 - `./ai.nix` ← nixos-nvme
+- `./backup.nix` ← core-pi
 - `./containers.nix` ← nixos-nvme
-- `./disko.nix` ← core-pi, hass-pi, mac-mini, orin-nano, orin-nano-bootstrap
+- `./disko.nix` ← mac-mini, nasbook, orin-nano, orin-nano-bootstrap
 - `./garage.nix` ← nixos-nvme
 - `./hardware-boot.nix` ← nixos-nvme
-- `./hardware-configuration.nix` ← nasbook
 - `./hardware.nix` ← orin-nano
 - `./network.nix` ← nixos-nvme, orin-nano
 - `./secrets.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
 - `./services.nix` ← orin-nano
 - `./specialisations.nix` ← nixos-nvme
-- `disko:disko` ← mac-mini, nixos-nvme, orin-nano, orin-nano-bootstrap
+- `disko:disko` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
 - `modules/nix-on-droid/dashboard.nix` ← phone
 - `modules/nixos/ai-hardening.nix` ← orin-nano
 - `modules/nixos/ananicy.nix` ← orin-nano
@@ -94,6 +95,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/audit.nix` ← orin-nano
 - `modules/nixos/base.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/clevis-initrd.nix` ← mac-mini, orin-nano
+- `modules/nixos/container-host.nix` ← core-pi, hass-pi, mac-mini, nasbook
 - `modules/nixos/data-disk.nix` ← nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/desktop.nix` ← mac-mini
@@ -103,12 +105,12 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/hosts.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
 - `modules/nixos/initrd-fan.nix` ← orin-nano
 - `modules/nixos/kernel.nix` ← orin-nano
-- `modules/nixos/persistence.nix` ← mac-mini, nixos-nvme, orin-nano
+- `modules/nixos/persistence.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
+- `modules/nixos/rpi5-disko.nix` ← core-pi, hass-pi
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← core-pi
-- `modules/nixos/services/container-updater.nix` ← core-pi, hass-pi, mac-mini, nixos-nvme, orin-nano
-- `modules/nixos/services/github-runner.nix` ← nixos-nvme
+- `modules/nixos/services/container-updater.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
 - `modules/nixos/users.nix` ← orin-nano
 - `modules/nixos/workstation.nix` ← nixos-nvme
 - `nix-hardware:intel-compute` ← nixos-nvme
@@ -131,10 +133,10 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:dashboard` ← container-factory, core-pi
 - `nix-presets:ente` ← container-factory, core-pi
 - `nix-presets:frigate` ← container-factory, orin-nano
-- `nix-presets:github-runner` ← container-factory, core-pi
 - `nix-presets:herdr-remote-client` ← core-pi, hass-pi, mac-mini, nasbook, orin-nano
 - `nix-presets:hermes` ← mac-mini
 - `nix-presets:home-assistant` ← container-factory, hass-pi
+- `nix-presets:kleinbem-auth` ← container-factory, core-pi
 - `nix-presets:langflow` ← container-factory
 - `nix-presets:langfuse` ← container-factory
 - `nix-presets:litellm` ← container-factory
@@ -152,7 +154,9 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:persona-runtime` ← mac-mini
 - `nix-presets:playground` ← container-factory
 - `nix-presets:qdrant` ← container-factory, nasbook
+- `nix-presets:stalwart` ← container-factory, mac-mini
 - `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
+- `nix-presets:vaultwarden` ← container-factory, core-pi
 - `nix-presets:vllm` ← container-factory
 - `user:dhirujaan` ← nixos-nvme
 - `user:martin` ← mac-mini, nixos-nvme, orin-nano

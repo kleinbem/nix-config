@@ -25,13 +25,15 @@
 ### core-pi
 
 - 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
-- 🔐 **Authelia SSO** (`authelia`) `10.85.48.123:9091` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
+- 🔐 **Authelia SSO** (`authelia`) `10.85.48.123:9091` → `authelia.kleinbem.dev` — Single Sign-On & 2FA. _[src: nix-presets/containers/authelia.nix:14]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:18]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:80` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
 - 🔐 **Ente Auth** (`ente`) `10.85.48.133:8080` → `auth.kleinbem.dev` — E2E Encrypted 2FA & Authenticator Server. _[src: nix-presets/containers/ente.nix:13]_
+- 🔑 **Login** (`kleinbem-auth`) `10.85.48.140:3000` → `login.kleinbem.dev` — Social login (Google/Facebook) for kleinbem.dev. _[src: nix-presets/containers/kleinbem-auth.nix:54]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
+- 🔐 **Vaultwarden** (`vaultwarden`) `10.85.48.135:8222` → `vault.kleinbem.dev` — Self-hosted password manager (people + personas). _[src: nix-presets/containers/vaultwarden.nix:21]_
 
 ### hass-pi
 
@@ -44,7 +46,8 @@
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:13]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
-- 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:192]_
+- 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:200]_
+- 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:35]_
 
 ### nasbook
 
@@ -64,6 +67,7 @@
 
 ### orin-nano
 
+- 📹 **Frigate NVR** (`frigate`) `10.85.46.130:5000` → `frigate.kleinbem.dev` — NVR with AI object detection (NVIDIA TensorRT). _[src: nix-presets/containers/frigate.nix:32]_
 - 📦 **llama-cpp** (`llama-cpp`) _[src: nix-presets/containers/llama-cpp.nix:23]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
@@ -75,9 +79,8 @@
 - `code-server` — Code Server _[src: nix-presets/containers/code-server.nix:14]_
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
-- `frigate` — Frigate NVR _[src: nix-presets/containers/frigate.nix:32]_
 - `garage` — Garage S3
-- `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:42]_
+- `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:12]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:13]_
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
@@ -87,7 +90,6 @@
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
-- `stalwart` _[src: nix-presets/containers/stalwart.nix:23]_
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
 - `syncthing-orin` — Syncthing (Orin)
 - `vllm` _[src: nix-presets/containers/vllm.nix:12]_
