@@ -52,15 +52,13 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 
 | File | Purpose | Status |
 |------|---------|--------|
-| homed_migration_plan.md | User directory migration planning | ✅ Completed |
-| home_manager_gap_analysis.md | Home Manager coverage analysis | ✅ Completed |
-| implementation_plan*.md | Task planning (various) | ⏸️ Historical |
-| phone_deployment.md | Nix on Droid setup | ✅ Completed |
+| homed_migration_plan.md | User directory migration planning | ⚠️ Never executed — no `homed`-related commit exists; verify before trusting the "Completed" label |
+| home_manager_gap_analysis.md | Home Manager coverage analysis (prep for homed migration above) | ⚠️ Same caveat as homed_migration_plan.md |
+| phone_deployment.md | Nix on Droid setup — evergreen lessons-learned, kept as reference | ✅ Reference |
 | PHASE1_STALWART_STATUS.md | Stalwart email integration | ✅ Shipped 2026-09-03 |
 | PHASE3_AUTHENTIK.md | Authentik SSO deployment | 📅 Future |
 | PHASE45_HRIS_COLLAB.md | HRIS/collaboration stack | 📅 Future |
-| rpi-kernel-caching-followups.md | Raspberry Pi kernel caching | ✅ Completed |
-| task.md, walkthrough*.md | Old planning docs | ⏸️ Historical |
+| rpi-kernel-caching-followups.md | Raspberry Pi kernel caching | ⏳ One on-device confirmation step still open per doc body — not actually Completed |
 
 ---
 
