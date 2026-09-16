@@ -336,6 +336,18 @@ pc_sops_add_and_reencrypt() {
   echo "🔐 Re-encrypting every real content file (YubiKey touch may be required per file)..."
   local f
   while IFS= read -r -d '' f; do
+    # Not every *.nix match here is actually sops-encrypted — e.g.
+    # personas/contact.nix is deliberately plain Nix (private-repo access
+    # control only, see its own header comment), and `sops updatekeys` on a
+    # non-sops file dies with "Could not unmarshal input data: invalid
+    # character '#'" (found onboarding nasbook, 2026-09-16). A real
+    # sops file always carries a top-level `sops:` metadata block; skip
+    # anything without one instead of assuming every matched extension
+    # is fair game.
+    if ! grep -q '^sops:' "$f"; then
+      echo "   skip (not sops-encrypted): ${f#../kleinbem-secrets/}"
+      continue
+    fi
     echo "   updatekeys: ${f#../kleinbem-secrets/}"
     (cd ../kleinbem-secrets && sops updatekeys --yes "${f#../kleinbem-secrets/}")
   done < <(find ../kleinbem-secrets \
