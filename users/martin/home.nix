@@ -44,6 +44,8 @@ in
     sessionVariables = {
       DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
       BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
+      CHROME_BIN = "${pkgs.google-chrome}/bin/google-chrome-stable";
+      CHROME_PATH = "${pkgs.google-chrome}/bin/google-chrome-stable";
       # mkForce: the neovim wrapper module also sets EDITOR (nvim); nano wins
       # so sops/git/etc. open a friendlier editor.
       EDITOR = lib.mkForce "nano";
@@ -58,6 +60,12 @@ in
       # Harmless on hosts without buzz-desktop installed.
       BUZZ_RELAY_URL = "ws://${myInventory.network.nodes.buzz.ip}:3000";
     };
+
+    packages = [
+      (pkgs.writeShellScriptBin "chrome" ''
+        exec ${pkgs.google-chrome}/bin/google-chrome-stable "$@"
+      '')
+    ];
 
     # Personal System Control Center — `os <ns>::<recipe>`. The `os`
     # shell alias lives in nix-presets/terminal.nix (generic); these

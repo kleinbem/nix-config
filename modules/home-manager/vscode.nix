@@ -54,4 +54,11 @@ in
     "Antigravity IDE/User/keybindings.json".source =
       config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/keybindings.json";
   };
+
+  home.file = {
+    ".antigravity-ide/User/settings.json".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/settings.json";
+    ".antigravity-ide/User/keybindings.json".source =
+      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/keybindings.json";
+  };
 }
