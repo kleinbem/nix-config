@@ -143,6 +143,10 @@ in
     # Mobile Device Support
     gvfs.enable = true; # MTP/PTP support for file transfer
 
+    # FHS dynamic executable compatibility for /bin and /usr/bin.
+    # Resolves paths like /usr/bin/google-chrome, /usr/bin/env, /bin/bash dynamically.
+    envfs.enable = true;
+
     # Mitigate kernel panics under extreme memory pressure (AI workloads).
     #
     # earlyoom is the *RAM* guard: it kills only when mem-avail AND swap-free

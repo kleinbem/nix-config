@@ -72,6 +72,7 @@
       efibootmgr # EFI NVRAM entry management (recovery + boot guard)
       bind.dnsutils # provides nslookup, dig
       google-antigravity-ide-no-fhs # Google Antigravity IDE
+      google-chrome # Google Chrome browser (provides system-wide chrome binary)
       buzz-desktop # Client for the self-hosted Buzz relay (containers.nix)
 
       # RDP clients for mac-mini's GNOME Remote Desktop (reached via
