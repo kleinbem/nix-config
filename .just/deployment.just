@@ -908,22 +908,7 @@ nasbook-install-usb device:
     sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
     rm -f /tmp/nasbook-system
 
-    echo ""
-    echo "🔐 Enrolling FIDO2 YubiKeys for boot-time LUKS auto-unlock (disko.nix's"
-    echo "   crypttabExtraOpts already declares fido2-device=auto — this just adds"
-    echo "   the credentials it needs to find). Each enrollment authenticates with"
-    echo "   the passphrase generated above, non-interactively; only the FIDO2"
-    echo "   touch itself needs you."
-    LUKS_DEV="$(sudo cryptsetup status "$CRYPT" | awk '/device:/ {print $2}')"
-    [ -n "$LUKS_DEV" ] || { echo "❌ Could not resolve the mapped LUKS device for $CRYPT."; exit 1; }
-    echo ""
-    echo "   Plug in your PRIMARY YubiKey, then press Enter here..."
-    read -r _
-    sudo systemd-cryptenroll --fido2-device=auto --unlock-key-file="$PASS_FILE" "$LUKS_DEV"
-    echo "   ✅ Primary enrolled. Now swap to your BACKUP YubiKey, then press Enter..."
-    read -r _
-    sudo systemd-cryptenroll --fido2-device=auto --unlock-key-file="$PASS_FILE" "$LUKS_DEV"
-    echo "   ✅ Backup enrolled."
+    pc_fido2_enroll_dual "$CRYPT" "$PASS_FILE"
 
     pc_teardown "$MNT" "$CRYPT"
     echo ""

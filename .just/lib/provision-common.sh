@@ -325,7 +325,14 @@ pc_sops_add_and_reencrypt() {
   fi
   # Replace ONLY the age value after the anchor, preserving any trailing comment
   # (e.g. "# Host Key (mac-mini)" or the "not yet enabled" placeholder note).
-  sed -i -E "s|(&${anchor}[[:space:]]+)age1[a-zA-Z0-9]+|\\1${age_pub}|" "$sops_yaml"
+  # NOT `age1[a-zA-Z0-9]+`: placeholders in this file look like
+  # "age1PLACEHOLDER_NASBOOK" — the underscore isn't in that class, so it only
+  # matched up through "PLACEHOLDER" and left "_NASBOOK" stuck onto the new
+  # real key (found the hard way onboarding nasbook, 2026-09-16, corrupting
+  # the anchor into an invalid recipient). Match up to the next run of
+  # whitespace instead — covers real bech32 keys (lowercase alnum) and any
+  # placeholder spelling, and still stops before a trailing "# comment".
+  sed -i -E "s|(&${anchor}[[:space:]]+)age1[^[:space:]]+|\\1${age_pub}|" "$sops_yaml"
   echo "🔐 Re-encrypting every real content file (YubiKey touch may be required per file)..."
   local f
   while IFS= read -r -d '' f; do
@@ -335,6 +342,28 @@ pc_sops_add_and_reencrypt() {
     \( -path '../kleinbem-secrets/.git' -o -path '../kleinbem-secrets/.jj' -o -path '../kleinbem-secrets/keys.d' \) -prune -o \
     -type f \( -name '*.yaml' -o -name '*.nix' \) ! -name '.sops.yaml' -print0)
   echo "✅ Secrets updated — remember to commit kleinbem-secrets + nix-config."
+}
+
+# ── FIDO2 (hosts that can't Tang-bind to themselves, e.g. nasbook IS the
+#    tang server) ────────────────────────────────────────────────────────────
+# Enroll BOTH YubiKeys as FIDO2 unlock credentials on a LUKS device, so losing
+# one doesn't lock the box out (same redundancy as martin_primary/backup in
+# kleinbem-secrets). Each enrollment authenticates non-interactively via the
+# existing passphrase keyfile; only the physical FIDO2 touch needs a human.
+# $1=crypt-name  $2=passphrase-keyfile
+pc_fido2_enroll_dual() {
+  local crypt="$1" pass_file="$2" luks_dev
+  luks_dev="$(sudo cryptsetup status "$crypt" | awk '/device:/ {print $2}')"
+  [ -n "$luks_dev" ] || { echo "❌ Could not resolve the mapped LUKS device for $crypt."; return 1; }
+  echo ""
+  echo "🔐 Enrolling FIDO2 YubiKeys on ${luks_dev} for boot-time LUKS unlock."
+  echo "   Plug in your PRIMARY YubiKey, then press Enter here..."
+  read -r _
+  sudo systemd-cryptenroll --fido2-device=auto --unlock-key-file="$pass_file" "$luks_dev"
+  echo "   ✅ Primary enrolled. Now swap to your BACKUP YubiKey, then press Enter..."
+  read -r _
+  sudo systemd-cryptenroll --fido2-device=auto --unlock-key-file="$pass_file" "$luks_dev"
+  echo "   ✅ Backup enrolled."
 }
 
 # ── clevis / Tang ─────────────────────────────────────────────────────────────
