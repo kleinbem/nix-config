@@ -12,6 +12,18 @@
 {
   lib,
   device ? "/dev/sda",
+  # Path to a file containing the LUKS passphrase, for non-interactive format
+  # during scripted provisioning (nasbook-install-usb generates a random
+  # passphrase and writes it here). null preserves the normal interactive
+  # cryptsetup prompt for manual/other-host use. This parameter was missing
+  # entirely until 2026-09-16 — silently swallowed by the `...` below, so
+  # every --argstr passwordFile the install recipe passed had NO effect and
+  # disko fell back to its own interactive default, leaving the recipe's own
+  # (recorded, generated) passphrase unable to unlock the real LUKS header
+  # it never actually set. Symptom: systemd-cryptenroll's later FIDO2
+  # enrollment step failed with "Unlocking via keyfile failed: Operation not
+  # permitted" — nothing to do with which YubiKey was plugged in.
+  passwordFile ? null,
   ...
 }:
 {
@@ -73,6 +85,7 @@
               content = {
                 type = "luks";
                 name = "nasbook_crypt";
+                inherit passwordFile;
                 settings = {
                   allowDiscards = true;
                   crypttabExtraOpts = [
