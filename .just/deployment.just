@@ -821,6 +821,184 @@ mac-mini-wake:
     echo "   waiting: physically power-cycle it instead (hold the button)."
 
 [group("Provisioning")]
+[confirm("💿 WIPE the USB-attached SSD and install NixOS for nasbook? This is destructive. A random LUKS passphrase will be generated and printed at the end, and both YubiKeys will be enrolled for boot-time FIDO2 auto-unlock.")]
+[doc("nasbook (QNAP TBS-453A) has no console once installed and can't Tang-bind to itself (it IS the tang server other hosts use), so unlock is via systemd-cryptenroll --fido2-device=auto instead of clevis — see hosts/nasbook/disko.nix. This enrolls BOTH YubiKeys (you'll be prompted to swap between them) so losing one doesn't lock the box out; the generated passphrase is the fallback if neither key is available (HDMI+TTY per .just/nasbook.just).")]
+nasbook-install-usb device:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source .just/lib/provision-common.sh
+
+    DEV="{{device}}"; MNT="/mnt/nasbook"; CRYPT="nasbook_crypt"
+    pc_sudo_keepalive
+    pc_require_block_device "$DEV"
+    pc_assert_safe_target "$DEV"
+    # No cache pre-flight: nasbook is x86_64, same arch as this workstation
+    # (native build, not an hours-long cross-arch emulation), and it's a
+    # brand-new host with nothing in Attic yet anyway.
+
+    # Random alnum passphrase — the FIDO2 enrollment below is the real unlock
+    # path; this is only the fallback for the rare case neither YubiKey is
+    # available at boot. 14 chars (~83 bits of alnum entropy) is far beyond
+    # brute-force reach for a passphrase this rarely typed. Save it to
+    # Bitwarden per the printed output — this script does NOT persist it.
+    # (See mac-mini-install-usb for why this reads a fixed chunk of
+    # /dev/urandom rather than piping tr into head -c.)
+    RAW_ENTROPY="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9')"
+    if [ "${#RAW_ENTROPY}" -lt 14 ]; then
+      echo "❌ Only got ${#RAW_ENTROPY} alnum chars from 256 random bytes (need 14) — vanishingly unlikely, just retry."
+      exit 1
+    fi
+    PASSPHRASE="${RAW_ENTROPY:0:14}"
+    PASS_FILE="$(mktemp)"
+    chmod 600 "$PASS_FILE"
+    printf '%s' "$PASSPHRASE" > "$PASS_FILE"
+    cleanup_passfile() { shred -u "$PASS_FILE" 2>/dev/null || rm -f "$PASS_FILE"; }
+    trap cleanup_passfile EXIT
+
+    echo "🔍 Ensuring clean state before install..."
+    pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
+    pc_wipe "$DEV" 100
+
+    echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
+    sudo nix run github:nix-community/disko -- \
+        --mode destroy,format,mount \
+        --argstr device "$DEV" \
+        --argstr passwordFile "$PASS_FILE" \
+        --root-mountpoint "$MNT" ./hosts/nasbook/disko.nix
+
+    # Guard: /mnt/nasbook/boot MUST be the target's ESP, not the workstation's.
+    pc_assert_esp_on_target "$MNT" "$DEV"
+
+    # Host identity + age key BEFORE the build — the build needs the fresh
+    # age key to be a valid recipient of the secrets it decrypts at runtime.
+    # See mac-mini-install-usb's comment for the mac-mini reinstall incident
+    # this ordering avoids.
+    AGE_PUB="$(pc_host_identity "$MNT" nasbook)"
+    echo "📋 nasbook age public key: ${AGE_PUB}"
+    pc_sops_add_and_reencrypt "$AGE_PUB" nasbook
+    # {{OVERRIDES}} resolves inputs.kleinbem-secrets to this local checkout,
+    # which only sees tracked/staged files — stage whatever the reencrypt touched.
+    git -C ../kleinbem-secrets add -u
+
+    SYSTEM="$(pc_build_toplevel nasbook {{OVERRIDES}})"
+    [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ nasbook closure build failed."; exit 1; }
+    pc_install_closure "$MNT" "$SYSTEM"
+
+    echo "💾 Installing systemd-boot to the ESP (host-side; writing NVRAM boot vars here would register against THIS workstation's EFI, not nasbook's)..."
+    pc_assert_esp_on_target "$MNT" "$DEV"   # re-verify right before writing
+    ESP="$MNT/boot"
+    BOOT_EFI="$(find "$MNT/nix/store" -maxdepth 6 -name systemd-bootx64.efi 2>/dev/null | head -1)"
+    [ -n "$BOOT_EFI" ] || { echo "❌ systemd-bootx64.efi not found in store" >&2; exit 1; }
+    KERNEL_SRC="$(realpath "${SYSTEM}/kernel")"
+    INITRD_SRC="$(realpath "${SYSTEM}/initrd")"
+    KERNEL_PARAMS="$(cat "${SYSTEM}/kernel-params")"
+    SYS_STORE_PATH="/nix/store/$(basename "${SYSTEM}")"
+    sudo mkdir -p "${ESP}/EFI/systemd" "${ESP}/EFI/BOOT" "${ESP}/EFI/nixos" "${ESP}/loader/entries"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/systemd/systemd-bootx64.efi"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTX64.EFI"
+    sudo cp "${KERNEL_SRC}" "${ESP}/EFI/nixos/kernel"
+    sudo cp "${INITRD_SRC}" "${ESP}/EFI/nixos/initrd"
+    # CRITICAL: embed boot.initrd.secrets (initrd-sshd host key, if any) or
+    # the first boot fails copy-secrets/sshd and drops to emergency mode.
+    pc_append_initrd_secrets nasbook "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
+    printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
+    ENTRY="$(mktemp)"
+    printf 'title NixOS\nlinux /EFI/nixos/kernel\ninitrd /EFI/nixos/initrd\noptions init=%s/init %s\n' \
+        "${SYS_STORE_PATH}" "${KERNEL_PARAMS}" > "${ENTRY}"
+    sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
+    rm -f /tmp/nasbook-system
+
+    echo ""
+    echo "🔐 Enrolling FIDO2 YubiKeys for boot-time LUKS auto-unlock (disko.nix's"
+    echo "   crypttabExtraOpts already declares fido2-device=auto — this just adds"
+    echo "   the credentials it needs to find). Each enrollment authenticates with"
+    echo "   the passphrase generated above, non-interactively; only the FIDO2"
+    echo "   touch itself needs you."
+    LUKS_DEV="$(sudo cryptsetup status "$CRYPT" | awk '/device:/ {print $2}')"
+    [ -n "$LUKS_DEV" ] || { echo "❌ Could not resolve the mapped LUKS device for $CRYPT."; exit 1; }
+    echo ""
+    echo "   Plug in your PRIMARY YubiKey, then press Enter here..."
+    read -r _
+    sudo systemd-cryptenroll --fido2-device=auto --unlock-key-file="$PASS_FILE" "$LUKS_DEV"
+    echo "   ✅ Primary enrolled. Now swap to your BACKUP YubiKey, then press Enter..."
+    read -r _
+    sudo systemd-cryptenroll --fido2-device=auto --unlock-key-file="$PASS_FILE" "$LUKS_DEV"
+    echo "   ✅ Backup enrolled."
+
+    pc_teardown "$MNT" "$CRYPT"
+    echo ""
+    echo "✅ nasbook SSD install complete. Remaining steps:"
+    echo ""
+    echo "   1. just jj::save-all 'feat: nasbook onboarding' nasbook kleinbem-secrets"
+    echo "        (the rotated .sops.yaml/nix/shared.yaml were already 'git add'-ed"
+    echo "        above so the build could see them — this gives them a real commit)"
+    echo "   2. nix flake lock --update-input kleinbem-secrets   (from nix-config's"
+    echo "        root, THEN commit the flake.lock bump — every other deploy path"
+    echo "        builds against this pin, not the local checkout this recipe used)"
+    echo "   3. Physically move the SSD into the QNAP TBS-453A and boot it. Touch"
+    echo "        whichever YubiKey is plugged in when prompted at boot."
+    echo "   4. just deployment::update nasbook   (or wait for the nightly autoUpgrade"
+    echo "        pull — nasbook is requireCache-gated) once it's reachable over SSH"
+    echo ""
+    echo "🔑 LUKS fallback passphrase for nasbook (save to Bitwarden now, then close"
+    echo "   this terminal — it is NOT stored anywhere by this script; only needed"
+    echo "   if neither YubiKey is available at boot):"
+    echo ""
+    echo "   ${PASSPHRASE}"
+    echo ""
+
+[group("Provisioning")]
+[confirm("🔄 Re-install nasbook config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS, rebuilds, and refreshes the closure + bootloader.")]
+[doc("Non-destructive in-place update. Unlocks via FIDO2 if a Yubikey is plugged in, else prompts for the saved passphrase.")]
+nasbook-update-usb device:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source .just/lib/provision-common.sh
+
+    sudo -v
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
+    echo "🔓 Mounting existing SSD via disko (touch a YubiKey, or enter the nasbook LUKS passphrase, when prompted)..."
+    sudo nix run github:nix-community/disko -- \
+        --mode mount \
+        --argstr device {{device}} \
+        --root-mountpoint /mnt/nasbook \
+        ./hosts/nasbook/disko.nix
+
+    echo "🏗️ Building nasbook closure..."
+    nix build .#nixosConfigurations.nasbook.config.system.build.toplevel \
+        --option sandbox false \
+        --option builders "" \
+        {{OVERRIDES}} \
+        --out-link /tmp/nasbook-system
+
+    SYSTEM="$(readlink /tmp/nasbook-system)"
+    ESP="/mnt/nasbook/boot"
+
+    echo "💿 Installing closure (skipping bootloader — done host-side below)..."
+    sudo nixos-install --root /mnt/nasbook --system "${SYSTEM}" --no-root-passwd --no-bootloader
+
+    echo "💾 Installing systemd-boot to ESP (host-side)..."
+    BOOT_EFI="$(find /mnt/nasbook/nix/store -maxdepth 6 -name "systemd-bootx64.efi" 2>/dev/null | head -1)"
+    [ -n "$BOOT_EFI" ] || { echo "❌ systemd-bootx64.efi not found in store" >&2; exit 1; }
+    sudo mkdir -p "${ESP}/EFI/systemd" "${ESP}/EFI/BOOT" "${ESP}/EFI/nixos" "${ESP}/loader/entries"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/systemd/systemd-bootx64.efi"
+    sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTX64.EFI"
+    sudo cp "$(realpath "${SYSTEM}/kernel")" "${ESP}/EFI/nixos/kernel"
+    sudo cp "$(realpath "${SYSTEM}/initrd")" "${ESP}/EFI/nixos/initrd"
+    pc_append_initrd_secrets nasbook "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
+    printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
+    ENTRY="$(mktemp)"
+    printf 'title NixOS\nlinux /EFI/nixos/kernel\ninitrd /EFI/nixos/initrd\noptions init=%s/init %s\n' \
+        "/nix/store/$(basename "${SYSTEM}")" "$(cat "${SYSTEM}/kernel-params")" > "${ENTRY}"
+    sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"
+    rm "${ENTRY}"
+    rm -f /tmp/nasbook-system
+
+    pc_teardown /mnt/nasbook nasbook_crypt
+    echo "✅ In-place update complete — put the SSD back in the QNAP and boot."
+
+[group("Provisioning")]
 [confirm("💿 WIPE the USB SSD and install NixOS for a Pi? This is destructive.")]
 pi-install-usb host device="/dev/sdc":
     #!/usr/bin/env bash
