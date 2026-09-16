@@ -17,6 +17,7 @@ in
     "${self}/modules/nixos/base.nix" # foundational, imported by every entry-point bundle
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
+    "${self}/modules/nixos/clevis-initrd.nix"
     # Root is stateless tmpfs (disko.nix) — this binds /var/lib/* service
     # state back from the persistent /nix/persist btrfs subvolume.
     "${self}/modules/nixos/persistence.nix"
@@ -52,6 +53,22 @@ in
   ];
 
   my = {
+    # Tang auto-unlock at boot, same pattern as hass-pi/mac-mini/core-pi —
+    # silent primary path; disko.nix's fido2-device=auto crypttab option is
+    # the physical-presence fallback (HDMI+TTY per .just/nasbook.just) if
+    # Tang is unreachable. Binds to the OTHER three tang servers (nixos-nvme,
+    # hass-pi, orin-nano — see pc_clevis_bind_tang), never to nasbook's own
+    # (it can't serve itself an advertisement before it's unlocked). `enable`
+    # is gated on the JWE existing rather than hardcoded true: nasbook-install-usb
+    # generates it during provisioning, same as every other clevis-initrd host.
+    boot.clevis-initrd = {
+      enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/cryptroot_nasbook.jwe");
+      luksDevice = "nasbook_crypt";
+      hostIp = "10.0.0.30"; # inventory.nix — excludes nasbook's own tang server from the wait loop
+      secretFile = inputs.kleinbem-secrets + "/initrd/cryptroot_nasbook.jwe";
+      fallbackMessage = "Tang still unreachable; falling back to FIDO2 (touch a YubiKey) or the HDMI/TTY console.";
+    };
+
     herdr-remote-client = {
       enable = true;
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)

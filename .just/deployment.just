@@ -821,8 +821,8 @@ mac-mini-wake:
     echo "   waiting: physically power-cycle it instead (hold the button)."
 
 [group("Provisioning")]
-[confirm("💿 WIPE the USB-attached SSD and install NixOS for nasbook? This is destructive. A random LUKS passphrase will be generated and printed at the end, and both YubiKeys will be enrolled for boot-time FIDO2 auto-unlock.")]
-[doc("nasbook (QNAP TBS-453A) has no console once installed and can't Tang-bind to itself (it IS the tang server other hosts use), so unlock is via systemd-cryptenroll --fido2-device=auto instead of clevis — see hosts/nasbook/disko.nix. This enrolls BOTH YubiKeys (you'll be prompted to swap between them) so losing one doesn't lock the box out; the generated passphrase is the fallback if neither key is available (HDMI+TTY per .just/nasbook.just).")]
+[confirm("💿 WIPE the USB-attached SSD and install NixOS for nasbook? This is destructive. A random LUKS passphrase will be generated and printed at the end; Tang auto-unlock (against nixos-nvme/hass-pi/orin-nano) is the primary boot-unlock path, with both YubiKeys enrolled via FIDO2 as a physical-presence fallback.")]
+[doc("Same two-layer unlock pattern as every other headless host (mac-mini, hass-pi, core-pi): Tang/clevis auto-unlock in initrd is silent and primary, FIDO2 (disko.nix's fido2-device=auto) is the fallback if Tang is unreachable. nasbook binds to the OTHER three tang servers, never itself — it can't serve itself an advertisement before it's unlocked, but there's no actual chicken-and-egg problem since the SSS pins list never included nasbook's own server anyway.")]
 nasbook-install-usb device:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -858,6 +858,13 @@ nasbook-install-usb device:
     echo "🔍 Ensuring clean state before install..."
     pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
     pc_wipe "$DEV" 100
+
+    # Generate the Tang JWE BEFORE formatting, using the passphrase we just
+    # chose — my.boot.clevis-initrd.enable (hosts/nasbook/default.nix) is
+    # gated on this file existing, so the build below needs to see it.
+    echo "🔑 Generating Tang JWE with the new passphrase..."
+    LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh nasbook
+    git -C ../kleinbem-secrets add initrd/cryptroot_nasbook.jwe
 
     echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
@@ -908,6 +915,10 @@ nasbook-install-usb device:
     sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
     rm -f /tmp/nasbook-system
 
+    # Tang bind FIRST — needs the live cryptsetup mapping (unlike FIDO2
+    # enrollment below, which must run on a closed device instead).
+    pc_clevis_bind_tang "$CRYPT" "$PASS_FILE"
+
     # Capture the raw partition path BEFORE closing — pc_fido2_enroll_dual
     # must run against a closed device (see its own comment for why), but
     # `cryptsetup status` only works while the mapping is still active.
@@ -926,14 +937,18 @@ nasbook-install-usb device:
     echo "   2. nix flake lock --update-input kleinbem-secrets   (from nix-config's"
     echo "        root, THEN commit the flake.lock bump — every other deploy path"
     echo "        builds against this pin, not the local checkout this recipe used)"
-    echo "   3. Physically move the SSD into the QNAP TBS-453A and boot it. Touch"
-    echo "        whichever YubiKey is plugged in when prompted at boot."
+    echo "   3. Physically move the SSD into the QNAP TBS-453A and boot it. It should"
+    echo "        auto-unlock silently via Tang; touch a YubiKey only if that fails."
     echo "   4. just deployment::update nasbook   (or wait for the nightly autoUpgrade"
     echo "        pull — nasbook is requireCache-gated) once it's reachable over SSH"
+    echo "   5. Once nasbook's own tang service is confirmed live, fetch its"
+    echo "        advertisement (see hosts/nixos-nvme/tang-adv.jws for the pattern)"
+    echo "        and add it as a 4th pin to pc_clevis_bind_tang + generate-jwe.sh,"
+    echo "        so other hosts can use nasbook as a tang source too."
     echo ""
     echo "🔑 LUKS fallback passphrase for nasbook (save to Bitwarden now, then close"
     echo "   this terminal — it is NOT stored anywhere by this script; only needed"
-    echo "   if neither YubiKey is available at boot):"
+    echo "   if Tang AND both YubiKeys are unavailable at boot):"
     echo ""
     echo "   ${PASSPHRASE}"
     echo ""
