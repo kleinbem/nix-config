@@ -12,16 +12,16 @@
       # per-container convention (see kleinbem-auth.yaml/stalwart.yaml), not
       # a deliberate choice, so they moved here alongside the seed users.yml.
       authelia_session_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authelia.yaml";
       };
       authelia_jwt_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authelia.yaml";
       };
       authelia_storage_encryption_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authelia.yaml";
       };
       authelia_users_file = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/authelia.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authelia.yaml";
       };
 
       # Vaultwarden — Argon2 PHC hash for the /admin page (ADMIN_TOKEN).
@@ -36,57 +36,57 @@
       # populated; google_/facebook_ are empty until the OAuth apps exist — the
       # service starts fine with no providers (see nix-presets preset).
       kleinbem_auth_better_auth_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "better_auth_secret";
       };
       kleinbem_auth_google_client_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "google_client_id";
       };
       kleinbem_auth_google_client_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "google_client_secret";
       };
       kleinbem_auth_facebook_client_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "facebook_client_id";
       };
       kleinbem_auth_facebook_client_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "facebook_client_secret";
       };
       kleinbem_auth_github_client_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "github_client_id";
       };
       kleinbem_auth_github_client_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "github_client_secret";
       };
       kleinbem_auth_linkedin_client_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "linkedin_client_id";
       };
       kleinbem_auth_linkedin_client_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "linkedin_client_secret";
       };
       kleinbem_auth_microsoft_client_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "microsoft_client_id";
       };
       kleinbem_auth_microsoft_client_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "microsoft_client_secret";
       };
       kleinbem_auth_turnstile_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/kleinbem-auth.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
         key = "turnstile_secret_key";
       };
 
       # Attic Binary Cache
       attic_server_token_rs256 = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
       };
       # Read-only pull token — activates modules/nixos/attic-pull.nix (netrc
       # Bearer auth + NetBird routing). Without it the host gets 401 from the
@@ -109,13 +109,13 @@
 
       # Cloudflare Tunnel
       cloudflare_account_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
       };
       cloudflare_tunnel_id = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
       };
       cloudflare_tunnel_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
       };
     };
 

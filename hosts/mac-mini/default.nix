@@ -28,7 +28,7 @@ let
   # michael before this).
   personasView = import "${self}/lib/personas.nix" {
     inherit lib;
-    contact = import "${inputs.nix-secrets}/personas/contact.nix";
+    contact = import "${inputs.kleinbem-secrets}/personas/contact.nix";
   };
   # Which persona names get their own invocable persona-runtime slot —
   # currently the two with a tool wired into that container's toolSpecs
@@ -242,7 +242,7 @@ in
     # would hang forever with nobody able to answer it.
     #
     # `enable` is gated on the JWE existing rather than hardcoded true: the
-    # JWE (nix-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated
+    # JWE (kleinbem-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated
     # AFTER the real LUKS passphrase is set during the physical install
     # (disko), so it doesn't exist at the time this file is first committed.
     # Once it's generated — `scripts/generate-jwe.sh mac-mini`, same
@@ -250,9 +250,9 @@ in
     # the next rebuild/redeploy; no further code change needed. Same pattern
     # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
     boot.clevis-initrd = {
-      enable = builtins.pathExists (inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe");
+      enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/cryptroot_mac-mini.jwe");
       luksDevice = "mac_mini_crypt";
-      secretFile = inputs.nix-secrets + "/initrd/cryptroot_mac-mini.jwe";
+      secretFile = inputs.kleinbem-secrets + "/initrd/cryptroot_mac-mini.jwe";
       fallbackMessage = "Tang still unreachable; falling back to initrd SSH (no physical console on this host)";
       # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
     };
@@ -752,7 +752,7 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists (inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini");
+          enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_mac-mini");
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
@@ -763,7 +763,7 @@ in
         };
       };
       secrets."/etc/ssh/ssh_host_ed25519_key_mac-mini" = lib.mkForce (
-        inputs.nix-secrets + "/initrd/ssh_host_ed25519_key_mac-mini"
+        inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_mac-mini"
       );
     };
 

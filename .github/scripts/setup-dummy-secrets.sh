@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Build the dummy kleinbem-secrets tree CI substitutes for the private repo
-# (via --override-input nix-secrets — identifier kept as "nix-secrets" for
-# historical reasons, see flake.nix's note; underlying repo is
-# kleinbem-secrets since the 2026-08-07 cutover). It must mirror every path
+# (via --override-input kleinbem-secrets). It must mirror every path
 # nix-config dereferences at eval/build time — a missing path fails the
 # BUILD with "failed to get symlink metadata", even when eval-only checks
 # pass:

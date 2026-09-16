@@ -31,11 +31,7 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     # Private Secrets (GitHub Repo)
-    # NOTE: input identifier kept as "nix-secrets" for historical reasons —
-    # the underlying repo is kleinbem-secrets as of the 2026-08-07 cutover.
-    # Renaming every `inputs.nix-secrets` reference across the tree is a
-    # separate, lower-risk cleanup, not required for this to be correct.
-    nix-secrets = {
+    kleinbem-secrets = {
       url = "github:kleinbem/kleinbem-secrets";
       flake = false;
     };

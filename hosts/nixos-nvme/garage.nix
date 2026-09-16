@@ -23,10 +23,10 @@
   # falling through to the default.
   sops = {
     secrets.garage_rpc_secret = {
-      sopsFile = "${inputs.nix-secrets}/infra/terraform.yaml";
+      sopsFile = "${inputs.kleinbem-secrets}/infra/terraform.yaml";
     };
     secrets.garage_admin_token = {
-      sopsFile = "${inputs.nix-secrets}/infra/terraform.yaml";
+      sopsFile = "${inputs.kleinbem-secrets}/infra/terraform.yaml";
     };
 
     # Rendered env file injected into the service (keeps secrets OUT of the

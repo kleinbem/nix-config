@@ -27,10 +27,10 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ steps.app-token.outputs.token }}
 
-      - name: Update flake inputs (excluding nix-secrets)
+      - name: Update flake inputs (excluding kleinbem-secrets)
         run: |
           cd nix-config
-          # nix-secrets is user-managed (rotated deliberately, not nightly)
+          # kleinbem-secrets is user-managed (rotated deliberately, not nightly)
           # AND private — CI has no PAT for it in Nix's access-tokens, so
           # fetching it here would 404. Discover remaining inputs dynamically
           # so new inputs are picked up automatically. jq is preinstalled on
@@ -38,7 +38,7 @@ jobs:
           inputs=$(nix flake metadata --json | jq -r '
             .locks.nodes.root.inputs
             | keys[]
-            | select(. != "nix-secrets")
+            | select(. != "kleinbem-secrets")
           ' | tr '\n' ' ')
           if [ -z "$inputs" ]; then
             echo "::error::Could not discover flake inputs — refusing to run unbounded \`nix flake update\`."
@@ -55,18 +55,18 @@ jobs:
         # drvPath instead — checks include every host toplevel (host-*), so a
         # bad lock still can't land.
         run: |
-          # nix-secrets is private and CI has no PAT in nix access-tokens, so
+          # kleinbem-secrets is private and CI has no PAT in nix access-tokens, so
           # substitute the shared dummy stub (see .github/scripts/).
           ./nix-config/.github/scripts/setup-dummy-secrets.sh
           cd nix-config
           eval_drv() {
             echo "eval $1"
             nix eval "$1" \
-              --override-input nix-secrets /tmp/dummy-secrets > /dev/null
+              --override-input kleinbem-secrets /tmp/dummy-secrets > /dev/null
           }
           attr_names() {
             nix eval "$1" --apply builtins.attrNames --json \
-              --override-input nix-secrets /tmp/dummy-secrets | jq -r '.[]'
+              --override-input kleinbem-secrets /tmp/dummy-secrets | jq -r '.[]'
           }
           for system in x86_64-linux aarch64-linux; do
             for check in $(attr_names ".#checks.$system"); do

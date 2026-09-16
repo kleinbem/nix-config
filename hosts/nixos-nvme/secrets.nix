@@ -67,13 +67,13 @@
       # is also used directly as services.typesense.apiKeyFile (raw value, no
       # template needed there — see hosts/nixos-nvme/containers.nix).
       buzz_relay_private_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       buzz_garage_rpc_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -hex 32`
       buzz_garage_admin_token = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -base64 32`
       # mode 0444: services.typesense's own module `cat`s apiKeyFile
       # INSIDE its script=, which runs as the unprivileged static
@@ -84,40 +84,40 @@
       # already sitting in the 0444 buzz.env template two secrets below,
       # readable by every process in this container regardless.
       buzz_typesense_api_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
         mode = "0444";
       };
       buzz_s3_access_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       buzz_s3_secret_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
       # Service Internal Secrets
       n8n_encryption_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       n8n_basic_auth_password = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       n8n_jwt_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       n8n_user_management_main_user_email = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       n8n_user_management_main_user_password = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       openwebui_secret_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       langfuse_nextauth_secret = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       langfuse_salt = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
       # API Keys
@@ -140,15 +140,15 @@
         owner = "martin";
       };
       vllm_huggingface_token = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       langfuse_public_key = {
         mode = "0444";
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       langfuse_secret_key = {
         mode = "0444";
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
       # Backup Secrets
@@ -170,10 +170,10 @@
 
       # Dashboard Keys
       homepage_n8n_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
       homepage_openwebui_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
 
       # Syncthing
@@ -200,14 +200,14 @@
     # `sops nix/per-host/nixos-nvme.yaml`, THEN flip the enable flag.
     // lib.optionalAttrs config.my.containers.litellm.enable {
       litellm_master_key = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
     }
     # GitHub runner registration token — only declared while the opt-in
     # runner container is enabled (same footgun-avoidance as litellm above).
     // lib.optionalAttrs config.my.containers.github-runner.enable {
       github_runner_pat = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/nixos-nvme.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
     };
     # (Stalwart's admin secret lives with the container, on mac-mini —

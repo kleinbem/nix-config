@@ -107,10 +107,10 @@ in
 lib.mkIf enable {
   sops.secrets = {
     restic_password = {
-      sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+      sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
     };
     backup_rclone_config = {
-      sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+      sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
     };
   };
 

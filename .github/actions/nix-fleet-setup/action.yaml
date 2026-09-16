@@ -61,7 +61,7 @@ runs:
         # existing ci.yml pattern). Each build evaluates against whatever's on
         # the sibling's main branch — same semantics as the per-sub-flake CIs.
         echo "NIX_OVERRIDES=\
-          --override-input nix-secrets /tmp/dummy-secrets \
+          --override-input kleinbem-secrets /tmp/dummy-secrets \
           --override-input nix-devshells github:kleinbem/nix-devshells \
           --override-input nix-hardware github:kleinbem/nix-hardware \
           --override-input nix-hardware/nix-devshells github:kleinbem/nix-devshells \

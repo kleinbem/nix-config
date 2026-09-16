@@ -11,12 +11,9 @@ HOST="$1"
 HOST_DIR="hosts/$HOST"
 # This must match what `my.boot.clevis-initrd.secretFile` actually reads
 # (see modules/nixos/clevis-initrd.nix consumers, e.g. hosts/*/services.nix
-# or hosts/*/default.nix: "${inputs.nix-secrets}/initrd/cryptroot_${HOST}.jwe").
+# or hosts/*/default.nix: "${inputs.kleinbem-secrets}/initrd/cryptroot_${HOST}.jwe").
 # Previously wrote to hosts/$HOST/cryptroot.jwe, a path nothing reads — every
 # real cryptroot_*.jwe in kleinbem-secrets/initrd/ was produced some other way.
-# inputs.nix-secrets resolves to kleinbem-secrets as of the 2026-08-07
-# cutover (input NAME unchanged, see nix-config/flake.nix's note) — this
-# sibling-directory path is the local checkout that name now means.
 SECRETS_DIR="../kleinbem-secrets/initrd"
 JWE_FILE="$SECRETS_DIR/cryptroot_${HOST}.jwe"
 

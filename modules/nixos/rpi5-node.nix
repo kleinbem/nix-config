@@ -14,12 +14,12 @@ let
   keys = import "${self}/modules/nixos/keys.nix";
   hostName = config.networking.hostName;
   hostIp = config.my.boot.clevis-initrd.hostIp;
-  # CI uses --override-input nix-secrets /tmp/dummy-secrets, which lacks the
+  # CI uses --override-input kleinbem-secrets /tmp/dummy-secrets, which lacks the
   # initrd/ subtree. Both consumers below — `network.ssh.enable` and
   # `boot.initrd.secrets` — gate on this, otherwise make-initrd-ng tries to
   # walk a path component that isn't on disk and aborts with
   # "failed to get symlink metadata for <…>/initrd".
-  initrdSshKey = "${inputs.nix-secrets}/initrd/ssh_host_ed25519_key_${hostName}";
+  initrdSshKey = "${inputs.kleinbem-secrets}/initrd/ssh_host_ed25519_key_${hostName}";
   hasInitrdSshKey = builtins.pathExists initrdSshKey;
 in
 {

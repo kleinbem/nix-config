@@ -13,23 +13,20 @@ ROOT := parent_directory(justfile())
 META := absolute_path(ROOT / "..")
 
 # Sibling sub-flakes that nix-config depends on, discovered at parse time.
-# nix-secrets excluded here on purpose — see OVERRIDES below. Excluded by
-# glob (nix-secrets*), not exact name, so a renamed/archived checkout (e.g.
-# nix-secrets.deleted) can't leak back in as a bogus sibling — nix's flake
-# CLI parses dots in --override-input names as nested attribute paths, so a
-# stray "nix-secrets.deleted" directory here produces an "invalid flake
-# input attribute path element" error instead of silently no-opping.
+# kleinbem-secrets is excluded from this glob (it doesn't match "nix-*"
+# anyway) and remapped explicitly below. Also excludes any leftover/archived
+# "nix-secrets*" checkout by glob, not exact name, so a renamed/archived
+# checkout (e.g. nix-secrets.deleted) can't leak back in as a bogus sibling —
+# nix's flake CLI parses dots in --override-input names as nested attribute
+# paths, so a stray "nix-secrets.deleted" directory here produces an
+# "invalid flake input attribute path element" error instead of silently
+# no-opping.
 SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
-# `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling.
-#
-# nix-secrets is remapped explicitly, not self-mapped: as of the 2026-08-07
-# cutover, nix-config's flake input keeps the "nix-secrets" NAME (see
-# flake.nix's note) but the repo behind it is now kleinbem-secrets. A plain
-# self-mapped override would point that input at the now-legacy local
-# nix-secrets checkout — silently undoing the cutover for every local
-# build/provisioning recipe that uses {{OVERRIDES}}.
-OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input nix-secrets git+file://" + META + "/kleinbem-secrets"
+# `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,
+# plus kleinbem-secrets explicitly since its directory name doesn't match
+# the "nix-*" glob SIBLING_REPOS uses.
+OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input kleinbem-secrets git+file://" + META + "/kleinbem-secrets"
 
 KEEP      := "3"
 TIMER     := "time "

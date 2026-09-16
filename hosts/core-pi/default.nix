@@ -90,7 +90,7 @@ in
       enable = true;
       luksDevice = luksVolumeName;
       hostIp = "10.0.0.22";
-      secretFile = "${inputs.nix-secrets}/initrd/cryptroot_core-pi.jwe";
+      secretFile = "${inputs.kleinbem-secrets}/initrd/cryptroot_core-pi.jwe";
     };
 
     herdr-remote-client = {

@@ -56,11 +56,11 @@
   # verbatim in its own secrets.nix; hoisted here 2026-09-11. mkDefault so a
   # host can still override (none currently need to).
   sops = {
-    defaultSopsFile = lib.mkDefault "${inputs.nix-secrets}/nix/shared.yaml";
+    defaultSopsFile = lib.mkDefault "${inputs.kleinbem-secrets}/nix/shared.yaml";
     defaultSopsFormat = lib.mkDefault "yaml";
     # Don't fail the *build* validating secret presence against the sops
     # file. CI builds every host's toplevel with an empty dummy
-    # nix/shared.yaml (--override-input nix-secrets /tmp/dummy-secrets),
+    # nix/shared.yaml (--override-input kleinbem-secrets /tmp/dummy-secrets),
     # so sops-install-secrets' build-time manifest check would otherwise
     # abort on "key '<foo>' cannot be found" — the documented sops-nix CI
     # workaround. Real decryption at activation is unaffected (it uses the

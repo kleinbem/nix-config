@@ -1200,6 +1200,22 @@
         "type": "github"
       }
     },
+    "kleinbem-secrets": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789507702,
+        "narHash": "sha256-cJBaPbrHrIbuJknRbLcDO+lBXVb8g3ej+O6ZsO3wFRU=",
+        "owner": "kleinbem",
+        "repo": "kleinbem-secrets",
+        "rev": "8db5faa487efeaa0a7fe66804935d8811ee57722",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "repo": "kleinbem-secrets",
+        "type": "github"
+      }
+    },
     "lanzaboote": {
       "inputs": {
         "crane": "crane",
@@ -1517,22 +1533,6 @@
       "original": {
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "type": "github"
-      }
-    },
-    "nix-secrets": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1789507702,
-        "narHash": "sha256-cJBaPbrHrIbuJknRbLcDO+lBXVb8g3ej+O6ZsO3wFRU=",
-        "owner": "kleinbem",
-        "repo": "kleinbem-secrets",
-        "rev": "8db5faa487efeaa0a7fe66804935d8811ee57722",
-        "type": "github"
-      },
-      "original": {
-        "owner": "kleinbem",
-        "repo": "kleinbem-secrets",
         "type": "github"
       }
     },
@@ -2461,6 +2461,7 @@
         "home-manager": "home-manager_3",
         "impermanence": "impermanence",
         "jetpack-nixos": "jetpack-nixos",
+        "kleinbem-secrets": "kleinbem-secrets",
         "lanzaboote": "lanzaboote",
         "nix-devshells": "nix-devshells",
         "nix-flatpak": "nix-flatpak",
@@ -2470,7 +2471,6 @@
         "nix-on-droid": "nix-on-droid",
         "nix-packages": "nix-packages",
         "nix-presets": "nix-presets",
-        "nix-secrets": "nix-secrets",
         "nix-templates": "nix-templates",
         "nix-topology": "nix-topology",
         "nix-vscode-extensions": "nix-vscode-extensions_2",

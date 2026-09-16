@@ -24,7 +24,7 @@
       # jetpack/l4t packages on-device.
       # attic_pull_token = { };
       attic_push_token = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/orin-nano.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/orin-nano.yaml";
       };
       github_pat = {
         owner = "martin";

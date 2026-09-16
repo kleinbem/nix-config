@@ -15,8 +15,7 @@
 #   1. cd kleinbem-secrets && sops updatekeys nix/shared.yaml   (workstation YubiKey)
 #      → commit + push kleinbem-secrets.
 #   2. Update nix-config's lock to that kleinbem-secrets commit
-#      (nix flake update nix-secrets, or the sync_locks autopilot — input
-#      identifier is still "nix-secrets", see flake.nix's note).
+#      (nix flake update kleinbem-secrets, or the sync_locks autopilot).
 #   3. Commit + push nix-config. hass-pi auto-enrolls on its next pull
 #      (or `just deployment::deploy-fleet` for immediate).
 #

@@ -23,7 +23,7 @@
 
       # kleinbem-secrets checkout (flake input, historically named
       # "nix-secrets"). personas/contact.nix is plain Nix — import directly.
-      contactFile = inputs.nix-secrets + "/personas/contact.nix";
+      contactFile = inputs.kleinbem-secrets + "/personas/contact.nix";
       contact = if builtins.pathExists contactFile then import contactFile else { };
 
       data = import ../../iac/data.nix { inherit lib contact; };

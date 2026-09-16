@@ -19,7 +19,7 @@
   personas ? import ../personas.nix,
   # kleinbem-secrets/personas/contact.nix — plain Nix (private repo, not sops;
   # see that file's header). The flake passes
-  # `inputs.nix-secrets + "/personas/contact.nix"`; empty = public-only eval
+  # `inputs.kleinbem-secrets + "/personas/contact.nix"`; empty = public-only eval
   # (personas.json then lacks the PII fields, same as the old script's
   # no-secrets fallback).
   contact ? { },

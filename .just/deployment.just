@@ -549,7 +549,7 @@ mac-mini-install-usb device:
     # chose ourselves — no need to wait until after disko like the old
     # (manual-passphrase) flow did, since we already know the exact value.
     # git add makes the new file visible to the git+file:// override
-    # {{OVERRIDES}} uses to resolve inputs.nix-secrets to this local checkout
+    # {{OVERRIDES}} uses to resolve inputs.kleinbem-secrets to this local checkout
     # (Nix flakes only see tracked/staged files, not arbitrary untracked
     # ones) — jj::save-all later gives it a real commit message, this just
     # gets it build-visible right now.
@@ -583,7 +583,7 @@ mac-mini-install-usb device:
     echo "📋 mac-mini age public key: ${AGE_PUB}"
     pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
     # Same reason the JWE needed `git add` above: the build below resolves
-    # inputs.nix-secrets via {{OVERRIDES}}' git+file:// override, which only
+    # inputs.kleinbem-secrets via {{OVERRIDES}}' git+file:// override, which only
     # sees tracked/staged files, not arbitrary untracked/modified ones.
     # pc_sops_add_and_reencrypt may touch .sops.yaml plus ANY content file
     # that references the mac_mini anchor (nix/per-host/mac-mini.yaml, every
@@ -641,10 +641,8 @@ mac-mini-install-usb device:
     echo "        (the JWE + rotated .sops.yaml/per-host+personas files were already"
     echo "        'git add'-ed above so the build could see them — this gives"
     echo "        them a proper commit through jj)"
-    echo "   2. nix flake lock --update-input nix-secrets   (from nix-config's"
-    echo "        root — input identifier is still 'nix-secrets', it now resolves"
-    echo "        to kleinbem-secrets, see flake.nix's note. THEN commit the"
-    echo "        flake.lock bump too — every OTHER deploy path, e.g. 'just"
+    echo "   2. nix flake lock --update-input kleinbem-secrets   (from nix-config's"
+    echo "        root. THEN commit the flake.lock bump too — every OTHER deploy path, e.g. 'just"
     echo "        deployment::deploy mac-mini' later, builds against this pin,"
     echo "        not the local kleinbem-secrets checkout this recipe pointed at"
     echo "        just now. Skipping this is exactly what caused a stale-secrets"

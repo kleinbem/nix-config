@@ -18,7 +18,7 @@ let
     claude-code = "anthropic_api_key";
   };
   invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
-  personaSopsFile = name: "${inputs.nix-secrets}/personas/${name}.yaml";
+  personaSopsFile = name: "${inputs.kleinbem-secrets}/personas/${name}.yaml";
 
   # sops-install-secrets validates its ENTIRE manifest atomically before
   # writing anything — one declared secret whose key doesn't exist yet in
@@ -97,7 +97,7 @@ in
       # Lives in kleinbem-secrets' per-host scope now (nix/per-host/mac-mini.yaml,
       # cutover 2026-08-07) rather than the old shared secrets.yaml.
       discord_bot_token = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/mac-mini.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
       };
 
       # Comma-separated Discord user IDs allowed to talk to the Hermes bot
@@ -110,7 +110,7 @@ in
       # mac-mini.yaml`, edit hermes_discord_allowed_users to a comma-joined
       # list.
       hermes_discord_allowed_users = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-host/mac-mini.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
       };
 
     }
@@ -126,7 +126,7 @@ in
       # manifest atomically, so one declared-but-unprovisioned secret
       # freezes every other secret on the host.
       stalwart_admin_password_hash = {
-        sopsFile = "${inputs.nix-secrets}/nix/per-container/stalwart.yaml";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/stalwart.yaml";
       };
     }
     // personaRuntimeSecrets;

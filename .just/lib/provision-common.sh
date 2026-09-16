@@ -3,7 +3,7 @@
 #
 # Sourced from the destructive install recipes in ../deployment.just. The caller
 # is responsible for `set -euo pipefail`. CWD is the nix-config repo root (recipes
-# reference ./hosts/... and ../nix-secrets), so relative paths resolve from there.
+# reference ./hosts/... and ../kleinbem-secrets), so relative paths resolve from there.
 #
 # Everything here uses sudo; call pc_sudo_keepalive first. Functions take explicit
 # arguments (no reliance on just {{...}} substitution) so they are unit-checkable.

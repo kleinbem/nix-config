@@ -32,7 +32,7 @@ jobs:
     - name: Set Nix input overrides
       run: |
         OVERRIDES=""
-        OVERRIDES="$OVERRIDES --override-input nix-secrets /tmp/dummy-secrets"
+        OVERRIDES="$OVERRIDES --override-input kleinbem-secrets /tmp/dummy-secrets"
         OVERRIDES="$OVERRIDES --override-input nix-devshells github:kleinbem/nix-devshells"
         OVERRIDES="$OVERRIDES --override-input nix-hardware github:kleinbem/nix-hardware"
         OVERRIDES="$OVERRIDES --override-input nix-hardware/nix-devshells github:kleinbem/nix-devshells"
