@@ -166,6 +166,17 @@ in
     udev.extraRules = ''
       # Use kyber scheduler for NVMe to improve latency
       ACTION=="add|change", KERNEL=="nvme*", ATTR{queue/scheduler}="kyber"
+
+      # 2026-09-16: sda (WD Red SA500, LUKS+btrfs /mnt/data on ata1) hit a
+      # hard link failure mid-write — 4 failed hard resets, kernel disabled
+      # the ATA device ("ata1.00: disable device"), btrfs aborted its
+      # transaction and forced itself read-only. Default link power policy
+      # was medium_power_with_dipm (ALPM); the drive dropping into a deep
+      # link-power state and not waking reliably is a well-documented cause
+      # of exactly this "link is slow to respond -> hard reset -> give up"
+      # signature. This is a desktop always on AC — no benefit from SATA
+      # link power saving, so just disable it fleet-wide on this host.
+      ACTION=="add|change", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
     '';
     fwupd.enable = true;
     irqbalance.enable = true;
