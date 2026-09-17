@@ -15,6 +15,8 @@ in
     # Disk setup via disko (replaces legacy hardware-configuration.nix, see ./disko.nix)
     inputs.disko.nixosModules.disko
     ./disko.nix
+    "${self}/modules/nixos/data-disk.nix"
+    ./data-disk.nix
     "${self}/modules/nixos/base.nix" # foundational, imported by every entry-point bundle
     "${self}/modules/nixos/headless.nix"
     "${self}/modules/nixos/hosts.nix"
@@ -197,6 +199,10 @@ in
     "d /mnt/data/Archive 0755 martin users - -"
     "d /mnt/data/Archive/Inbox 0755 martin users - -"
     "d /mnt/data/Archive/Paperless 0755 root root - -"
+    # syncthing's vaults bind-mount source — was missing entirely, so the
+    # container failed with "Failed to clone /mnt/data/GoogleDrive: No such
+    # file or directory" (only surfaced once /mnt/data itself existed).
+    "d /mnt/data/GoogleDrive 0755 martin users - -"
   ];
 
   # ─── Networking & Security ──────────────────────────────────

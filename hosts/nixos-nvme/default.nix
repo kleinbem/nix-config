@@ -95,6 +95,13 @@
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
     services.tang.enable = true;
+    # Preserves this host's exact prior data-disk.nix hardcoded values now
+    # that the module is parameterized via options (nasbook needed its own
+    # device + keyfile-based unlock instead of FIDO2).
+    dataDisk = {
+      enable = true;
+      device = "/dev/disk/by-id/ata-WD_Red_SA500_2.5_2TB_2548TKD00121";
+    };
     deploy.autoUpgrade.enable = true;
     services.threeDPrinting.enable = true; # Bambu Lab A1 mini: slicers + LAN discovery
     desktop = {
