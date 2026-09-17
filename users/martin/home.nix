@@ -148,6 +148,13 @@ in
     # is git-specific and silently breaks signing in jj.
     jujutsu.settings.signing.key = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.pub";
 
+    # Global gitignore, applied across every repo on this machine.
+    # .ignore/ is a scratch folder convention for untracked local files.
+    git.ignores = [
+      "**/.claude/settings.local.json"
+      ".ignore/"
+    ];
+
     # SSH multiplexing for github.com — first touch-required FIDO op opens a
     # master connection; subsequent SSH ops within ControlPersist reuse it
     # without a fresh touch. Dramatically reduces YubiKey touches during
@@ -229,6 +236,27 @@ in
         # initrd LUKS-unlock stage for orin-nano (manual fallback; Tang auto-unlocks)
         "orin-nano-initrd" = {
           Hostname = "10.0.0.15";
+          Port = 2222;
+          User = "root";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+        };
+        # nasbook (QNAP TBS-453A). Same FIDO2-SK-via-agent pattern as the
+        # Pis/orin-nano — match the IP too, since colmena's targetHost is the
+        # raw IP (hostMeta.nasbook.ip), not the "nasbook" alias.
+        "nasbook 10.0.0.30" = {
+          Hostname = "10.0.0.30";
+          User = "martin";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/cm-%r@%h:%p";
+          ControlPersist = "1h";
+        };
+        # nasbook has no FIDO2 unlock (see hosts/nasbook/disko.nix) — its
+        # initrd SSH fallback is unlock over the recovery passphrase only.
+        "nasbook-initrd" = {
+          Hostname = "10.0.0.30";
           Port = 2222;
           User = "root";
           IdentityFile = "~/.ssh/id_ed25519_sk";

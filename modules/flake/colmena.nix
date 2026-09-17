@@ -58,7 +58,7 @@ in
     nasbook = {
       deployment = {
         targetHost = hostMeta.nasbook.ip;
-        targetUser = "root";
+        targetUser = "martin";
         inherit (hostMeta.nasbook) tags;
       };
       imports = [ ../../hosts/nasbook/default.nix ];

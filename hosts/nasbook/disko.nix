@@ -88,8 +88,10 @@
                 inherit passwordFile;
                 settings = {
                   allowDiscards = true;
+                  # No FIDO2 fallback on nasbook (unlike the other headless
+                  # hosts) — unlock is Tang (silent) or the recovery
+                  # passphrase/initrd SSH (my.boot.clevis-initrd, default.nix).
                   crypttabExtraOpts = [
-                    "fido2-device=auto"
                     "x-systemd.device-timeout=60s"
                   ];
                 };

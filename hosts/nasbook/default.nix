@@ -1,5 +1,6 @@
 # nasbook — QNAP TBS-453A
 {
+  lib,
   inputs,
   self,
   myInventory,
@@ -66,7 +67,7 @@ in
       luksDevice = "nasbook_crypt";
       hostIp = "10.0.0.30"; # inventory.nix — excludes nasbook's own tang server from the wait loop
       secretFile = inputs.kleinbem-secrets + "/initrd/cryptroot_nasbook.jwe";
-      fallbackMessage = "Tang still unreachable; falling back to FIDO2 (touch a YubiKey) or the HDMI/TTY console.";
+      fallbackMessage = "Tang still unreachable; falling back to the recovery passphrase over initrd SSH or the HDMI/TTY console.";
     };
 
     herdr-remote-client = {
@@ -81,7 +82,11 @@ in
       requireCache = true;
     };
 
-    network.externalInterface = "enp2s0";
+    # Confirmed via lspci on the real hardware 2026-09-17: enp4s0 is the
+    # connected port (Realtek RTL8111/8168, r8169). enp3s0 (Intel I210,
+    # igb) is the second onboard NIC, currently uncabled. "enp2s0" here
+    # before was copied from another host and never matched real hardware.
+    network.externalInterface = "enp4s0";
 
     # ─── Container Hosting (via reusable module) ─────────────
     # Supplies my.network.subnet/.hostAddress (externalInterface stays
@@ -187,6 +192,39 @@ in
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
+  };
+
+  boot.initrd = {
+    # QNAP TBS-453A onboard NIC — never explicitly loaded (no hardware.nix
+    # survived the hardware-configuration.nix→disko migration, and NixOS's
+    # default initrd module set is storage/HID only, no Ethernet drivers).
+    # Without this, systemd-networkd has no interface to bring up in stage 1,
+    # so wait-for-tang.service's carrier check always times out and Tang
+    # auto-unlock silently falls back to FIDO2/passphrase on every boot.
+    # Confirmed via lspci 2026-09-17: enp4s0 (the connected port) is a
+    # Realtek RTL8111/8168 on r8169; enp3s0 (uncabled) is an Intel I210 on
+    # igb. Both loaded here so Tang still works in initrd if the cable
+    # ever moves to the other port.
+    kernelModules = [
+      "r8169"
+      "igb"
+    ];
+
+    # Remote unlock fallback, same pattern as nixos-nvme/mac-mini — lets us
+    # unlock over SSH instead of needing physical HDMI/keyboard access.
+    network.ssh = {
+      enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_nasbook");
+      port = 2222;
+      authorizedKeys = [
+        keys.ssh.yubikey
+        keys.ssh.fido2
+        keys.ssh.fido2-backup
+      ];
+      hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_nasbook" ];
+    };
+    secrets."/etc/ssh/ssh_host_ed25519_key_nasbook" = lib.mkForce (
+      inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_nasbook"
+    );
   };
 
   system.stateVersion = "25.11"; # Or whatever the current state version is

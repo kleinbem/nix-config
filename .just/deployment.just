@@ -821,8 +821,8 @@ mac-mini-wake:
     echo "   waiting: physically power-cycle it instead (hold the button)."
 
 [group("Provisioning")]
-[confirm("💿 WIPE the USB-attached SSD and install NixOS for nasbook? This is destructive. A random LUKS passphrase will be generated and printed at the end; Tang auto-unlock (against nixos-nvme/hass-pi/orin-nano) is the primary boot-unlock path, with both YubiKeys enrolled via FIDO2 as a physical-presence fallback.")]
-[doc("Same two-layer unlock pattern as every other headless host (mac-mini, hass-pi, core-pi): Tang/clevis auto-unlock in initrd is silent and primary, FIDO2 (disko.nix's fido2-device=auto) is the fallback if Tang is unreachable. nasbook binds to the OTHER three tang servers, never itself — it can't serve itself an advertisement before it's unlocked, but there's no actual chicken-and-egg problem since the SSS pins list never included nasbook's own server anyway.")]
+[confirm("💿 WIPE the USB-attached SSD and install NixOS for nasbook? This is destructive. A random LUKS passphrase will be generated and printed at the end; Tang auto-unlock (against nixos-nvme/hass-pi/orin-nano) is the primary boot-unlock path, with the recovery passphrase over initrd SSH or the HDMI/TTY console as fallback — no YubiKey/FIDO2 on this host.")]
+[doc("Unlike the other headless hosts (mac-mini, hass-pi, core-pi), nasbook has no FIDO2 fallback — Tang/clevis auto-unlock in initrd is silent and primary, the recovery passphrase (over initrd SSH or physical console) is the fallback if Tang is unreachable. nasbook binds to the OTHER three tang servers, never itself — it can't serve itself an advertisement before it's unlocked, but there's no actual chicken-and-egg problem since the SSS pins list never included nasbook's own server anyway.")]
 nasbook-install-usb device:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -915,18 +915,12 @@ nasbook-install-usb device:
     sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
     rm -f /tmp/nasbook-system
 
-    # Tang bind FIRST — needs the live cryptsetup mapping (unlike FIDO2
-    # enrollment below, which must run on a closed device instead).
+    # No FIDO2 enrollment on nasbook (unlike the other headless hosts) —
+    # Tang is the silent primary path, the recovery passphrase over initrd
+    # SSH or the physical console is the fallback.
     pc_clevis_bind_tang "$CRYPT" "$PASS_FILE"
 
-    # Capture the raw partition path BEFORE closing — pc_fido2_enroll_dual
-    # must run against a closed device (see its own comment for why), but
-    # `cryptsetup status` only works while the mapping is still active.
-    LUKS_DEV="$(sudo cryptsetup status "$CRYPT" | awk '/device:/ {print $2}')"
-    [ -n "$LUKS_DEV" ] || { echo "❌ Could not resolve the mapped LUKS device for $CRYPT."; exit 1; }
-
     pc_teardown "$MNT" "$CRYPT"
-    pc_fido2_enroll_dual "$LUKS_DEV" "$PASS_FILE"
 
     echo ""
     echo "✅ nasbook SSD install complete. Remaining steps:"
@@ -938,7 +932,8 @@ nasbook-install-usb device:
     echo "        root, THEN commit the flake.lock bump — every other deploy path"
     echo "        builds against this pin, not the local checkout this recipe used)"
     echo "   3. Physically move the SSD into the QNAP TBS-453A and boot it. It should"
-    echo "        auto-unlock silently via Tang; touch a YubiKey only if that fails."
+    echo "        auto-unlock silently via Tang; use initrd SSH or the recovery"
+    echo "        passphrase at the console only if that fails."
     echo "   4. just deployment::update nasbook   (or wait for the nightly autoUpgrade"
     echo "        pull — nasbook is requireCache-gated) once it's reachable over SSH"
     echo "   5. Once nasbook's own tang service is confirmed live, fetch its"
@@ -948,14 +943,14 @@ nasbook-install-usb device:
     echo ""
     echo "🔑 LUKS fallback passphrase for nasbook (save to Bitwarden now, then close"
     echo "   this terminal — it is NOT stored anywhere by this script; only needed"
-    echo "   if Tang AND both YubiKeys are unavailable at boot):"
+    echo "   if Tang is unreachable at boot):"
     echo ""
     echo "   ${PASSPHRASE}"
     echo ""
 
 [group("Provisioning")]
 [confirm("🔄 Re-install nasbook config to an ALREADY-PROVISIONED SSD in the USB reader (NO wipe)? Mounts the existing LUKS, rebuilds, and refreshes the closure + bootloader.")]
-[doc("Non-destructive in-place update. Unlocks via FIDO2 if a Yubikey is plugged in, else prompts for the saved passphrase.")]
+[doc("Non-destructive in-place update. Prompts for the saved passphrase (no FIDO2 on this host).")]
 nasbook-update-usb device:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -964,7 +959,7 @@ nasbook-update-usb device:
     sudo -v
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
-    echo "🔓 Mounting existing SSD via disko (touch a YubiKey, or enter the nasbook LUKS passphrase, when prompted)..."
+    echo "🔓 Mounting existing SSD via disko (enter the nasbook LUKS passphrase when prompted)..."
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
