@@ -182,6 +182,13 @@ in
   services = {
     netbird.enable = true;
     fstrim.enable = true;
+
+    # dhcpcd already writes /etc/resolv.conf pointing at the resolved stub
+    # (127.0.0.1) on this NixOS version, but resolved itself was never
+    # enabled — so nothing was listening and every DNS lookup failed
+    # ("Could not resolve host"), which in turn kept systemd-timesyncd from
+    # resolving its NTP pool (root cause of the boot clock reading 2012).
+    resolved.enable = true;
   };
 
   networking.firewall = {

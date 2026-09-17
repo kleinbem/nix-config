@@ -40,7 +40,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nasbook`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/container-host.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Other inputs:** `disko:disko`
 - **Local:** `./disko.nix`, `./secrets.nix`
@@ -94,7 +94,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/apps.nix` ← nixos-nvme
 - `modules/nixos/audit.nix` ← orin-nano
 - `modules/nixos/base.nix` ← mac-mini, nasbook, orin-nano
-- `modules/nixos/clevis-initrd.nix` ← mac-mini, orin-nano
+- `modules/nixos/clevis-initrd.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/container-host.nix` ← core-pi, hass-pi, mac-mini, nasbook
 - `modules/nixos/data-disk.nix` ← nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
