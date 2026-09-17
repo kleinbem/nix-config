@@ -1203,11 +1203,11 @@
     "kleinbem-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1789605769,
-        "narHash": "sha256-UAXIf83uw0ECT/2LH2rulNR2FuGDGAJfEEn+urbU6x8=",
+        "lastModified": 1789665170,
+        "narHash": "sha256-21L0f68iuF7aeh/h+bzPuzZo5FRYidevs7DHvqVP96Y=",
         "owner": "kleinbem",
         "repo": "kleinbem-secrets",
-        "rev": "1be2533d73e821bb766e711ae826ffa738e156de",
+        "rev": "f9de2680b158f3e10ef198e120f817d1b98a1c3d",
         "type": "github"
       },
       "original": {
