@@ -141,9 +141,13 @@
       "mac-mini"
     ];
     # Smart-home / automation nodes (SSH-reachable from personal-devices).
+    # nasbook isn't smart-home per se, but needs the same access this group
+    # grants (cache-pull + SSH-reachable from personal-devices) and doesn't
+    # warrant its own group for one host.
     smart-home = [
       "hass-pi"
       "orin-nano"
+      "nasbook"
     ];
     # The attic/caddy cache entrypoint — exactly one host (the `central`
     # peer). CI runners may reach this and nothing else.
