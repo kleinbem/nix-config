@@ -88,6 +88,22 @@ in
     # before was copied from another host and never matched real hardware.
     network.externalInterface = "enp4s0";
 
+    # my.virtualisation.enable gates podman-network-cbr0, the service that
+    # actually creates the shared cbr0 bridge every container — podman or
+    # nspawn — attaches to. podman.enable defaults to true on its own, but
+    # that default is inert without this. Identical to the mac-mini bug
+    # fixed 2026-08-04 ("Failed to add interface vb-monitoring to bridge
+    # cbr0: No such device" — cbr0 never created because this host never
+    # ran a container before); rpi5-node.nix sets this automatically for
+    # core-pi/hass-pi, but nasbook (non-Pi hardware) needs it explicitly
+    # and never got it.
+    virtualisation = {
+      enable = true;
+      libvirtd.enable = false;
+      podman.enable = true;
+      lxc.enable = false;
+    };
+
     # ─── Container Hosting (via reusable module) ─────────────
     # Supplies my.network.subnet/.hostAddress (externalInterface stays
     # above — container-host.nix doesn't set it) plus the container-updater
