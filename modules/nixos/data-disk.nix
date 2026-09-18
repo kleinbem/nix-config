@@ -49,7 +49,7 @@ in
   config = lib.mkIf cfg.enable {
     disko.devices.disk.data = {
       type = "disk";
-      device = cfg.device;
+      inherit (cfg) device;
       content = {
         type = "gpt";
         partitions.luks_data = {
@@ -70,7 +70,7 @@ in
                 cfg.label
               ];
               subvolumes."/" = {
-                mountpoint = cfg.mountpoint;
+                inherit (cfg) mountpoint;
                 mountOptions = [
                   "compress=zstd"
                   "noatime"
