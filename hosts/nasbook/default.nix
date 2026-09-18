@@ -44,8 +44,6 @@ in
     ./secrets.nix
   ];
 
-  networking.hostName = "nasbook";
-
   # headless.nix creates the martin user but — unlike orin-nano/core-pi/
   # hass-pi — nothing here ever authorized a key for it, so it was actually
   # unreachable by SSH. Same fleet-wide key set as everywhere else.
@@ -225,9 +223,51 @@ in
     resolved.enable = true;
   };
 
-  networking.firewall = {
-    enable = true;
-    interfaces."wt0".allowedTCPPorts = [ 22 ];
+  # paperless trusts an unauthenticated Remote-User header for SSO login
+  # (PAPERLESS_ENABLE_HTTP_REMOTE_USER, nix-presets/containers/paperless.nix)
+  # — normally safe because only Caddy's forward_auth (after a verified
+  # Authelia session) is meant to set that header. But paperless's own
+  # container port is otherwise reachable by anyone who can route to
+  # nasbook's cbr0, including cross-host (network-routing.nix installs a
+  # route to every host's container subnet on every other host), which
+  # bypasses Caddy/Authelia entirely. Confirmed exploitable live
+  # 2026-09-19: curling http://10.85.47.131:28981/ directly with
+  # `-H "Remote-User: admin"` logs straight into the dashboard with no
+  # credentials, while the same request without the header correctly
+  # redirects to /accounts/login/.
+  #
+  # NOT fixed via networking.firewall.extraForwardRules — that option only
+  # exists on the nftables firewall backend (nixpkgs'
+  # firewall-nftables.nix); nasbook uses the classic iptables backend
+  # (networking.firewall.backend == "iptables", confirmed live 2026-09-19),
+  # where extraForwardRules is silently inert — container-host.nix's own
+  # nftables-syntax "extraForwardRules" have in fact never done anything on
+  # this host. The iptables backend's forward-chain filtering instead comes
+  # from networking.nat (nat-iptables.nix's "nixos-filter-forward" chain:
+  # unconditional cbr0->WAN accept + established/related accept, then falls
+  # through to the kernel's default FORWARD policy, which is ACCEPT — so
+  # nothing was blocking this at all). networking.nat.extraCommands is the
+  # correct injection point for that backend: it's appended into
+  # nixos-filter-forward, after the existing accepts but before that
+  # fallthrough. Verified via a live tcpdump that cross-host container
+  # traffic isn't NAT'd here (no source-IP masquerade on this path), so
+  # matching Caddy's real container IP as the source is reliable — same
+  # convention zero-trust.nix already uses for same-host flows.
+  # 10.85.47.1 is nasbook's own bridge address, allowed for host-side
+  # debugging/administration.
+  networking = {
+    hostName = "nasbook";
+
+    firewall = {
+      enable = true;
+      interfaces."wt0".allowedTCPPorts = [ 22 ];
+    };
+
+    nat.extraCommands = ''
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s ${myInventory.network.nodes.caddy.ip} -j ACCEPT
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s 10.85.47.1 -j ACCEPT
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -j DROP
+    '';
   };
 
   boot.loader = {
