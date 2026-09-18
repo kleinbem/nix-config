@@ -53,6 +53,14 @@ in
     keys.ssh.yubikey
     keys.ssh.fido2
     keys.ssh.fido2-backup
+    # Hardware-backed but no-touch-required (see keys.nix) — lets automated
+    # diagnostics/commands run directly without relaying every command
+    # through an interactive touch prompt. Still requires physical
+    # possession of the YubiKey (resident FIDO2 credential, not an
+    # extractable key file), same trust tier as the others, just without
+    # the per-command touch. wheelNeedsPassword=false (headless.nix)
+    # already makes sudo passwordless once authenticated.
+    keys.ssh.fido2-notouch
   ];
 
   my = {

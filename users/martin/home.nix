@@ -253,6 +253,21 @@ in
           ControlPath = "~/.ssh/cm-%r@%h:%p";
           ControlPersist = "1h";
         };
+        # No-touch alias for automated diagnostics/tooling (Claude Code and
+        # similar) — separate from "nasbook" above so interactive/deploy
+        # access still requires a physical touch. Uses the hardware-backed
+        # but no-touch-required resident credential (keys.ssh.fido2-notouch
+        # in kleinbem/keys.nix), so it's still gated on physically
+        # possessing the YubiKey, just without the per-command touch.
+        "nasbook-auto" = {
+          Hostname = "10.0.0.30";
+          User = "martin";
+          IdentityFile = "~/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2";
+          IdentityAgent = "none";
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/cm-%r@%h:%p";
+          ControlPersist = "1h";
+        };
         # nasbook has no FIDO2 unlock (see hosts/nasbook/disko.nix) — its
         # initrd SSH fallback is unlock over the recovery passphrase only.
         "nasbook-initrd" = {
