@@ -203,6 +203,13 @@ in
     # container failed with "Failed to clone /mnt/data/GoogleDrive: No such
     # file or directory" (only surfaced once /mnt/data itself existed).
     "d /mnt/data/GoogleDrive 0755 martin users - -"
+    # agent-team's bind-mount sources (nix-presets/containers/agent-team.nix
+    # defaults hostDataDir to /var/lib/images/agent-team) — was missing
+    # entirely, same class of gap as GoogleDrive above: "Failed to clone
+    # /var/lib/images/agent-team/state: No such file or directory".
+    "d /var/lib/images/agent-team 0755 root root - -"
+    "d /var/lib/images/agent-team/workspace 0755 root root - -"
+    "d /var/lib/images/agent-team/state 0755 root root - -"
   ];
 
   # ─── Networking & Security ──────────────────────────────────
