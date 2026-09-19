@@ -16,9 +16,10 @@
         # Public tunnel ingress. `code` (browser IDE w/ shell — Cloudflare Access
         # was its only gate) and `frigate` (camera NVR) are mesh-only: reached
         # over NetBird via the per-FQDN DNS overrides in nix/infra/netbird/dns.tf
-        # (→ core-pi mesh IP → core-pi DNAT → caddy). home/chat/n8n stay public
-        # behind their existing auth — low breach value (dashboard) or external
-        # webhooks (n8n).
+        # (→ core-pi mesh IP → core-pi DNAT → caddy). home/chat/n8n/grafana stay
+        # public behind their existing auth — low breach value (dashboard),
+        # external webhooks (n8n), or Authelia forward_auth (grafana, same
+        # pattern as chat/n8n — see inventory.nix's monitoring node).
         ingress = {
           "kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "home.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
@@ -27,6 +28,7 @@
           "cache.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "ntfy.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "grafana.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           # 502 until the kleinbem-auth container is enabled on core-pi.
           "login.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };

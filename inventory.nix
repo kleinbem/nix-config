@@ -406,15 +406,18 @@
       monitoring = {
         enabled = true;
         ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
-        # Not proxied through Caddy under a *.kleinbem.dev domain (unlike
-        # n8n/code-server/etc, which pair `port` with a real `externalPort`
-        # + `domain`) — reached directly on this port. A stale
-        # `externalPort = 3001` used to live here with nothing ever bound to
-        # it (Grafana's actual listener is this `port`, set via
-        # server.http_port in nix-presets/containers/monitoring.nix); the
-        # generic `service-launchers` desktop entry prefers externalPort over
-        # port when both exist, so it was silently pointing at a dead port.
+        # Grafana's real listener, set via server.http_port in
+        # nix-presets/containers/monitoring.nix. A stale `externalPort =
+        # 3001` used to live here with nothing ever bound to it; the generic
+        # `service-launchers` desktop entry prefers externalPort over port
+        # when both exist, so it was silently pointing at a dead port.
         port = 3000;
+        # Proxied through Caddy at grafana.kleinbem.dev (added 2026-09-19),
+        # same pattern as n8n/chat: public tunnel ingress + Authelia
+        # forward_auth below, no Cloudflare Access double-gate (see
+        # nix/infra/cloudflare-access.tf's scope-decision comment).
+        externalPort = 443;
+        domain = "grafana.kleinbem.dev";
         auth = true; # Protected by Authelia
         meta = {
           name = "Monitoring";
