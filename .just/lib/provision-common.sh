@@ -371,7 +371,10 @@ pc_sops_add_and_reencrypt() {
 # partition device (e.g. /dev/sdc2, NOT the crypt name)  $2=passphrase-keyfile
 pc_fido2_enroll_dual() {
   local luks_dev="$1" pass_file="$2"
-  [ -b "$luks_dev" ] || { echo "❌ $luks_dev is not a block device."; return 1; }
+  [ -b "$luks_dev" ] || {
+    echo "❌ $luks_dev is not a block device."
+    return 1
+  }
   echo ""
   echo "🔐 Enrolling FIDO2 YubiKeys on ${luks_dev} for boot-time LUKS unlock."
   echo "   Plug in your PRIMARY YubiKey, then press Enter here..."
