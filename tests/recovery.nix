@@ -63,13 +63,18 @@ pkgs.testers.nixosTest {
             };
           };
 
-          # Inject the mock storage and target into the container
+          # Inject the mock storage and target into the container. The real
+          # bind-mount key is /mnt/backup-targets/<sanitized container path>
+          # (see nix-presets/containers/backup.nix) — NOT the raw cfg.targets
+          # key ("/data") — so overriding "/data" here silently created an
+          # unused second mount instead of making the actual backup-target
+          # mount writable, leaving it read-only and breaking restore.
           containers.backup.bindMounts = {
             "/mnt/restic-repo" = {
               hostPath = "/tmp/restic-repo";
               isReadOnly = false;
             };
-            "/data" = {
+            "/mnt/backup-targets/data" = {
               hostPath = "/srv/important-data";
               isReadOnly = lib.mkForce false; # Allow restoration in the test!
             };
