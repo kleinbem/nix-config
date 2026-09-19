@@ -20,6 +20,16 @@
         # public behind their existing auth — low breach value (dashboard),
         # external webhooks (n8n), or Authelia forward_auth (grafana, same
         # pattern as chat/n8n — see inventory.nix's monitoring node).
+        #
+        # `authelia.kleinbem.dev` itself MUST also be on this public ingress:
+        # forward_auth on chat/n8n/grafana redirects the visitor's own browser
+        # to it for login (?rd=...), and that redirect comes from whatever
+        # network the VISITOR is on — not from core-pi's mesh membership. It
+        # resolves publicly (wildcard *.kleinbem.dev CNAME → this tunnel) but
+        # had no ingress rule, so it 404'd via `default` below for anyone off
+        # NetBird's private DNS override (nix/infra/netbird/dns.tf) — i.e.
+        # everyone except fleet devices. Bug, not by design; found 2026-09-19
+        # testing grafana.kleinbem.dev's login redirect off-mesh.
         ingress = {
           "kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "home.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
@@ -29,6 +39,7 @@
           "ntfy.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "grafana.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "authelia.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           # 502 until the kleinbem-auth container is enabled on core-pi.
           "login.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
