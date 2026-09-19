@@ -823,6 +823,25 @@ in
     # override is needed on this host specifically.
     resolvconf.enable = lib.mkForce false;
 
+    # Alertmanager has no built-in authentication at all (upstream Prometheus
+    # design — it's meant to sit behind a reverse proxy). Caddy's forward_auth
+    # (Authelia) is that proxy for the fleet, but alertmanager's own container
+    # port was reachable directly, bypassing it entirely: confirmed live
+    # 2026-09-19, curling http://10.85.50.2:9093/ cross-host from nixos-nvme
+    # returned the full Alertmanager UI (view/silence alerts) with no auth
+    # challenge at all. Same class of bug as paperless/code-server/syncthing
+    # (nasbook cea111b0/da236067) and same root cause: networking.firewall.
+    # extraForwardRules (what container-host.nix uses fleet-wide) only exists
+    # on the nftables firewall backend; mac-mini uses the classic iptables
+    # backend, where it's silently inert. networking.nat.extraCommands is the
+    # correct injection point for that backend. 10.85.50.1 is mac-mini's own
+    # bridge address, allowed for host-side debugging/administration.
+    nat.extraCommands = ''
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s ${myInventory.network.nodes.caddy.ip} -j ACCEPT
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s 10.85.50.1 -j ACCEPT
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -j DROP
+    '';
+
     interfaces."enp2s0f0" = {
       useDHCP = false;
       ipv4.addresses = [
