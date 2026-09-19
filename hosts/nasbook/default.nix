@@ -213,6 +213,15 @@ in
     ];
 
     # ─── Google Drive mirror ───────────────────────────────────
+    # PAUSED 2026-09-19 — Martin wants a real strategy first (~250GB of a
+    # 5TB account; full-mirror-vs-scoped-subset wasn't decided, this was
+    # built same-day as a "let's see what's there" experiment). Left
+    # defined but inert (timer has no wantedBy, so it never fires and
+    # `systemctl start gdrive-sync` won't auto-repeat) rather than
+    # deleted — the ~9GB already pulled into /mnt/data/GoogleDrive during
+    # the trial run was left in place too. Re-enable by giving the timer
+    # back `wantedBy = [ "timers.target" ];` once there's an actual plan.
+    #
     # One-way pull (rclone sync, not bisync): /mnt/data/GoogleDrive is meant
     # to mirror the real Google Drive account exactly, matching what the
     # folder is named — local changes are NOT pushed back up. Reuses the
@@ -243,7 +252,7 @@ in
     };
 
     timers.gdrive-sync = {
-      wantedBy = [ "timers.target" ];
+      # wantedBy intentionally omitted — see the PAUSED note above.
       timerConfig = {
         OnCalendar = "hourly";
         Persistent = true;
