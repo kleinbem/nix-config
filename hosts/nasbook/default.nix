@@ -1,6 +1,7 @@
 # nasbook — QNAP TBS-453A
 {
   lib,
+  pkgs,
   inputs,
   self,
   myInventory,
@@ -187,28 +188,69 @@ in
     monitoring.node.enable = true;
   };
 
-  # IMAGE STATE STORAGE
-  systemd.tmpfiles.rules = [
-    "d /var/lib/images 0755 root root - -"
-    "d /var/lib/images/loki 0755 root root - -"
-    "d /var/lib/images/monitoring 0755 root root - -"
-    "d /var/lib/images/qdrant 0755 root root - -"
-    "d /var/lib/images/syncthing 0755 root root - -"
-    "d /mnt/data/Archive 0755 martin users - -"
-    "d /mnt/data/Archive/Inbox 0755 martin users - -"
-    "d /mnt/data/Archive/Paperless 0755 root root - -"
-    # syncthing's vaults bind-mount source — was missing entirely, so the
-    # container failed with "Failed to clone /mnt/data/GoogleDrive: No such
-    # file or directory" (only surfaced once /mnt/data itself existed).
-    "d /mnt/data/GoogleDrive 0755 martin users - -"
-    # agent-team's bind-mount sources (nix-presets/containers/agent-team.nix
-    # defaults hostDataDir to /var/lib/images/agent-team) — was missing
-    # entirely, same class of gap as GoogleDrive above: "Failed to clone
-    # /var/lib/images/agent-team/state: No such file or directory".
-    "d /var/lib/images/agent-team 0755 root root - -"
-    "d /var/lib/images/agent-team/workspace 0755 root root - -"
-    "d /var/lib/images/agent-team/state 0755 root root - -"
-  ];
+  systemd = {
+    # IMAGE STATE STORAGE
+    tmpfiles.rules = [
+      "d /var/lib/images 0755 root root - -"
+      "d /var/lib/images/loki 0755 root root - -"
+      "d /var/lib/images/monitoring 0755 root root - -"
+      "d /var/lib/images/qdrant 0755 root root - -"
+      "d /var/lib/images/syncthing 0755 root root - -"
+      "d /mnt/data/Archive 0755 martin users - -"
+      "d /mnt/data/Archive/Inbox 0755 martin users - -"
+      "d /mnt/data/Archive/Paperless 0755 root root - -"
+      # syncthing's vaults bind-mount source — was missing entirely, so the
+      # container failed with "Failed to clone /mnt/data/GoogleDrive: No such
+      # file or directory" (only surfaced once /mnt/data itself existed).
+      "d /mnt/data/GoogleDrive 0755 martin users - -"
+      # agent-team's bind-mount sources (nix-presets/containers/agent-team.nix
+      # defaults hostDataDir to /var/lib/images/agent-team) — was missing
+      # entirely, same class of gap as GoogleDrive above: "Failed to clone
+      # /var/lib/images/agent-team/state: No such file or directory".
+      "d /var/lib/images/agent-team 0755 root root - -"
+      "d /var/lib/images/agent-team/workspace 0755 root root - -"
+      "d /var/lib/images/agent-team/state 0755 root root - -"
+    ];
+
+    # ─── Google Drive mirror ───────────────────────────────────
+    # One-way pull (rclone sync, not bisync): /mnt/data/GoogleDrive is meant
+    # to mirror the real Google Drive account exactly, matching what the
+    # folder is named — local changes are NOT pushed back up. Reuses the
+    # same rclone_config secret (and "gdrive" remote) the backup container
+    # already has; only the destination path differs. Runs on the host
+    # (not in the syncthing container) since syncthing's own bind-mount of
+    # this same host directory just serves it to other LAN devices —
+    # syncthing has no idea this content came from Drive.
+    services.gdrive-sync = {
+      description = "Mirror Google Drive into /mnt/data/GoogleDrive";
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      unitConfig.RequiresMountsFor = "/mnt/data";
+      serviceConfig = {
+        Type = "oneshot";
+        # Runs as root, not martin: /run/secrets/rclone_config is only
+        # readable by root on the host (its only prior consumer was the
+        # backup container's own bind-mount copy, done as root). Files
+        # land owned by root, but /mnt/data/GoogleDrive stays 0755 so
+        # syncthing (running as cfg.user, separately) can still read them.
+        ExecStart = ''
+          ${pkgs.rclone}/bin/rclone sync gdrive: /mnt/data/GoogleDrive \
+            --config ${config.sops.secrets.rclone_config.path} \
+            --fast-list --transfers 4 --checkers 8 --tpslimit 5 \
+            --log-level INFO
+        '';
+      };
+    };
+
+    timers.gdrive-sync = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "hourly";
+        Persistent = true;
+        RandomizedDelaySec = "10m";
+      };
+    };
+  };
 
   # ─── Networking & Security ──────────────────────────────────
   services = {
