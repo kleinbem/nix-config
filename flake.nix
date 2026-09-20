@@ -9,6 +9,11 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
+    # Tracks main, not nixpkgs' packaged v0.4.0 (tagged 2023-05-15, ~3 years
+    # stale — see nix-community/colmena#162). Not follows-ing nixpkgs: colmena
+    # pins its own compatible version for its build.
+    colmena.url = "github:nix-community/colmena";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";

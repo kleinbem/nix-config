@@ -4,6 +4,16 @@ let
   hostMeta = myInventory.hosts;
 in
 {
+  # Direct flake evaluation (colmena >=0.5.0-pre, github:nix-community/colmena
+  # main). Purely additive — wraps the existing `flake.colmena` output below,
+  # no restructuring needed. This is what actually fixes nix-community/
+  # colmena#162 (mismatched version labels breaking Attic substitution — see
+  # its own comment thread) and the separate "/tmp/colmena-assets-*"
+  # bootstrap breakage we hit trying to patch around #162 from userland: both
+  # were artifacts of the OLD builtins.getFlake + temp-copy evaluator, which
+  # this bypasses entirely.
+  flake.colmenaHive = inputs.colmena.lib.makeHive self.colmena;
+
   flake.colmena = {
     meta = {
       nixpkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
@@ -18,7 +28,10 @@ in
         allowLocalDeployment = true;
         targetHost = null; # Local deployment
       };
-      imports = [ ../../hosts/nixos-nvme/default.nix ];
+      imports = [
+        ../../hosts/nixos-nvme/default.nix
+        ../nixos/colmena-version-metadata.nix
+      ];
       nixpkgs.hostPlatform = hostMeta.nixos-nvme.system;
     };
 
@@ -30,7 +43,10 @@ in
         buildOnTarget = true; # Build natively on the Orin Nano itself to avoid slow QEMU cross-compilation on the workstation
         inherit (hostMeta.orin-nano) tags;
       };
-      imports = [ ../../hosts/orin-nano/default.nix ];
+      imports = [
+        ../../hosts/orin-nano/default.nix
+        ../nixos/colmena-version-metadata.nix
+      ];
       nixpkgs.hostPlatform = hostMeta.orin-nano.system;
     };
 
@@ -42,7 +58,10 @@ in
         buildOnTarget = false; # Evaluates on workstation, fetches from Attic, pushes via SSH
         inherit (hostMeta.core-pi) tags;
       };
-      imports = [ ../../hosts/core-pi/default.nix ];
+      imports = [
+        ../../hosts/core-pi/default.nix
+        ../nixos/colmena-version-metadata.nix
+      ];
       nixpkgs.hostPlatform = hostMeta.core-pi.system;
     };
     hass-pi = {
@@ -52,7 +71,10 @@ in
         buildOnTarget = false;
         inherit (hostMeta.hass-pi) tags;
       };
-      imports = [ ../../hosts/hass-pi/default.nix ];
+      imports = [
+        ../../hosts/hass-pi/default.nix
+        ../nixos/colmena-version-metadata.nix
+      ];
       nixpkgs.hostPlatform = hostMeta.hass-pi.system;
     };
     nasbook = {
@@ -61,7 +83,10 @@ in
         targetUser = "martin";
         inherit (hostMeta.nasbook) tags;
       };
-      imports = [ ../../hosts/nasbook/default.nix ];
+      imports = [
+        ../../hosts/nasbook/default.nix
+        ../nixos/colmena-version-metadata.nix
+      ];
       nixpkgs.hostPlatform = hostMeta.nasbook.system;
     };
 
@@ -74,7 +99,10 @@ in
         buildOnTarget = false; # same x86_64 arch as nixos-nvme — fast native build, push via SSH
         inherit (hostMeta.mac-mini) tags;
       };
-      imports = [ ../../hosts/mac-mini/default.nix ];
+      imports = [
+        ../../hosts/mac-mini/default.nix
+        ../nixos/colmena-version-metadata.nix
+      ];
       nixpkgs.hostPlatform = hostMeta.mac-mini.system;
     };
   };
