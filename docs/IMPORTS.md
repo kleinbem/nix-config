@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 9  
-**Distinct imports:** 85
+**Distinct imports:** 86
 
 ---
 
@@ -40,10 +40,10 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nasbook`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Other inputs:** `disko:disko`
-- **Local:** `./disko.nix`, `./secrets.nix`
+- **Local:** `./data-disk.nix`, `./disko.nix`, `./secrets.nix`
 
 ### `nixos-nvme`
 
@@ -79,6 +79,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./ai.nix` ← nixos-nvme
 - `./backup.nix` ← core-pi
 - `./containers.nix` ← nixos-nvme
+- `./data-disk.nix` ← nasbook
 - `./disko.nix` ← mac-mini, nasbook, orin-nano, orin-nano-bootstrap
 - `./garage.nix` ← nixos-nvme
 - `./hardware-boot.nix` ← nixos-nvme
@@ -96,7 +97,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/base.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/clevis-initrd.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/container-host.nix` ← core-pi, hass-pi, mac-mini, nasbook
-- `modules/nixos/data-disk.nix` ← nixos-nvme
+- `modules/nixos/data-disk.nix` ← nasbook, nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/desktop.nix` ← mac-mini
 - `modules/nixos/disko.nix` ← nixos-nvme

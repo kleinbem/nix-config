@@ -6,6 +6,14 @@
     anduril = "anduril.cachix.org-1:0KJgGiAgDtCE9Pl0wvvyALRJlPhQMLRMMt+43JExFlY=";
   };
 
+  # Other Binary Cache Public Keys (non-cachix)
+  binaryCache = {
+    # Official CUDA-enabled nixpkgs cache (Harmonia), successor to the
+    # cuda-maintainers.cachix.org project (archived, moved Nov 2025 — see
+    # https://wiki.nixos.org/wiki/CUDA). Public, no auth token needed.
+    nixos-cuda = "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M=";
+  };
+
   # SSH Public Keys
   ssh = {
     yubikey = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFLSRkt7uoF1c2iWpwt7mJi2krEtmpdUD4wLUm0XTn5JbGIBce+avhSqY02YRe3dpRVqo7KGE8upe11xI8IcEjk= PIV AUTH pubkey";

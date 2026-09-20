@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 61  
-**Consumer files scanned:** 15
+**Declarations indexed:** 62  
+**Consumer files scanned:** 16
 
 ---
 
@@ -308,6 +308,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `autoStart`, `device`, `enable`, `enableAudio`, `enableGPU`, `enforceEager`, `extraArgs`, `gpuMemoryUtilization`, `hostDataDir`, `image`, `ip`, `maxModelLen`, `memoryLimit`, `memorySwapMax`, `model`, `openvinoDevice`, `openvinoKvCacheSpace`, `quantization`, `secretsFile`
 - **Consumed by:** _(no opt-ins detected)_
 
+## `my.dataDisk`
+
+### `my.dataDisk`
+
+- **Declared:** `nix-config/modules/nixos/data-disk.nix:15`
+- **Sub-options:** `cryptName`, `crypttabExtraOpts`, `device`, `enable`, `keyFilePath`, `label`, `mountpoint`
+- **Consumed by:** `host:nasbook`, `host:nixos-nvme`
+
 ## `my.deploy`
 
 ### `my.deploy.autoUpgrade`
@@ -407,5 +415,5 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
 - **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
-- **Explicit overrides:** `host:mac-mini`, `host:nixos-nvme`
+- **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 

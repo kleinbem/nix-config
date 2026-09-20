@@ -62,6 +62,7 @@ in
         "https://nix-community.cachix.org"
         "https://devenv.cachix.org"
         "https://anduril.cachix.org"
+        "https://cache.nixos-cuda.org"
         "https://cache.kleinbem.dev/system"
       ];
       trusted-public-keys = [
@@ -69,6 +70,7 @@ in
         keys.cachix.nix-community
         keys.cachix.devenv
         keys.cachix.anduril
+        keys.binaryCache.nixos-cuda
         "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU="
       ];
       download-buffer-size = 1073741824;
