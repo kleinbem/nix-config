@@ -48,6 +48,23 @@
       settings = {
         PermitRootLogin = lib.mkDefault "prohibit-password";
         PasswordAuthentication = false;
+        # OpenSSH's 120s default was too short for FIDO2-SK auth against these
+        # headless deploy targets: sshd's own LoginGraceTime timer runs
+        # server-side from TCP accept, independent of and not reset by the
+        # client's PIN-entry/touch prompt — a deploy tool opening several
+        # sequential connections (nixos-rebuild --target-host/--build-host:
+        # eval, build trigger, nix-copy-closure, activation) can lose the
+        # race on any one of them if the human doesn't respond within the
+        # window. Confirmed root cause 2026-09-20: repeated "Timeout before
+        # authentication" in core-pi's sshd journal at the exact times both
+        # `dev::apply` and `deployment::deploy` failed — a server-side
+        # auth-timeout, not the "FIDO2/USB glitch" it was first misdiagnosed
+        # as (usbreset + ssh-agent restart legitimately don't fix a timing
+        # issue, which is exactly why both retry tiers in .just/dev.just's
+        # apply recipe also failed identically). 300s gives real headroom
+        # without meaningfully widening the unauthenticated-connection
+        # window (SSH still refuses anything before a successful handshake).
+        LoginGraceTime = "300";
       };
     };
 
