@@ -3,6 +3,9 @@
   inputs,
   self,
   myInventory,
+  config,
+  lib,
+  pkgs,
   ...
 }:
 let
@@ -172,6 +175,34 @@ in
       reflector = true;
       allowInterfaces = [ "end0" ]; # Forward from physical LAN
     };
+  };
+
+  # Upstream ESPHome removed its built-in `dashboard` command (confirmed via
+  # `esphome dashboard` erroring "The built-in dashboard has been removed
+  # from ESPHome" on 2026.8.0, the version nixpkgs currently ships); the
+  # NixOS services.esphome module (nixos/modules/services/home-automation/
+  # esphome.nix) hasn't been updated to match and still hardcodes that
+  # subcommand, so esphome.service crash-looped on every start. nixpkgs
+  # already packages the replacement dashboard tool, esphome-device-builder
+  # — override just this ExecStart to use it (same default port 6052,
+  # equivalent --host/--port flags) rather than waiting on upstream nixpkgs.
+  # Firmware compilation itself is untouched: services.esphome.package
+  # (still real esphome) stays on PATH for it via the base module's own
+  # `path = [ cfg.package ];`, this just adds the new dashboard binary
+  # alongside it.
+  systemd.services.esphome = {
+    path = [ pkgs.esphome-device-builder ];
+    serviceConfig.ExecStart = lib.mkForce (
+      let
+        cfg = config.services.esphome;
+        args =
+          if cfg.enableUnixSocket then
+            "--socket /run/esphome/esphome.sock"
+          else
+            "--host ${cfg.address} --port ${toString cfg.port}";
+      in
+      "${pkgs.esphome-device-builder}/bin/esphome-device-builder ${args} /var/lib/esphome"
+    );
   };
 
 }
