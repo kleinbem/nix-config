@@ -61,7 +61,6 @@ in
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
         "https://devenv.cachix.org"
-        "https://cuda-maintainers.cachix.org"
         "https://anduril.cachix.org"
         "https://cache.kleinbem.dev/system"
       ];
@@ -69,7 +68,6 @@ in
         "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
         keys.cachix.nix-community
         keys.cachix.devenv
-        keys.cachix.cuda-maintainers
         keys.cachix.anduril
         "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU="
       ];

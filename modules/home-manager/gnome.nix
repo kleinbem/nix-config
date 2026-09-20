@@ -35,8 +35,8 @@
           wrapProgram $out/bin/rofi --unset WAYLAND_DISPLAY
         '';
       };
-      terminal = "${pkgs.ptyxis}/bin/ptyxis";
-      extraConfig = {
+      settings = {
+        terminal = "${pkgs.ptyxis}/bin/ptyxis";
         modi = "drun,run,window";
         show-icons = true;
         display-drun = "Apps";
