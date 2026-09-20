@@ -130,7 +130,58 @@ apply *args="":
         echo "🚀 Deploying $TARGET_HOST remotely using nixos-rebuild..."
         debug_flag=""
         [ "$DEBUG" -eq 1 ] && debug_flag="--show-trace"
-        nixos-rebuild "$MODE" --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --use-remote-sudo --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag
+
+        # nixos-rebuild's internal nix-copy-closure/ssh calls are subprocesses,
+        # so they bypass hosts/nixos-nvme/ssh-fido-recovery.nix's
+        # home.shellAliases.ssh wrapper entirely (aliases only intercept
+        # interactive-shell ssh usage — same gap deployment.just's own colmena
+        # wrapper comment already documents). Confirmed live 2026-09-20:
+        # `nix-copy-closure --to core-pi` died with "Connection closed... /
+        # failed to start SSH connection" right after a PIN prompt. Mirror
+        # both of that wrapper's fixes here: SSH_ASKPASS_REQUIRE=never (the
+        # actual, reliable fix — forces PIN entry through the terminal
+        # instead of the flaky GUI askpass dialog) plus its two-tier
+        # usbreset/ssh-agent-restart fallback for the rarer stuck-agent case.
+        export SSH_ASKPASS_REQUIRE=never
+        yubikey_id="1050:0406"
+        errfile="$(mktemp)"
+        trap 'rm -f "$errfile"' EXIT
+
+        is_fido_glitch() {
+            grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)|Connection closed by.*port 22|failed to start SSH connection' "$errfile"
+        }
+
+        try_deploy() {
+            : >"$errfile"
+            nixos-rebuild "$MODE" --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --use-remote-sudo --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag 2> >(tee "$errfile" >&2)
+        }
+
+        if try_deploy; then
+            :
+        else
+            status=$?
+            if is_fido_glitch; then
+                echo "⚠️  Detected FIDO2/SSH signing glitch — resetting YubiKey ($yubikey_id) and retrying..." >&2
+                usbreset "$yubikey_id" >/dev/null 2>&1 || true
+                sleep 1
+                if try_deploy; then
+                    :
+                else
+                    status=$?
+                    if is_fido_glitch; then
+                        echo "⚠️  Still glitching after USB reset — restarting ssh-agent and retrying once more..." >&2
+                        systemctl --user restart ssh-agent.service 2>/dev/null || true
+                        sleep 1
+                        try_deploy
+                    else
+                        exit "$status"
+                    fi
+                fi
+            else
+                exit "$status"
+            fi
+        fi
+
         just deployment::push-cache --remote "$TARGET_HOST"
     fi
 
