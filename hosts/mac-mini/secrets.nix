@@ -92,6 +92,19 @@ in
       # capped/retried forever by RuntimeMaxSec instead of ever succeeding.
       attic_pull_token = { };
 
+      # Wires into nix.conf via modules/nixos/core.nix's include directive
+      # (gated on this secret existing) so the nix daemon can authenticate
+      # GitHub fetches of the private kleinbem-secrets repo — needed
+      # whenever autoUpgrade needs a kleinbem-secrets commit not already
+      # sitting in the local store. nixos-nvme/orin-nano already had this;
+      # mac-mini/core-pi/hass-pi didn't (found via nasbook hitting exactly
+      # this failure 2026-09-20: unauthenticated archive fetches of a
+      # private repo 404 unconditionally, regardless of commit).
+      github_read_all_token = {
+        mode = "0440";
+        group = "wheel";
+      };
+
       # Hermes Agent's Discord gateway bot token — moved from hass-pi
       # 2026-08-05, see hosts/mac-mini/default.nix my.containers.hermes.
       # Lives in kleinbem-secrets' per-host scope now (nix/per-host/mac-mini.yaml,

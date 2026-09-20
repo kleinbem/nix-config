@@ -94,6 +94,19 @@
       # on-device until RuntimeMaxSec kills it.
       attic_pull_token = { };
 
+      # Wires into nix.conf via modules/nixos/core.nix's include directive
+      # (gated on this secret existing) so the nix daemon can authenticate
+      # GitHub fetches of the private kleinbem-secrets repo — needed
+      # whenever autoUpgrade needs a kleinbem-secrets commit not already
+      # sitting in the local store. nixos-nvme/orin-nano already had this;
+      # mac-mini/core-pi/hass-pi didn't (found via nasbook hitting exactly
+      # this failure 2026-09-20: unauthenticated archive fetches of a
+      # private repo 404 unconditionally, regardless of commit).
+      github_read_all_token = {
+        mode = "0440";
+        group = "wheel";
+      };
+
       # Secret ntfy topic — arms the nixos-upgrade-listener (rpi5-node.nix
       # enables it; ConditionPathExists on this secret's path keeps it inert
       # until the key materialises at activation).
