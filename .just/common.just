@@ -20,8 +20,12 @@ META := absolute_path(ROOT / "..")
 # nix's flake CLI parses dots in --override-input names as nested attribute
 # paths, so a stray "nix-secrets.deleted" directory here produces an
 # "invalid flake input attribute path element" error instead of silently
-# no-opping.
-SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -printf '%f\n' 2>/dev/null | xargs echo -n")
+# no-opping. nix-toolbox is also excluded: it matches "nix-*" but is a
+# standalone dev-workflow toolset (nix-check-versions, nix-audit-deps, …),
+# never a nix-config flake input — including it produced a real (if inert)
+# "--override-input nix-toolbox ... does not match any input" warning on
+# every eval.
+SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,
 # plus kleinbem-secrets explicitly since its directory name doesn't match

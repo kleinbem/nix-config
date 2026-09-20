@@ -200,15 +200,27 @@ check-hosts *args="--impure":
 
 [group("Development")]
 sync-agent:
-    @echo "🤖 Syncing system context for Antigravity..."
-    @./scripts/sync-agent-context.sh
-    @timeout 30 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null; rc=$?; \
-    if [ "$rc" -eq 124 ]; then \
-        echo "  ⏱️  jj diff timed out after 30s — skipping doc-change check (apply not blocked)."; \
-        echo "     (jj likely deadlocked on the working-copy lock; re-run sync-agent later.)"; \
-    elif [ "$rc" -ne 0 ]; then \
-        echo "  📝 Reference docs updated — already in jj working copy (@)."; \
-        echo "     Commit when convenient: jj describe -m 'docs: auto-update AI reference docs'"; \
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "🤖 Syncing system context for Antigravity..."
+    ./scripts/sync-agent-context.sh
+    # jj diff briefly contends for the working-copy lock with other jj
+    # activity (e.g. a jj-aware shell prompt polling status) — retry once
+    # after a short wait before giving up, rather than treating one 30s
+    # stall as a deadlock.
+    timeout 15 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null
+    rc=$?
+    if [ "$rc" -eq 124 ]; then
+        sleep 2
+        timeout 15 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null
+        rc=$?
+    fi
+    if [ "$rc" -eq 124 ]; then
+        echo "  ⏱️  jj diff timed out after retrying — skipping doc-change check (apply not blocked)."
+        echo "     (jj working-copy lock stayed held; re-run sync-agent later.)"
+    elif [ "$rc" -ne 0 ]; then
+        echo "  📝 Reference docs updated — already in jj working copy (@)."
+        echo "     Commit when convenient: jj describe -m 'docs: auto-update AI reference docs'"
     fi
 
 [group("Development")]
