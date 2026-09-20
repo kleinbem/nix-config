@@ -221,6 +221,21 @@ in
           IdentityFile = "~/.ssh/id_ed25519_sk";
           IdentityAgent = "none";
         };
+        # mac-mini (Mid-2011 Mac Mini, interactive/GNOME+RDP box). Same
+        # FIDO2-SK-via-agent pattern as the other headless hosts. Restored
+        # 2026-09-20 — this whole block had gone missing from the file
+        # (not just a stale local ssh config: `ssh mac-mini` failed to
+        # resolve for Martin too), root cause not identified; re-added
+        # from the established per-host pattern rather than left broken.
+        "mac-mini" = {
+          Hostname = "10.0.0.16";
+          User = "martin";
+          IdentityFile = "~/.ssh/id_ed25519_sk";
+          IdentityAgent = "none";
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/cm-%r@%h:%p";
+          ControlPersist = "1h";
+        };
         # orin-nano (Jetson Orin Nano, AI edge node). Same FIDO2-SK-via-agent
         # failure as the Pis ("agent refused operation") — bypass the agent so the
         # key signs. Match the IP too, so `ssh …10.0.0.15` gets it, not just the alias.
