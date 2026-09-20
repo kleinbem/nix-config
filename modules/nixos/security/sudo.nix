@@ -29,10 +29,6 @@
           options = [ "NOPASSWD" ];
         }
         {
-          command = "/run/current-system/sw/bin/systemctl restart container@*";
-          options = [ "NOPASSWD" ];
-        }
-        {
           command = "/run/current-system/sw/bin/systemctl start ollama.service";
           options = [ "NOPASSWD" ];
         }

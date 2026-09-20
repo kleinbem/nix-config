@@ -147,6 +147,14 @@ in
     esphome = {
       enable = true;
       openFirewall = true;
+      # openFirewall = true already expressed the intent to be LAN-reachable,
+      # but the module's own default (address = "localhost") meant it was
+      # only ever listening on loopback — confirmed live 2026-09-20 via
+      # `ss -tlnp` showing 127.0.0.1/::1 only, openFirewall doing nothing.
+      # Needed anyway now that Home Assistant's panel_iframe (below) embeds
+      # this URL directly in a browser tab, which can't reach loopback on
+      # a different machine.
+      address = "0.0.0.0";
     };
 
     matter-server = {

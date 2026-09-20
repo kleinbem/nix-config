@@ -435,11 +435,6 @@ def render(
         out.append("- **Devenv**: Available")
     else:
         out.append("- **Devenv**: Not found in path")
-    guard = run_cmd(["systemctl", "--user", "is-active", "workspace-guardian.service"])
-    if guard == "active":
-        out.append("- **Autonomous Guardian**: Active ✅")
-    else:
-        out.append("- **Autonomous Guardian**: Inactive ❌")
     out.append("")
 
     # --- CI Status (overall, per workflow) ---
