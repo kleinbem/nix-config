@@ -225,9 +225,6 @@ in
     ../../modules/nixos/options.nix
 
     # --- Every container module exposed by nix-presets ---
-    # (dashboard / dashboard-homer / dashboard-homepage share the same
-    #  `my.containers.dashboard` options but emit distinct container names,
-    #  so importing all three yields three buildable containers.)
     inputs.nix-presets.nixosModules.n8n
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.code-server
@@ -260,15 +257,16 @@ in
     inputs.nix-presets.nixosModules.frigate
     inputs.nix-presets.nixosModules.home-assistant
     inputs.nix-presets.nixosModules.anythingllm
-    inputs.nix-presets.nixosModules.dashboard
+    inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.kleinbem-auth
-    # NOTE: dashboard-homer / dashboard-homepage are alternate frontends that
-    # re-declare the same `my.containers.dashboard` option slot, so they cannot
-    # coexist with `dashboard` in one host. Their closures are near-identical
-    # (nginx + static assets) and already covered by caching `dashboard`. To
-    # cache a specific skin, swap the import above for that variant.
+    # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
+    # option slot as dashboard-homepage above, so it cannot be imported
+    # alongside it in one host. To cache the homer skin instead, swap the
+    # import above for `dashboard-homer` (the `dashboard` catalogue entry
+    # below stays the same either way — it's keyed by option name, not by
+    # which container the module actually emits).
   ];
 
   # This host doesn't import base.nix, but container presets that run a

@@ -209,6 +209,18 @@
       github_runner_pat = {
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
+    }
+    # AnythingLLM API key for vault-anythingllm-sync.nix — generated via the
+    # AnythingLLM UI (Settings → API Keys), not Nix-creatable, so this is
+    # gated the same way as litellm_master_key above: declaring it
+    # unconditionally would break activation before the key exists in
+    # kleinbem-secrets. owner=martin: the sync job is a home-manager user
+    # service, not root.
+    // lib.optionalAttrs config.my.anythingllmVaultSync.enable {
+      anythingllm_api_key = {
+        owner = "martin";
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
     };
     # (Stalwart's admin secret lives with the container, on mac-mini —
     # hosts/mac-mini/secrets.nix, keyed to nix/per-container/stalwart.yaml.)

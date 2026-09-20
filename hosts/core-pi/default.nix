@@ -30,7 +30,7 @@ in
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
     ./backup.nix
-    inputs.nix-presets.nixosModules.dashboard
+    inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.kleinbem-auth
