@@ -196,7 +196,11 @@
       # App Containers
       dashboard = {
         ip = "10.85.48.103";
-        port = 80;
+        # homepage-dashboard (gethomepage/homepage) listens on 8082, not the
+        # old custom skin's plain nginx :80 — Caddy's reverse_proxy
+        # (nix-presets/containers/caddy/helpers.nix mkUpstream) reads this
+        # field directly, so a stale value here is a silent 502.
+        port = 8082;
         externalPort = 443; # Default HTTPS
         domain = "home.kleinbem.dev";
         maintenance = false;
