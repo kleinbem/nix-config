@@ -29,10 +29,13 @@
   ...
 }:
 {
-  system.nixos.versionSuffix =
-    ".${lib.substring 0 8 (inputs.nixpkgs.lastModifiedDate or inputs.nixpkgs.lastModified or "19700101")}.${
-      inputs.nixpkgs.shortRev or "dirty"
-    }";
-  system.nixos.revision = lib.mkIf (inputs.nixpkgs ? rev) inputs.nixpkgs.rev;
-  system.configurationRevision = lib.mkIf (self ? rev) self.rev;
+  system = {
+    nixos = {
+      versionSuffix = ".${
+        lib.substring 0 8 (inputs.nixpkgs.lastModifiedDate or inputs.nixpkgs.lastModified or "19700101")
+      }.${inputs.nixpkgs.shortRev or "dirty"}";
+      revision = lib.mkIf (inputs.nixpkgs ? rev) inputs.nixpkgs.rev;
+    };
+    configurationRevision = lib.mkIf (self ? rev) self.rev;
+  };
 }
