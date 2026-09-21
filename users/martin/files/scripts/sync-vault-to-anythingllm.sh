@@ -29,7 +29,7 @@ fi
 API_KEY=$(cat "$API_KEY_FILE")
 
 mkdir -p "$(dirname "$STATE_FILE")"
-[ -f "$STATE_FILE" ] || echo '{}' > "$STATE_FILE"
+[ -f "$STATE_FILE" ] || echo '{}' >"$STATE_FILE"
 state=$(cat "$STATE_FILE")
 new_state="$state"
 
@@ -93,5 +93,5 @@ while IFS= read -r rel; do
   fi
 done < <(jq -r 'keys[]' <<<"$state")
 
-echo "$new_state" > "$STATE_FILE"
+echo "$new_state" >"$STATE_FILE"
 echo "anythingllm-vault-sync: +${added} ~${updated} -${removed}"
