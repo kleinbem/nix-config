@@ -84,6 +84,24 @@
         key = "turnstile_secret_key";
       };
 
+      # Authentik — shared IdP replacing kleinbem-auth. Per-container file,
+      # scoped to core_pi in kleinbem-secrets/.sops.yaml. All 4 values are
+      # freshly generated internal secrets (no external OAuth app needed for
+      # these) — social login sources are configured inside Authentik itself
+      # once its own OAuth apps exist, not via NixOS secrets.
+      authentik_secret_key = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authentik.yaml";
+      };
+      authentik_postgres_password = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authentik.yaml";
+      };
+      authentik_bootstrap_admin_password = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authentik.yaml";
+      };
+      authentik_bootstrap_api_token = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authentik.yaml";
+      };
+
       # Attic Binary Cache
       attic_server_token_rs256 = {
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";

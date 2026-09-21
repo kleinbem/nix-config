@@ -208,6 +208,17 @@ let
       # dependency, so once it's sops-set this activates on redeploy alone.
       turnstileSecretKeyFile = "/run/secrets/factory-dummy";
     };
+    authentik = {
+      ip = "10.85.48.142/24"; # core-pi
+      hostDataDir = dataDir "authentik";
+      # All non-null so the cached closure's env-setup writes every line
+      # (each reads a fixed in-container path — see authentik.nix — bind-
+      # mounted onto those paths by the deploying host, core-pi).
+      secretKeyFile = "/run/secrets/factory-dummy";
+      postgresPasswordFile = "/run/secrets/factory-dummy";
+      bootstrapAdminPasswordFile = "/run/secrets/factory-dummy";
+      bootstrapApiTokenFile = "/run/secrets/factory-dummy";
+    };
     ntfy.ip = "10.85.48.131/24"; # core-pi
     agent-team.ip = "10.85.47.118/24"; # nasbook
     netdata = { };
@@ -261,6 +272,7 @@ in
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.kleinbem-auth
+    inputs.nix-presets.nixosModules.authentik
     # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
     # option slot as dashboard-homepage above, so it cannot be imported
     # alongside it in one host. To cache the homer skin instead, swap the

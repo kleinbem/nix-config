@@ -34,6 +34,7 @@ in
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.kleinbem-auth
+    inputs.nix-presets.nixosModules.authentik
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
@@ -183,6 +184,23 @@ in
         microsoftClientIdFile = config.sops.secrets.kleinbem_auth_microsoft_client_id.path;
         microsoftClientSecretFile = config.sops.secrets.kleinbem_auth_microsoft_client_secret.path;
         turnstileSecretKeyFile = config.sops.secrets.kleinbem_auth_turnstile_secret.path;
+      };
+
+      # Shared IdP: replaces kleinbem-auth for kleinbem.dev visitor login,
+      # and also serves persona OIDC / Matrix federation / sigstore — the
+      # scope this preset was originally built for (see authentik.nix's own
+      # description). One instance, multiple Applications configured inside
+      # Authentik itself (not via NixOS options — that's Terraform's job,
+      # see nix/infra/).
+      authentik = {
+        enable = true;
+        ip = "${myInventory.network.nodes.authentik.ip}/24";
+        hostDataDir = "/var/lib/authentik";
+        inherit (myInventory.network.nodes.authentik) domain;
+        secretKeyFile = config.sops.secrets.authentik_secret_key.path;
+        postgresPasswordFile = config.sops.secrets.authentik_postgres_password.path;
+        bootstrapAdminPasswordFile = config.sops.secrets.authentik_bootstrap_admin_password.path;
+        bootstrapApiTokenFile = config.sops.secrets.authentik_bootstrap_api_token.path;
       };
 
       dashboard = {

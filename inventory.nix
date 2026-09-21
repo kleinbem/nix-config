@@ -615,7 +615,12 @@
         ip = "10.85.48.133";
         port = 8080;
         externalPort = 443;
-        domain = "auth.kleinbem.dev";
+        # Was auth.kleinbem.dev — a placeholder that happened to never
+        # collide with anything until Authentik (whose preset explicitly
+        # reserved that hostname) actually got deployed there. Renamed
+        # 2026-09-21 rather than leave two Caddy vhosts fighting over one
+        # domain (Caddy would refuse to start on the duplicate).
+        domain = "2fa.kleinbem.dev";
         auth = false;
         meta = {
           name = "Ente Auth";
@@ -655,6 +660,24 @@
           category = "Identity";
           icon = "🔑";
           description = "Social login (Google/Facebook) for kleinbem.dev.";
+        };
+      };
+      # Shared IdP: replaces kleinbem-auth for kleinbem.dev visitor login and
+      # also serves persona OIDC / Matrix federation / sigstore (the original
+      # scope authentik.nix was built for) — one instance, multiple
+      # Applications configured inside Authentik itself.
+      # auth = false: this IS the sign-in surface — never Authelia-gated.
+      authentik = {
+        ip = "10.85.48.142";
+        port = 9000;
+        externalPort = 443;
+        domain = "auth.kleinbem.dev";
+        auth = false;
+        meta = {
+          name = "Authentik";
+          category = "Identity";
+          icon = "🪪";
+          description = "Shared identity provider (SSO, social login, persona OIDC).";
         };
       };
       # Persona-fleet mail (Phase 1). One mailbox per persona at
