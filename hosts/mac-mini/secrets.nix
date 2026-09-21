@@ -5,6 +5,8 @@
   ...
 }:
 let
+  mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
+
   # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
   # each tool persona-runtime knows how to run (nix-presets/containers/
   # persona-runtime.nix's toolSpecs — keep in sync when a new tool gets
@@ -131,7 +133,7 @@ in
       };
 
     }
-    // lib.optionalAttrs config.my.containers.stalwart.enable {
+    // lib.optionalAttrs config.my.containers.stalwart.enable (
       # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
       # plaintext — Stalwart accepts either). Per-CONTAINER scope, not
       # per-host: the mail server is a fleet service that could migrate
@@ -142,10 +144,11 @@ in
       # litellm_master_key: sops-install-secrets validates the whole
       # manifest atomically, so one declared-but-unprovisioned secret
       # freezes every other secret on the host.
-      stalwart_admin_password_hash = {
-        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/stalwart.yaml";
-      };
-    }
+      mkPerContainerSecrets {
+        container = "stalwart";
+        keys = [ "admin_password_hash" ];
+      }
+    )
     // personaRuntimeSecrets;
 
     templates."hermes.env" = {

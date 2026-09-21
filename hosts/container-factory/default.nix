@@ -1,6 +1,7 @@
 {
   lib,
   inputs,
+  myInventory,
   deployedContainers ? null,
   ...
 }:
@@ -54,11 +55,11 @@ let
       hostDataDir = dataDir "code-server";
     };
     open-webui = {
-      ip = "10.85.50.3/24"; # mac-mini
+      ip = "${myInventory.network.nodes.open-webui.ip}/24"; # mac-mini
       hostDataDir = dataDir "open-webui";
     };
     qdrant = {
-      ip = "10.85.47.105/24"; # nasbook
+      ip = "${myInventory.network.nodes.qdrant.ip}/24"; # nasbook
       hostDataDir = dataDir "qdrant";
     };
     playground = {
@@ -74,7 +75,7 @@ let
       hostDataDir = dataDir "litellm";
     };
     loki = {
-      ip = "10.85.47.116/24"; # nasbook
+      ip = "${myInventory.network.nodes.loki.ip}/24"; # nasbook
       hostDataDir = dataDir "loki";
     };
     crowdsec = {
@@ -86,11 +87,11 @@ let
       hostDataDir = dataDir "ollama";
     };
     openclaw = {
-      ip = "10.85.49.112/24"; # hass-pi
+      ip = "${myInventory.network.nodes.openclaw.ip}/24"; # hass-pi
       hostDataDir = dataDir "openclaw";
     };
     monitoring = {
-      ip = "10.85.50.2/24"; # mac-mini
+      ip = "${myInventory.network.nodes.monitoring.ip}/24"; # mac-mini
       hostDataDir = dataDir "monitoring";
     };
     agent-zero = {
@@ -98,7 +99,7 @@ let
       hostDataDir = dataDir "agent-zero";
     };
     anythingllm = {
-      ip = "10.85.50.6/24"; # mac-mini
+      ip = "${myInventory.network.nodes.anythingllm.ip}/24"; # mac-mini
       hostDataDir = dataDir "anythingllm";
     };
     # hermes deliberately absent (2026-08-07): it became attrsOf (one
@@ -128,16 +129,16 @@ let
     # dummy; cups's gateway is wrong either way until that's fixed.
     cups.ip = ip 38;
     frigate.ip = ip 39;
-    home-assistant.ip = "10.85.49.10/24"; # hass-pi
-    paperless.ip = "10.85.47.131/24"; # nasbook
+    home-assistant.ip = "${myInventory.network.nodes.home-assistant.ip}/24"; # hass-pi
+    paperless.ip = "${myInventory.network.nodes.paperless.ip}/24"; # nasbook
     stalwart = {
       # REAL deployment IP, not a dummy — mkContainer now derives the
       # container's baked default gateway from its own address (.1 of the
       # /24), so a standalone closure must be built with the address it
       # will actually run on. Stalwart runs on mac-mini (10.85.50.0/24);
       # a .46 dummy would bake a 10.85.46.1 gateway that doesn't exist
-      # there. Source of truth: inventory.nix network.nodes.stalwart.
-      ip = "10.85.50.8/24";
+      # there.
+      ip = "${myInventory.network.nodes.stalwart.ip}/24";
       hostDataDir = dataDir "stalwart";
       # Non-null so the closure includes the fallback-admin block (its
       # secret path is a fixed /run/credentials/... macro, not this
@@ -160,22 +161,22 @@ let
       modelPath = "/var/lib/factory/llama/model.gguf"; # host-level; not in closure
     };
     dashboard = {
-      ip = "10.85.48.103/24"; # core-pi
+      ip = "${myInventory.network.nodes.dashboard.ip}/24"; # core-pi
       hostBridgeIp = "10.85.48.1";
     };
     ente = {
-      ip = "10.85.48.133/24"; # core-pi
+      ip = "${myInventory.network.nodes.ente.ip}/24"; # core-pi
       hostDataDir = dataDir "ente";
     };
     vaultwarden = {
-      ip = "10.85.48.135/24"; # core-pi
+      ip = "${myInventory.network.nodes.vaultwarden.ip}/24"; # core-pi
       hostDataDir = dataDir "vaultwarden";
       # Non-null so the cached closure includes the env-setup + admin branch.
       # Real bind mount is supplied by the deploying host (sops path).
       adminTokenFile = "/run/secrets/factory-dummy";
     };
     kleinbem-auth = {
-      ip = "10.85.48.140/24"; # core-pi
+      ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24"; # core-pi
       hostDataDir = dataDir "kleinbem-auth";
       # Baked into the closure at build time (not a secret/bind-mount), so
       # unlike the *File options below, setting this on core-pi itself is a
@@ -209,7 +210,7 @@ let
       turnstileSecretKeyFile = "/run/secrets/factory-dummy";
     };
     authentik = {
-      ip = "10.85.48.142/24"; # core-pi
+      ip = "${myInventory.network.nodes.authentik.ip}/24"; # core-pi
       hostDataDir = dataDir "authentik";
       # All non-null so the cached closure's env-setup writes every line
       # (each reads a fixed in-container path — see authentik.nix — bind-
@@ -219,11 +220,17 @@ let
       bootstrapAdminPasswordFile = "/run/secrets/factory-dummy";
       bootstrapApiTokenFile = "/run/secrets/factory-dummy";
     };
-    ntfy.ip = "10.85.48.131/24"; # core-pi
-    agent-team.ip = "10.85.47.118/24"; # nasbook
+    ntfy.ip = "${myInventory.network.nodes.ntfy.ip}/24"; # core-pi
+    agent-team.ip = "${myInventory.network.nodes.agent-team.ip}/24"; # nasbook
     netdata = { };
+    # NOT wired to myInventory like its siblings: inventory.nix's syncthing
+    # node says 10.85.46.127, but nasbook's own my.containers.syncthing
+    # (the one with enable = true — nixos-nvme also declares syncthing but
+    # with enable = false) hardcodes 10.85.47.127 instead, a real mismatch
+    # discovered 2026-09-21 while auditing this file. Flagged to the user
+    # rather than silently resolved either way — not this refactor's call.
     syncthing.ip = "10.85.47.127/24"; # nasbook
-    backup.ip = "10.85.47.128/24"; # nasbook
+    backup.ip = "${myInventory.network.nodes.backup.ip}/24"; # nasbook
     # OCI/podman containers (comfyui, vllm, langflow) are deliberately absent:
     # they run via virtualisation.oci-containers, pull upstream images at
     # runtime, and produce no `config.containers.<name>` closure to cache.
