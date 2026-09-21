@@ -80,6 +80,10 @@ in
     deploy.autoUpgrade = {
       enable = true;
       requireCache = true;
+      # core-pi/hass-pi get this transitively via rpi5-node.nix; nasbook isn't
+      # that hardware so it doesn't import it, but it should still get the
+      # same instant-on-promote fast path rather than only the 04:00 timer.
+      ntfy.enable = true;
     };
 
     # Confirmed via lspci on the real hardware 2026-09-17: enp4s0 is the

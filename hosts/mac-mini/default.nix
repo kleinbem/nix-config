@@ -206,6 +206,10 @@ in
     deploy.autoUpgrade = {
       enable = true;
       requireCache = true;
+      # core-pi/hass-pi get this transitively via rpi5-node.nix; mac-mini
+      # isn't that hardware so it doesn't import it, but it should still get
+      # the same instant-on-promote fast path rather than only the 04:00 timer.
+      ntfy.enable = true;
     };
 
     monitoring.node.enable = true;

@@ -81,6 +81,10 @@ in
     # martin_password (sops key: martin_password_hash) is already declared by
     # users/martin/nixos.nix, imported below.
     secrets = {
+      # ntfy fast-path for autoUpgrade (see default.nix's deploy.autoUpgrade
+      # block) — same shared topic core-pi/hass-pi already use, from
+      # nix/shared.yaml (no per-host provisioning needed).
+      ntfy_deploy_topic = { };
       # NetBird — consumed by modules/nixos/networking.nix → netbird-autojoin
       # oneshot. Same shared setup key as orin-nano/core-pi/hass-pi.
       netbird_setup_key = { };

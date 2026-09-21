@@ -10,6 +10,10 @@
       # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so
       # nightly upgrades substitute the CI-built closure instead of building.
       attic_pull_token = { };
+      # ntfy fast-path for autoUpgrade (see default.nix's deploy.autoUpgrade
+      # block) — same shared topic core-pi/hass-pi already use, from
+      # nix/shared.yaml (no per-host provisioning needed).
+      ntfy_deploy_topic = { };
       paperless_password = { };
       restic_password = { };
       restic_system_password = { };
