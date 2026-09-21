@@ -42,6 +42,13 @@
           "authelia.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           # 502 until the kleinbem-auth container is enabled on core-pi.
           "login.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          # Authentik (kleinbem-auth's replacement) — same bug class as
+          # authelia/login above: this list is hand-maintained and had no
+          # rule for it, so it 404'd at Cloudflare's edge (not even reaching
+          # Caddy) despite Caddy itself already having a vhost for it
+          # (auto-generated from inventory.nix's externalPort entries).
+          # Found 2026-09-21 while applying Authentik's Phase 2 Terraform.
+          "auth.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
         default = "http_status:404";
       };
