@@ -175,40 +175,8 @@ let
       # Real bind mount is supplied by the deploying host (sops path).
       adminTokenFile = "/run/secrets/factory-dummy";
     };
-    kleinbem-auth = {
-      ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24"; # core-pi
-      hostDataDir = dataDir "kleinbem-auth";
-      # Baked into the closure at build time (not a secret/bind-mount), so
-      # unlike the *File options below, setting this on core-pi itself is a
-      # no-op — core-pi never builds its own container closures (ADR-002),
-      # it only pulls whatever container-factory already built. This IS the
-      # value that ends up in the running container's TRUSTED_ORIGINS.
-      trustedOrigins = [
-        "https://kleinbem.dev"
-        "https://www.kleinbem.dev"
-      ];
-      # All non-null so the cached closure's env-setup writes every secret
-      # line (each reads a fixed in-container path; the real sops files are
-      # bind-mounted onto those paths by the deploying host, core-pi). The
-      # OAuth ones matter now-vs-later: with them present the closure is
-      # already complete, so wiring Google/Facebook is a sops edit + redeploy
-      # with no container rebuild.
-      betterAuthSecretFile = "/run/secrets/factory-dummy";
-      googleClientIdFile = "/run/secrets/factory-dummy";
-      googleClientSecretFile = "/run/secrets/factory-dummy";
-      facebookClientIdFile = "/run/secrets/factory-dummy";
-      facebookClientSecretFile = "/run/secrets/factory-dummy";
-      githubClientIdFile = "/run/secrets/factory-dummy";
-      githubClientSecretFile = "/run/secrets/factory-dummy";
-      linkedinClientIdFile = "/run/secrets/factory-dummy";
-      linkedinClientSecretFile = "/run/secrets/factory-dummy";
-      microsoftClientIdFile = "/run/secrets/factory-dummy";
-      microsoftClientSecretFile = "/run/secrets/factory-dummy";
-      # Ready like the OAuth ones above (not deferred like the still-unset-up
-      # SMTP pair) — the Turnstile secret has no external provisioning
-      # dependency, so once it's sops-set this activates on redeploy alone.
-      turnstileSecretKeyFile = "/run/secrets/factory-dummy";
-    };
+    # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
+    # Authentik (catalogue entry below).
     authentik = {
       ip = "${myInventory.network.nodes.authentik.ip}/24"; # core-pi
       hostDataDir = dataDir "authentik";
@@ -278,7 +246,6 @@ in
     inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
-    inputs.nix-presets.nixosModules.kleinbem-auth
     inputs.nix-presets.nixosModules.authentik
     # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
     # option slot as dashboard-homepage above, so it cannot be imported
@@ -289,7 +256,7 @@ in
   ];
 
   # This host doesn't import base.nix, but container presets that run a
-  # nix-packages-built service in their innerConfig (kleinbem-auth) need
+  # nix-packages-built service in their innerConfig (langfuse, cups) need
   # pkgs.<name> to resolve during the factory's closure eval.
   nixpkgs.overlays = [ inputs.nix-packages.overlays.default ];
 

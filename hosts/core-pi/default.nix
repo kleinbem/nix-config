@@ -33,7 +33,6 @@ in
     inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
-    inputs.nix-presets.nixosModules.kleinbem-auth
     inputs.nix-presets.nixosModules.authentik
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.authelia
@@ -160,33 +159,9 @@ in
         adminTokenFile = config.sops.secrets.vaultwarden_admin_token.path;
       };
 
-      # better-auth social login for kleinbem.dev visitors (kleinbem-auth repo,
-      # live at /login there). google_/facebook_ OAuth credentials, the
-      # session secret, and trustedOrigins are all populated — see
-      # hosts/container-factory/default.nix for trustedOrigins specifically:
-      # it's baked into the closure at build time, not a secret/bind-mount,
-      # so it has to be set there, not here (core-pi never builds its own
-      # container closures — ADR-002).
-      kleinbem-auth = {
-        enable = true;
-        ip = "${myInventory.network.nodes.kleinbem-auth.ip}/24";
-        hostDataDir = "/var/lib/kleinbem-auth";
-        inherit (myInventory.network.nodes.kleinbem-auth) domain;
-        betterAuthSecretFile = config.sops.secrets.kleinbem_auth_better_auth_secret.path;
-        googleClientIdFile = config.sops.secrets.kleinbem_auth_google_client_id.path;
-        googleClientSecretFile = config.sops.secrets.kleinbem_auth_google_client_secret.path;
-        facebookClientIdFile = config.sops.secrets.kleinbem_auth_facebook_client_id.path;
-        facebookClientSecretFile = config.sops.secrets.kleinbem_auth_facebook_client_secret.path;
-        githubClientIdFile = config.sops.secrets.kleinbem_auth_github_client_id.path;
-        githubClientSecretFile = config.sops.secrets.kleinbem_auth_github_client_secret.path;
-        linkedinClientIdFile = config.sops.secrets.kleinbem_auth_linkedin_client_id.path;
-        linkedinClientSecretFile = config.sops.secrets.kleinbem_auth_linkedin_client_secret.path;
-        microsoftClientIdFile = config.sops.secrets.kleinbem_auth_microsoft_client_id.path;
-        microsoftClientSecretFile = config.sops.secrets.kleinbem_auth_microsoft_client_secret.path;
-        turnstileSecretKeyFile = config.sops.secrets.kleinbem_auth_turnstile_secret.path;
-      };
-
-      # Shared IdP: replaces kleinbem-auth for kleinbem.dev visitor login,
+      # Shared IdP: replaces kleinbem-auth (decommissioned 2026-09-21 —
+      # Phase 4 of the migration; kleinbem-site's own auth moved to this in
+      # Phase 3) for kleinbem.dev visitor login,
       # and also serves persona OIDC / Matrix federation / sigstore — the
       # scope this preset was originally built for (see authentik.nix's own
       # description). One instance, multiple Applications configured inside

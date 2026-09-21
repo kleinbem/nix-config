@@ -40,8 +40,11 @@
           "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "grafana.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "authelia.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          # 502 until the kleinbem-auth container is enabled on core-pi.
-          "login.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          # login.kleinbem.dev (kleinbem-auth) removed 2026-09-21 —
+          # decommissioned, replaced by Authentik (auth.kleinbem.dev,
+          # below). Visitors to the old URL now get the plain
+          # http_status:404 `default` below, deliberately — kleinbem.dev
+          # itself is where visitors actually land, not this subdomain.
           # Authentik (kleinbem-auth's replacement) — same bug class as
           # authelia/login above: this list is hand-maintained and had no
           # rule for it, so it 404'd at Cloudflare's edge (not even reaching

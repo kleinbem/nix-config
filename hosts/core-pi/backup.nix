@@ -12,10 +12,11 @@
 #     compromise cannot erase backup history (belt: enable R2 Object Lock,
 #     30d, when you create the bucket).
 #
-#   * BULK   — Ente + kleinbem-auth are larger / lower-stakes. Plain restic
-#     (dedup + retention) → R2. Ente's Postgres is backed up as a raw datadir
-#     for now (restore leans on PG crash recovery); a `machinectl`-based
-#     pg_dump prepare step is a follow-up.
+#   * BULK   — Ente is larger / lower-stakes. Plain restic (dedup +
+#     retention) → R2. Its Postgres is backed up as a raw datadir for now
+#     (restore leans on PG crash recovery); a `machinectl`-based pg_dump
+#     prepare step is a follow-up. kleinbem-auth removed from this list
+#     2026-09-21 — decommissioned, replaced by Authentik.
 #
 # Why not the `backup` container preset: core-pi doesn't import it, and it
 # bakes `cfg.targets` into the per-*name* container closure
@@ -122,7 +123,6 @@ lib.mkIf enable {
     rcloneConfigFile = config.sops.secrets.backup_rclone_config.path;
     paths = [
       "/var/lib/ente" # raw PG datadir — pg_dump prepare step is a follow-up
-      "/var/lib/kleinbem-auth"
     ];
     exclude = [
       "/var/lib/ente/**/tmp"

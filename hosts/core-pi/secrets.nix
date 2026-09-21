@@ -37,39 +37,8 @@ in
         vaultwarden_admin_token = { };
       }
       // (
-        # kleinbem-auth (better-auth login for kleinbem.dev). Per-container
-        # file, scoped to core_pi in kleinbem-secrets/.sops.yaml.
-        # better_auth_secret is populated; google_/facebook_ are empty until
-        # the OAuth apps exist — the service starts fine with no providers
-        # (see nix-presets preset). fullKey = false: this file's own YAML
-        # keys are the bare suffix (e.g. "better_auth_secret"), unlike
-        # authelia/authentik's full-attr-name convention below.
-        mkPerContainerSecrets {
-          container = "kleinbem-auth";
-          fullKey = false;
-          keys = [
-            "better_auth_secret"
-            "google_client_id"
-            "google_client_secret"
-            "facebook_client_id"
-            "facebook_client_secret"
-            "github_client_id"
-            "github_client_secret"
-            "linkedin_client_id"
-            "linkedin_client_secret"
-            "microsoft_client_id"
-            "microsoft_client_secret"
-          ];
-        }
-        // {
-          kleinbem_auth_turnstile_secret = {
-            sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/kleinbem-auth.yaml";
-            key = "turnstile_secret_key";
-          };
-        }
-      )
-      // (
-        # Authentik — shared IdP replacing kleinbem-auth. Per-container file,
+        # Authentik — shared IdP, replaces kleinbem-auth (decommissioned
+        # 2026-09-21). Per-container file,
         # scoped to core_pi in kleinbem-secrets/.sops.yaml. All 4 values are
         # freshly generated internal secrets (no external OAuth app needed
         # for these) — social login sources are configured inside Authentik

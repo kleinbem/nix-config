@@ -646,22 +646,8 @@
           description = "Self-hosted password manager (people + personas).";
         };
       };
-      # better-auth social login for kleinbem.dev visitors (container staged
-      # disabled on core-pi until kleinbem-secrets + OAuth apps exist).
-      # auth = false: this IS the public sign-in surface — never Authelia-gated.
-      kleinbem-auth = {
-        ip = "10.85.48.140";
-        port = 3000;
-        externalPort = 443;
-        domain = "login.kleinbem.dev";
-        auth = false;
-        meta = {
-          name = "Login";
-          category = "Identity";
-          icon = "🔑";
-          description = "Social login (Google/Facebook) for kleinbem.dev.";
-        };
-      };
+      # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
+      # Authentik below. 10.85.48.140 and login.kleinbem.dev are free again.
       # Shared IdP: replaces kleinbem-auth for kleinbem.dev visitor login and
       # also serves persona OIDC / Matrix federation / sigstore (the original
       # scope authentik.nix was built for) — one instance, multiple
