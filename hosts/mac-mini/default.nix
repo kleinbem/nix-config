@@ -47,6 +47,7 @@ in
     "${self}/modules/nixos/hosts.nix"
     "${self}/modules/nixos/persistence.nix"
     "${self}/modules/nixos/clevis-initrd.nix"
+    "${self}/modules/nixos/pull-deploy-node.nix"
 
     "${self}/users/martin/nixos.nix"
     "${self}/modules/nixos/container-host.nix"
@@ -201,16 +202,10 @@ in
     # still applies to whatever session GDM starts after that login.
     desktop.gnome.enable = true;
 
-    # Old, comparatively slow CPU (2011 Sandy Bridge) — don't let nightly
-    # auto-upgrade fall back to a multi-hour local compile if Attic ever misses.
-    deploy.autoUpgrade = {
-      enable = true;
-      requireCache = true;
-      # core-pi/hass-pi get this transitively via rpi5-node.nix; mac-mini
-      # isn't that hardware so it doesn't import it, but it should still get
-      # the same instant-on-promote fast path rather than only the 04:00 timer.
-      ntfy.enable = true;
-    };
+    # Pull-deploy config itself now comes from pull-deploy-node.nix (imports
+    # above) — old, comparatively slow CPU (2011 Sandy Bridge), don't let
+    # nightly auto-upgrade fall back to a multi-hour local compile if Attic
+    # ever misses, same reasoning as every other host in that tier.
 
     monitoring.node.enable = true;
 

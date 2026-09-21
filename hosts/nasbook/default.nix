@@ -24,6 +24,7 @@ in
     # Root is stateless tmpfs (disko.nix) — this binds /var/lib/* service
     # state back from the persistent /nix/persist btrfs subvolume.
     "${self}/modules/nixos/persistence.nix"
+    "${self}/modules/nixos/pull-deploy-node.nix"
     # ADR-002: containers below are decoupled/pulled, not built on this weak
     # host (see container-factory's catalogue for their pre-built closures).
     "${self}/modules/nixos/container-host.nix"
@@ -75,16 +76,9 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # Pull-deploy; substitute-only — this laptop is too weak for long builds.
-    # Gate the nightly run on cache reachability and cap its runtime.
-    deploy.autoUpgrade = {
-      enable = true;
-      requireCache = true;
-      # core-pi/hass-pi get this transitively via rpi5-node.nix; nasbook isn't
-      # that hardware so it doesn't import it, but it should still get the
-      # same instant-on-promote fast path rather than only the 04:00 timer.
-      ntfy.enable = true;
-    };
+    # Pull-deploy config itself now comes from pull-deploy-node.nix (imports
+    # above) — this laptop is too weak for long builds, same reasoning as
+    # every other host in that tier.
 
     # Confirmed via lspci on the real hardware 2026-09-17: enp4s0 is the
     # connected port (Realtek RTL8111/8168, r8169). enp3s0 (Intel I210,

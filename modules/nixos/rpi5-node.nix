@@ -34,6 +34,7 @@ in
     "${self}/modules/nixos/services/rpi-eeprom.nix"
     "${self}/modules/nixos/clevis-initrd.nix"
     "${self}/modules/nixos/rpi-direct-boot.nix"
+    "${self}/modules/nixos/pull-deploy-node.nix"
     inputs.nix-presets.nixosModules.monitoring-node
   ];
 
@@ -240,19 +241,6 @@ in
     services = {
       tang.enable = true;
       rpi-eeprom.enable = true;
-    };
-
-    # Pull-deploy; these Pis only ever substitute from Attic (over NetBird) and
-    # must never fall back to compiling locally — gate the nightly run on cache
-    # reachability and cap its runtime. See modules/nixos/auto-upgrade.nix.
-    deploy.autoUpgrade = {
-      enable = true;
-      requireCache = true;
-      # Upgrade the moment promote-production publishes to the secret ntfy
-      # topic instead of waiting for the 04:00 timer (which stays as the
-      # catch-up path). Requires the host to declare the ntfy_deploy_topic
-      # sops secret — the listener is inert until its path exists.
-      ntfy.enable = true;
     };
 
     virtualisation = {
