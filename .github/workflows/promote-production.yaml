@@ -80,6 +80,41 @@ jobs:
           netbird: 'true'
           free-disk-space: 'false'
 
+      # Lock-honesty gate: every check in this job so far evaluates with
+      # nix-presets (and siblings) floated to their latest main via
+      # $NIX_OVERRIDES — useful for catching cross-repo breakage early, but it
+      # means CI never actually builds what a device resolves
+      # (`nixos-rebuild switch --flake github:kleinbem/nix-config?ref=production`,
+      # zero overrides). A stale flake.lock can sail through every overridden
+      # check and still crash on-device — exactly what happened 2026-09-22:
+      # nix-presets gained a `gatus` module, this repo's committed lock
+      # wasn't bumped, and every autoUpgrade attempt on core-pi failed with
+      # "attribute 'gatus' missing" until the lock was fixed by hand. Force a
+      # full eval of every autoUpgrade host using ONLY the committed lock —
+      # no $NIX_OVERRIDES at all — so this class of bug blocks promotion
+      # instead of reaching a device.
+      - name: Assert committed flake.lock evaluates (no overrides)
+        run: |
+          set -euo pipefail
+          # Every host with my.deploy.autoUpgrade.enable — these are the ones
+          # that resolve flake inputs strictly via the committed lock, with
+          # no override, when they pull the `production` ref themselves.
+          HOSTS=(nixos-nvme orin-nano core-pi hass-pi nasbook mac-mini)
+          fail=0
+          for h in "${HOSTS[@]}"; do
+            echo "::group::honest eval $h"
+            target=".#nixosConfigurations.$h.config.system.build.toplevel.drvPath"
+            if ! out="$(nix eval --json "$target" 2>&1)"; then
+              echo "$out"
+              echo "::error::$h: fails to evaluate against the COMMITTED flake.lock (no overrides) — this is what a real device would hit. Blocking promotion."
+              fail=1
+            else
+              echo "✅ $h: evaluates cleanly against the committed lock."
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
       - name: Assert no deployed host would build
         run: |
           set -euo pipefail
