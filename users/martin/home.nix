@@ -19,7 +19,16 @@ in
 
   modules = {
     devshell-launchers.enable = true;
-    service-launchers.enable = true;
+    # Disabled 2026-09-22: redundant now that PWAs are installed directly
+    # via Chrome's own "Install site as app" (GNOME-integrated), which
+    # gives a real app window/icon — these were just inventory-derived
+    # "open in default browser" xdg.desktopEntries shortcuts
+    # (modules/home-manager/service-launchers.nix), a much lighter
+    # convenience layer than the old isolated-profile PWA framework
+    # (nix-presets/pwa.nix, removed 2026-09-04) but no longer needed on
+    # top of real installed PWAs. Full service URL list saved to Obsidian
+    # before removal.
+    service-launchers.enable = false;
     mcp.enable = true;
     opencode.enable = true;
     ai-agents.enable = true;
