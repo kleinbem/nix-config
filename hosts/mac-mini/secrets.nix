@@ -133,6 +133,19 @@ in
       };
 
     }
+    // lib.optionalAttrs config.my.containers.monitoring.grafanaOidc.enable (
+      # Authentik OIDC client secret for Grafana's own login (Authelia
+      # migration — see default.nix's monitoring.grafanaOidc block).
+      # Value: `tofu output -raw grafana_oidc_client_secret` from
+      # nix/infra, then `sops kleinbem-secrets/nix/per-container/
+      # monitoring.yaml` to set monitoring_grafana_oauth_client_secret —
+      # same manual round-trip as every other Terraform-generated secret
+      # this fleet feeds into sops (e.g. turnstile_secret_key).
+      mkPerContainerSecrets {
+        container = "monitoring";
+        keys = [ "grafana_oauth_client_secret" ];
+      }
+    )
     // lib.optionalAttrs config.my.containers.stalwart.enable (
       # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
       # plaintext — Stalwart accepts either). Per-CONTAINER scope, not

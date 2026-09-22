@@ -279,7 +279,7 @@
         port = 4444;
         externalPort = 443;
         domain = "code.kleinbem.dev";
-        auth = true; # Mesh-only now — Cloudflare Access was its only gate; Authelia replaces it
+        auth = true; # Mesh-only now — Cloudflare Access was its only gate; Authentik forward-auth replaces it (was Authelia until 2026-09-22)
         meta = {
           name = "Code Server";
           category = "Dev";
@@ -417,12 +417,16 @@
         # when both exist, so it was silently pointing at a dead port.
         port = 3000;
         # Proxied through Caddy at grafana.kleinbem.dev (added 2026-09-19),
-        # same pattern as n8n/chat: public tunnel ingress + Authelia
-        # forward_auth below, no Cloudflare Access double-gate (see
+        # public tunnel ingress, no Cloudflare Access double-gate (see
         # nix/infra/cloudflare-access.tf's scope-decision comment).
         externalPort = 443;
         domain = "grafana.kleinbem.dev";
-        auth = true; # Protected by Authelia
+        # auth = false: Grafana logs visitors in itself via Authentik OIDC
+        # (my.containers.monitoring.grafanaOidc on mac-mini, provider in
+        # nix/infra/authentik.tf) instead of sitting behind Caddy's
+        # forward_auth gate — avoids double-gating the same login. Was
+        # `auth = true` / Authelia until the 2026-09-22 migration.
+        auth = false;
         meta = {
           name = "Monitoring";
           category = "Infrastructure";
@@ -441,7 +445,7 @@
         ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
         port = 9093;
         externalPort = 9093;
-        auth = true; # Protected by Authelia
+        auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Alertmanager";
           category = "Infrastructure";
@@ -538,7 +542,7 @@
         ip = "10.85.46.127";
         port = 8384;
         externalPort = 8384;
-        auth = true; # Protected by Authelia SSO
+        auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Syncthing (Zotac)";
           category = "Infrastructure";
@@ -572,7 +576,7 @@
         port = 5000;
         externalPort = 443;
         domain = "frigate.kleinbem.dev";
-        auth = true; # Authelia in front; mesh-only (NVR — never on the public tunnel)
+        auth = true; # Authentik forward-auth in front (was Authelia until 2026-09-22); mesh-only (NVR — never on the public tunnel)
         meta = {
           name = "Frigate NVR";
           category = "Security";
@@ -593,7 +597,7 @@
         ip = "10.85.47.131"; # Moved to NASbook subnet
         port = 28981;
         externalPort = 28981;
-        auth = true;
+        auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Paperless-ngx";
           category = "Documents";

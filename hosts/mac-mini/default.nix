@@ -310,6 +310,15 @@ in
           "10.85.50.1" # mac-mini itself (my.network.hostAddress above)
         ];
         githubMetrics.enable = false;
+        # Grafana logs visitors in directly via Authentik OIDC instead of
+        # sitting behind Caddy's shared forward_auth gate (Authelia
+        # migration — see nix-presets/containers/caddy/helpers.nix and
+        # nix/infra/authentik.tf's grafana Provider). inventory.nix's
+        # monitoring node keeps auth = false to match — see its own comment.
+        grafanaOidc = {
+          enable = true;
+          clientSecretFile = config.sops.secrets."monitoring_grafana_oauth_client_secret".path;
+        };
       };
 
       # Moved from hass-pi 2026-08-05: hass-pi's actual purpose (Home
