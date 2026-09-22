@@ -103,7 +103,23 @@ let
       };
     };
     agent-zero = {
-      ip = ip 35;
+      # FIXED 2026-09-22: was the generic `ip 35` helper (container-factory's
+      # own 10.85.46.0/24 base subnet) — wrong for a container that actually
+      # deploys standalone to mac-mini (10.85.50.0/24), same class of bug
+      # factory.nix's own defaultGateway-fix comment describes ("baking the
+      # factory's ... hostAddress made every container deployed off the .46
+      # subnet route wrong"), except this was the catalogue's OWN ip value
+      # being wrong, not the gateway derivation — the derivation was correct,
+      # it just computed the wrong gateway FROM a wrong base ip. Confirmed
+      # live: agent-zero's container had two addresses on eth0 (the correct
+      # host-assigned 10.85.50.5 AND a stale baked-in 10.85.46.35 from this
+      # catalogue value), with the wrong one winning as the default route —
+      # "Destination Host Unreachable" for all outbound traffic, including
+      # the image pull that's the whole point of this container. Never
+      # surfaced before because agent-zero was disabled since 2026-08-05,
+      # so this path was never actually exercised until re-enabling it
+      # tonight. anythingllm (below) already had the correct pattern.
+      ip = "${myInventory.network.nodes.agent-zero.ip}/24"; # mac-mini
       hostDataDir = dataDir "agent-zero";
     };
     anythingllm = {
