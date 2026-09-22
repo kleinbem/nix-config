@@ -247,7 +247,6 @@ in
       enable = true;
       libvirtd.enable = false;
       podman.enable = true;
-      lxc.enable = false;
     };
 
     network.externalInterface = "end0";

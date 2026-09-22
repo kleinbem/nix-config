@@ -224,7 +224,6 @@ in
       enable = true;
       libvirtd.enable = false;
       podman.enable = true;
-      lxc.enable = false;
     };
 
     # Joins the unlock cluster as a 4th independent Tang server (alongside

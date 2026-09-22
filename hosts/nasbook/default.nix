@@ -99,7 +99,6 @@ in
       enable = true;
       libvirtd.enable = false;
       podman.enable = true;
-      lxc.enable = false;
     };
 
     # ─── Container Hosting (via reusable module) ─────────────

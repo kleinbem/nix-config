@@ -50,11 +50,14 @@
       "/var/lib/machines" # systemd-machined and systemd-nspawn container state
       "/var/lib/syncthing" # Syncthing device identity and config
       "/var/lib/private/tang" # Tang NBDE keys (DynamicUser → /var/lib/private)
-      "/var/lib/lxc" # LXC state
     ];
     files = [
-      "/etc/ssh/ssh_host_rsa_key"
-      "/etc/ssh/ssh_host_rsa_key.pub"
+      # RSA host key persistence dropped 2026-09-22 — every host's initrd
+      # hostKeys (rpi5-node.nix, hardware-boot.nix, hardware.nix, mac-mini/
+      # nasbook default.nix) lists only ed25519, and the whole sops/age
+      # recipient chain is ed25519-derived already (kleinbem-secrets
+      # .sops.yaml — 23 age1 recipients, zero RSA/PGP). Nothing referenced
+      # the RSA key; it was just persisted dead weight.
       "/etc/ssh/ssh_host_ed25519_key"
       "/etc/ssh/ssh_host_ed25519_key.pub"
     ]

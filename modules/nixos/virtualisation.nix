@@ -27,11 +27,6 @@ in
       description = "Enable host-level Podman container engine and tools.";
     };
 
-    lxc.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Enable host-level LXC daemonless tools.";
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -86,13 +81,6 @@ in
         # proved neither had ever successfully pulled its image, on any
         # host, the whole time.
         registries.settings.unqualified-search-registries = [ "docker.io" ];
-      };
-
-      # Raw LXC (Daemonless)
-      lxc = {
-        inherit (cfg.lxc) enable;
-        lxcfs.enable = cfg.lxc.enable;
-        defaultConfig = "lxc.include = ${pkgs.lxc}/share/lxc/config/common.conf.d/00-lxcfs.conf";
       };
     };
 
@@ -254,7 +242,7 @@ in
         pkgs.podman-compose
         pkgs.docker-compose
       ])
-      (lib.optional (cfg.libvirtd.enable || cfg.lxc.enable) pkgs.crosvm)
+      (lib.optional cfg.libvirtd.enable pkgs.crosvm)
     ];
   };
 }

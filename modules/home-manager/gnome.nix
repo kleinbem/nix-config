@@ -484,7 +484,7 @@
       "org/gnome/desktop/app-folders/folders/FleetServices" = {
         name = "Fleet Services";
         categories = [ "WebBrowser" ];
-        # The ~30 self-hosted service PWA launchers (Attic, Authelia, Frigate,
+        # The ~30 self-hosted service PWA launchers (Attic, Authentik, Frigate,
         # Home Assistant, n8n, Netdata, Paperless, Qdrant, Syncthing, etc.)
         # all declare Categories=Network;WebBrowser. Exclude the actual
         # browsers so Chrome doesn't get folded in alongside them.
