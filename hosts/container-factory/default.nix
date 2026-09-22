@@ -93,6 +93,14 @@ let
     monitoring = {
       ip = "${myInventory.network.nodes.monitoring.ip}/24"; # mac-mini
       hostDataDir = dataDir "monitoring";
+      # Non-null so the cached closure includes the auth.generic_oauth
+      # block (grafana's own $__file{} syntax reads the fixed in-container
+      # path at runtime — see monitoring.nix). Real bind mount is supplied
+      # by the deploying host (mac-mini, sops path).
+      grafanaOidc = {
+        enable = true;
+        clientSecretFile = "/run/secrets/factory-dummy";
+      };
     };
     agent-zero = {
       ip = ip 35;
