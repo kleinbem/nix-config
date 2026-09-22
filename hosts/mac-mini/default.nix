@@ -846,6 +846,15 @@ in
     # override is needed on this host specifically.
     resolvconf.enable = lib.mkForce false;
 
+    # UPDATED 2026-09-22: migrated to the nftables firewall backend
+    # (same playbook as nixos-nvme the same night — see its network.nix for
+    # the full nat.enable/nftables.enable/filterForward gotchas) so
+    # extraForwardRules actually works, replacing the iptables
+    # nat.extraCommands workaround below. virtualisation.nix's NAT is
+    # already native nftables (migrated in the same change), so this host
+    # needed no NAT-specific work, just the firewall backend + rule syntax.
+    nftables.enable = true;
+
     # Alertmanager has no built-in authentication at all (upstream Prometheus
     # design — it's meant to sit behind a reverse proxy). Caddy's forward_auth
     # (Authentik, was Authelia until 2026-09-22) is that proxy for the fleet,
@@ -854,12 +863,7 @@ in
     # 2026-09-19, curling http://10.85.50.2:9093/ cross-host from nixos-nvme
     # returned the full Alertmanager UI (view/silence alerts) with no auth
     # challenge at all. Same class of bug as paperless/code-server/syncthing
-    # (nasbook cea111b0/da236067) and same root cause: networking.firewall.
-    # extraForwardRules (what container-host.nix uses fleet-wide) only exists
-    # on the nftables firewall backend; mac-mini uses the classic iptables
-    # backend, where it's silently inert. networking.nat.extraCommands is the
-    # correct injection point for that backend. 10.85.50.1 is mac-mini's own
-    # bridge address, allowed for host-side debugging/administration.
+    # (nasbook cea111b0/da236067).
     #
     # Source IP corrected 2026-09-22: this ACCEPT rule matched Caddy's raw
     # container IP (myInventory.network.nodes.caddy.ip, 10.85.48.107) — but
@@ -871,12 +875,17 @@ in
     # (alertmanager only got a real domain + forward-auth path this
     # session) — confirmed dropped via live reachability testing before
     # this fix. myInventory.hosts.core-pi.ip is the real, masqueraded
-    # source.
-    nat.extraCommands = ''
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s ${myInventory.hosts.core-pi.ip} -j ACCEPT
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s 10.85.50.1 -j ACCEPT
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -j DROP
-    '';
+    # source. 10.85.50.1 is mac-mini's own bridge address, allowed for
+    # host-side debugging/administration.
+    firewall = {
+      enable = true;
+      backend = "nftables";
+      filterForward = true;
+      extraForwardRules = lib.mkBefore ''
+        ip daddr ${myInventory.network.nodes.alertmanager.ip} tcp dport ${toString myInventory.network.nodes.alertmanager.port} ip saddr { ${myInventory.hosts.core-pi.ip}, 10.85.50.1 } accept
+        ip daddr ${myInventory.network.nodes.alertmanager.ip} tcp dport ${toString myInventory.network.nodes.alertmanager.port} drop
+      '';
+    };
 
     interfaces."enp2s0f0" = {
       useDHCP = false;

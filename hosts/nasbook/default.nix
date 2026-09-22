@@ -229,49 +229,39 @@ in
   # credentials, while the same request without the header correctly
   # redirects to /accounts/login/.
   #
-  # NOT fixed via networking.firewall.extraForwardRules — that option only
-  # exists on the nftables firewall backend (nixpkgs'
-  # firewall-nftables.nix); nasbook uses the classic iptables backend
-  # (networking.firewall.backend == "iptables", confirmed live 2026-09-19),
-  # where extraForwardRules is silently inert — container-host.nix's own
-  # nftables-syntax "extraForwardRules" have in fact never done anything on
-  # this host. The iptables backend's forward-chain filtering instead comes
-  # from networking.nat (nat-iptables.nix's "nixos-filter-forward" chain:
-  # unconditional cbr0->WAN accept + established/related accept, then falls
-  # through to the kernel's default FORWARD policy, which is ACCEPT — so
-  # nothing was blocking this at all). networking.nat.extraCommands is the
-  # correct injection point for that backend: it's appended into
-  # nixos-filter-forward, after the existing accepts but before that
-  # fallthrough. Verified via a live tcpdump that cross-host container
-  # traffic isn't NAT'd here (no source-IP masquerade on this path), so
-  # matching Caddy's real container IP as the source is reliable — same
-  # convention zero-trust.nix already uses for same-host flows.
-  # 10.85.47.1 is nasbook's own bridge address, allowed for host-side
-  # debugging/administration.
+  # UPDATED 2026-09-22: migrated to the nftables firewall backend (same
+  # playbook as nixos-nvme the same night — see its network.nix for the
+  # full nat.enable/nftables.enable/filterForward gotchas), replacing the
+  # iptables nat.extraCommands workaround below. virtualisation.nix's NAT
+  # is already native nftables (migrated in the same change), so this host
+  # needed no NAT-specific work, just the firewall backend + rule syntax.
   #
-  # Source IP corrected 2026-09-22: this file's own comment above says a
-  # live tcpdump on 2026-09-19 found NO masquerading on this path, so
+  # Source IP corrected 2026-09-22: this file's own comment previously said
+  # a live tcpdump on 2026-09-19 found NO masquerading on this path, so
   # matching Caddy's raw container IP was reliable at the time — but
   # core-pi's blanket `iifname "cbr0" oifname "end0" masquerade` rule
   # (confirmed live via `nft list ruleset` on core-pi, 2026-09-22) applies
   # to ALL cbr0 egress regardless of destination, paperless included; it
   # must have been added to core-pi after that original tcpdump. Confirmed
-  # broken today via live reachability testing (Caddy's traffic dropped)
-  # before this fix. myInventory.hosts.core-pi.ip is the real, currently
-  # masqueraded source.
+  # broken via live reachability testing (Caddy's traffic dropped) before
+  # this fix. myInventory.hosts.core-pi.ip is the real, currently
+  # masqueraded source. 10.85.47.1 is nasbook's own bridge address, allowed
+  # for host-side debugging/administration.
   networking = {
     hostName = "nasbook";
 
+    nftables.enable = true;
+
     firewall = {
       enable = true;
+      backend = "nftables";
+      filterForward = true;
       interfaces."wt0".allowedTCPPorts = [ 22 ];
+      extraForwardRules = lib.mkBefore ''
+        ip daddr ${myInventory.network.nodes.paperless.ip} tcp dport ${toString myInventory.network.nodes.paperless.port} ip saddr { ${myInventory.hosts.core-pi.ip}, 10.85.47.1 } accept
+        ip daddr ${myInventory.network.nodes.paperless.ip} tcp dport ${toString myInventory.network.nodes.paperless.port} drop
+      '';
     };
-
-    nat.extraCommands = ''
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s ${myInventory.hosts.core-pi.ip} -j ACCEPT
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s 10.85.47.1 -j ACCEPT
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -j DROP
-    '';
   };
 
   boot.loader = {
