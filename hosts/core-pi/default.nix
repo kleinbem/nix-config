@@ -176,6 +176,19 @@ in
         postgresPasswordFile = config.sops.secrets.authentik_postgres_password.path;
         bootstrapAdminPasswordFile = config.sops.secrets.authentik_bootstrap_admin_password.path;
         bootstrapApiTokenFile = config.sops.secrets.authentik_bootstrap_api_token.path;
+        # Preset default (1G, "comfortable for ~50 persona users") turned
+        # out too tight once a forward_domain Proxy Provider existed:
+        # confirmed live 2026-09-22 via `podman logs authentik-server` —
+        # "Worker was sent SIGKILL! Perhaps out of memory?" — every single
+        # time right after "refreshing outpost", crash-looping the whole
+        # container (5-45s up, repeat) and taking kleinbem.dev's public
+        # login down with it, since it's the same server process. Real hard
+        # limit confirmed via `systemctl show container@authentik.service
+        # -p MemoryMax` = 1073741824 (exactly 1G, not a fluke). core-pi has
+        # room (7.9Gi total, ~4Gi available even mid-incident) — doubling
+        # rather than micro-tuning since the actual per-provider-type cost
+        # of an outpost refresh isn't characterized.
+        memoryLimit = "2G";
       };
 
       dashboard = {
