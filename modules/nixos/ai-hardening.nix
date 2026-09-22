@@ -15,6 +15,23 @@ let
   # of a static /etc/hosts pin.
   hostNetbirdIp = (inv.hosts.${config.networking.hostName} or { }).netbirdIp or null;
   cacheViaNetbirdDns = cfg.strictEgress && hostNetbirdIp != null;
+  # Every FQDN NetBird answers authoritatively over the mesh (see
+  # nix/infra/netbird/dns.tf's `mesh_only_fqdns` local — keep these two
+  # lists in sync by hand, same as this file already did for cache alone).
+  # Public DNS answers these with the Cloudflare tunnel's IPs (wrong or,
+  # for the mesh-only ones, plain unreachable off-mesh), so this dnsmasq
+  # — which has no-resolv=true and otherwise only talks to public
+  # upstreams — needs an explicit per-domain forward to the local NetBird
+  # agent's own embedded DNS server (bound to this host's own mesh IP) for
+  # each one, or it never queries NetBird for them at all.
+  meshOnlyFqdns = [
+    "cache.kleinbem.dev"
+    "code.kleinbem.dev"
+    "frigate.kleinbem.dev"
+    "syncthing.kleinbem.dev"
+    "alertmanager.kleinbem.dev"
+    "paperless.kleinbem.dev"
+  ];
 in
 {
   options.my.security.ai-hardening = {
@@ -87,13 +104,16 @@ in
             "8.8.8.8" # Google
             "9.9.9.9" # Quad9
           ]
-          # Cache entrypoint resolves via this host's own NetBird agent so the
+          # Mesh-only FQDNs resolve via this host's own NetBird agent so the
           # mesh record is authoritative (public DNS answers with Cloudflare
-          # tunnel IPs, whose 100 MiB NAR cap breaks big pulls). Note dnsmasq
+          # tunnel IPs — wrong for cache, whose 100 MiB NAR cap breaks big
+          # pulls, and unreachable off-mesh for the others). Note dnsmasq
           # does NOT fall back to the general upstreams for a /domain/-scoped
-          # server: if the agent is down this name SERVFAILs — acceptable, the
-          # WireGuard path is unreachable without the agent anyway.
-          ++ lib.optional cacheViaNetbirdDns "/cache.kleinbem.dev/${hostNetbirdIp}";
+          # server: if the agent is down these names SERVFAIL — acceptable,
+          # the WireGuard path is unreachable without the agent anyway.
+          ++ lib.optionals cacheViaNetbirdDns (
+            map (fqdn: "/${fqdn}/${hostNetbirdIp}") meshOnlyFqdns
+          );
         };
       };
 
