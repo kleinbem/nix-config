@@ -345,17 +345,19 @@ in
       # container updates from full host rebuilds) — only a *fresh*
       # build hits this. Move it once upstream fixes their lockfile.
       #
-      # agent-zero disabled entirely (not just stopped): confirmed
-      # 2026-08-05 that frdel/agent-zero:latest on Docker Hub currently
-      # resolves to a plain Kali Linux base image, not the actual
-      # application (no run_ui.py, no agent-zero code at all anywhere in
-      # the image) — genuine upstream image drift, outside our control.
-      # A manual `systemctl stop` doesn't survive reboot (still
-      # enable=true, auto-starts and crash-loops trying the same broken
-      # pull forever) — confirmed live after martin rebooted mac-mini.
-      # Re-enable once upstream publishes a real image at this tag again.
+      # RE-ENABLED 2026-09-22: was disabled 2026-08-05 after
+      # frdel/agent-zero:latest on Docker Hub was confirmed to have
+      # rotted into a plain Kali Linux base image with no application
+      # code — genuine upstream image drift. The project itself is
+      # alive: it rebranded to agent0ai/agent-zero (v2.x rewrite),
+      # confirmed actively maintained (multi-arch, updated within the
+      # last two weeks) — see nix-presets/containers/agent-zero.nix for
+      # the image/wiring update. LiteLLM auth is via the existing mTLS
+      # client-cert mechanism (tlsOpts, shared with every other
+      # mTLS-fronted container on this host), not an API key — no
+      # secretsFile needed here.
       agent-zero = {
-        enable = false;
+        enable = true;
         ip = "10.85.50.5/24";
         hostDataDir = "/var/lib/agent-zero";
         memoryLimit = "1G";
@@ -464,11 +466,12 @@ in
   # spare. containers.<name>.tmpfs is the plain NixOS nixos-containers
   # option (nspawn's own --tmpfs=PATH:size=X), separate from and merging
   # fine alongside whatever my.containers.<name> (mkContainer) already
-  # sets for the same container name. NOT agent-zero here anymore — it's
-  # disabled entirely above (broken upstream image), and this attribute
-  # alone (with my.containers.agent-zero.enable = false leaving the rest
-  # of containers.agent-zero unset) breaks eval: "containers.agent-zero
-  # .path was accessed but has no value defined."
+  # sets for the same container name. Historically NOT agent-zero here
+  # (when it was disabled 2026-08-05 — 2026-09-22: with
+  # my.containers.agent-zero.enable = false, this attribute alone left
+  # the rest of containers.agent-zero unset, breaking eval:
+  # "containers.agent-zero.path was accessed but has no value defined").
+  # Moot now that agent-zero is re-enabled — noted for context only.
   containers.anythingllm.tmpfs = [ "/var/lib/containers:size=8G" ];
 
   # All services.* for this host in one block too (same statix repeated-key
@@ -726,14 +729,13 @@ in
         # NOTE: enabled-container hostDataDirs — /var/lib/monitoring
         # (moved from core-pi 2026-08-04), /var/lib/open-webui,
         # /var/lib/anythingllm, /var/lib/hermes (moved from hass-pi
-        # 2026-08-05) — are NOT listed here: the container-host module
-        # auto-derives a persistence entry from each enabled container's
-        # hostDataDir, and impermanence hard-asserts on duplicate directory
-        # entries. /var/lib/agent-zero stays (its my.containers.agent-zero
-        # is disabled, so nothing auto-derives it); /var/lib/homarr stays
-        # (a plain virtualisation.oci-containers container, not
-        # my.containers.*).
-        "/var/lib/agent-zero"
+        # 2026-08-05), /var/lib/agent-zero (re-enabled 2026-09-22, see
+        # its my.containers.agent-zero block above) — are NOT listed
+        # here: the container-host module auto-derives a persistence
+        # entry from each enabled container's hostDataDir, and
+        # impermanence hard-asserts on duplicate directory entries.
+        # /var/lib/homarr stays (a plain virtualisation.oci-containers
+        # container, not my.containers.*).
 
         # Homarr + AdGuard Home — moved from hass-pi 2026-08-05 (not
         # HA-related, see the my.containers.open-webui / services block
