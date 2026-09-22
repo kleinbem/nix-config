@@ -157,17 +157,6 @@
       }; # User backup
       restic_system_password = { }; # Root backup
 
-      # (Authelia secrets removed 2026-09-10, 2nd time — a history rewrite ate
-      # the first removal. authelia is `enable = false` on this host; these
-      # unconditional decls have no `sopsFile` so they resolve against
-      # nix/shared.yaml, which has NO `authelia_*` keys since kleinbem-secrets
-      # 198f2cd consolidated them into nix/per-container/authelia.yaml. Result:
-      # sops-install-secrets fails the whole manifest at activation
-      # ("key 'authelia_jwt_secret' cannot be found"), exit 4. core-pi runs
-      # authelia and declares these WITH sopsFile = .../per-container/authelia.yaml
-      # — copy that block here if this host ever enables authelia.
-      # COMMIT THIS as its own change so a rebase doesn't drop it again.)
-
       # Dashboard Keys
       homepage_n8n_key = {
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";

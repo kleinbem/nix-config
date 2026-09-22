@@ -153,15 +153,7 @@ let
       # value). Real bind mount is supplied by the deploying host.
       adminPasswordFile = "/run/secrets/factory-dummy";
     };
-    authelia = {
-      hostDataDir = dataDir "authelia";
-      # Host-level bind mounts; not in closure. The factory has no sops-nix,
-      # so the preset's `config.sops.secrets.*` defaults would fail to eval.
-      jwtSecretFile = "/run/secrets/factory-dummy";
-      sessionSecretFile = "/run/secrets/factory-dummy";
-      storageEncryptionKeyFile = "/run/secrets/factory-dummy";
-      usersFile = "/run/secrets/factory-dummy";
-    };
+    # authelia removed 2026-09-22 — decommissioned, replaced by Authentik.
     # github-runner: opt-in debug runner, built embedded on nixos-nvme
     # (excludeFromUpdater) so it's not a factory target.
     llama-cpp = {
@@ -237,7 +229,6 @@ in
     inputs.nix-presets.nixosModules.loki
     inputs.nix-presets.nixosModules.crowdsec
     inputs.nix-presets.nixosModules.netdata
-    inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.buzz
     inputs.nix-presets.nixosModules.agent-zero

@@ -9,11 +9,12 @@
   networking = {
     hostName = "nixos-nvme";
     # code-server and syncthing both rely entirely on Caddy's forward_auth
-    # (Authelia) for access control: code-server runs with `auth = "none"`
+    # (Authentik, was Authelia until 2026-09-22) for access control:
+    # code-server runs with `auth = "none"`
     # (nix-presets/containers/code-server.nix) and syncthing's GUI has no
     # username/password configured (nix-presets/containers/syncthing.nix) —
     # neither has any auth of its own. Both container ports were reachable
-    # directly, bypassing Caddy/Authelia entirely: confirmed live
+    # directly, bypassing Caddy/forward_auth entirely: confirmed live
     # 2026-09-19, curling either one directly returned the full app (VS
     # Code workbench / Syncthing GUI) with no login prompt at all — worse
     # than the paperless bug fixed earlier the same day (that one at least

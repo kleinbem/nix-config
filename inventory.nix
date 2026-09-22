@@ -511,18 +511,9 @@
           description = "Real-time per-second telemetry.";
         };
       };
-      authelia = {
-        ip = "10.85.48.123";
-        port = 9091;
-        externalPort = 443;
-        domain = "authelia.kleinbem.dev"; # mesh-only (nix/infra/netbird) — never the tunnel; it's the SSO gate itself
-        meta = {
-          name = "Authelia SSO";
-          category = "Identity";
-          icon = "🔐";
-          description = "Single Sign-On & 2FA.";
-        };
-      };
+      # authelia removed 2026-09-22 — decommissioned, replaced by Authentik
+      # forward-auth (nix/infra/authentik.tf's fleet_forward_auth Provider).
+      # Freed: 10.85.48.123, authelia.kleinbem.dev.
       home-assistant = {
         ip = "10.85.49.10"; # Hass-Pi
         port = 8123;

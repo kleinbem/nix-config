@@ -35,7 +35,6 @@ in
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.authentik
     inputs.nix-presets.nixosModules.cups
-    inputs.nix-presets.nixosModules.authelia
     inputs.nix-presets.nixosModules.attic
     inputs.nix-presets.nixosModules.ntfy
     inputs.nix-presets.nixosModules.caddy
@@ -201,13 +200,6 @@ in
       cups = {
         enable = true;
         ip = "${myInventory.network.nodes.cups.ip}/24";
-      };
-
-      authelia = {
-        enable = true;
-        ip = "${myInventory.network.nodes.authelia.ip}/24";
-        hostDataDir = "/var/lib/images/authelia";
-        domain = "local";
       };
 
       attic = {

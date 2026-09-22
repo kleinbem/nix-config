@@ -136,13 +136,6 @@
         ip = "${myInventory.network.nodes.netdata.ip}/24";
       };
 
-      authelia = {
-        enable = false;
-        ip = "${myInventory.network.nodes.authelia.ip}/24";
-        hostDataDir = "/var/lib/images/authelia";
-        domain = "local";
-      };
-
       cups = {
         enable = false;
         ip = "${myInventory.network.nodes.cups.ip}/24";

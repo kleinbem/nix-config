@@ -12,23 +12,13 @@ in
     # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
     # fleet-wide in modules/nixos/base.nix.
     secrets =
-      # Identity (Authelia) — all 4 secrets live in one per-container file,
-      # scoped to core_pi in kleinbem-secrets/.sops.yaml (only the host that
-      # actually runs the container can decrypt them). The 3 crypto secrets
-      # used to live in shared.yaml (decryptable by every fleet host) before
-      # this consolidation — that was a legacy artifact predating the
-      # per-container convention (see kleinbem-auth.yaml/stalwart.yaml), not
-      # a deliberate choice, so they moved here alongside the seed users.yml.
-      mkPerContainerSecrets {
-        container = "authelia";
-        keys = [
-          "session_secret"
-          "jwt_secret"
-          "storage_encryption_key"
-          "users_file"
-        ];
-      }
-      // {
+      # Authelia decommissioned 2026-09-22 — all 6 services it protected
+      # migrated to Authentik forward-auth (nix/infra/authentik.tf's
+      # fleet_forward_auth Provider); its own 4 secrets
+      # (session_secret/jwt_secret/storage_encryption_key/users_file, in
+      # kleinbem-secrets/nix/per-container/authelia.yaml) are no longer
+      # referenced anywhere and were removed from here.
+      {
         # Vaultwarden — Argon2 PHC hash for the /admin page (ADMIN_TOKEN).
         # Generate: `nix run nixpkgs#vaultwarden -- hash --preset owasp`.
         # Add the value to kleinbem-secrets/nix/shared.yaml (defaultSopsFile).

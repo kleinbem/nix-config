@@ -18,18 +18,17 @@
         # over NetBird via the per-FQDN DNS overrides in nix/infra/netbird/dns.tf
         # (→ core-pi mesh IP → core-pi DNAT → caddy). home/chat/n8n/grafana stay
         # public behind their existing auth — low breach value (dashboard),
-        # external webhooks (n8n), or Authelia forward_auth (grafana, same
+        # external webhooks (n8n), or Authentik forward_auth (grafana, same
         # pattern as chat/n8n — see inventory.nix's monitoring node).
         #
-        # `authelia.kleinbem.dev` itself MUST also be on this public ingress:
-        # forward_auth on chat/n8n/grafana redirects the visitor's own browser
-        # to it for login (?rd=...), and that redirect comes from whatever
-        # network the VISITOR is on — not from core-pi's mesh membership. It
-        # resolves publicly (wildcard *.kleinbem.dev CNAME → this tunnel) but
-        # had no ingress rule, so it 404'd via `default` below for anyone off
-        # NetBird's private DNS override (nix/infra/netbird/dns.tf) — i.e.
-        # everyone except fleet devices. Bug, not by design; found 2026-09-19
-        # testing grafana.kleinbem.dev's login redirect off-mesh.
+        # authelia.kleinbem.dev removed 2026-09-22 — Authelia decommissioned,
+        # its own former ingress-rule bug (the note that used to live here,
+        # about needing this entry for the visitor's own browser to reach
+        # the login redirect off-mesh) is moot now that auth.kleinbem.dev
+        # (below) plays that role for Authentik instead. Visitors to the old
+        # URL now get the plain http_status:404 `default` below,
+        # deliberately — same "Plain 404" choice already made for
+        # login.kleinbem.dev.
         ingress = {
           "kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "home.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
@@ -39,7 +38,6 @@
           "ntfy.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "grafana.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "authelia.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           # login.kleinbem.dev (kleinbem-auth) removed 2026-09-21 —
           # decommissioned, replaced by Authentik (auth.kleinbem.dev,
           # below). Visitors to the old URL now get the plain

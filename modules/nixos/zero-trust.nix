@@ -119,11 +119,15 @@ let
       comment = "All Containers -> Loki Logging";
     }
     # ─── Security & Identity ────────────────────────────────
+    # Authelia decommissioned 2026-09-22, replaced by Authentik forward-auth
+    # (nix/infra/authentik.tf's fleet_forward_auth Provider) — same role,
+    # different backend: Caddy calls the embedded outpost at port 9000
+    # instead of Authelia's 9091.
     {
       src = inv.nodes.caddy.ip;
-      dst = inv.nodes.authelia.ip;
-      dport = 9091;
-      comment = "Caddy -> Authelia (SSO Subrequests)";
+      dst = inv.nodes.authentik.ip;
+      dport = 9000;
+      comment = "Caddy -> Authentik (forward-auth subrequests)";
     }
   ];
 

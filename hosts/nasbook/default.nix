@@ -215,16 +215,17 @@ in
     resolved.enable = true;
   };
 
-  # paperless trusts an unauthenticated Remote-User header for SSO login
-  # (PAPERLESS_ENABLE_HTTP_REMOTE_USER, nix-presets/containers/paperless.nix)
-  # — normally safe because only Caddy's forward_auth (after a verified
-  # Authelia session) is meant to set that header. But paperless's own
-  # container port is otherwise reachable by anyone who can route to
-  # nasbook's cbr0, including cross-host (network-routing.nix installs a
-  # route to every host's container subnet on every other host), which
-  # bypasses Caddy/Authelia entirely. Confirmed exploitable live
-  # 2026-09-19: curling http://10.85.47.131:28981/ directly with
-  # `-H "Remote-User: admin"` logs straight into the dashboard with no
+  # paperless trusts an unauthenticated X-Authentik-Username header for SSO
+  # login (PAPERLESS_ENABLE_HTTP_REMOTE_USER, nix-presets/containers/paperless.nix
+  # — was Remote-User/Authelia until 2026-09-22) — normally safe because
+  # only Caddy's forward_auth (after a verified Authentik session) is meant
+  # to set that header. But paperless's own container port is otherwise
+  # reachable by anyone who can route to nasbook's cbr0, including
+  # cross-host (network-routing.nix installs a route to every host's
+  # container subnet on every other host), which bypasses Caddy/forward_auth
+  # entirely. Confirmed exploitable live 2026-09-19 (pre-migration, header
+  # was Remote-User then): curling http://10.85.47.131:28981/ directly with
+  # a spoofed identity header logs straight into the dashboard with no
   # credentials, while the same request without the header correctly
   # redirects to /accounts/login/.
   #

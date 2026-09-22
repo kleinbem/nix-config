@@ -848,8 +848,9 @@ in
 
     # Alertmanager has no built-in authentication at all (upstream Prometheus
     # design — it's meant to sit behind a reverse proxy). Caddy's forward_auth
-    # (Authelia) is that proxy for the fleet, but alertmanager's own container
-    # port was reachable directly, bypassing it entirely: confirmed live
+    # (Authentik, was Authelia until 2026-09-22) is that proxy for the fleet,
+    # but alertmanager's own container port was reachable directly, bypassing
+    # it entirely: confirmed live
     # 2026-09-19, curling http://10.85.50.2:9093/ cross-host from nixos-nvme
     # returned the full Alertmanager UI (view/silence alerts) with no auth
     # challenge at all. Same class of bug as paperless/code-server/syncthing
