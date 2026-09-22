@@ -103,7 +103,15 @@
       enable = true;
       device = "/dev/disk/by-id/ata-WD_Red_SA500_2.5_2TB_2548TKD00121";
     };
-    deploy.autoUpgrade.enable = true;
+    deploy.autoUpgrade = {
+      enable = true;
+      # Unlike orin-nano, this host has no legitimate multi-hour local
+      # build (no on-device kernel compile) — CI already builds this
+      # host's toplevel and pushes it to Attic (build-all.yaml), so a
+      # cache-unreachable cycle should abort and retry next time rather
+      # than fall back to compiling the whole closure from source.
+      requireCache = true;
+    };
     services.threeDPrinting.enable = true; # Bambu Lab A1 mini: slicers + LAN discovery
     desktop = {
       gnome.enable = true;
