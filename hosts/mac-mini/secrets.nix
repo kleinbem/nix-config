@@ -133,7 +133,7 @@ in
       };
 
     }
-    // lib.optionalAttrs config.my.containers.monitoring.grafanaOidc.enable (
+    // lib.optionalAttrs config.my.containers.monitoring.grafanaOidc.enable {
       # Authentik OIDC client secret for Grafana's own login (Authelia
       # migration — see default.nix's monitoring.grafanaOidc block).
       # Value: `tofu output -raw grafana_oidc_client_secret` from
@@ -141,11 +141,20 @@ in
       # monitoring.yaml` to set monitoring_grafana_oauth_client_secret —
       # same manual round-trip as every other Terraform-generated secret
       # this fleet feeds into sops (e.g. turnstile_secret_key).
-      mkPerContainerSecrets {
-        container = "monitoring";
-        keys = [ "grafana_oauth_client_secret" ];
-      }
-    )
+      #
+      # Declared directly (not via mkPerContainerSecrets) because this one
+      # needs mode = "0444": sops-nix's default 0400/root:root is unreadable
+      # by grafana's own unprivileged in-container user (uid 196) once
+      # bind-mounted through — confirmed live 2026-09-22, grafana.service
+      # crash-looping on "permission denied" reading the bind-mounted path.
+      # World-readable is an acceptable tradeoff here (same posture as
+      # other container-bind-mounted secrets in this fleet) rather than
+      # chasing exact UID parity across a package-version-dependent uid.
+      monitoring_grafana_oauth_client_secret = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/monitoring.yaml";
+        mode = "0444";
+      };
+    }
     // lib.optionalAttrs config.my.containers.stalwart.enable (
       # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
       # plaintext — Stalwart accepts either). Per-CONTAINER scope, not
