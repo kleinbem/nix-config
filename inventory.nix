@@ -445,6 +445,11 @@
         ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
         port = 9093;
         externalPort = 9093;
+        # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
+        # *.kleinbem.dev hostname to match (bare IP:port never worked, see
+        # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
+        # code-server/frigate, not on the public Cloudflare tunnel.
+        domain = "alertmanager.kleinbem.dev";
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Alertmanager";
@@ -542,6 +547,11 @@
         ip = "10.85.46.127";
         port = 8384;
         externalPort = 8384;
+        # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
+        # *.kleinbem.dev hostname to match (bare IP:port never worked, see
+        # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
+        # code-server/frigate, not on the public Cloudflare tunnel.
+        domain = "syncthing.kleinbem.dev";
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Syncthing (Zotac)";
@@ -597,6 +607,11 @@
         ip = "10.85.47.131"; # Moved to NASbook subnet
         port = 28981;
         externalPort = 28981;
+        # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
+        # *.kleinbem.dev hostname to match (bare IP:port never worked, see
+        # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
+        # code-server/frigate, not on the public Cloudflare tunnel.
+        domain = "paperless.kleinbem.dev";
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Paperless-ngx";
