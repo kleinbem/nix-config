@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 62  
+**Declarations indexed:** 61  
 **Consumer files scanned:** 16
 
 ---
@@ -86,17 +86,11 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `autoReap.enable`, `autoReap.schedule`, `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`
 - **Consumed by:** `host:core-pi`
 
-### `my.containers.authelia`
-
-- **Declared:** `nix-presets/containers/authelia.nix:14`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `sessionSecretFile`, `storageEncryptionKeyFile`, `usersFile`
-- **Consumed by:** `host:core-pi`, `host:nixos-nvme`
-
 ### `my.containers.authentik`
 
-- **Declared:** `nix-presets/containers/authentik.nix:13`
+- **Declared:** `nix-presets/containers/authentik.nix:50`
 - **Sub-options:** `bootstrapAdminPasswordFile`, `bootstrapApiTokenFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `postgresPasswordFile`, `secretKeyFile`
-- **Consumed by:** _(no opt-ins detected)_
+- **Consumed by:** `host:core-pi`
 
 ### `my.containers.backup`
 
@@ -158,6 +152,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `environmentFile`, `hostDataDir`, `innerConfig`, `ip`, `jetson`, `jetsonDevices`, `mediaDir`, `memoryLimit`
 - **Consumed by:** `host:orin-nano`
 
+### `my.containers.gatus`
+
+- **Declared:** `nix-presets/containers/gatus.nix:13`
+- **Sub-options:** `enable`, `endpoints`, `ip`, `memoryLimit`, `port`
+- **Consumed by:** `host:core-pi`
+
 ### `my.containers.hermes`
 
 - **Declared:** `nix-presets/containers/hermes.nix:14`
@@ -169,12 +169,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/home-assistant.nix:12`
 - **Sub-options:** `enable`, `enableBluetooth`, `enableUSB`, `hostDataDir`, `ip`, `memoryLimit`
 - **Consumed by:** `host:hass-pi`
-
-### `my.containers.kleinbem-auth`
-
-- **Declared:** `nix-presets/containers/kleinbem-auth.nix:54`
-- **Sub-options:** `betterAuthSecretFile`, `cookieDomain`, `domain`, `enable`, `facebookClientIdFile`, `facebookClientSecretFile`, `githubClientIdFile`, `githubClientSecretFile`, `googleClientIdFile`, `googleClientSecretFile`, `hostDataDir`, `ip`, `linkedinClientIdFile`, `linkedinClientSecretFile`, `memoryLimit`, `microsoftClientIdFile`, `microsoftClientSecretFile`, `port`, `smtpFrom`, `smtpHost`, `smtpPasswordFile`, `smtpPort`, `smtpUserFile`, `trustedOrigins`, `turnstileSecretKeyFile`
-- **Consumed by:** `host:core-pi`
 
 ### `my.containers.langflow`
 
@@ -208,8 +202,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.monitoring`
 
-- **Declared:** `nix-presets/containers/monitoring.nix:13`
-- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `hostDataDir`, `ip`, `nodeTargets`, `ollamaTargets`, `vllmTargets`
+- **Declared:** `nix-presets/containers/monitoring.nix:18`
+- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `nodeTargets`, `ollamaTargets`, `vllmTargets`
 - **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.n8n`
@@ -322,7 +316,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.desktop`
 
@@ -366,7 +360,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.security.ai-hardening`
 
-- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:20`
+- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:37`
 - **Sub-options:** `airlockIPs`, `enable`, `strictEgress`, `whitelistDomains`
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
@@ -413,7 +407,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.virtualisation`
 
 - **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
-- **Sub-options:** `enable`, `libvirtd.enable`, `lxc.enable`, `podman.enable`
+- **Sub-options:** `enable`, `libvirtd.enable`, `podman.enable`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 - **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 

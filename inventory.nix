@@ -692,7 +692,25 @@
         };
       };
       # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
-      # Authentik below. 10.85.48.140 and login.kleinbem.dev are free again.
+      # Authentik below. login.kleinbem.dev is free again; 10.85.48.140
+      # reused below by gatus.
+      # Public fleet status page, probing the other public endpoints in
+      # this file directly over HTTP (no Prometheus dependency). auth =
+      # false: the whole point is a status page visitors can check without
+      # signing in.
+      gatus = {
+        ip = "10.85.48.140";
+        port = 8080;
+        externalPort = 443;
+        domain = "status.kleinbem.dev";
+        auth = false;
+        meta = {
+          name = "Status";
+          category = "Infrastructure";
+          icon = "🟢";
+          description = "Fleet uptime / status page.";
+        };
+      };
       # Shared IdP: replaces kleinbem-auth for kleinbem.dev visitor login and
       # also serves persona OIDC / Matrix federation / sigstore (the original
       # scope authentik.nix was built for) — one instance, multiple

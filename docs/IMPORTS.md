@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 9  
-**Distinct imports:** 86
+**Distinct imports:** 88
 
 ---
 
@@ -15,13 +15,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `container-factory`
 
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:home-assistant`, `nix-presets:kleinbem-auth`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`, `nix-presets:vllm`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:gatus`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`, `nix-presets:vllm`
 - **Local:** `../../modules/nixos/options.nix`
 
 ### `core-pi`
 
 - **Modules:** `modules/nixos/container-host.nix`, `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`, `modules/nixos/services/container-updater.nix`
-- **Presets:** `nix-presets:attic`, `nix-presets:authelia`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard`, `nix-presets:ente`, `nix-presets:herdr-remote-client`, `nix-presets:kleinbem-auth`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
+- **Presets:** `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:ente`, `nix-presets:gatus`, `nix-presets:herdr-remote-client`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
 - **Local:** `./backup.nix`, `./secrets.nix`
 
 ### `hass-pi`
@@ -32,7 +32,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `mac-mini`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:stalwart`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`
@@ -40,7 +40,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nasbook`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/container-updater.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/container-host.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`, `modules/nixos/services/container-updater.nix`
 - **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Other inputs:** `disko:disko`
 - **Local:** `./data-disk.nix`, `./disko.nix`, `./secrets.nix`
@@ -52,7 +52,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
 - **Other inputs:** `disko:disko`
-- **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./network.nix`, `./secrets.nix`, `./specialisations.nix`
+- **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./network.nix`, `./secrets.nix`, `./specialisations.nix`, `./vault-anythingllm-sync.nix`
 
 ### `orin-nano`
 
@@ -88,6 +88,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./secrets.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
 - `./services.nix` ← orin-nano
 - `./specialisations.nix` ← nixos-nvme
+- `./vault-anythingllm-sync.nix` ← nixos-nvme
 - `disko:disko` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
 - `modules/nix-on-droid/dashboard.nix` ← phone
 - `modules/nixos/ai-hardening.nix` ← orin-nano
@@ -107,6 +108,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/initrd-fan.nix` ← orin-nano
 - `modules/nixos/kernel.nix` ← orin-nano
 - `modules/nixos/persistence.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
+- `modules/nixos/pull-deploy-node.nix` ← mac-mini, nasbook
 - `modules/nixos/rpi5-disko.nix` ← core-pi, hass-pi
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
@@ -123,7 +125,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:anythingllm` ← container-factory, mac-mini
 - `nix-presets:attic` ← container-factory, core-pi
 - `nix-presets:attic-push` ← orin-nano
-- `nix-presets:authelia` ← container-factory, core-pi
+- `nix-presets:authentik` ← container-factory, core-pi
 - `nix-presets:backup` ← container-factory, nasbook
 - `nix-presets:buzz` ← container-factory
 - `nix-presets:caddy` ← container-factory, core-pi
@@ -131,13 +133,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:comfyui` ← container-factory
 - `nix-presets:crowdsec` ← container-factory, core-pi
 - `nix-presets:cups` ← container-factory, core-pi
-- `nix-presets:dashboard` ← container-factory, core-pi
+- `nix-presets:dashboard-homepage` ← container-factory, core-pi
 - `nix-presets:ente` ← container-factory, core-pi
 - `nix-presets:frigate` ← container-factory, orin-nano
+- `nix-presets:gatus` ← container-factory, core-pi
 - `nix-presets:herdr-remote-client` ← core-pi, hass-pi, mac-mini, nasbook, orin-nano
 - `nix-presets:hermes` ← mac-mini
 - `nix-presets:home-assistant` ← container-factory, hass-pi
-- `nix-presets:kleinbem-auth` ← container-factory, core-pi
 - `nix-presets:langflow` ← container-factory
 - `nix-presets:langfuse` ← container-factory
 - `nix-presets:litellm` ← container-factory

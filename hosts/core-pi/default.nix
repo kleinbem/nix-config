@@ -33,6 +33,7 @@ in
     inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
+    inputs.nix-presets.nixosModules.gatus
     inputs.nix-presets.nixosModules.authentik
     inputs.nix-presets.nixosModules.cups
     inputs.nix-presets.nixosModules.attic
@@ -170,6 +171,86 @@ in
         # kleinbem-secrets/nix/shared.yaml before the first deploy (needs
         # YubiKey). Until then /admin is disabled; the service still runs.
         adminTokenFile = config.sops.secrets.vaultwarden_admin_token.path;
+      };
+
+      gatus = {
+        enable = true;
+        ip = "${myInventory.network.nodes.gatus.ip}/24";
+        inherit (myInventory.network.nodes.gatus) port;
+        # `[STATUS] < 500` rather than `== 200`: several of these sit behind
+        # Authentik forward-auth or Cloudflare Access (home, chat, n8n,
+        # grafana), so an unauthenticated probe gets a redirect, not a
+        # clean 200 — this only proves the edge + backend are up, not that
+        # the app itself is healthy behind the login. status.kleinbem.dev
+        # deliberately doesn't check itself.
+        endpoints = [
+          {
+            name = "kleinbem.dev";
+            group = "Public";
+            url = "https://kleinbem.dev";
+            interval = "3m";
+            conditions = [
+              "[STATUS] < 500"
+              "[RESPONSE_TIME] < 3000"
+            ];
+          }
+          {
+            name = "Dashboard";
+            group = "Public";
+            url = "https://home.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "Vaultwarden";
+            group = "Identity";
+            url = "https://vault.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "Authentik";
+            group = "Identity";
+            url = "https://auth.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "Grafana";
+            group = "Infrastructure";
+            url = "https://grafana.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "ntfy";
+            group = "Infrastructure";
+            url = "https://ntfy.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "Attic cache";
+            group = "Infrastructure";
+            url = "https://cache.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "n8n";
+            group = "Apps";
+            url = "https://n8n.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+          {
+            name = "Chat";
+            group = "Apps";
+            url = "https://chat.kleinbem.dev";
+            interval = "3m";
+            conditions = [ "[STATUS] < 500" ];
+          }
+        ];
       };
 
       # Shared IdP: replaces kleinbem-auth (decommissioned 2026-09-21 —

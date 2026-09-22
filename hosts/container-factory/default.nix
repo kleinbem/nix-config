@@ -191,6 +191,13 @@ let
       # Real bind mount is supplied by the deploying host (sops path).
       adminTokenFile = "/run/secrets/factory-dummy";
     };
+    gatus = {
+      ip = "${myInventory.network.nodes.gatus.ip}/24"; # core-pi
+      # endpoints deliberately empty: the real fleet-specific list lives on
+      # the deploying host (core-pi), not here — same "preset stays
+      # portable" reasoning as buzz's dummy relayUrl above.
+      endpoints = [ ];
+    };
     # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
     # Authentik (catalogue entry below).
     authentik = {
@@ -262,6 +269,7 @@ in
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.authentik
+    inputs.nix-presets.nixosModules.gatus
     # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
     # option slot as dashboard-homepage above, so it cannot be imported
     # alongside it in one host. To cache the homer skin instead, swap the

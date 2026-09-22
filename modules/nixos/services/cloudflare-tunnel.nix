@@ -50,6 +50,7 @@
           # (auto-generated from inventory.nix's externalPort entries).
           # Found 2026-09-21 while applying Authentik's Phase 2 Terraform.
           "auth.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          "status.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
         default = "http_status:404";
       };
