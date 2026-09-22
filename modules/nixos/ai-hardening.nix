@@ -111,9 +111,7 @@ in
           # does NOT fall back to the general upstreams for a /domain/-scoped
           # server: if the agent is down these names SERVFAIL — acceptable,
           # the WireGuard path is unreachable without the agent anyway.
-          ++ lib.optionals cacheViaNetbirdDns (
-            map (fqdn: "/${fqdn}/${hostNetbirdIp}") meshOnlyFqdns
-          );
+          ++ lib.optionals cacheViaNetbirdDns (map (fqdn: "/${fqdn}/${hostNetbirdIp}") meshOnlyFqdns);
         };
       };
 
