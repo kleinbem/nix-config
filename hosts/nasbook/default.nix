@@ -248,6 +248,17 @@ in
   # convention zero-trust.nix already uses for same-host flows.
   # 10.85.47.1 is nasbook's own bridge address, allowed for host-side
   # debugging/administration.
+  #
+  # Source IP corrected 2026-09-22: this file's own comment above says a
+  # live tcpdump on 2026-09-19 found NO masquerading on this path, so
+  # matching Caddy's raw container IP was reliable at the time — but
+  # core-pi's blanket `iifname "cbr0" oifname "end0" masquerade` rule
+  # (confirmed live via `nft list ruleset` on core-pi, 2026-09-22) applies
+  # to ALL cbr0 egress regardless of destination, paperless included; it
+  # must have been added to core-pi after that original tcpdump. Confirmed
+  # broken today via live reachability testing (Caddy's traffic dropped)
+  # before this fix. myInventory.hosts.core-pi.ip is the real, currently
+  # masqueraded source.
   networking = {
     hostName = "nasbook";
 
@@ -257,7 +268,7 @@ in
     };
 
     nat.extraCommands = ''
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s ${myInventory.network.nodes.caddy.ip} -j ACCEPT
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s ${myInventory.hosts.core-pi.ip} -j ACCEPT
       iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -s 10.85.47.1 -j ACCEPT
       iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.paperless.ip} -p tcp --dport ${toString myInventory.network.nodes.paperless.port} -j DROP
     '';

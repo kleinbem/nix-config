@@ -860,8 +860,20 @@ in
     # backend, where it's silently inert. networking.nat.extraCommands is the
     # correct injection point for that backend. 10.85.50.1 is mac-mini's own
     # bridge address, allowed for host-side debugging/administration.
+    #
+    # Source IP corrected 2026-09-22: this ACCEPT rule matched Caddy's raw
+    # container IP (myInventory.network.nodes.caddy.ip, 10.85.48.107) — but
+    # core-pi masquerades ALL cbr0->end0 egress unconditionally (`iifname
+    # "cbr0" oifname "end0" masquerade`, confirmed live via `nft list
+    # ruleset` on core-pi), so Caddy's cross-host traffic actually arrives
+    # here as core-pi's own physical LAN address instead. This rule had
+    # never been exercised end-to-end from cross-host since it was written
+    # (alertmanager only got a real domain + forward-auth path this
+    # session) — confirmed dropped via live reachability testing before
+    # this fix. myInventory.hosts.core-pi.ip is the real, masqueraded
+    # source.
     nat.extraCommands = ''
-      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s ${myInventory.network.nodes.caddy.ip} -j ACCEPT
+      iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s ${myInventory.hosts.core-pi.ip} -j ACCEPT
       iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -s 10.85.50.1 -j ACCEPT
       iptables -w -t filter -A nixos-filter-forward -d ${myInventory.network.nodes.alertmanager.ip} -p tcp --dport ${toString myInventory.network.nodes.alertmanager.port} -j DROP
     '';

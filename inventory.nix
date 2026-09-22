@@ -296,7 +296,13 @@
         };
       };
       code-server = {
-        ip = "10.85.46.101";
+        # Corrected 2026-09-22: was "10.85.46.101", which never matched the
+        # actually-running container (confirmed live via `machinectl status
+        # code-server` on nixos-nvme, and a container-factory update pull
+        # did NOT converge it — nspawn addresses are assigned once at
+        # container creation, not re-applied on every closure activation).
+        # This is the container's real, live address.
+        ip = "10.85.46.22";
         port = 4444;
         externalPort = 443;
         domain = "code.kleinbem.dev";
@@ -594,7 +600,15 @@
 
       # Services not currently proxied by Caddy but present
       frigate = {
-        ip = "10.85.46.130";
+        # Corrected 2026-09-22: was "10.85.46.130", which never matched the
+        # actually-running container (confirmed live via `machinectl status
+        # frigate` on orin-nano). This is the container's real, live
+        # address. Note orin-nano's own cbr0 bridge reuses the same
+        # 10.85.46.0/24 range as nixos-nvme's — they're separate host-local
+        # L2 segments, not a shared subnet, so this is not a collision on
+        # the wire, only for anything (like a single fleet-wide netbird
+        # route or static LAN route) that tries to key purely off the /24.
+        ip = "10.85.46.39";
         port = 5000;
         externalPort = 443;
         domain = "frigate.kleinbem.dev";

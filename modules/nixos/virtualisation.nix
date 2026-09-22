@@ -109,13 +109,36 @@ in
           prefixLength = 24;
         }
       ];
-      nat = {
-        enable = true;
-        internalInterfaces = [
-          config.my.network.bridge
-        ]
-        ++ lib.optional cfg.libvirtd.enable "virbr0";
-        inherit (config.my.network) externalInterface;
+      # UPDATED 2026-09-22: native nftables masquerade table, replacing
+      # networking.nat.enable (the legacy iptables-only NAT module).
+      # Functionally identical (masquerade bridge/virbr0 egress out the
+      # external interface) but networking.nat.* is fundamentally
+      # incompatible with networking.firewall.backend = "nftables" — its
+      # own internal teardown script trips a hard assertion the moment
+      # ANY host using this module switches backends (found migrating
+      # nixos-nvme, blocking code-server/syncthing's forward-auth-only
+      # security fix from actually working cross-host). Native
+      # networking.nftables.tables works regardless of firewall.backend
+      # (ai-hardening.nix already proves this on nixos-nvme, which stays
+      # on the iptables backend for its firewall module while this exact
+      # mechanism runs fine) — safe for mac-mini/nasbook too, which don't
+      # switch backends and keep working exactly as before.
+      nftables.tables.virtualisation-nat = {
+        family = "inet";
+        content =
+          let
+            internalIfaces = [
+              config.my.network.bridge
+            ]
+            ++ lib.optional cfg.libvirtd.enable "virbr0";
+            internalIfaceSet = lib.concatMapStringsSep ", " (i: "\"${i}\"") internalIfaces;
+          in
+          ''
+            chain postrouting {
+              type nat hook postrouting priority srcnat; policy accept;
+              iifname { ${internalIfaceSet} } oifname "${config.my.network.externalInterface}" masquerade
+            }
+          '';
       };
 
       # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
