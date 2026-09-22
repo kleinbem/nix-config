@@ -44,6 +44,10 @@
         display-window = "Windows";
         drun-display-format = "{name}";
       };
+      # Catppuccin Mocha, hand-coded here since rofi has no native theme
+      # package — now the system-wide theme too (GTK/icons/cursor in
+      # nix-presets/desktop.nix, tiling-assistant hint below), so this no
+      # longer stands alone.
       theme =
         let
           inherit (config.lib.formats.rasi) mkLiteral;
@@ -140,6 +144,10 @@
         toggle-overview = [ "<Super>a" ];
         toggle-application-view = [ "<Super>grave" ];
         toggle-message-tray = [ "<Super>n" ];
+      };
+
+      "org/gnome/shell/app-switcher" = {
+        current-workspace-only = true;
       };
 
       "org/gnome/settings-daemon/plugins/color" = {
@@ -331,7 +339,10 @@
       "org/gnome/shell/extensions/tiling-assistant" = {
         enable-gradient = true;
         active-window-hint = 1; # Pulse hint
-        active-window-hint-color = "rgba(53, 132, 228, 0.5)";
+        # Catppuccin Mocha "Blue" (#89b4fa) — matches the GTK/icon/cursor
+        # theme in nix-presets/desktop.nix and rofi's accent below, instead
+        # of GNOME's default blue (#3584e4).
+        active-window-hint-color = "rgba(137, 180, 250, 0.5)";
       };
 
       # Top-bar "Workspace" menu wired to common `just` recipes from the meta-flake.
