@@ -266,7 +266,28 @@
         externalPort = 443;
         domain = "n8n.kleinbem.dev";
         mtls = true;
-        auth = true; # Protected by Authelia
+        auth = true; # Authentik forward-auth for the UI — was Authelia until 2026-09-22
+        # Webhook endpoints are called by external services (GitHub, Stripe,
+        # etc.) that can't complete an interactive Authentik login — carved
+        # out of forward_auth at the Caddy layer (see caddy/helpers.nix).
+        # This was ALSO true under Authelia (its access_control had no
+        # path exclusion at all, blanket one_factor for *.kleinbem.dev) —
+        # not a new gap introduced by the Authentik migration, just never
+        # fixed until now.
+        #
+        # No network-layer auth on this path at all, deliberately — real
+        # security has to be n8n's OWN per-webhook Header Auth/HMAC
+        # signature verification (set per-workflow in n8n itself, not
+        # something Nix/Terraform can configure). Didn't add a Cloudflare
+        # WAF rate-limit rule here: the free plan's one rate-limit slot is
+        # already spent on Vaultwarden (cloudflare-waf.tf), and a guessed
+        # method/pattern restriction risks blocking real webhook payloads
+        # without knowing this fleet's actual workflows. Worth adding once
+        # the plan allows a second rule or the real traffic shape is known.
+        authExcludePaths = [
+          "/webhook/*"
+          "/webhook-test/*"
+        ];
         meta = {
           name = "n8n Automation";
           category = "Apps";
