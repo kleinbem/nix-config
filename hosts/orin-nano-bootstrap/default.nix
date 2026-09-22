@@ -20,7 +20,16 @@ in
     ./disko.nix
   ];
 
-  networking.hostName = "orin-nano-bootstrap";
+  networking = {
+    hostName = "orin-nano-bootstrap";
+    nftables.enable = true;
+    # SSH reachable on any interface — no netbird/VPN needed at this stage
+    firewall = {
+      enable = true;
+      backend = "nftables";
+      allowedTCPPorts = [ 22 ];
+    };
+  };
 
   nixpkgs = {
     hostPlatform = "aarch64-linux";
@@ -85,12 +94,6 @@ in
         addresses = true;
       };
     };
-  };
-
-  # SSH reachable on any interface — no netbird/VPN needed at this stage
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ 22 ];
   };
 
   users.users = {

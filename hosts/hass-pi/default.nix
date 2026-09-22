@@ -36,7 +36,28 @@ in
 
   networking = {
     hostName = "hass-pi";
+    # UPDATED 2026-09-22: migrated to the nftables firewall backend, same
+    # fleet-wide playbook as nixos-nvme/mac-mini/nasbook/orin-nano the same
+    # night. Replaces the DNAT workaround below (previously iptables —
+    # this host had networking.nftables.enable = false, so
+    # networking.nftables.tables.* would have silently no-op'd here) with
+    # a native nftables prerouting DNAT chain.
+    nftables.enable = true;
+    nftables.tables.hass-dnat = {
+      family = "ip";
+      content = ''
+        chain prerouting {
+          type nat hook prerouting priority dstnat; policy accept;
+          iifname "end0" tcp dport 8123 dnat to 10.85.49.10:8123
+        }
+        chain postrouting {
+          type nat hook postrouting priority srcnat; policy accept;
+          ip daddr 10.85.49.10 tcp dport 8123 masquerade
+        }
+      '';
+    };
     firewall = {
+      backend = "nftables";
       allowedTCPPorts = [ 8123 ]; # direct LAN access to HA — see forwardPorts note below
       interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
     };
@@ -104,20 +125,9 @@ in
   # necessarily match the address the container's own NixOS network config
   # statically self-assigns (10.85.49.10 here) via `localAddress`+hostBridge,
   # so the forward silently targets the wrong (unused) address inside the
-  # container.
-  #
-  # Plain host-side iptables DNAT to the verified-working address sidesteps
-  # that mismatch — iptables, not nftables: hass-pi has
-  # networking.nftables.enable = false (classic firewall.enable backend), so
-  # `networking.nftables.tables.*` would silently no-op here.
-  networking.firewall.extraCommands = ''
-    iptables -t nat -A PREROUTING -i end0 -p tcp --dport 8123 -j DNAT --to-destination 10.85.49.10:8123
-    iptables -t nat -A POSTROUTING -d 10.85.49.10 -p tcp --dport 8123 -j MASQUERADE
-  '';
-  networking.firewall.extraStopCommands = ''
-    iptables -t nat -D PREROUTING -i end0 -p tcp --dport 8123 -j DNAT --to-destination 10.85.49.10:8123 || true
-    iptables -t nat -D POSTROUTING -d 10.85.49.10 -p tcp --dport 8123 -j MASQUERADE || true
-  '';
+  # container. Plain host-side DNAT to the verified-working address
+  # sidesteps that mismatch — see the networking.nftables.tables.hass-dnat
+  # declaration above.
 
   # ─── Persistence ─────────────────────────────────────────────
   # /var/lib/home-assistant and /var/lib/openclaw are container

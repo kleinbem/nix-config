@@ -57,13 +57,34 @@
       address = "10.0.0.1";
       interface = "enP8p1s0";
     };
-    nat = {
-      enable = true;
-      internalInterfaces = [ "cbr0" ];
-      externalInterface = "enP8p1s0";
+    # UPDATED 2026-09-22: migrated to the nftables firewall backend, same
+    # fleet-wide playbook as nixos-nvme/mac-mini/nasbook the same night.
+    # networking.nat.enable (legacy iptables-only) is fundamentally
+    # incompatible with the nftables backend regardless of its own
+    # content — replaced with a native networking.nftables.tables
+    # masquerade table (same technique used in modules/nixos/
+    # virtualisation.nix and ai-hardening.nix). nftables.enable = true is
+    # a second, separate flag nixpkgs' legacy nat-iptables.nix checks
+    # unconditionally — without it, its iptables-flush teardown script
+    # gets injected into firewall.extraCommands regardless of nat.enable,
+    # tripping the nftables-backend firewall module's own assertion.
+    nftables.enable = true;
+    nftables.tables.virtualisation-nat = {
+      family = "inet";
+      content = ''
+        chain postrouting {
+          type nat hook postrouting priority srcnat; policy accept;
+          iifname "cbr0" oifname "enP8p1s0" masquerade
+        }
+      '';
     };
     firewall = {
       enable = true;
+      backend = "nftables";
+      # extraForwardRules is silently unused without this — the module
+      # only emits its "forward"/"forward-allow" chains at all when
+      # filterForward = true (default false).
+      filterForward = true;
       trustedInterfaces = [ "cbr0" ];
       # SSH only over NetBird — not exposed on LAN
       interfaces."wt0".allowedTCPPorts = [ 22 ];

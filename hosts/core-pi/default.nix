@@ -72,6 +72,20 @@ in
     };
 
     firewall = {
+      # UPDATED 2026-09-22: added backend + filterForward — found while
+      # doing the fleet-wide nftables migration that extraForwardRules
+      # below (and container-host.nix's own broader bridge-accept
+      # fragment) had been silently dead this whole time without these,
+      # same class of bug hit on nixos-nvme/mac-mini/nasbook the same
+      # night. This host is public-facing (Caddy fronts kleinbem.dev,
+      # Vaultwarden, Authentik, etc.) so this genuinely activates
+      # previously-unverified restriction logic — container-host.nix's own
+      # broad "oifname cbr0 accept" fragment covers host->container traffic
+      # (cloudflared -> Caddy) as a safety net regardless of this rule, but
+      # verify all public services live after switching, same rigor as the
+      # nixos-nvme migration earlier the same night.
+      backend = "nftables";
+      filterForward = true;
       # Open all ports that Caddy is proxying to allow external access
       allowedTCPPorts = lib.unique caddyPortsList;
       interfaces."wt0".allowedTCPPorts = [ 22 ] ++ lib.unique caddyPortsList;
