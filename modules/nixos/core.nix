@@ -21,9 +21,18 @@ let
   });
 in
 {
-  # Wraps nix-index/nix-locate with the prebuilt weekly database, so the
-  # command-not-found hook works without ever running `nix-index` locally.
-  imports = [ inputs.nix-index-database.nixosModules.default ];
+  imports = [
+    # Wraps nix-index/nix-locate with the prebuilt weekly database, so the
+    # command-not-found hook works without ever running `nix-index` locally.
+    inputs.nix-index-database.nixosModules.default
+    # Per-command NOPASSWD allowlist (nh/nixos-rebuild, systemctl/machinectl
+    # for container hosts, etc). Fleet-wide here so headless hosts get the
+    # same scoped root access as the desktop instead of a blanket
+    # wheelNeedsPassword=false — see headless.nix. workstation-bundle.nix
+    # also pulls the full ./security bundle, which re-imports this same
+    # file; NixOS module dedup by path makes that a no-op, not a conflict.
+    ./security/sudo.nix
+  ];
 
   # ==========================================
   # NIX SETTINGS & CORE
@@ -167,9 +176,9 @@ in
         "-s"
         "10"
         "--prefer"
-        "^(chrome|chromium|antigravity.*)$"
+        "^(chrome|chromium)$"
         "--ignore"
-        "^(gnome-shell|Xwayland|bash|zsh)$"
+        "^(gnome-shell|Xwayland|bash|zsh|antigravity.*)$"
       ];
     };
   };

@@ -1,4 +1,9 @@
-{ pkgs, config, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 
 let
   commonData = import ./code-common/settings.nix;
@@ -7,6 +12,19 @@ let
   # The overlay is configured in modules/nixos/common.nix.
   vsx = pkgs.open-vsx;
   mkt = pkgs.vscode-marketplace;
+
+  antigravitySettingsJson = pkgs.writeText "antigravity-settings.json" (
+    builtins.toJSON (
+      commonData.settings
+      // {
+        "extensions.autoUpdate" = false;
+        "extensions.autoCheckUpdates" = false;
+      }
+    )
+  );
+  antigravityKeybindingsJson = pkgs.writeText "antigravity-keybindings.json" (
+    builtins.toJSON commonData.keybindings
+  );
 
 in
 {
@@ -48,17 +66,39 @@ in
     };
   };
 
-  xdg.configFile = {
-    "Antigravity IDE/User/settings.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/settings.json";
-    "Antigravity IDE/User/keybindings.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/keybindings.json";
-  };
+  # Seed Antigravity configuration as mutable files so edits in GUI/extensions work
+  home.activation.setupAntigravityConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    for user_dir in "${config.home.homeDirectory}/.antigravity-ide/User" "${config.home.homeDirectory}/.config/Antigravity IDE/User"; do
+      mkdir -p "$user_dir"
+      
+      # Convert symlink to mutable copy or seed from commonData
+      if [ -L "$user_dir/settings.json" ]; then
+        target=$(readlink -f "$user_dir/settings.json" 2>/dev/null || true)
+        rm -f "$user_dir/settings.json"
+        if [ -n "$target" ] && [ -f "$target" ]; then
+          cp -f "$target" "$user_dir/settings.json"
+        else
+          cp -f "${antigravitySettingsJson}" "$user_dir/settings.json"
+        fi
+        chmod 644 "$user_dir/settings.json"
+      elif [ ! -f "$user_dir/settings.json" ]; then
+        cp -f "${antigravitySettingsJson}" "$user_dir/settings.json"
+        chmod 644 "$user_dir/settings.json"
+      fi
 
-  home.file = {
-    ".antigravity-ide/User/settings.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/settings.json";
-    ".antigravity-ide/User/keybindings.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/Code/User/keybindings.json";
-  };
+      if [ -L "$user_dir/keybindings.json" ]; then
+        target=$(readlink -f "$user_dir/keybindings.json" 2>/dev/null || true)
+        rm -f "$user_dir/keybindings.json"
+        if [ -n "$target" ] && [ -f "$target" ]; then
+          cp -f "$target" "$user_dir/keybindings.json"
+        else
+          cp -f "${antigravityKeybindingsJson}" "$user_dir/keybindings.json"
+        fi
+        chmod 644 "$user_dir/keybindings.json"
+      elif [ ! -f "$user_dir/keybindings.json" ]; then
+        cp -f "${antigravityKeybindingsJson}" "$user_dir/keybindings.json"
+        chmod 644 "$user_dir/keybindings.json"
+      fi
+    done
+  '';
 }
