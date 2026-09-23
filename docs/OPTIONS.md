@@ -154,8 +154,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.gatus`
 
-- **Declared:** `nix-presets/containers/gatus.nix:13`
-- **Sub-options:** `enable`, `endpoints`, `ip`, `memoryLimit`, `port`
+- **Declared:** `nix-presets/containers/gatus.nix:32`
+- **Sub-options:** `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.hermes`
