@@ -246,13 +246,17 @@
     "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
     "d /var/lib/images/n8n 0755 root root - -"
     "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
-    "d /var/lib/images/caddy 0755 root root - -"
-    "d /var/lib/images/litellm 0755 root root - -"
+    # caddy dropped: conflicted with caddy/default.nix's own
+    # `Z ${hostDataDir} 0755 3000 3000` (its actual uid=3000 user) — same
+    # class of bug ai.nix had, see its comment. litellm doesn't write to
+    # its bind mount at all, so its factory-default 0755 1000:100 is left
+    # alone rather than duplicated here.
     "d /var/lib/images/loki 0755 root root - -"
     "d /var/lib/images/crowdsec 0755 root root - -"
     "d /var/lib/images/monitoring 0755 root root - -"
     "d /var/lib/images/monitoring/db 0755 root root - -"
-    "d /var/lib/images/monitoring/grafana 0755 root root - -"
+    # monitoring/grafana dropped: conflicted with monitoring.nix's own
+    # `0755 1000 100` for that exact subdir.
     "d /var/lib/images/qdrant 0755 root root - -"
     "d /var/lib/images/open-webui 0755 root root - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
@@ -260,7 +264,10 @@
     "d /var/lib/images/netdata/cache 0755 root root - -"
     "d /var/lib/images/netdata/lib 0755 root root - -"
     "d /var/lib/images/langfuse 0755 root root - -"
-    "d /var/lib/images/langfuse/db 0755 root root - -"
+    # langfuse/db dropped: postgres needs uid/gid 71, now set via
+    # dataDirOwner/dataDirGroup in langfuse.nix's langfuse-db container —
+    # this line duplicated the factory's 1000:100 default, which postgres
+    # refuses to start against.
     "d /var/lib/images/buzz 0755 root root - -"
     "d /var/lib/images/buzz/postgresql 0755 root root - -"
     "d /var/lib/images/buzz/redis 0755 root root - -"

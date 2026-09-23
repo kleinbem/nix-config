@@ -183,6 +183,15 @@ let
     ente = {
       ip = "${myInventory.network.nodes.ente.ip}/24"; # core-pi
       hostDataDir = dataDir "ente";
+      # Non-null so the cached closure's env-setup script includes every
+      # `cat` branch (each reads a fixed in-container path — see
+      # ente.nix — bind-mounted onto those paths by the deploying host,
+      # core-pi). Same dummy-path convention as authentik/vaultwarden
+      # above; a null here would bake the branch out of the script
+      # entirely at factory build time, not just leave it unused.
+      postgresPasswordFile = "/run/secrets/factory-dummy";
+      minioRootPasswordFile = "/run/secrets/factory-dummy";
+      jwtSecretFile = "/run/secrets/factory-dummy";
     };
     vaultwarden = {
       ip = "${myInventory.network.nodes.vaultwarden.ip}/24"; # core-pi

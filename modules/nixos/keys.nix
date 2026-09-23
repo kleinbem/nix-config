@@ -27,8 +27,6 @@
     # (eating a full day of friction before we caught it). Lives at
     # ~/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.
     fido2-notouch = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIBZ4U3wGwDb7DDfBsT4wH208lzSiQRhFb+CN3tJc+HIHAAAAE3NzaDpHaXRIdWJOb1RvdWNoVjI= ssh:GitHubNoTouchV2";
-    # Temporary root builder key
-    temp-builder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINfniLMozPzqGcLeIDEwAsGcG7ndYhqaO6elSjB57HkH root@nixos-nvme";
 
     # Plain (non-FIDO2) key for nixos-nvme's daily unattended pull of Caddy's
     # internal root CA from core-pi (hosts/nixos-nvme/caddy-ca-refresh.nix) —

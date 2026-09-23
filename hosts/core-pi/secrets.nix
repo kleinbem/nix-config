@@ -43,6 +43,26 @@ in
           ];
         }
       )
+      // (
+        # Ente Auth (2FA/TOTP vault, auth.kleinbem.dev) — freshly generated
+        # 2026-09-23, replacing the hardcoded "pgpass"/"password123"/
+        # placeholder-JWT that used to live directly in ente.nix. Per-
+        # container file, scoped to core_pi in kleinbem-secrets/.sops.yaml.
+        # postgres_password/minio_root_password only take effect on each
+        # service's own first start (initdb / MinIO's first boot) — an
+        # already-initialized live deployment needs its running Postgres
+        # user and MinIO root user rotated to match via `ALTER USER` /
+        # `mc admin user` BEFORE restarting museum with the new config,
+        # or the app loses its DB/object-storage connection.
+        mkPerContainerSecrets {
+          container = "ente";
+          keys = [
+            "postgres_password"
+            "minio_root_password"
+            "jwt_secret"
+          ];
+        }
+      )
       // {
         # Attic Binary Cache
         attic_server_token_rs256 = {

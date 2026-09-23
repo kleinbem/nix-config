@@ -55,9 +55,14 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
-  users.users.root.openssh.authorizedKeys.keys = [
-    keys.ssh.temp-builder
-  ];
+  # No root authorized_keys here: the only key that was ever wired in
+  # (`temp-builder`) had no matching private key anywhere, no script or CI
+  # reference, and was labeled "Temporary" — a dead, unrestricted root
+  # credential on internet-facing hosts (core-pi fronts the public
+  # internet). Real access is martin + sudo (security/sudo.nix) or, for
+  # disk unlock, the FIDO2-backed initrd SSH — see caddy-ca-refresh.nix's
+  # pattern for what a genuine unattended root-adjacent key should look
+  # like (command=-restricted, documented private-key location).
 
   # ─── Stateless Root (Impermanence) ──────────────────────────
   fileSystems = {

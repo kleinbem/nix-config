@@ -103,7 +103,11 @@
     extraGroups = [ "wheel" ];
   };
 
-  security.sudo.wheelNeedsPassword = false;
+  # No blanket wheelNeedsPassword=false here: these are always-on,
+  # network-facing hosts (core-pi fronts the public internet), so root
+  # access is scoped through the fleet-wide per-command NOPASSWD allowlist
+  # (security/sudo.nix, imported via core.nix) instead of unrestricted
+  # passwordless sudo. users.nix's `mkDefault true` applies.
 
   # ─── Container TUI ──────────────────────────────────────────
   # Headless hosts run nspawn / podman containers (AI services, Frigate,

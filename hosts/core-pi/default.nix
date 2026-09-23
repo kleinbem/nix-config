@@ -235,6 +235,9 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.ente.ip}/24";
         hostDataDir = "/var/lib/ente";
+        postgresPasswordFile = config.sops.secrets.ente_postgres_password.path;
+        minioRootPasswordFile = config.sops.secrets.ente_minio_root_password.path;
+        jwtSecretFile = config.sops.secrets.ente_jwt_secret.path;
       };
 
       vaultwarden = {

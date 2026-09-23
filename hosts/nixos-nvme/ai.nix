@@ -160,23 +160,26 @@
     };
   };
 
-  # Ensure the data directories exist with correct permissions
+  # The rest of this host's container data dirs used to all get a blanket
+  # `0777 root root` here — a shortcut that both made several of them
+  # world-writable for no reason (litellm and the langfuse app container
+  # don't even write to their hostDataDir; playground's factory default of
+  # 0755 1000:100 already matches its container's uid=1000 user) and
+  # actively conflicted with correct rules the owning preset already
+  # declares (caddy's own `Z ... 0755 3000 3000`, monitoring's own
+  # `0755 1000 100` for its grafana subdir). comfyui/langflow now pin their
+  # podman containers to run as 1000:100 and get a matching tmpfiles rule
+  # in their own preset; langfuse-db's postgres data dir gets the real
+  # postgres uid/gid via dataDirOwner/dataDirGroup in langfuse.nix. The
+  # `/var/lib/images/ollama` rules referenced a host user ("ollama") that
+  # doesn't exist on this host — services.ollama isn't configured here,
+  # only the nspawn `my.containers.ollama` in containers.nix, whose own
+  # process runs as root and needs no dir override — so those two lines
+  # were simply broken and are dropped, not replaced.
   systemd.tmpfiles.rules = [
-    # "d /var/lib/images/vllm 0777 root root - -" # Removed workstation vLLM directory
-    "d /var/lib/images/litellm 0777 root root - -"
-    "d /var/lib/images/playground 0777 martin users - -"
-    "d /var/lib/caddy 0777 root root - -"
-    "d /var/lib/images/monitoring 0777 root root - -"
-    "d /var/lib/images/monitoring/grafana 0777 root root - -"
-    "d /var/lib/images/comfyui 0777 root root - -"
-    "d /var/lib/images/langflow 0777 root root - -"
-    "d /var/lib/images/langfuse 0777 root root - -"
-    "d /var/lib/images/langfuse/db 0777 root root - -"
     "d /var/lib/images/agent-team 0755 1000 100 - -"
     "d /var/lib/images/agent-team/workspace 0775 1000 100 - -"
     "d /var/lib/images/agent-team/state 0700 1000 100 - -"
-    "d /var/lib/images/ollama 0777 ollama ollama - -"
-    "Z /var/lib/images/ollama 0777 ollama ollama - -"
     "d /var/lib/images/podman/tmp 1777 root root - -"
   ];
 
