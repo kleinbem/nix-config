@@ -21,6 +21,81 @@ let
     lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes
   ));
   caddyPortsStr = lib.concatMapStringsSep ", " toString (lib.unique caddyPortsList);
+
+  # Real fleet-specific endpoint list for the gatus preset's endpointsFile
+  # (bind-mounted into the container at runtime — see nix-presets'
+  # containers/gatus.nix for why this can't be baked into the preset
+  # itself: container-factory builds that closure once, centrally).
+  gatusEndpointsFile = (pkgs.formats.yaml { }).generate "gatus-endpoints.yaml" {
+    endpoints = [
+      {
+        name = "kleinbem.dev";
+        group = "Public";
+        url = "https://kleinbem.dev";
+        interval = "3m";
+        conditions = [
+          "[STATUS] < 500"
+          "[RESPONSE_TIME] < 3000"
+        ];
+      }
+      {
+        name = "Dashboard";
+        group = "Public";
+        url = "https://home.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "Vaultwarden";
+        group = "Identity";
+        url = "https://vault.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "Authentik";
+        group = "Identity";
+        url = "https://auth.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "Grafana";
+        group = "Infrastructure";
+        url = "https://grafana.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "ntfy";
+        group = "Infrastructure";
+        url = "https://ntfy.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "Attic cache";
+        group = "Infrastructure";
+        url = "https://cache.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "n8n";
+        group = "Apps";
+        url = "https://n8n.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
+        name = "Chat";
+        group = "Apps";
+        url = "https://chat.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+    ];
+  };
 in
 {
   imports = [
@@ -183,74 +258,14 @@ in
         # clean 200 — this only proves the edge + backend are up, not that
         # the app itself is healthy behind the login. status.kleinbem.dev
         # deliberately doesn't check itself.
-        endpoints = [
-          {
-            name = "kleinbem.dev";
-            group = "Public";
-            url = "https://kleinbem.dev";
-            interval = "3m";
-            conditions = [
-              "[STATUS] < 500"
-              "[RESPONSE_TIME] < 3000"
-            ];
-          }
-          {
-            name = "Dashboard";
-            group = "Public";
-            url = "https://home.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "Vaultwarden";
-            group = "Identity";
-            url = "https://vault.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "Authentik";
-            group = "Identity";
-            url = "https://auth.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "Grafana";
-            group = "Infrastructure";
-            url = "https://grafana.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "ntfy";
-            group = "Infrastructure";
-            url = "https://ntfy.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "Attic cache";
-            group = "Infrastructure";
-            url = "https://cache.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "n8n";
-            group = "Apps";
-            url = "https://n8n.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-          {
-            name = "Chat";
-            group = "Apps";
-            url = "https://chat.kleinbem.dev";
-            interval = "3m";
-            conditions = [ "[STATUS] < 500" ];
-          }
-        ];
+        #
+        # The actual list lives in gatusEndpointsFile above, not inline
+        # here: container-factory builds this container's closure once,
+        # centrally (ADR-002), so an inline `endpoints` list would only
+        # ever reach container-factory's own build, never the container
+        # core-pi actually runs. endpointsFile is bind-mounted into the
+        # running container instead — see nix-presets' containers/gatus.nix.
+        endpointsFile = gatusEndpointsFile;
       };
 
       # Shared IdP: replaces kleinbem-auth (decommissioned 2026-09-21 —

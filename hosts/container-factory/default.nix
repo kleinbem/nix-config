@@ -193,10 +193,11 @@ let
     };
     gatus = {
       ip = "${myInventory.network.nodes.gatus.ip}/24"; # core-pi
-      # endpoints deliberately empty: the real fleet-specific list lives on
-      # the deploying host (core-pi), not here — same "preset stays
-      # portable" reasoning as buzz's dummy relayUrl above.
-      endpoints = [ ];
+      # Non-null so the cached closure includes the config-setup + bind-mount
+      # branch. Real endpoints file is supplied by the deploying host
+      # (core-pi) — same dummy-path convention as vaultwarden's
+      # adminTokenFile above.
+      endpointsFile = "/run/secrets/factory-dummy";
     };
     # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
     # Authentik (catalogue entry below).
