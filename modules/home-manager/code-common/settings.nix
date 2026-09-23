@@ -34,6 +34,9 @@
 
     # --- Browser ---
     "browser.customChromeBinaryPath" = "/etc/profiles/per-user/martin/bin/google-chrome";
+
+    # --- Python ---
+    "python.languageServer" = "None";
   };
 
   keybindings = [

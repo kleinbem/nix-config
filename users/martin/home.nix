@@ -31,6 +31,7 @@ in
     service-launchers.enable = false;
     mcp.enable = true;
     opencode.enable = true;
+    herdr.enable = true;
     ai-agents.enable = true;
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet
