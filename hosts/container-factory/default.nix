@@ -126,26 +126,26 @@ let
       ip = "${myInventory.network.nodes.anythingllm.ip}/24"; # mac-mini
       hostDataDir = dataDir "anythingllm";
     };
-    # hermes deliberately absent (2026-08-07): it became attrsOf (one
-    # instance per persona) when the persona-fleet needed its own workers.
-    # Reproducibly triggers "infinite recursion encountered" when evaluated
-    # here specifically — confirmed with even a maximally minimal attrsOf
-    # schema (bare enable/ip/hostDataDir), so it's a structural conflict
-    # between attrsOf-of-submodule + the shared mkContainer factory (likely
-    # its `config.my.containers.standaloneRunner or false` sibling-option
-    # read in nix-presets/lib/factory.nix) and this host's specific
-    # catalogue+deployedContainers construction — not something narrowed
-    # down further without real effort. Every other preset here is still a
-    # singular submodule and unaffected. Net effect: hermes containers
-    # aren't CI-pre-cached via the factory; they still build fine directly
-    # on the deploying host (mac-mini). Revisit if/when another preset needs
-    # to go attrsOf too.
     buzz = {
       ip = ip 48;
       hostDataDir = dataDir "buzz";
       secretsFile = "/run/secrets/factory-dummy";
       typesenseApiKeyFile = "/run/secrets/factory-dummy";
       relayUrl = "wss://buzz.example.invalid";
+    };
+    # Briefly excluded 2026-08-07: an attrsOf (one-instance-per-persona)
+    # experiment on this preset reproducibly triggered "infinite recursion
+    # encountered" here, but the experiment was reverted back to a singular
+    # submodule the same day (nix-presets 0e8c25d, 7 minutes after the
+    # attrsOf commit) and the exclusion here was never revisited. Restored
+    # 2026-09-24 after confirming a clean eval + real build through the
+    # factory with today's (singular) hermes.nix. persona-runtime is the
+    # actual attrsOf preset now (its `personas` option) and remains embedded
+    # on mac-mini for that reason.
+    hermes = {
+      ip = "${myInventory.network.nodes.hermes.ip}/24"; # mac-mini
+      hostDataDir = dataDir "hermes";
+      secretsFile = "/run/secrets/factory-dummy";
     };
     caddy.ip = ip 37;
     # cups: inventory node still has a .46 IP but it deploys on core-pi (.48)
@@ -266,6 +266,7 @@ in
     inputs.nix-presets.nixosModules.netdata
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.buzz
+    inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.agent-zero
     inputs.nix-presets.nixosModules.agent-team
     inputs.nix-presets.nixosModules.cups

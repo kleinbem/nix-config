@@ -1,6 +1,6 @@
 # Container Host Setup Guide
 
-**Status:** Module available; existing devices can adopt incrementally  
+**Status:** Adopted fleet-wide — all 6 container-hosting devices (core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano) use this module  
 **Created:** 2026-08-17
 
 This document explains how to set up a device that hosts LXD containers, using the new `container-host.nix` module for simplified, reusable configuration.

@@ -267,19 +267,23 @@ in
       enable = true;
       subnet = "10.85.50.0/24";
       hostAddress = "10.85.50.1";
-      # hermes and persona-runtime are both structurally excluded from
-      # container-factory's catalogue (hosts/container-factory/default.nix
-      # — attrsOf-per-persona schema triggers an infinite recursion there,
-      # so they're built directly on this host instead of pulled from the
-      # CI manifest). Without this, the container-updater still tries to
-      # pull+stage them like any other container, and update-container@
-      # {hermes,persona-runtime}.service fail every cycle with "Container
-      # ... has no entry for x86_64-linux in manifest" — confirmed
-      # pre-existing (predates 2026-09-20) via journalctl, not caused by
-      # anything that session touched, but a real gap worth closing since
-      # it means their updater services have never once succeeded.
+      # persona-runtime is structurally excluded from container-factory's
+      # catalogue (hosts/container-factory/default.nix — its `personas`
+      # option is attrsOf, which triggers an infinite recursion there), so
+      # it's built directly on this host instead of pulled from the CI
+      # manifest. Without this, container-updater still tries to pull+stage
+      # it like any other container and update-container@persona-runtime
+      # fails every cycle with "Container ... has no entry for
+      # x86_64-linux in manifest".
+      #
+      # hermes was excluded for the same reason until 2026-09-24, but its
+      # own attrsOf experiment (2026-08-07) was reverted the same day it
+      # landed — the exclusion here just never got cleaned up. It now
+      # builds and evals cleanly through the factory (see
+      # hosts/container-factory/default.nix's catalogue.hermes comment),
+      # so it's back on the normal CI-manifest pull path like everything
+      # else.
       excludeFromUpdater = [
-        "hermes"
         "persona-runtime"
       ];
     };
