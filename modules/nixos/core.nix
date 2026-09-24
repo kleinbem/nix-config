@@ -81,7 +81,18 @@ in
         keys.cachix.anduril
         keys.binaryCache.nixos-cuda
         "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU="
+        keys.binaryCache.kleinbem-fleet-build
       ];
+      # Lets `nix copy --from ssh://<host>` between fleet machines
+      # (push-cache's cache-warming step) verify a closure another host
+      # just built locally, instead of rejecting it outright for having
+      # no signature at all — see keys.nix's kleinbem-fleet-build doc
+      # comment. Empty list (harmless no-op for `nix.settings`, which
+      # accepts a list here) until kleinbem-secrets' nix/shared-signing.yaml
+      # has actually reached this host's pinned input and it's redeployed.
+      secret-key-files = lib.optional (
+        config.sops.secrets ? nix_signing_key
+      ) config.sops.secrets.nix_signing_key.path;
       download-buffer-size = 1073741824;
 
       # Binary Cache Optimization
@@ -113,6 +124,19 @@ in
       dates = "weekly";
       options = "--delete-older-than 14d";
     };
+  };
+
+  # Fleet build-signing secret key — declared here (fleet-wide, since
+  # core.nix is imported by every host via base.nix) rather than
+  # duplicated into each host's own secrets.nix, the way
+  # github_read_all_token used to need re-adding per host. Every host
+  # signs its own locally-built closures with this so a sibling host's
+  # `nix copy --from ssh://<host>` verifies them — see keys.nix and
+  # nix.settings.secret-key-files above.
+  sops.secrets.nix_signing_key = {
+    sopsFile = "${inputs.kleinbem-secrets}/nix/shared-signing.yaml";
+    mode = "0400";
+    owner = "root";
   };
 
   # ==========================================

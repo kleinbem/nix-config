@@ -1315,11 +1315,11 @@
     "kleinbem-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1790203984,
-        "narHash": "sha256-B/Htzi8wXGsHSnGSRiaBN7ewWFlDPVZKB0lYzSIOwA4=",
+        "lastModified": 1790210941,
+        "narHash": "sha256-rHB/2YqnKQSH7hprKG1sA7oQ5lVyyUCNlIAo95P84R4=",
         "owner": "kleinbem",
         "repo": "kleinbem-secrets",
-        "rev": "1475d71204c546f9f009d968485ed8319a275ecd",
+        "rev": "5c64cf1a9797131d89e88e5f7a250c312014f197",
         "type": "github"
       },
       "original": {

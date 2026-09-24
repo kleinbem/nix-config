@@ -12,6 +12,15 @@
     # cuda-maintainers.cachix.org project (archived, moved Nov 2025 — see
     # https://wiki.nixos.org/wiki/CUDA). Public, no auth token needed.
     nixos-cuda = "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M=";
+    # Fleet-internal build-signing key (secret half in kleinbem-secrets'
+    # nix/shared-signing.yaml, wired via nix.settings.secret-key-files in
+    # core.nix). Every host signs what it builds locally with this same
+    # key, so `nix copy --from ssh://<host>` between fleet machines
+    # verifies cleanly instead of hitting "lacks a signature by a trusted
+    # key" for anything not yet through CI→Attic. Not a real "cache" —
+    # just reusing the nix binary-cache-key mechanism for host-to-host
+    # trust within the fleet.
+    kleinbem-fleet-build = "kleinbem-fleet-build-1:2WtnzmBEU1YqC25CzcVOXs/j926Qp9yT5REoNkEqnbw=";
   };
 
   # SSH Public Keys
