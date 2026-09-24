@@ -100,8 +100,8 @@ in
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
-    "${self}/modules/nixos/container-host.nix"
-    "${self}/modules/nixos/services/container-updater.nix"
+    inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
     ./backup.nix
@@ -192,6 +192,7 @@ in
       enable = true;
       subnet = "10.85.48.0/24";
       hostAddress = "10.85.48.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       excludeFromUpdater = [
         "attic"
         "caddy"

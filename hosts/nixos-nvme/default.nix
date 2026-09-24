@@ -31,7 +31,7 @@
     inputs.disko.nixosModules.disko
     ./ai.nix
     ./specialisations.nix
-    "${self}/modules/nixos/services/container-updater.nix"
+    inputs.nix-gantry.nixosModules.updater
 
     ./hardware-boot.nix
     ./network.nix

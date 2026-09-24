@@ -27,8 +27,8 @@ in
     "${self}/modules/nixos/pull-deploy-node.nix"
     # ADR-002: containers below are decoupled/pulled, not built on this weak
     # host (see container-factory's catalogue for their pre-built closures).
-    "${self}/modules/nixos/container-host.nix"
-    "${self}/modules/nixos/services/container-updater.nix"
+    inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.updater
 
     # ─── Services moved from Workstation ─────────────────────
     inputs.nix-presets.nixosModules.paperless
@@ -110,6 +110,7 @@ in
       enable = true;
       subnet = "10.85.47.0/24";
       hostAddress = "10.85.47.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
     };
 
     # ─── Data & Analytics Hub Services ───────────────────────

@@ -50,8 +50,8 @@ in
     "${self}/modules/nixos/pull-deploy-node.nix"
 
     "${self}/users/martin/nixos.nix"
-    "${self}/modules/nixos/container-host.nix"
-    "${self}/modules/nixos/services/container-updater.nix"
+    inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/desktop.nix"
     # firejail.nix is a separate file from desktop.nix, only pulled in
     # transitively via modules/nixos/default.nix's aggregator — which
@@ -267,6 +267,7 @@ in
       enable = true;
       subnet = "10.85.50.0/24";
       hostAddress = "10.85.50.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       # persona-runtime is structurally excluded from container-factory's
       # catalogue (hosts/container-factory/default.nix — its `personas`
       # option is attrsOf, which triggers an infinite recursion there), so

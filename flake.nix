@@ -60,7 +60,12 @@
         nixpkgs.follows = "nixpkgs";
         nix-devshells.follows = "nix-devshells";
         nix-packages.follows = "nix-packages";
+        nix-gantry.follows = "nix-gantry";
       };
+    };
+    nix-gantry = {
+      url = "github:kleinbem/nix-gantry";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
       url = "github:kleinbem/nix-packages";

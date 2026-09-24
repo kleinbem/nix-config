@@ -238,8 +238,8 @@ let
 
   # Catalogue entries are keyed by my.containers.<option> name, but hosts
   # register REAL container instance names in deployedContainers (see
-  # modules/nixos/container-host.nix — nix-presets/lib/factory.nix's
-  # isStandalone matches against those real names). Usually the two are
+  # nix-gantry's modules/host.nix — its lib/factory.nix's isStandalone
+  # matches against those real names). Usually the two are
   # identical; where a preset's mkContainer `name` differs from its own
   # option name (one option can also emit more than one real container,
   # e.g. langfuse → langfuse + langfuse-db), list the real name(s) here so

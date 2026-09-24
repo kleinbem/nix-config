@@ -16,8 +16,8 @@ in
 {
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
-    "${self}/modules/nixos/container-host.nix"
-    "${self}/modules/nixos/services/container-updater.nix"
+    inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
@@ -82,6 +82,7 @@ in
       enable = true;
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
     };
 
     services.tang.enable = true;
