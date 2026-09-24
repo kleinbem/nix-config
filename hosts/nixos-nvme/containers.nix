@@ -10,6 +10,7 @@
     services = {
       container-updater = {
         enable = true;
+        manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
         # Auto-derive from actually-enabled containers (specialisations included),
         # minus an explicit exclude list. Avoids cron-time failures for containers
         # that aren't deployed on this host.

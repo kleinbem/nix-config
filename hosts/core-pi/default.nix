@@ -206,6 +206,9 @@ in
       caddy = {
         enable = lib.mkForce true;
         ip = "${myInventory.network.nodes.caddy.ip}/24";
+        hostIP = myInventory.network.nodes.caddy.ip;
+        proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
+        globalMaintenance = myInventory.globalMaintenance or false;
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
         # kleinbem.dev — static Astro build (kleinbem/kleinbem-site), packaged

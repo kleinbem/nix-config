@@ -115,6 +115,7 @@ in
     # NOTE: Requires services/container-updater.nix to be imported.
     my.services.container-updater = {
       enable = true;
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       # Source from config.containers (the real nspawn instance names mkContainer
       # produces), not config.my.containers (the my.containers.<option-name>
       # keys) — a preset's mkContainer `name` can differ from its option name

@@ -1,4 +1,9 @@
-{ config, myInventory, ... }:
+{
+  config,
+  lib,
+  myInventory,
+  ...
+}:
 
 {
   my.containers = {
@@ -37,6 +42,9 @@
     caddy = {
       enable = false;
       ip = "${myInventory.network.nodes.caddy.ip}/24";
+      hostIP = myInventory.network.nodes.caddy.ip;
+      proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
+      globalMaintenance = myInventory.globalMaintenance or false;
       hostDataDir = "/var/lib/caddy";
       memoryLimit = "512M";
       tls = {

@@ -58,6 +58,7 @@
 
     services.container-updater = {
       enable = true;
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       containers =
         let
           excludeFromUpdater = [ ];
