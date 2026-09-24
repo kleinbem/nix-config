@@ -6,11 +6,24 @@
 # directly, we re-derive the same overrides for nix-config's own inputs — minus
 # nix-config itself, since you can't override your own flake.
 
-# nix-config directory (parent of this .just/ dir)
+# nix-config directory (parent of this .just/ dir) — or, inside a jj agent
+# workspace (`just jj::ws-new nix-config <name>`, see kleinbem/CLAUDE.md's
+# multi-agent protocol), <repo>.ws/<name>/.
 ROOT := parent_directory(justfile())
 
-# Meta-workspace directory (parent of nix-config)
-META := absolute_path(ROOT / "..")
+# Meta-workspace directory. Normally ROOT's direct parent, but a jj
+# workspace sits one directory deeper (<repo>.ws/<name>/ instead of
+# <repo>/), which used to make this resolve to <repo>.ws/ itself and break
+# every sibling-repo override with "Git repository ... does not exist" —
+# confirmed live 2026-09-24 running `just dev::apply` from a workspace.
+# Detected by the `.ws` suffix `just jj::ws-new` always gives that parent
+# directory, rather than anything workspace-internal, so this only needs
+# ROOT itself to locate it.
+META := if trim_end_match(file_name(parent_directory(ROOT)), ".ws") == file_name(parent_directory(ROOT)) {
+    absolute_path(ROOT / "..")
+} else {
+    absolute_path(ROOT / "../..")
+}
 
 # Sibling sub-flakes that nix-config depends on, discovered at parse time.
 # kleinbem-secrets is excluded from this glob (it doesn't match "nix-*"
@@ -24,8 +37,10 @@ META := absolute_path(ROOT / "..")
 # standalone dev-workflow toolset (nix-check-versions, nix-audit-deps, …),
 # never a nix-config flake input — including it produced a real (if inert)
 # "--override-input nix-toolbox ... does not match any input" warning on
-# every eval.
-SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -printf '%f\n' 2>/dev/null | xargs echo -n")
+# every eval. Same reasoning excludes any "*.ws" directory (jj agent
+# workspace containers, e.g. nix-config.ws — confirmed live 2026-09-24
+# that "nix-*.ws" matches the glob and isn't a flake input either).
+SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -not -name '*.ws' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,
 # plus kleinbem-secrets explicitly since its directory name doesn't match
