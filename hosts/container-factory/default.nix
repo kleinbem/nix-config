@@ -192,6 +192,8 @@ let
       postgresPasswordFile = "/run/secrets/factory-dummy";
       minioRootPasswordFile = "/run/secrets/factory-dummy";
       jwtSecretFile = "/run/secrets/factory-dummy";
+      keyEncryptionFile = "/run/secrets/factory-dummy";
+      keyHashFile = "/run/secrets/factory-dummy";
     };
     vaultwarden = {
       ip = "${myInventory.network.nodes.vaultwarden.ip}/24"; # core-pi

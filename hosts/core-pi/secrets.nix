@@ -64,6 +64,21 @@ in
         }
       )
       // {
+        # Same ente scope, separate file (nix/per-container/ente-keys.yaml)
+        # — added 2026-09-24 when museum got repackaged as a native service,
+        # after ente.yaml above already existed as ciphertext (adding a key
+        # to an existing sops file needs a YubiKey touch this session
+        # didn't have). key.encryption/key.hash: required by museum's real
+        # config schema, discovered while packaging it from source — the
+        # original hand-written museum.yaml never set them at all.
+        ente_key_encryption = {
+          sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/ente-keys.yaml";
+        };
+        ente_key_hash = {
+          sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/ente-keys.yaml";
+        };
+      }
+      // {
         # Attic Binary Cache
         attic_server_token_rs256 = {
           sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
