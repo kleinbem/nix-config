@@ -93,7 +93,25 @@ jobs:
       # full eval of every autoUpgrade host using ONLY the committed lock —
       # no $NIX_OVERRIDES at all — so this class of bug blocks promotion
       # instead of reaching a device.
+      #
+      # That "no overrides" honesty is exactly why this step (alone in the
+      # job) needs its own github.com auth: kleinbem-secrets is a private
+      # repo, so the unauthenticated `github:` fetcher 404s on it the same
+      # way an anonymous `curl` would — confirmed live 2026-09-24, blocking
+      # every promotion since this gate was added. Real devices solve this
+      # with their own sops-decrypted github_read_all_token wired into
+      # nix.conf's access-tokens (core.nix) — mint the equivalent here via
+      # the same GitHub App the `promote` job below already uses.
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Assert committed flake.lock evaluates (no overrides)
+        env:
+          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
         run: |
           set -euo pipefail
           # Every host with my.deploy.autoUpgrade.enable — these are the ones

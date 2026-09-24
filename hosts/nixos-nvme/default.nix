@@ -72,7 +72,9 @@
       tio # serial terminal (USB-TTL, embedded devices)
       efibootmgr # EFI NVRAM entry management (recovery + boot guard)
       bind.dnsutils # provides nslookup, dig
-      google-antigravity-ide-no-fhs # Google Antigravity IDE
+      google-antigravity # Google Antigravity 2.0 (orchestration hub) -> binary: antigravity
+      google-antigravity-ide-no-fhs # Google Antigravity IDE -> binary: antigravity-ide
+      google-antigravity-cli # Google Antigravity CLI -> binary: antigravity-cli, agy
       google-chrome # Google Chrome browser (provides system-wide chrome binary)
       buzz-desktop # Client for the self-hosted Buzz relay (containers.nix)
 
