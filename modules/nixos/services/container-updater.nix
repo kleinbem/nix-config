@@ -20,6 +20,60 @@ let
   # by the 03:00 timer. For something like a reverse proxy you want built once,
   # centrally, and cached — but never unattended-restarted.
   nightly = lib.subtractLists cfg.excludeFromNightly registered;
+
+  # Shared by the "update-container-stage@" systemd template unit AND the
+  # system.activationScripts hook below — the latter runs with a minimal
+  # environment (no PATH), so every tool is referenced by full store path.
+  # Fetch manifest, substitute from cache, register as a Nix profile, swap
+  # the /var/lib/machines/<name>/current symlink. Never touches the running
+  # container.
+  stageScript = pkgs.writeShellScript "container-stage" ''
+    set -euo pipefail
+    CONTAINER=$1
+    echo "Staging update for container: $CONTAINER (system: ${hostSystem})"
+
+    echo "Fetching manifest ${cfg.manifestUrl}..."
+    MANIFEST=$(${pkgs.curl}/bin/curl -fsSL --retry 3 --max-time 60 "${cfg.manifestUrl}")
+
+    REV=$(echo "$MANIFEST" | ${pkgs.jq}/bin/jq -r '.rev // "unknown"')
+    STORE_PATH=$(echo "$MANIFEST" \
+      | ${pkgs.jq}/bin/jq -r --arg sys "${hostSystem}" --arg c "$CONTAINER" \
+          '.systems[$sys][$c] // empty')
+
+    if [ -z "$STORE_PATH" ]; then
+      echo "Container $CONTAINER has no entry for ${hostSystem} in manifest (rev $REV)."
+      echo "Either CI has not built it for this arch yet, or the name is wrong. Aborting."
+      exit 1
+    fi
+
+    echo "Manifest (rev $REV): $CONTAINER -> $STORE_PATH"
+    echo "Substituting from binary cache..."
+    ${pkgs.nix}/bin/nix-store --realise "$STORE_PATH"
+
+    PROFILE="/nix/var/nix/profiles/containers/$CONTAINER"
+    OLD_PATH=$(readlink -f "$PROFILE" 2>/dev/null || echo "none")
+
+    echo "Registering $CONTAINER as a Nix profile (GC safe)..."
+    ${pkgs.nix}/bin/nix-env --profile "$PROFILE" --set "$STORE_PATH"
+
+    # Defensive: /var/lib/machines/<name>/ is normally created by the NixOS
+    # containers module when my.containers.<name>.enable = true on this host.
+    # Create it ourselves if missing so a one-off update for a never-deployed
+    # container doesn't fail at the symlink swap.
+    mkdir -p "/var/lib/machines/$CONTAINER"
+
+    echo "Updating symlink /var/lib/machines/$CONTAINER/current..."
+    ln -sfn "$PROFILE" "/var/lib/machines/$CONTAINER/current"
+
+    if [ "$OLD_PATH" != "$STORE_PATH" ]; then
+      touch "/run/container-updater/changed-$CONTAINER"
+      echo "Closure changed ($OLD_PATH -> $STORE_PATH); activation needed."
+    else
+      echo "Closure unchanged; no restart needed."
+    fi
+
+    echo "Stage complete for $CONTAINER."
+  '';
 in
 {
   options.my.services.container-updater = {
@@ -74,60 +128,11 @@ in
           after = [ "network-online.target" ];
           wants = [ "network-online.target" ];
 
-          path = with pkgs; [
-            nix
-            systemd
-            curl
-            jq
-          ];
+          path = with pkgs; [ systemd ];
 
           scriptArgs = "%i";
           script = ''
-            CONTAINER=$1
-            echo "Staging update for container: $CONTAINER (system: ${hostSystem})"
-
-            echo "Fetching manifest ${cfg.manifestUrl}..."
-            MANIFEST=$(curl -fsSL --retry 3 --max-time 60 "${cfg.manifestUrl}")
-
-            REV=$(echo "$MANIFEST" | jq -r '.rev // "unknown"')
-            STORE_PATH=$(echo "$MANIFEST" \
-              | jq -r --arg sys "${hostSystem}" --arg c "$CONTAINER" \
-                  '.systems[$sys][$c] // empty')
-
-            if [ -z "$STORE_PATH" ]; then
-              echo "Container $CONTAINER has no entry for ${hostSystem} in manifest (rev $REV)."
-              echo "Either CI has not built it for this arch yet, or the name is wrong. Aborting."
-              exit 1
-            fi
-
-            echo "Manifest (rev $REV): $CONTAINER -> $STORE_PATH"
-            echo "Substituting from binary cache..."
-            nix-store --realise "$STORE_PATH"
-
-            PROFILE="/nix/var/nix/profiles/containers/$CONTAINER"
-            OLD_PATH=$(readlink -f "$PROFILE" 2>/dev/null || echo "none")
-
-            echo "Registering $CONTAINER as a Nix profile (GC safe)..."
-            nix-env --profile "$PROFILE" --set "$STORE_PATH"
-
-            # Defensive: /var/lib/machines/<name>/ is normally created by the NixOS
-            # containers module when my.containers.<name>.enable = true on this host.
-            # Create it ourselves if missing so a one-off update for a never-deployed
-            # container doesn't fail at the symlink swap.
-            mkdir -p "/var/lib/machines/$CONTAINER"
-
-            echo "Updating symlink /var/lib/machines/$CONTAINER/current..."
-            ln -sfn "$PROFILE" "/var/lib/machines/$CONTAINER/current"
-
-            if [ "$OLD_PATH" != "$STORE_PATH" ]; then
-              touch "/run/container-updater/changed-$CONTAINER"
-              echo "Closure changed ($OLD_PATH -> $STORE_PATH); activation needed."
-            else
-              echo "Closure unchanged; no restart needed."
-            fi
-
-            echo "Stage complete for $CONTAINER. Activate with:"
-            echo "  systemctl start update-container-activate@$CONTAINER.service"
+            exec ${stageScript} "$@"
           '';
 
           serviceConfig = {
@@ -297,5 +302,41 @@ in
         "d /run/container-updater 0755 root root - -"
       ];
     };
+
+    # ----------------------------------------------------------------
+    # container-updater-bootstrap (systemd service, above) only runs on
+    # BOOT (wantedBy multi-user.target) — a plain `nixos-rebuild switch`
+    # never fires it. But switch-to-configuration restarts a container's
+    # unit in the SAME activation that first makes it standalone (its
+    # `.path` flips from an embedded derivation to
+    # `/var/lib/machines/<name>/current`), and that restart happens via
+    # normal unit reconciliation AFTER activationScripts run — so a
+    # container going embedded→standalone for the first time gets
+    # restarted against a symlink nothing has ever staged, fails
+    # ConditionPathExists, and stays down until a reboot or someone
+    # notices. This actually happened (nix-config commit e37e23b5,
+    # 2026-09-24) — core-pi's public reverse proxy was down for 2+ hours
+    # because this exact gap meant nothing auto-recovered it.
+    #
+    # Runs synchronously during every switch/boot, before the switch's
+    # own unit restarts, and stages (never activates/restarts) any
+    # registered container whose symlink doesn't exist yet — so by the
+    # time switch-to-configuration restarts that container's unit
+    # moments later, the symlink already resolves and the container
+    # comes up first-try instead of failing and waiting for a manual
+    # fix. Blocking and synchronous on purpose (activation scripts run
+    # serially before boot/switch is considered done) — acceptable
+    # because this only does real work the ONE time a container is new
+    # to standalone; every other switch it's a no-op symlink check.
+    system.activationScripts.container-updater-stage-missing = lib.mkIf (registered != [ ]) (
+      lib.stringAfter [ "var" ] ''
+        for c in ${lib.concatStringsSep " " registered}; do
+          if [ ! -e "/var/lib/machines/$c/current" ]; then
+            echo "container-updater: $c has no staged closure yet — staging before activation continues..."
+            ${stageScript} "$c" || echo "container-updater: staging $c failed during activation; it will retry on the nightly timer or next boot."
+          fi
+        done
+      ''
+    );
   };
 }
