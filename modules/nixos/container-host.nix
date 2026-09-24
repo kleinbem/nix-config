@@ -97,9 +97,16 @@ in
     # NOTE: Requires services/container-updater.nix to be imported.
     my.services.container-updater = {
       enable = true;
+      # Source from config.containers (the real nspawn instance names mkContainer
+      # produces), not config.my.containers (the my.containers.<option-name>
+      # keys) — a preset's mkContainer `name` can differ from its option name
+      # (e.g. `my.containers.dashboard` → container "dashboard-homepage"), and
+      # this list is matched against the real name by isStandalone in
+      # nix-presets/lib/factory.nix. Deriving from the option-name set instead
+      # silently left any such container permanently embedded, never pulled.
       containers =
         let
-          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+          allEnabled = lib.attrNames config.containers;
         in
         lib.subtractLists cfg.excludeFromUpdater allEnabled;
     };
