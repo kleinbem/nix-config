@@ -51,6 +51,7 @@ in
 
     "${self}/users/martin/nixos.nix"
     inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.host-persistence
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/desktop.nix"
     # firejail.nix is a separate file from desktop.nix, only pulled in
@@ -268,6 +269,11 @@ in
       subnet = "10.85.50.0/24";
       hostAddress = "10.85.50.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry's default flipped to false (a stranger without our
+      # always-imported modules/nixos/persistence.nix would otherwise hit
+      # a hard dependency on the impermanence module); this fleet already
+      # has it, so restore the previous behavior explicitly.
+      enablePersistence = true;
       # persona-runtime is structurally excluded from container-factory's
       # catalogue (hosts/container-factory/default.nix — its `personas`
       # option is attrsOf, which triggers an infinite recursion there), so

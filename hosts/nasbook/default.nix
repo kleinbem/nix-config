@@ -28,6 +28,7 @@ in
     # ADR-002: containers below are decoupled/pulled, not built on this weak
     # host (see container-factory's catalogue for their pre-built closures).
     inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.host-persistence
     inputs.nix-gantry.nixosModules.updater
 
     # ─── Services moved from Workstation ─────────────────────
@@ -111,6 +112,11 @@ in
       subnet = "10.85.47.0/24";
       hostAddress = "10.85.47.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry's default flipped to false (a stranger without our
+      # always-imported modules/nixos/persistence.nix would otherwise hit
+      # a hard dependency on the impermanence module); this fleet already
+      # has it, so restore the previous behavior explicitly.
+      enablePersistence = true;
     };
 
     # ─── Data & Analytics Hub Services ───────────────────────

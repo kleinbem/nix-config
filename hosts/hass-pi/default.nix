@@ -17,6 +17,7 @@ in
   imports = [
     "${self}/modules/nixos/rpi5-node.nix"
     inputs.nix-gantry.nixosModules.host
+    inputs.nix-gantry.nixosModules.host-persistence
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
@@ -83,6 +84,11 @@ in
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry's default flipped to false (a stranger without our
+      # always-imported modules/nixos/persistence.nix would otherwise hit
+      # a hard dependency on the impermanence module); this fleet already
+      # has it, so restore the previous behavior explicitly.
+      enablePersistence = true;
     };
 
     services.tang.enable = true;
