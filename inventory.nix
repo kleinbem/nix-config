@@ -532,7 +532,12 @@
       };
 
       cups = {
-        ip = "10.85.46.124";
+        # Was 10.85.46.124 — a stale .46 (nixos-nvme's subnet) address that
+        # never matched where cups actually deploys (core-pi, 10.85.48.0/24).
+        # Same dual-IP/wrong-gateway bug as caddy/attic/crowdsec had — this
+        # was the one instance of it left deliberately unfixed until now.
+        # .123 was already freed (authelia's old slot, see comment below).
+        ip = "10.85.48.123";
         port = 631;
         secure = true; # Uses https upstream
         meta = {

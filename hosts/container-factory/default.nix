@@ -46,7 +46,7 @@ let
       hostDataDir = dataDir "n8n";
     };
     attic = {
-      ip = ip 21;
+      ip = "${myInventory.network.nodes.attic.ip}/24"; # core-pi
       hostDataDir = dataDir "attic";
       secretsFile = "/run/secrets/factory-dummy";
     };
@@ -79,7 +79,7 @@ let
       hostDataDir = dataDir "loki";
     };
     crowdsec = {
-      ip = ip 31;
+      ip = "${myInventory.network.nodes.crowdsec.ip}/24"; # core-pi
       hostDataDir = dataDir "crowdsec";
     };
     ollama = {
@@ -147,11 +147,8 @@ let
       hostDataDir = dataDir "hermes";
       secretsFile = "/run/secrets/factory-dummy";
     };
-    caddy.ip = ip 37;
-    # cups: inventory node still has a .46 IP but it deploys on core-pi (.48)
-    # — pre-existing inventory inconsistency, tracked separately. Leaving the
-    # dummy; cups's gateway is wrong either way until that's fixed.
-    cups.ip = ip 38;
+    caddy.ip = "${myInventory.network.nodes.caddy.ip}/24"; # core-pi
+    cups.ip = "${myInventory.network.nodes.cups.ip}/24"; # core-pi — fixed 2026-09-24, see inventory.nix's cups comment
     frigate.ip = ip 39;
     home-assistant.ip = "${myInventory.network.nodes.home-assistant.ip}/24"; # hass-pi
     paperless.ip = "${myInventory.network.nodes.paperless.ip}/24"; # nasbook
