@@ -108,6 +108,14 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Without this, create-github-app-token defaults to scoping the
+          # token to ONLY the current repo (nix-config) — confirmed live
+          # 2026-09-24 via its own log ("Inputs 'owner' and 'repositories'
+          # are not set. Creating token for this repository."), which is
+          # exactly why the first version of this fix still 404'd on
+          # kleinbem-secrets despite minting a token successfully.
+          repositories: |
+            kleinbem-secrets
 
       - name: Assert committed flake.lock evaluates (no overrides)
         env:
