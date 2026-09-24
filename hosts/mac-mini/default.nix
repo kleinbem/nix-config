@@ -859,7 +859,27 @@ in
     # nat.extraCommands workaround below. virtualisation.nix's NAT is
     # already native nftables (migrated in the same change), so this host
     # needed no NAT-specific work, just the firewall backend + rule syntax.
-    nftables.enable = true;
+    nftables = {
+      enable = true;
+      # Inbound SMTP: Digiweb's WAN IP is unblocked on port 25 (confirmed live
+      # 2026-09-24 via canyouseeme.org against 84.203.9.163), and the Zyxel +
+      # Orbi both forward WAN:25 -> this host's LAN IP (10.0.0.16). Stalwart
+      # itself lives on the cbr0 container bridge (10.85.50.8), not on this
+      # host's own address, so it needs the same dstnat-in-prerouting pattern
+      # core-pi already uses for Caddy over wt0 (see core-pi's netbird-nat
+      # table) — just on the physical LAN interface instead of the mesh one.
+      # No extraForwardRules needed: container-host.nix's own
+      # `oifname "cbr0" accept` fragment already covers the forwarded packet.
+      tables.mail-nat = {
+        family = "inet";
+        content = ''
+          chain prerouting {
+            type nat hook prerouting priority dstnat; policy accept;
+            iifname "enp2s0f0" tcp dport 25 dnat ip to ${myInventory.network.nodes.stalwart.ip}
+          }
+        '';
+      };
+    };
 
     # Alertmanager has no built-in authentication at all (upstream Prometheus
     # design — it's meant to sit behind a reverse proxy). Caddy's forward_auth
@@ -911,6 +931,25 @@ in
       address = "10.0.0.1";
       interface = "enp2s0f0";
     };
+  };
+
+  # Keeps mail.kleinbem.dev's A record pointed at Digiweb's WAN IP, which is
+  # dynamic (PPPoE) — confirmed reachable + unblocked on port 25 2026-09-24.
+  # Deliberately NOT Terraform-managed (nix/infra/cloudflare-dns.tf): a
+  # value that changes on its own can't live in Terraform state without the
+  # two fighting every apply/tick, so this one record's source of truth is
+  # live network state, not a Nix/Tofu input — everything else about the
+  # domain (MX/SPF/DMARC/MTA-STS) stays in Terraform as usual. Gated on the
+  # sops secret existing (secrets.nix) so an unprovisioned token can't crash
+  # this one service — see that file for the atomic-manifest landmine this
+  # avoids on every OTHER secret on this host.
+  services.cloudflare-dyndns = lib.mkIf (config.sops.secrets ? "cloudflare_dyndns_token") {
+    enable = true;
+    apiTokenFile = config.sops.secrets."cloudflare_dyndns_token".path;
+    domains = [ "mail.kleinbem.dev" ];
+    ipv4 = true;
+    ipv6 = false;
+    proxied = false; # SMTP can't be Cloudflare-proxied
   };
 
   # Override the fleet-wide zstd zram default (core.nix): zstd's better

@@ -7,6 +7,16 @@
 let
   mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
 
+  # Guards the not-yet-provisioned cloudflare_dyndns_token the same way
+  # personaHasField guards persona API keys below — sops-install-secrets
+  # validates its whole manifest atomically, so declaring a key before it
+  # exists in mac-mini.yaml would freeze every other secret on this host
+  # (discord_bot_token, stalwart's admin hash, etc.) until someone notices,
+  # same landmine documented in the persona comment further down.
+  macMiniSopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
+  macMiniHasField =
+    field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
+
   # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
   # each tool persona-runtime knows how to run (nix-presets/containers/
   # persona-runtime.nix's toolSpecs — keep in sync when a new tool gets
@@ -132,6 +142,17 @@ in
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
       };
 
+    }
+    // lib.optionalAttrs (macMiniHasField "cloudflare_dyndns_token") {
+      # Cloudflare API token (Zone:DNS:Edit, scoped to kleinbem.dev only —
+      # deliberately narrower than the Terraform automation token) for
+      # services.cloudflare-dyndns below, which keeps mail.kleinbem.dev's A
+      # record pointed at Digiweb's dynamic PPPoE IP. Add via:
+      #   sops nix/per-host/mac-mini.yaml   (in kleinbem-secrets)
+      # See default.nix's cloudflare-dyndns block.
+      cloudflare_dyndns_token = {
+        sopsFile = macMiniSopsFile;
+      };
     }
     // lib.optionalAttrs config.my.containers.monitoring.grafanaOidc.enable {
       # Authentik OIDC client secret for Grafana's own login (Authelia
