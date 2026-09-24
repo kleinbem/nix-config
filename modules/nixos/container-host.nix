@@ -60,12 +60,30 @@ in
     excludeFromUpdater = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Containers to exclude from nightly auto-update (e.g., ['attic' 'caddy'])";
+      description = ''
+        Containers still built by container-factory and pulled/cached from the
+        CI manifest, but excluded from the automatic nightly bulk update —
+        e.g. a reverse proxy you don't want unattended-restarted. Still
+        stageable/updatable any time via
+        `systemctl start update-container@<name>`.
+      '';
       example = [
         "attic"
         "caddy"
         "crowdsec"
       ];
+    };
+
+    excludeFromStandalone = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        Containers that must build embedded on this host and never be
+        treated as standalone/pulled at all — for a container-factory
+        structural conflict (e.g. an attrsOf option that recurses in the
+        factory's eval), not merely "don't auto-restart" (use
+        excludeFromUpdater for that).
+      '';
     };
 
     enablePersistence = lib.mkEnableOption "Impermanence for container host" // {
@@ -104,11 +122,17 @@ in
       # this list is matched against the real name by isStandalone in
       # nix-presets/lib/factory.nix. Deriving from the option-name set instead
       # silently left any such container permanently embedded, never pulled.
-      containers =
-        let
-          allEnabled = lib.attrNames config.containers;
-        in
-        lib.subtractLists cfg.excludeFromUpdater allEnabled;
+      #
+      # excludeFromStandalone subtracts here, at the base list, because
+      # isStandalone matches against this exact list — a container that
+      # genuinely can't be factory-built (persona-runtime's attrsOf
+      # structural conflict) must never appear in it, or NixOS expects a
+      # manifest entry that will never exist. excludeFromUpdater does NOT
+      # subtract here — it only opts a container out of the *nightly* bulk
+      # restart (below); removing it from this base list would silently
+      # build it embedded again instead of pulled/cached.
+      containers = lib.subtractLists cfg.excludeFromStandalone (lib.attrNames config.containers);
+      excludeFromNightly = cfg.excludeFromUpdater;
     };
 
     # ─── Persistence for Container State ────────────────────────

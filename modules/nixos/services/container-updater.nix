@@ -12,6 +12,14 @@ let
   # (comfyui, vllm, langflow) that have no nspawn closure and thus no manifest
   # entry — intersecting with `config.containers` filters those out.
   registered = lib.filter (c: builtins.hasAttr c config.containers) cfg.containers;
+  # Subset of `registered` eligible for the automatic nightly bulk update —
+  # everything else in `registered` is still pulled/cached/CI-built (isStandalone
+  # in nix-presets/lib/factory.nix matches against the full `cfg.containers`,
+  # not this subset) and still stageable/activatable any time via
+  # `systemctl start update-container@<name>`, it just never gets auto-restarted
+  # by the 03:00 timer. For something like a reverse proxy you want built once,
+  # centrally, and cached — but never unattended-restarted.
+  nightly = lib.subtractLists cfg.excludeFromNightly registered;
 in
 {
   options.my.services.container-updater = {
@@ -33,6 +41,19 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "List of standalone containers to auto-update.";
+    };
+    excludeFromNightly = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        Containers from `containers` (above) to skip in the automatic nightly
+        bulk update (e.g. a reverse proxy you don't want unattended-restarted).
+        They're still built by container-factory, cached from the CI manifest,
+        staged automatically on first boot if never staged
+        (container-updater-bootstrap), and updatable any time via
+        `systemctl start update-container@<name>` — this only opts them out
+        of the automatic 03:00 timer.
+      '';
     };
   };
 
@@ -177,7 +198,7 @@ in
         # restarted — an unchanged container (e.g. home-assistant between
         # releases) is left untouched instead of blipping nightly.
         # ----------------------------------------------------------------
-        "update-containers" = lib.mkIf (registered != [ ]) {
+        "update-containers" = lib.mkIf (nightly != [ ]) {
           description = "Smart bulk update of standalone NixOS containers (stage all → activate changed non-attic → activate attic last)";
 
           path = with pkgs; [ systemd ];
@@ -189,7 +210,7 @@ in
 
           script = ''
             set -e
-            CONTAINERS="${lib.concatStringsSep " " registered}"
+            CONTAINERS="${lib.concatStringsSep " " nightly}"
 
             echo "=== Phase 1: staging updates for all containers in parallel ==="
             for c in $CONTAINERS; do
@@ -260,7 +281,7 @@ in
         };
       };
 
-      timers."update-containers" = lib.mkIf (registered != [ ]) {
+      timers."update-containers" = lib.mkIf (nightly != [ ]) {
         description = "Nightly update of standalone NixOS containers";
         wantedBy = [ "timers.target" ];
         timerConfig = {

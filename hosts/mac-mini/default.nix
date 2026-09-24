@@ -271,10 +271,11 @@ in
       # catalogue (hosts/container-factory/default.nix — its `personas`
       # option is attrsOf, which triggers an infinite recursion there), so
       # it's built directly on this host instead of pulled from the CI
-      # manifest. Without this, container-updater still tries to pull+stage
-      # it like any other container and update-container@persona-runtime
-      # fails every cycle with "Container ... has no entry for
-      # x86_64-linux in manifest".
+      # manifest. excludeFromStandalone (not excludeFromUpdater — that only
+      # skips the nightly auto-restart, a pulled container still needs a
+      # real manifest entry) keeps it out of container-updater's list
+      # entirely, so nothing ever tries to pull+stage it and fail with
+      # "Container ... has no entry for x86_64-linux in manifest".
       #
       # hermes was excluded for the same reason until 2026-09-24, but its
       # own attrsOf experiment (2026-08-07) was reverted the same day it
@@ -283,7 +284,7 @@ in
       # hosts/container-factory/default.nix's catalogue.hermes comment),
       # so it's back on the normal CI-manifest pull path like everything
       # else.
-      excludeFromUpdater = [
+      excludeFromStandalone = [
         "persona-runtime"
       ];
     };

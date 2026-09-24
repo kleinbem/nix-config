@@ -239,7 +239,22 @@ let
     # runtime, and produce no `config.containers.<name>` closure to cache.
   };
 
-  wanted = name: deployedContainers == null || builtins.elem name deployedContainers;
+  # Catalogue entries are keyed by my.containers.<option> name, but hosts
+  # register REAL container instance names in deployedContainers (see
+  # modules/nixos/container-host.nix — nix-presets/lib/factory.nix's
+  # isStandalone matches against those real names). Usually the two are
+  # identical; where a preset's mkContainer `name` differs from its own
+  # option name (one option can also emit more than one real container,
+  # e.g. langfuse → langfuse + langfuse-db), list the real name(s) here so
+  # `wanted` still recognizes a host that only ever registers the real name.
+  realContainerNames = {
+    dashboard = [ "dashboard-homepage" ];
+  };
+  wanted =
+    name:
+    deployedContainers == null
+    || builtins.elem name deployedContainers
+    || lib.any (n: builtins.elem n deployedContainers) (realContainerNames.${name} or [ ]);
 in
 {
   imports = [
