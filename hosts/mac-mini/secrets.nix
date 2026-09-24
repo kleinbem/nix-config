@@ -14,8 +14,7 @@ let
   # (discord_bot_token, stalwart's admin hash, etc.) until someone notices,
   # same landmine documented in the persona comment further down.
   macMiniSopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
-  macMiniHasField =
-    field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
+  macMiniHasField = field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
 
   # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
   # each tool persona-runtime knows how to run (nix-presets/containers/
