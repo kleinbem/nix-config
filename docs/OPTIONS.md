@@ -142,8 +142,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.ente`
 
-- **Declared:** `nix-presets/containers/ente.nix:13`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`
+- **Declared:** `nix-presets/containers/ente.nix:21`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `memoryLimit`, `minioRootPasswordFile`, `postgresPasswordFile`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.frigate`
