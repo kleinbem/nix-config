@@ -322,6 +322,10 @@ in
       bridge = "br0";
     };
     hardware.gpuRenderNode = "/dev/dri/renderD128";
+    # Build-only host that enables every preset → every preset registers
+    # its backup items here. Backups belong to the hosts that actually run
+    # the services, not to this one.
+    backup.warnIfDisabled = false;
 
     containers = lib.mapAttrs (name: def: def // { enable = wanted name; }) catalogue;
   };

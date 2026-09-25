@@ -105,7 +105,6 @@ in
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
-    ./backup.nix
     inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
@@ -207,6 +206,13 @@ in
     };
 
     services.tang.enable = true;
+
+    # Backups — nix-presets' backup-engine, fleet wiring in
+    # modules/nixos/backup.nix. Nothing to list here: vaultwarden,
+    # authentik, ente, caddy (local CA) and tang register their own items.
+    # Flip once `backup_r2_rclone_config` (nix/per-host/core-pi.yaml) and
+    # `ntfy_alerts_topic` (nix/shared.yaml) exist in sops.
+    backup.enable = false;
 
     # ─── Containers ──────────────────────────────────────────────
     containers = {

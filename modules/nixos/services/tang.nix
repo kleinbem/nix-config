@@ -23,5 +23,13 @@ in
     };
 
     networking.firewall.allowedTCPPorts = [ 7654 ];
+
+    # Losing these breaks every clevis binding to this Tang (hosts fall back
+    # to their LUKS passphrase). Secure tier = age-encrypted to the
+    # YubiKeys, so an off-site copy doesn't hand the keys to anyone else.
+    my.backup.items.tang = {
+      tier = "secure";
+      paths = [ "/var/lib/private/tang" ];
+    };
   };
 }
