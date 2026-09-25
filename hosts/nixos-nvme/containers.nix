@@ -181,8 +181,12 @@
       };
 
       backup = {
-        enable = false; # TEMP: toggle false→apply→true→apply to force NixOS to
-        # cleanly tear down + recreate the container (its system was stuck stale).
+        # Re-enabled 2026-09-25: the 2026-06-28 "TEMP: toggle false→apply→
+        # true→apply" to recreate a stale container was never flipped back,
+        # so this host went ~3 months with no backups. nasbook's instance of
+        # the same preset writes to the same gdrive repos and was verified
+        # healthy the same day (snapshots dated 2026-09-25).
+        enable = true;
         ip = "10.85.46.128/24";
         # Literal paths (not config.sops.secrets.*.path) on purpose: the sops
         # attribute evaluated to null inside the container's separate module
@@ -201,8 +205,26 @@
           "/var/lib/sops" = "/var/lib/sops";
           "/nix/persist/var/lib/sbctl" = "/nix/persist/var/lib/sbctl";
           "/var/lib/caddy" = "/var/lib/caddy";
-          "/var/lib/images" = "/var/lib/images";
-        };
+        }
+        # Named per-app state dirs, NOT /var/lib/images wholesale: that also
+        # holds model weights (ollama, vllm, lmstudio, comfyui), 14G of loki
+        # logs, the attic cache, podman image layers and syncthing (synced
+        # elsewhere) — all regenerable, none worth shipping to Drive. The
+        # preset's `exclude` list can't express this per host (its
+        # innerConfig is built once, centrally — ADR-002), but systemTargets
+        # is per-host bind-mounts, so narrow it here. n8n is already under
+        # `targets` above. Every entry must exist on disk or the bind-mount
+        # fails the container start — so only dirs already guaranteed by the
+        # tmpfiles.rules at the bottom of this file are listed. Leftover dirs
+        # of services since moved off this host (litellm, stalwart,
+        # authelia, agent-team, langflow) are deliberately not included.
+        // lib.genAttrs [
+          "/var/lib/images/open-webui"
+          "/var/lib/images/qdrant"
+          "/var/lib/images/monitoring"
+          "/var/lib/images/langfuse"
+          "/var/lib/images/buzz"
+        ] (d: d);
       };
 
       paperless = {
