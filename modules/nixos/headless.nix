@@ -96,18 +96,25 @@
 
   # ─── User ───────────────────────────────────────────────────
   # Hosts that need SSH access add `users.users.${config.my.username}.openssh.authorizedKeys.keys`
-  # in their own configuration (with keys.nix references). This block just
-  # ensures the user exists with the right groups.
+  # in their own configuration (with keys.nix references). This block ensures
+  # the user exists with the right groups and wires the sops password hash so
+  # sudo authentication works with the fleet-shared password.
   users.users.${config.my.username} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
+    hashedPasswordFile = lib.mkDefault config.sops.secrets.martin_password.path;
+  };
+
+  sops.secrets.martin_password = {
+    key = lib.mkDefault "martin_password_hash";
+    neededForUsers = true;
   };
 
   # No blanket wheelNeedsPassword=false here: these are always-on,
   # network-facing hosts (core-pi fronts the public internet), so root
   # access is scoped through the fleet-wide per-command NOPASSWD allowlist
   # (security/sudo.nix, imported via core.nix) instead of unrestricted
-  # passwordless sudo. users.nix's `mkDefault true` applies.
+  # passwordless sudo.
 
   # ─── Container TUI ──────────────────────────────────────────
   # Headless hosts run nspawn / podman containers (AI services, Frigate,
