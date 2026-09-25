@@ -25,15 +25,15 @@
 ### core-pi
 
 - 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
-- 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:50]_
-- 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:18]_
+- 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:52]_
+- 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:16]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
-- 🖨️ **CUPS Printing** (`cups`) `10.85.46.124:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
+- 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
-- 🔐 **Ente Auth** (`ente`) `10.85.48.133:8080` → `2fa.kleinbem.dev` — E2E Encrypted 2FA & Authenticator Server. _[src: nix-presets/containers/ente.nix:21]_
+- 🔐 **Ente Auth** (`ente`) `10.85.48.133:8080` → `2fa.kleinbem.dev` — E2E Encrypted 2FA & Authenticator Server. _[src: nix-presets/containers/ente.nix:25]_
 - 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:32]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
-- 🔐 **Vaultwarden** (`vaultwarden`) `10.85.48.135:8222` → `vault.kleinbem.dev` — Self-hosted password manager (people + personas). _[src: nix-presets/containers/vaultwarden.nix:21]_
+- 🔐 **Vaultwarden** (`vaultwarden`) `10.85.48.135:8222` → `vault.kleinbem.dev` — Self-hosted password manager (people + personas). _[src: nix-presets/containers/vaultwarden.nix:23]_
 
 ### hass-pi
 
@@ -60,8 +60,8 @@
 
 ### nixos-nvme
 
+- 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:39]_
-- 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 

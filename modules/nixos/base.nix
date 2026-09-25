@@ -50,6 +50,7 @@
     ./virtualisation.nix
     ./zero-trust.nix
     ./services/timesync.nix
+    ./backup.nix # my.backup — fleet destinations/keys for nix-presets' backup-engine (off until a host enables it)
   ];
 
   # Fleet-wide sops defaults — every host used to repeat these 3 lines

@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 61  
-**Consumer files scanned:** 16
+**Declarations indexed:** 60  
+**Consumer files scanned:** 21
 
 ---
 
@@ -43,6 +43,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `jabra.buttons.enable`, `jabra.buttons.smartButtonCommand`, `jabra.preferred`
 - **Consumed by:** `host:nixos-nvme`
 
+## `my.backup`
+
+### `my.backup`
+
+- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:278`
+- **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `hostName`, `items`, `notify.command`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/vaultwarden.nix`
+
 ## `my.boot`
 
 ### `my.boot.initrd-fan`
@@ -50,14 +58,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/initrd-fan.nix:61`
 - **Sub-options:** `enable`, `kernelModules`, `pwm`
 - **Consumed by:** `host:orin-nano`
-
-## `my.container-host`
-
-### `my.container-host`
-
-- **Declared:** `nix-config/modules/nixos/container-host.nix:39`
-- **Sub-options:** `bridge`, `enable`, `enablePersistence`, `excludeFromUpdater`, `hostAddress`, `subnet`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`
 
 ## `my.containers`
 
@@ -88,7 +88,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.authentik`
 
-- **Declared:** `nix-presets/containers/authentik.nix:50`
+- **Declared:** `nix-presets/containers/authentik.nix:52`
 - **Sub-options:** `bootstrapAdminPasswordFile`, `bootstrapApiTokenFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `postgresPasswordFile`, `secretKeyFile`
 - **Consumed by:** `host:core-pi`
 
@@ -106,8 +106,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.caddy`
 
-- **Declared:** `nix-presets/containers/caddy/default.nix:18`
-- **Sub-options:** `enable`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `staticSites`
+- **Declared:** `nix-presets/containers/caddy/default.nix:16`
+- **Sub-options:** `enable`, `globalMaintenance`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `proxyTargets`, `staticSites`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.code-server`
@@ -142,8 +142,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.ente`
 
-- **Declared:** `nix-presets/containers/ente.nix:21`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `memoryLimit`, `minioRootPasswordFile`, `postgresPasswordFile`
+- **Declared:** `nix-presets/containers/ente.nix:25`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`, `postgresPasswordFile`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.frigate`
@@ -292,7 +292,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.vaultwarden`
 
-- **Declared:** `nix-presets/containers/vaultwarden.nix:21`
+- **Declared:** `nix-presets/containers/vaultwarden.nix:23`
 - **Sub-options:** `adminTokenFile`, `domain`, `enable`, `hostDataDir`, `invitationsAllowed`, `ip`, `memoryLimit`, `port`, `signupsAllowed`, `smtp`
 - **Consumed by:** `host:core-pi`
 
@@ -365,12 +365,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.services`
-
-### `my.services.container-updater`
-
-- **Declared:** `nix-config/modules/nixos/services/container-updater.nix:17`
-- **Sub-options:** `containers`, `enable`, `manifestUrl`
-- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.printing`
 
