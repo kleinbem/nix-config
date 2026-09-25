@@ -194,6 +194,16 @@
     }
     # GitHub runner registration token — only declared while the opt-in
     # runner container is enabled (same footgun-avoidance as litellm above).
+    # Password of langfuse's own least-privilege Postgres role (replaced a
+    # hardcoded postgres/postgres superuser, 2026-09-25). Gated like
+    # litellm above: to turn langfuse on, first `openssl rand -hex 32`
+    # into `sops nix/per-host/nixos-nvme.yaml` as langfuse_db_password,
+    # THEN flip the enable flag.
+    // lib.optionalAttrs config.my.containers.langfuse.enable {
+      langfuse_db_password = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
+      };
+    }
     // lib.optionalAttrs config.my.containers.github-runner.enable {
       github_runner_pat = {
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
@@ -227,15 +237,6 @@
         mode = "0444";
         content = ''
           WEBUI_SECRET_KEY=${config.sops.placeholder.openwebui_secret_key}
-        '';
-      };
-      "langfuse.env" = {
-        mode = "0444";
-        content = ''
-          DATABASE_URL=postgresql://postgres:postgres@10.85.46.124:5432/langfuse
-          NEXTAUTH_SECRET=${config.sops.placeholder.langfuse_nextauth_secret}
-          SALT=${config.sops.placeholder.langfuse_salt}
-          NEXTAUTH_URL=http://${myInventory.network.nodes.langfuse.ip}:3000
         '';
       };
       "agent-team.env" = {
@@ -313,6 +314,19 @@
       # "syncthing.env".content = ''
       #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
       # '';
+    }
+    // lib.optionalAttrs config.my.containers.langfuse.enable {
+      # 0400, not the old 0444: it now carries a real DB password, and
+      # the bind-mount into the container is read by root there anyway.
+      "langfuse.env" = {
+        mode = "0400";
+        content = ''
+          DATABASE_URL=postgresql://langfuse:${config.sops.placeholder.langfuse_db_password}@10.85.46.124:5432/langfuse
+          NEXTAUTH_SECRET=${config.sops.placeholder.langfuse_nextauth_secret}
+          SALT=${config.sops.placeholder.langfuse_salt}
+          NEXTAUTH_URL=http://${myInventory.network.nodes.langfuse.ip}:3000
+        '';
+      };
     }
     // lib.optionalAttrs config.my.containers.litellm.enable {
       "litellm.env" = {

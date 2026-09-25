@@ -48,16 +48,16 @@ in
         # 2026-09-23, replacing the hardcoded "pgpass"/"password123"/
         # placeholder-JWT that used to live directly in ente.nix. Per-
         # container file, scoped to core_pi in kleinbem-secrets/.sops.yaml.
-        # postgres_password/minio_root_password only take effect on each
-        # service's own first start (initdb / MinIO's first boot) — an
-        # already-initialized live deployment needs its running Postgres
-        # user and MinIO root user rotated to match via `ALTER USER` /
-        # `mc admin user` BEFORE restarting museum with the new config,
-        # or the app loses its DB/object-storage connection.
+        # minio_root_password only takes effect on MinIO's first boot — a
+        # live deployment needs its root user rotated to match via
+        # `mc admin user` BEFORE restarting museum with the new config, or
+        # the app loses its object-storage connection. (postgres_password
+        # is gone since ente moved to native Postgres with socket peer
+        # auth, 2026-10; its ciphertext in ente.yaml can go once the
+        # migration in nix-presets containers/ente.nix is done.)
         mkPerContainerSecrets {
           container = "ente";
           keys = [
-            "postgres_password"
             "minio_root_password"
             "jwt_secret"
           ];

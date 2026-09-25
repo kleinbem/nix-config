@@ -70,8 +70,13 @@ let
       hostDataDir = dataDir "playground";
     };
     langfuse = {
-      ip = ip 27;
+      # Real address, not a dummy: langfuse-db's pg_hba admits only the
+      # app container's IP, so it's baked into that closure.
+      ip = "${myInventory.network.nodes.langfuse.ip}/24"; # nixos-nvme
       hostDataDir = dataDir "langfuse";
+      # Non-null so the cached closure includes the password-setup branch
+      # (same dummy-path convention as ente/authentik below).
+      dbPasswordFile = "/run/secrets/factory-dummy";
     };
     litellm = {
       ip = ip 29;
@@ -197,7 +202,6 @@ let
       # core-pi). Same dummy-path convention as authentik/vaultwarden
       # above; a null here would bake the branch out of the script
       # entirely at factory build time, not just leave it unused.
-      postgresPasswordFile = "/run/secrets/factory-dummy";
       minioRootPasswordFile = "/run/secrets/factory-dummy";
       jwtSecretFile = "/run/secrets/factory-dummy";
       keyEncryptionFile = "/run/secrets/factory-dummy";
