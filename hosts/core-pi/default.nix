@@ -55,9 +55,18 @@ let
       {
         name = "Authentik";
         group = "Identity";
-        url = "https://auth.kleinbem.dev";
+        # An unauthenticated app endpoint, not `/` with `< 500`: during the
+        # 2026-09-26 outage (worker grabbed :9000, server crash-looping)
+        # `/` and every UI/API path answered 404 while /-/health/* stayed
+        # 200 — a `< 500` probe stayed green for 80 minutes. This one only
+        # answers 200 when the real server (Django behind the Rust front)
+        # is serving.
+        url = "https://auth.kleinbem.dev/api/v3/root/config/";
         interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
+        conditions = [
+          "[STATUS] == 200"
+          "[RESPONSE_TIME] < 3000"
+        ];
       }
       {
         name = "Grafana";
