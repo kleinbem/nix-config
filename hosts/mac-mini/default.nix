@@ -165,6 +165,10 @@ in
   # All my.* fleet options for this host live in one block (statix flags
   # repeated top-level keys — this used to be three separate my.* spots).
   my = {
+    # External dead-man's switch (modules/nixos/heartbeat.nix): <host>-alive
+    # every 5 min + a ping per backup job; missing pings alert from
+    # healthchecks.io, outside the fleet. Always-on hosts only.
+    heartbeat.enable = true;
     # Remote desktop: this host's whole reason for existing (see top-of-file
     # comment) is GUI access with zero physical keyboard/screen/console ever
     # attached. Was Wayland (sway) + wayvnc + noVNC (bespoke systemd services

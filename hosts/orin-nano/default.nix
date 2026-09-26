@@ -56,6 +56,10 @@ in
   networking.hostName = "orin-nano";
 
   my = {
+    # External dead-man's switch (modules/nixos/heartbeat.nix): <host>-alive
+    # every 5 min + a ping per backup job; missing pings alert from
+    # healthchecks.io, outside the fleet. Always-on hosts only.
+    heartbeat.enable = true;
     # Orin Nano needs to compile its own kernel/L4T locally.
     # We do NOT set requireCache = true here, so there is no 30-minute
     # timeout to brutally kill the build. It will take as long as it needs.
