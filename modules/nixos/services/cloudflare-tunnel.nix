@@ -1,10 +1,33 @@
 {
   config,
+  lib,
   myInventory,
   ...
 }:
 
+let
+  caddy = "https://${myInventory.network.nodes.caddy.ip}:443";
+
+  # Every inventory node marked `public = true` gets its `domain` on the
+  # tunnel (→ Caddy, which already has a vhost for it from `externalPort`).
+  # Generated rather than hand-maintained since 2026-09-26: the old literal
+  # list silently missed new/renamed hostnames three times (authelia/login,
+  # auth.kleinbem.dev, then 2fa.kleinbem.dev after Ente's rename), each
+  # time a 404 at Cloudflare's edge that never even reached Caddy.
+  #
+  # Mesh-only services (code, frigate, paperless, s3, …) simply don't set
+  # `public` — they're reached over NetBird via the per-FQDN DNS overrides
+  # in nix/infra/netbird/dns.tf (→ core-pi mesh IP → DNAT → caddy). Retired
+  # hostnames (authelia., login.) fall through to the 404 `default` below,
+  # deliberately.
+  publicNodes = lib.filterAttrs (_: n: n.public or false) myInventory.network.nodes;
+in
 {
+  assertions = lib.mapAttrsToList (name: n: {
+    assertion = n ? domain && n ? externalPort;
+    message = "inventory node `${name}` is public = true but lacks `domain` or `externalPort` — Caddy wouldn't have a vhost for it, so the tunnel route would dead-end.";
+  }) publicNodes;
+
   services.cloudflared = {
     enable = true;
     tunnels = {
@@ -13,50 +36,12 @@
         originRequest = {
           noTLSVerify = true;
         };
-        # Public tunnel ingress. `code` (browser IDE w/ shell — Cloudflare Access
-        # was its only gate) and `frigate` (camera NVR) are mesh-only: reached
-        # over NetBird via the per-FQDN DNS overrides in nix/infra/netbird/dns.tf
-        # (→ core-pi mesh IP → core-pi DNAT → caddy). home/chat/n8n/grafana stay
-        # public behind their existing auth — low breach value (dashboard),
-        # external webhooks (n8n), or Authentik forward_auth (grafana, same
-        # pattern as chat/n8n — see inventory.nix's monitoring node).
-        #
-        # authelia.kleinbem.dev removed 2026-09-22 — Authelia decommissioned,
-        # its own former ingress-rule bug (the note that used to live here,
-        # about needing this entry for the visitor's own browser to reach
-        # the login redirect off-mesh) is moot now that auth.kleinbem.dev
-        # (below) plays that role for Authentik instead. Visitors to the old
-        # URL now get the plain http_status:404 `default` below,
-        # deliberately — same "Plain 404" choice already made for
-        # login.kleinbem.dev.
         ingress = {
-          "kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "home.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "chat.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "n8n.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "cache.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "ntfy.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "vault.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "grafana.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          # login.kleinbem.dev (kleinbem-auth) removed 2026-09-21 —
-          # decommissioned, replaced by Authentik (auth.kleinbem.dev,
-          # below). Visitors to the old URL now get the plain
-          # http_status:404 `default` below, deliberately — kleinbem.dev
-          # itself is where visitors actually land, not this subdomain.
-          # Authentik (kleinbem-auth's replacement) — same bug class as
-          # authelia/login above: this list is hand-maintained and had no
-          # rule for it, so it 404'd at Cloudflare's edge (not even reaching
-          # Caddy) despite Caddy itself already having a vhost for it
-          # (auto-generated from inventory.nix's externalPort entries).
-          # Found 2026-09-21 while applying Authentik's Phase 2 Terraform.
-          "auth.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          "status.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-          # Ente Auth — third hit of the same bug class: renamed from
-          # auth.kleinbem.dev 2026-09-21 (inventory.nix), but this list never
-          # learned the new name, so it 404'd at Cloudflare's edge. Unnoticed
-          # until 2026-09-26 because museum itself had never started.
-          "2fa.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
-        };
+          # Apex: the static kleinbem-site served by Caddy's staticSites —
+          # not an inventory node.
+          "kleinbem.dev" = caddy;
+        }
+        // lib.mapAttrs' (_: n: lib.nameValuePair n.domain caddy) publicNodes;
         default = "http_status:404";
       };
     };

@@ -171,6 +171,10 @@
     subnet = "10.85.46.0/24";
     bridge = "cbr0";
     hostIP = "10.85.48.107"; # Caddy Entry Point
+    # Node attrs: `public = true` puts the node's `domain` on the core-pi
+    # Cloudflare Tunnel ingress (→ Caddy). Omit for mesh-only services —
+    # `externalPort`/`auth` don't encode public vs mesh-only (code, frigate,
+    # paperless, s3, … all have both yet stay on NetBird only).
     nodes = {
       # Infrastructure
       caddy = {
@@ -203,6 +207,7 @@
         port = 8082;
         externalPort = 443; # Default HTTPS
         domain = "home.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         maintenance = false;
         auth = false; # Gated at the edge by Cloudflare Access (terraform/cloudflare-access.tf); Authelia retired here
         meta = {
@@ -217,6 +222,7 @@
         port = 8080;
         externalPort = 443;
         domain = "cache.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         meta = {
           name = "Attic Binary Cache";
           category = "Infrastructure";
@@ -229,6 +235,7 @@
         port = 2586;
         externalPort = 443;
         domain = "ntfy.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         # No SSO: CI publishes the fleet-deploy signal with a plain curl and
         # devices long-poll anonymously — Authelia would break both. Access
         # control is the unguessable topic name (sops: ntfy_deploy_topic),
@@ -265,6 +272,7 @@
         port = 5678;
         externalPort = 443;
         domain = "n8n.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         mtls = true;
         auth = true; # Authentik forward-auth for the UI — was Authelia until 2026-09-22
         # Webhook endpoints are called by external services (GitHub, Stripe,
@@ -319,6 +327,7 @@
         port = 8080;
         externalPort = 443;
         domain = "chat.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         mtls = true;
         meta = {
           name = "Open WebUI";
@@ -448,6 +457,7 @@
         # nix/infra/cloudflare-access.tf's scope-decision comment).
         externalPort = 443;
         domain = "grafana.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         # auth = false: Grafana logs visitors in itself via Authentik OIDC
         # (my.containers.monitoring.grafanaOidc on mac-mini, provider in
         # nix/infra/authentik.tf) instead of sitting behind Caddy's
@@ -671,6 +681,7 @@
         # 2026-09-21 rather than leave two Caddy vhosts fighting over one
         # domain (Caddy would refuse to start on the duplicate).
         domain = "2fa.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         auth = false;
         meta = {
           name = "Ente Auth";
@@ -688,6 +699,7 @@
         port = 8222;
         externalPort = 443;
         domain = "vault.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         auth = false;
         meta = {
           name = "Vaultwarden";
@@ -708,6 +720,7 @@
         port = 8080;
         externalPort = 443;
         domain = "status.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         auth = false;
         meta = {
           name = "Status";
@@ -726,6 +739,7 @@
         port = 9000;
         externalPort = 443;
         domain = "auth.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         auth = false;
         meta = {
           name = "Authentik";
