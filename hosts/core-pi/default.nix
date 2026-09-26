@@ -53,6 +53,20 @@ let
         conditions = [ "[STATUS] < 500" ];
       }
       {
+        # museum's own liveness endpoint, end to end through the tunnel.
+        # Would have caught both 2026-09-26 findings: museum crash-looping
+        # since the 09-24 repackage, and 2fa.kleinbem.dev missing from the
+        # tunnel ingress since the 09-21 rename.
+        name = "Ente Auth";
+        group = "Identity";
+        url = "https://2fa.kleinbem.dev/ping";
+        interval = "3m";
+        conditions = [
+          "[STATUS] == 200"
+          "[BODY].message == pong"
+        ];
+      }
+      {
         name = "Authentik";
         group = "Identity";
         # An unauthenticated app endpoint, not `/` with `< 500`: during the
