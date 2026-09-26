@@ -210,9 +210,10 @@ in
     # Backups — nix-presets' backup-engine, fleet wiring in
     # modules/nixos/backup.nix. Nothing to list here: vaultwarden,
     # authentik, ente, caddy (local CA) and tang register their own items.
-    # Flip once `backup_r2_rclone_config` (nix/per-host/core-pi.yaml) and
-    # `ntfy_alert_topic` (nix/shared.yaml) exist in sops.
-    backup.enable = false;
+    # Secrets: backup_r2_rclone_config (nix/per-host/core-pi.yaml, token
+    # `backup-core-pi`), rclone_config/restic_password/ntfy_alert_topic
+    # (nix/shared.yaml). Enabled 2026-09-26.
+    backup.enable = true;
 
     # ─── Containers ──────────────────────────────────────────────
     containers = {
