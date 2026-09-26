@@ -116,6 +116,19 @@
   # (security/sudo.nix, imported via core.nix) instead of unrestricted
   # passwordless sudo.
 
+  # ─── Sudo with Hardware YubiKey (SSH Agent Forwarding) ──────
+  # When connected via `ssh -A`, sudo authenticates by requesting a signature
+  # from the forwarded SSH agent, requiring a physical tap on the local YubiKey
+  # rather than typing a password. Falls back to password if no agent is forwarded.
+  security.pam.sshAgentAuth = {
+    enable = true;
+    authorizedKeysFiles = [ "/etc/ssh/authorized_keys.d/%u" ];
+  };
+
+  security.sudo.extraConfig = ''
+    Defaults env_keep += "SSH_AUTH_SOCK"
+  '';
+
   # ─── Container TUI ──────────────────────────────────────────
   # Headless hosts run nspawn / podman containers (AI services, Frigate,
   # paperless, etc). `lazydocker` is the TUI for inspecting them.
