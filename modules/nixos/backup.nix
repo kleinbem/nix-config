@@ -13,7 +13,8 @@
 #   r2      kleinbem-backup bucket (nix/infra/cloudflare-r2.tf). Required.
 #           `secure/` is bucket-LOCKED 30d → a compromised host can't erase
 #           its own recent secure history; expired after 365d by lifecycle.
-#   gdrive  second provider (covers losing R2 / the Cloudflare account).
+#   gdrive  second provider (covers losing R2 / the Cloudflare account),
+#           remote `gdrive-fleet:kleinbem-backups` (own OAuth client).
 #           Best-effort for the secure tier, pruned after 365d here since
 #           Drive has no lifecycle rules.
 #
@@ -23,7 +24,7 @@
 # Secrets a host needs before enabling (all sops):
 #   nix/per-host/<host>.yaml  backup_r2_rclone_config  — per host so a
 #                             single host's R2 token can be revoked alone
-#   nix/shared.yaml           rclone_config (gdrive), restic_password,
+#   nix/shared.yaml           rclone_config ([gdrive-fleet]), restic_password,
 #                             ntfy_alert_topic
 #
 # Alerts go to ntfy_alert_topic — the fleet's single human-facing alert
@@ -68,7 +69,12 @@ in
           rcloneConfigFile = config.sops.secrets.backup_r2_rclone_config.path;
         };
         gdrive = {
-          remote = "gdrive:backups";
+          # Own OAuth client (kleinbem-ai "rclone-fleet-backups", drive.file,
+          # brand-verified for Advanced Protection). drive.file only sees files
+          # this client created, hence its own top-level folder. The legacy
+          # `gdrive:` remote (rclone's shared client, retiring 2026) stays in
+          # rclone_config only for nasbook's legacy backup container.
+          remote = "gdrive-fleet:kleinbem-backups";
           rcloneConfigFile = config.sops.secrets.rclone_config.path;
           required = false;
           pruneSecureAfterDays = 365;

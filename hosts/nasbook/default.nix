@@ -56,6 +56,10 @@ in
   ];
 
   my = {
+    # External dead-man's switch (modules/nixos/heartbeat.nix): <host>-alive
+    # every 5 min + a ping per backup job; missing pings alert from
+    # healthchecks.io, outside the fleet. Always-on hosts only.
+    heartbeat.enable = true;
     # Tang auto-unlock at boot, same pattern as hass-pi/mac-mini/core-pi —
     # silent primary path; disko.nix's fido2-device=auto crypttab option is
     # the physical-presence fallback (HDMI+TTY per .just/nasbook.just) if

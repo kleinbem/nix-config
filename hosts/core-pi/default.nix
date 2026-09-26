@@ -197,6 +197,10 @@ in
   };
 
   my = {
+    # External dead-man's switch (modules/nixos/heartbeat.nix): <host>-alive
+    # every 5 min + a ping per backup job; missing pings alert from
+    # healthchecks.io, outside the fleet. Always-on hosts only.
+    heartbeat.enable = true;
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
       enable = true;
