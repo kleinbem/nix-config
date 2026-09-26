@@ -9,8 +9,20 @@
 # Both files are `jq -S` canonical (sorted keys, 2-space) so the copies in
 # nix/infra diff cleanly. nix/tools/gen-iac-data.sh copies them into place;
 # nix/tools/check-iac-data.sh drift-guards the committed copies.
-{ inputs, ... }:
+{ inputs, self, ... }:
 {
+  # heartbeats.json bridge: slug → { kind, timeout, grace } per host, from
+  # each host's evaluated `my.heartbeat.checks` (modules/nixos/heartbeat.nix).
+  # A flake output rather than part of iac/data.nix because it needs the
+  # evaluated host configs; laziness keeps it to the my.heartbeat/my.backup
+  # slice of each host. Hosts without the option (container-factory, the
+  # bootstrap image) are skipped. Read by nix/tools/gen-iac-data.sh.
+  flake.heartbeats = inputs.nixpkgs.lib.mapAttrs (_: c: c.config.my.heartbeat.checks) (
+    inputs.nixpkgs.lib.filterAttrs (
+      _: c: c.config ? my && c.config.my ? heartbeat
+    ) self.nixosConfigurations
+  );
+
   perSystem =
     {
       config,
