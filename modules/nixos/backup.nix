@@ -24,10 +24,13 @@
 #   nix/per-host/<host>.yaml  backup_r2_rclone_config  — per host so a
 #                             single host's R2 token can be revoked alone
 #   nix/shared.yaml           rclone_config (gdrive), restic_password,
-#                             ntfy_alerts_topic
+#                             ntfy_alert_topic
 #
-# Alerts go to their OWN ntfy topic — never ntfy_deploy_topic: every host's
-# nixos-upgrade-listener starts an upgrade on ANY message there.
+# Alerts go to ntfy_alert_topic — the fleet's single human-facing alert
+# topic, shared with CI (distributed as the NTFY_ALERT_TOPIC Actions secret
+# by nix/infra/github-secrets.tf from the same shared.yaml key). NEVER
+# ntfy_deploy_topic: every host's nixos-upgrade-listener starts an upgrade on
+# ANY message there.
 #
 # Restore: see nix-presets/nixosModules/backup-engine (header) and
 # docs in hosts that enable it; secure bundles decrypt with either YubiKey.
@@ -40,7 +43,7 @@ let
     set -u
     prio="$1"; title="$2"; shift 2
     ${pkgs.util-linux}/bin/logger -t backup "$title: $*"
-    topic="$(cat ${config.sops.secrets.ntfy_alerts_topic.path} 2>/dev/null || true)"
+    topic="$(cat ${config.sops.secrets.ntfy_alert_topic.path} 2>/dev/null || true)"
     [ -n "$topic" ] || exit 0
     ${pkgs.curl}/bin/curl -fsS --max-time 15 \
       -H "Title: $title" -H "Priority: $prio" -H "Tags: floppy_disk" \
@@ -55,7 +58,7 @@ in
       backup_r2_rclone_config.sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/${host}.yaml";
       rclone_config = { };
       restic_password = { };
-      ntfy_alerts_topic = { };
+      ntfy_alert_topic = { };
     };
 
     my.backup = {

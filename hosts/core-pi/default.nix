@@ -211,7 +211,7 @@ in
     # modules/nixos/backup.nix. Nothing to list here: vaultwarden,
     # authentik, ente, caddy (local CA) and tang register their own items.
     # Flip once `backup_r2_rclone_config` (nix/per-host/core-pi.yaml) and
-    # `ntfy_alerts_topic` (nix/shared.yaml) exist in sops.
+    # `ntfy_alert_topic` (nix/shared.yaml) exist in sops.
     backup.enable = false;
 
     # ─── Containers ──────────────────────────────────────────────
