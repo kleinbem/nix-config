@@ -51,6 +51,11 @@
           # Found 2026-09-21 while applying Authentik's Phase 2 Terraform.
           "auth.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
           "status.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
+          # Ente Auth — third hit of the same bug class: renamed from
+          # auth.kleinbem.dev 2026-09-21 (inventory.nix), but this list never
+          # learned the new name, so it 404'd at Cloudflare's edge. Unnoticed
+          # until 2026-09-26 because museum itself had never started.
+          "2fa.kleinbem.dev" = "https://${myInventory.network.nodes.caddy.ip}:443";
         };
         default = "http_status:404";
       };
