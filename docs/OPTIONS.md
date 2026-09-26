@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 60  
-**Consumer files scanned:** 21
+**Declarations indexed:** 61  
+**Consumer files scanned:** 22
 
 ---
 
@@ -47,9 +47,9 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.backup`
 
-- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:278`
-- **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `hostName`, `items`, `notify.command`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
-- **Consumed by:** `host:container-factory`, `host:core-pi`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/vaultwarden.nix`
+- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:297`
+- **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
 
 ## `my.boot`
 
@@ -142,7 +142,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.ente`
 
-- **Declared:** `nix-presets/containers/ente.nix:25`
+- **Declared:** `nix-presets/containers/ente.nix:30`
 - **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`, `postgresPasswordFile`
 - **Consumed by:** `host:core-pi`
 
@@ -338,6 +338,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/rpi-direct-boot.nix:12`
 - **Sub-options:** `enable`
+- **Consumed by:** _(no opt-ins detected)_
+
+## `my.heartbeat`
+
+### `my.heartbeat`
+
+- **Declared:** `nix-config/modules/nixos/heartbeat.nix:58`
+- **Sub-options:** `baseUrl`, `checks`, `enable`
 - **Consumed by:** _(no opt-ins detected)_
 
 ## `my.herdr-remote-client`
