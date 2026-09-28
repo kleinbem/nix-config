@@ -147,7 +147,15 @@ let
       hostDataDir = dataDir "hermes";
       secretsFile = "/run/secrets/factory-dummy";
     };
-    caddy.ip = "${myInventory.network.nodes.caddy.ip}/24"; # core-pi
+    caddy = {
+      ip = "${myInventory.network.nodes.caddy.ip}/24"; # core-pi
+      hostIP = myInventory.network.nodes.caddy.ip;
+      proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
+      globalMaintenance = myInventory.globalMaintenance or false;
+      staticSites."kleinbem.dev" = {
+        hostPath = "/var/www/kleinbem.dev";
+      };
+    };
     cups.ip = "${myInventory.network.nodes.cups.ip}/24"; # core-pi — fixed 2026-09-24, see inventory.nix's cups comment
     frigate.ip = ip 39;
     home-assistant.ip = "${myInventory.network.nodes.home-assistant.ip}/24"; # hass-pi
