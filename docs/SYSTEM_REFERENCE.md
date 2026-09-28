@@ -46,7 +46,7 @@
 - 🧠 **AnythingLLM** (`anythingllm`) `10.85.50.6:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
-- 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:14]_
+- 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:18]_
 - 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:200]_
 - 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:35]_
 
@@ -62,6 +62,7 @@
 
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:39]_
+- 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 

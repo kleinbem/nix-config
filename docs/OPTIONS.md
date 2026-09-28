@@ -191,7 +191,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.llama-cpp`
 
 - **Declared:** `nix-presets/containers/llama-cpp.nix:23`
-- **Sub-options:** `contextSize`, `enable`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`
+- **Sub-options:** `contextSize`, `enable`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
 - **Consumed by:** `host:orin-nano`
 
 ### `my.containers.loki`
@@ -244,8 +244,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.open-webui`
 
-- **Declared:** `nix-presets/containers/open-webui.nix:14`
-- **Sub-options:** `enable`, `enableAudio`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
+- **Declared:** `nix-presets/containers/open-webui.nix:18`
+- **Sub-options:** `enable`, `enableAudio`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `openaiUrl`, `secretsFile`, `vllmUrl`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
 ### `my.containers.openclaw`
@@ -346,7 +346,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/heartbeat.nix:58`
 - **Sub-options:** `baseUrl`, `checks`, `enable`
-- **Consumed by:** _(no opt-ins detected)_
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
 ## `my.herdr-remote-client`
 
