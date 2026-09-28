@@ -42,7 +42,8 @@
             }
           ];
           # Suppress static routes from network-routing.nix — other hosts' container
-          # subnets (10.85.47-49.0/24) are not routable from the Orin's 10.0.0.x LAN.
+          # subnets (10.85.47-49.0/24) are not routable from the Orin's 10.0.0.x LAN,
+          # and 10.85.46.0/24 is used locally by cbr0 on this host.
           routes = lib.mkForce [ ];
         };
       };
@@ -72,9 +73,14 @@
     nftables.tables.virtualisation-nat = {
       family = "inet";
       content = ''
+        chain prerouting {
+          type nat hook prerouting priority dstnat; policy accept;
+          tcp dport 11434 dnat ip to 10.85.46.126:11434
+        }
         chain postrouting {
           type nat hook postrouting priority srcnat; policy accept;
           iifname "cbr0" oifname "enP8p1s0" masquerade
+          ip daddr 10.85.46.126 tcp dport 11434 masquerade
         }
       '';
     };
@@ -87,13 +93,19 @@
       filterForward = true;
       trustedInterfaces = [ "cbr0" ];
       # SSH only over NetBird — not exposed on LAN
-      interfaces."wt0".allowedTCPPorts = [ 22 ];
+      interfaces."wt0".allowedTCPPorts = [ 22 11434 ];
       # Also allow SSH on LAN for emergency access (e.g. before NetBird is running)
-      interfaces."enP8p1s0".allowedTCPPorts = [ 22 ];
+      interfaces."enP8p1s0".allowedTCPPorts = [ 22 11434 ];
       extraForwardRules = ''
         iifname "cbr0" oifname "enP8p1s0" accept
         iifname "enP8p1s0" oifname "cbr0" ct state { established, related } accept
+        oifname "cbr0" ip daddr 10.85.46.126 tcp dport 11434 accept
       '';
     };
+  };
+
+  systemd = {
+    services.enforce-container-routes.enable = lib.mkForce false;
+    timers.enforce-container-routes.enable = lib.mkForce false;
   };
 }

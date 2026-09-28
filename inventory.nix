@@ -328,7 +328,6 @@
         externalPort = 443;
         domain = "chat.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
-        mtls = true;
         meta = {
           name = "Open WebUI";
           category = "AI";
