@@ -29,6 +29,14 @@
           options = [ "NOPASSWD" ];
         }
         {
+          command = "/run/current-system/sw/bin/nix-env --profile /nix/var/nix/profiles/system --set *";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/nix/store/*-nix-*/bin/nix-env --profile /nix/var/nix/profiles/system --set *";
+          options = [ "NOPASSWD" ];
+        }
+        {
           command = "/run/current-system/sw/bin/systemctl start ollama.service";
           options = [ "NOPASSWD" ];
         }
