@@ -236,7 +236,7 @@ in
         # (not just a stale local ssh config: `ssh mac-mini` failed to
         # resolve for Martin too), root cause not identified; re-added
         # from the established per-host pattern rather than left broken.
-        "mac-mini" = {
+        "mac-mini 10.0.0.16" = {
           Hostname = "10.0.0.16";
           User = "martin";
           IdentityFile = "~/.ssh/id_ed25519_sk";
