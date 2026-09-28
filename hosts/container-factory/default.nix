@@ -57,6 +57,8 @@ let
     open-webui = {
       ip = "${myInventory.network.nodes.open-webui.ip}/24"; # mac-mini
       hostDataDir = dataDir "open-webui";
+      secretsFile = "/run/secrets/factory-dummy";
+      oidc.enable = true;
     };
     qdrant = {
       ip = "${myInventory.network.nodes.qdrant.ip}/24"; # nasbook

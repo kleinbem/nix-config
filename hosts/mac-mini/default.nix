@@ -349,6 +349,12 @@ in
         ip = "10.85.50.3/24";
         hostDataDir = "/var/lib/open-webui";
         memoryLimit = "2G";
+        oidc.enable = true;
+        secretsFile =
+          if (config.sops.templates ? "openwebui.env") then
+            config.sops.templates."openwebui.env".path
+          else
+            null;
       };
 
       # NOT openclaw (deliberately left on hass-pi): its pnpm-deps

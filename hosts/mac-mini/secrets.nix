@@ -16,6 +16,11 @@ let
   macMiniSopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
   macMiniHasField = field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
 
+  openWebUiSopsFile = "${inputs.kleinbem-secrets}/nix/per-container/open-webui.yaml";
+  openWebUiHasSecret =
+    builtins.pathExists openWebUiSopsFile
+    && lib.hasInfix "\nopen_webui_oauth_client_secret:" ("\n" + builtins.readFile openWebUiSopsFile);
+
   # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
   # each tool persona-runtime knows how to run (nix-presets/containers/
   # persona-runtime.nix's toolSpecs — keep in sync when a new tool gets
@@ -175,6 +180,15 @@ in
         mode = "0444";
       };
     }
+    // lib.optionalAttrs (config.my.containers.open-webui.oidc.enable && openWebUiHasSecret) {
+      # Authentik OIDC client secret for Open WebUI's login (see nix/infra/authentik.tf's open_webui Provider).
+      # Value: `tofu output -raw open_webui_oidc_client_secret` from nix/infra,
+      # then `sops kleinbem-secrets/nix/per-container/open-webui.yaml` to set open_webui_oauth_client_secret.
+      open_webui_oauth_client_secret = {
+        sopsFile = openWebUiSopsFile;
+        mode = "0444";
+      };
+    }
     // lib.optionalAttrs config.my.containers.stalwart.enable (
       # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
       # plaintext — Stalwart accepts either). Per-CONTAINER scope, not
@@ -193,13 +207,23 @@ in
     )
     // personaRuntimeSecrets;
 
-    templates."hermes.env" = {
-      mode = "0444";
-      content = ''
-        DISCORD_BOT_TOKEN=${config.sops.placeholder.discord_bot_token}
-        # By default the gateway denies everyone not listed here.
-        DISCORD_ALLOWED_USERS=${config.sops.placeholder.hermes_discord_allowed_users}
-      '';
+    templates = {
+      "hermes.env" = {
+        mode = "0444";
+        content = ''
+          DISCORD_BOT_TOKEN=${config.sops.placeholder.discord_bot_token}
+          # By default the gateway denies everyone not listed here.
+          DISCORD_ALLOWED_USERS=${config.sops.placeholder.hermes_discord_allowed_users}
+        '';
+      };
+    }
+    // lib.optionalAttrs (config.my.containers.open-webui.oidc.enable && openWebUiHasSecret) {
+      "openwebui.env" = {
+        mode = "0444";
+        content = ''
+          OAUTH_CLIENT_SECRET=${config.sops.placeholder.open_webui_oauth_client_secret}
+        '';
+      };
     };
   };
 }
