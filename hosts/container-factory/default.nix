@@ -58,6 +58,7 @@ let
       ip = "${myInventory.network.nodes.open-webui.ip}/24"; # mac-mini
       hostDataDir = dataDir "open-webui";
       secretsFile = "/run/secrets/factory-dummy";
+      openaiUrl = "http://${myInventory.hosts.orin-nano.ip}:11434/v1";
       oidc.enable = true;
     };
     qdrant = {

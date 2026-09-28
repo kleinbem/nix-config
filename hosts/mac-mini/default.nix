@@ -349,6 +349,7 @@ in
         ip = "10.85.50.3/24";
         hostDataDir = "/var/lib/open-webui";
         memoryLimit = "2G";
+        openaiUrl = "http://${myInventory.hosts.orin-nano.ip}:11434/v1";
         oidc.enable = true;
         secretsFile =
           if (config.sops.templates ? "openwebui.env") then

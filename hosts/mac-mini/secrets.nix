@@ -20,6 +20,7 @@ let
   openWebUiOidc = secretHelpers.mkOidcSecret {
     inherit config;
     container = "open-webui";
+    envTemplate = "openwebui.env";
   };
 
   # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
