@@ -93,9 +93,15 @@
       filterForward = true;
       trustedInterfaces = [ "cbr0" ];
       # SSH only over NetBird — not exposed on LAN
-      interfaces."wt0".allowedTCPPorts = [ 22 11434 ];
+      interfaces."wt0".allowedTCPPorts = [
+        22
+        11434
+      ];
       # Also allow SSH on LAN for emergency access (e.g. before NetBird is running)
-      interfaces."enP8p1s0".allowedTCPPorts = [ 22 11434 ];
+      interfaces."enP8p1s0".allowedTCPPorts = [
+        22
+        11434
+      ];
       extraForwardRules = ''
         iifname "cbr0" oifname "enP8p1s0" accept
         iifname "enP8p1s0" oifname "cbr0" ct state { established, related } accept
