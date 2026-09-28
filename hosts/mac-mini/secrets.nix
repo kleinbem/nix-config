@@ -16,10 +16,11 @@ let
   macMiniSopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
   macMiniHasField = field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
 
-  openWebUiSopsFile = "${inputs.kleinbem-secrets}/nix/per-container/open-webui.yaml";
-  openWebUiHasSecret =
-    builtins.pathExists openWebUiSopsFile
-    && lib.hasInfix "\nopen_webui_oauth_client_secret:" ("\n" + builtins.readFile openWebUiSopsFile);
+  secretHelpers = import ../../lib/secrets.nix { inherit lib inputs; };
+  openWebUiOidc = secretHelpers.mkOidcSecret {
+    inherit config;
+    container = "open-webui";
+  };
 
   # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
   # each tool persona-runtime knows how to run (nix-presets/containers/
@@ -180,15 +181,7 @@ in
         mode = "0444";
       };
     }
-    // lib.optionalAttrs (config.my.containers.open-webui.oidc.enable && openWebUiHasSecret) {
-      # Authentik OIDC client secret for Open WebUI's login (see nix/infra/authentik.tf's open_webui Provider).
-      # Value: `tofu output -raw open_webui_oidc_client_secret` from nix/infra,
-      # then `sops kleinbem-secrets/nix/per-container/open-webui.yaml` to set open_webui_oauth_client_secret.
-      open_webui_oauth_client_secret = {
-        sopsFile = openWebUiSopsFile;
-        mode = "0444";
-      };
-    }
+    // lib.optionalAttrs config.my.containers.open-webui.oidc.enable openWebUiOidc.secrets
     // lib.optionalAttrs config.my.containers.stalwart.enable (
       # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
       # plaintext — Stalwart accepts either). Per-CONTAINER scope, not
@@ -217,13 +210,6 @@ in
         '';
       };
     }
-    // lib.optionalAttrs (config.my.containers.open-webui.oidc.enable && openWebUiHasSecret) {
-      "openwebui.env" = {
-        mode = "0444";
-        content = ''
-          OAUTH_CLIENT_SECRET=${config.sops.placeholder.open_webui_oauth_client_secret}
-        '';
-      };
-    };
+    // lib.optionalAttrs config.my.containers.open-webui.oidc.enable openWebUiOidc.templates;
   };
 }

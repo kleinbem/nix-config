@@ -1,39 +1,74 @@
-# Per-container sops.secrets generator.
+# Reusable sops.secrets and template helpers for containers.
 #
-# hosts/*/secrets.nix were hand-duplicating blocks like:
-#   authentik_secret_key = { sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authentik.yaml"; };
-#   authentik_postgres_password = { sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/authentik.yaml"; };
-#   ...
-# one entry per secret, only the suffix changing — core-pi/secrets.nix alone
-# had 17 of these across authelia/kleinbem-auth/authentik. mkPerContainerSecrets
-# generates the same attrset from a plain list of suffixes.
-#
-# Two real naming conventions exist in kleinbem-secrets' per-container YAML
-# files (confirmed 2026-09-21 against their actual plaintext keys):
-#   - authelia.yaml / authentik.yaml: the YAML key IS the full attr name
-#     (e.g. "authentik_secret_key") — sops-nix's default `key` (= the attr
-#     name) already matches, so `fullKey = true` (the default) omits `key`.
-#   - kleinbem-auth.yaml: the YAML key is the BARE suffix (e.g.
-#     "better_auth_secret", not "kleinbem_auth_better_auth_secret") — pass
-#     `fullKey = false` so each generated entry gets `key = suffix;`.
+# Provides:
+#   1. mkPerContainerSecrets: bulk secret generator for a container's YAML file
+#   2. mkOidcSecret: plug-and-play Authentik OIDC client secret + template generator
 { lib, inputs }:
+let
+  mkPerContainerSecrets =
+    {
+      container,
+      keys,
+      # attr name prefix — defaults to `container` with hyphens turned into
+      # underscores (e.g. "kleinbem-auth" -> "kleinbem_auth"), since Nix/sops-nix
+      # attr names don't take hyphens the same way file/container names do.
+      prefix ? lib.replaceStrings [ "-" ] [ "_" ] container,
+      fullKey ? true,
+    }:
+    lib.listToAttrs (
+      map (
+        suffix:
+        lib.nameValuePair "${prefix}_${suffix}" (
+          {
+            sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/${container}.yaml";
+          }
+          // lib.optionalAttrs (!fullKey) { key = suffix; }
+        )
+      ) keys
+    );
+
+  # Helper for Authentik OIDC client secrets
+  # Automatically handles existence checking so missing secrets don't freeze the host,
+  # sets mode = "0444" so in-container unprivileged users can read it, and builds
+  # the container env template.
+  mkOidcSecret =
+    {
+      config,
+      container,
+      secretKey ? "${lib.replaceStrings [ "-" ] [ "_" ] container}_oauth_client_secret",
+      yamlFile ? container,
+      envTemplate ? "${container}.env",
+      envVar ? "OAUTH_CLIENT_SECRET",
+    }:
+    let
+      sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/${yamlFile}.yaml";
+      hasSecret =
+        builtins.pathExists sopsFile && lib.hasInfix "\n${secretKey}:" ("\n" + builtins.readFile sopsFile);
+    in
+    {
+      inherit
+        hasSecret
+        sopsFile
+        secretKey
+        envTemplate
+        ;
+      secrets = lib.optionalAttrs hasSecret {
+        ${secretKey} = {
+          inherit sopsFile;
+          mode = "0444";
+        };
+      };
+      templates = lib.optionalAttrs hasSecret {
+        ${envTemplate} = {
+          mode = "0444";
+          content = ''
+            ${envVar}=${config.sops.placeholder.${secretKey}}
+          '';
+        };
+      };
+    };
+in
 {
-  container,
-  keys,
-  # attr name prefix — defaults to `container` with hyphens turned into
-  # underscores (e.g. "kleinbem-auth" -> "kleinbem_auth"), since Nix/sops-nix
-  # attr names don't take hyphens the same way file/container names do.
-  prefix ? lib.replaceStrings [ "-" ] [ "_" ] container,
-  fullKey ? true,
-}:
-lib.listToAttrs (
-  map (
-    suffix:
-    lib.nameValuePair "${prefix}_${suffix}" (
-      {
-        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/${container}.yaml";
-      }
-      // lib.optionalAttrs (!fullKey) { key = suffix; }
-    )
-  ) keys
-)
+  __functor = _self: mkPerContainerSecrets;
+  inherit mkPerContainerSecrets mkOidcSecret;
+}
