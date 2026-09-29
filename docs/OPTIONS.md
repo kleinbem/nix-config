@@ -191,7 +191,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.llama-cpp`
 
 - **Declared:** `nix-presets/containers/llama-cpp.nix:23`
-- **Sub-options:** `contextSize`, `enable`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
+- **Sub-options:** `contextSize`, `enable`, `enableCuda`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
 - **Consumed by:** `host:orin-nano`
 
 ### `my.containers.loki`
@@ -203,8 +203,9 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.monitoring`
 
 - **Declared:** `nix-presets/containers/monitoring.nix:18`
-- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `nodeTargets`, `ollamaTargets`, `vllmTargets`
-- **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
+- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `nodeTargets`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
+- **Default-enabled** (no hosts import the declaring file)
+- **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.n8n`
 

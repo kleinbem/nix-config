@@ -221,6 +221,18 @@ in
     enableUserSlices = true;
   };
 
+  # Prevent broken services from restarting 1,000 times silently:
+  # Trips the burst limit after 5 failures in 15 minutes, transitioning the unit
+  # into a terminal "failed" state so monitoring and alerts can fire.
+  systemd.settings.Manager = {
+    DefaultStartLimitIntervalSec = "15m";
+    DefaultStartLimitBurst = 5;
+  };
+  systemd.user.settings.Manager = {
+    DefaultStartLimitIntervalSec = "15m";
+    DefaultStartLimitBurst = 5;
+  };
+
   # Generic Boot Preferences
   boot.loader.timeout = 2; # Fast boot
 
