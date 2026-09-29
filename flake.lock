@@ -1263,11 +1263,11 @@
     "kleinbem-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1790609464,
-        "narHash": "sha256-3UErrt9lDZDshIqs8pLoVMsKfl1ni/FFl1WuwHbAtjc=",
+        "lastModified": 1790723412,
+        "narHash": "sha256-ImyC+qShsWXjuPEhzECHTvZoJbhJ2FRxyjboDu4VUV8=",
         "owner": "kleinbem",
         "repo": "kleinbem-secrets",
-        "rev": "df598b7dd3aee61b1fcaa6f0836fb9f6943e748c",
+        "rev": "5003b49a30f11d13a97d533ba28a9b0a66e963c4",
         "type": "github"
       },
       "original": {
