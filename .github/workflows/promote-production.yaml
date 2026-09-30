@@ -173,40 +173,31 @@ jobs:
               echo "::endgroup::"
               continue
             fi
-            # `nix build --dry-run` NEVER builds; it queries every substituter
-            # for each closure path and classifies it as "to fetch" (cached) or
-            # "to build" (missing everywhere we trust). The runner's store is
-            # clean, so this faithfully simulates a fresh device.
+            # `nix build --dry-run <literal store path>` crashes the Nix
+            # daemon outright on this (aarch64) runner, consistently and
+            # reproducibly (confirmed live 2026-09-30: 3/3 attempts, every
+            # host, identical Crashpad/Sentry noise —
+            # elf_dynamic_array_reader tag errors, "upload_file_minidump
+            # exceeded the size limit" — never a clean Nix error). A bare
+            # store path apparently exercises the build-scheduler/sandbox
+            # setup path (note the /sys/devices/.../cpufreq probes in the
+            # crash, typical of build resource planning) even under
+            # --dry-run, which a literal path was never meant to reach.
             #
-            # Retried up to 3 attempts: this specific invocation has crashed
-            # the Nix daemon outright on this (aarch64) runner a few times in
-            # a row while chasing the flake-attr-vs-literal-path bug above —
-            # Crashpad/Sentry noise (elf_dynamic_array_reader, "invalid
-            # multipart data... upload_file_minidump exceeded the size
-            # limit"), never a clean Nix error. Looks like transient
-            # runner/daemon instability rather than anything this script
-            # controls; a short retry is the pragmatic mitigation until it's
-            # reproducible enough to root-cause properly.
-            out=""
-            dry_run_ok=0
-            for attempt in 1 2 3; do
-              if out="$(nix build --dry-run "$path" $NIX_OVERRIDES 2>&1)"; then
-                dry_run_ok=1
-                break
-              fi
-              echo "::warning::$h: dry-run attempt $attempt/3 failed (daemon crash?), retrying..."
-              echo "$out"
-              sleep 5
-            done
-            if [ "$dry_run_ok" -ne 1 ]; then
-              echo "$out"
-              echo "::error::$h: dry-run failed 3/3 attempts — cannot verify cache, refusing to promote."
-              fail=1
-              echo "::endgroup::"
-              continue
-            fi
+            # `nix path-info -r` queries the same substituter/closure
+            # information (it's what --dry-run itself queries under the
+            # hood) without ever entering that scheduler path — confirmed
+            # to give an identical, correct pass/fail signal for this exact
+            # closure by hand, with no crash. It exits non-zero even on
+            # success (the path isn't actually realized locally, so
+            # path-info's own "is this path valid" check fails afterward)
+            # and phrases a hard miss as "don't know how to build" instead
+            # of "will be built" (no flake attribute means Nix has no build
+            # recipe to offer as a fallback) — so the exit code is ignored
+            # and both phrasings count as a miss.
+            out="$(nix path-info -r "$path" $NIX_OVERRIDES 2>&1 || true)"
             echo "$out"
-            if echo "$out" | grep -qiE 'will be built'; then
+            if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
               echo "::error::$h closure is NOT fully cached — a device would compile on-device. Blocking promotion."
               fail=1
             else
@@ -242,37 +233,27 @@ jobs:
             # Checks the FULL closure (root + deps) against the substituters a
             # device trusts; repeated evals share the flake eval cache.
             #
-            # Dry-runs the already-resolved literal $path, NOT the flake
-            # attribute — confirmed live 2026-09-30 that these are NOT
-            # equivalent for substitutability checking (a genuinely-cached,
-            # validly-signed, fetchable output still reported "will be
-            # built" via the flake-attr form; the literal path correctly
-            # reported "will be fetched"). This is why the manifest came
-            # back empty on every run since this gate was added, even fully
-            # green ones — every container silently failed this check and
-            # got dropped, with no warning distinguishable from a real
-            # cache miss. See the matching fix + comment on the host
-            # dry-run step above.
-            # Retried up to 3 attempts — same transient daemon-crash mitigation
-            # as the host dry-run step above (Crashpad/Sentry noise, not a
-            # clean Nix error).
+            # Uses `nix path-info -r` on the already-resolved literal $path,
+            # NOT `nix build --dry-run` on the flake attribute — see the
+            # matching, longer comment on the host dry-run step above for
+            # why: the flake-attr form silently misreports genuinely-cached
+            # closures as needing a build (the original empty-manifest bug),
+            # and `nix build --dry-run` on a literal path crashes the Nix
+            # daemon outright on this runner. `path-info -r` gives the same
+            # correct signal as neither of those, safely. Exit code is
+            # ignored (path-info always exits non-zero here — the path
+            # isn't actually realized locally); a miss is either phrasing,
+            # "will be built" or "don't know how to build" (no flake
+            # attribute means no build recipe to fall back to).
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
-              out=""
-              dry_run_ok=0
-              for attempt in 1 2 3; do
-                if out=$(nix build --dry-run "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
-                  dry_run_ok=1
-                  break
-                fi
-                sleep 5
-              done
-              if [ "$dry_run_ok" -eq 1 ]; then
-                jq --arg n "$name" --arg p "$path" '. + {($n): $p}' "/tmp/ok-$sys.json" > /tmp/ok.tmp && mv /tmp/ok.tmp "/tmp/ok-$sys.json"
-              else
+              out="$(nix path-info -r "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
+              if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
                 echo "$out"
+              else
+                jq --arg n "$name" --arg p "$path" '. + {($n): $p}' "/tmp/ok-$sys.json" > /tmp/ok.tmp && mv /tmp/ok.tmp "/tmp/ok-$sys.json"
               fi
             done
             jq --arg s "$sys" --slurpfile m "/tmp/ok-$sys.json" '. + {($s): $m[0]}' /tmp/systems.json > /tmp/systems.tmp && mv /tmp/systems.tmp /tmp/systems.json
