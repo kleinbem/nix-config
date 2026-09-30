@@ -214,23 +214,25 @@ in
   # root cgroups: when system swap passes 90% used, oomd kills the single
   # cgroup hogging the most swap — stopping the multi-day creep long before it
   # can wedge the machine, regardless of how healthy MemAvailable looks.
-  systemd.oomd = {
-    enable = true;
-    enableRootSlice = true;
-    enableSystemSlice = true;
-    enableUserSlices = true;
-  };
+  systemd = {
+    oomd = {
+      enable = true;
+      enableRootSlice = true;
+      enableSystemSlice = true;
+      enableUserSlices = true;
+    };
 
-  # Prevent broken services from restarting 1,000 times silently:
-  # Trips the burst limit after 5 failures in 15 minutes, transitioning the unit
-  # into a terminal "failed" state so monitoring and alerts can fire.
-  systemd.settings.Manager = {
-    DefaultStartLimitIntervalSec = "15m";
-    DefaultStartLimitBurst = 5;
-  };
-  systemd.user.settings.Manager = {
-    DefaultStartLimitIntervalSec = "15m";
-    DefaultStartLimitBurst = 5;
+    # Prevent broken services from restarting 1,000 times silently:
+    # Trips the burst limit after 5 failures in 15 minutes, transitioning the unit
+    # into a terminal "failed" state so monitoring and alerts can fire.
+    settings.Manager = {
+      DefaultStartLimitIntervalSec = "15m";
+      DefaultStartLimitBurst = 5;
+    };
+    user.settings.Manager = {
+      DefaultStartLimitIntervalSec = "15m";
+      DefaultStartLimitBurst = 5;
+    };
   };
 
   # Generic Boot Preferences

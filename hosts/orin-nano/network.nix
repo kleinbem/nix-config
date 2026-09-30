@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   services = {
     netbird.enable = true;
@@ -58,39 +58,39 @@
       address = "10.0.0.1";
       interface = "enP8p1s0";
     };
-    # UPDATED 2026-09-22: migrated to the nftables firewall backend, same
-    # fleet-wide playbook as nixos-nvme/mac-mini/nasbook the same night.
-    # networking.nat.enable (legacy iptables-only) is fundamentally
-    # incompatible with the nftables backend regardless of its own
-    # content — replaced with a native networking.nftables.tables
-    # masquerade table (same technique used in modules/nixos/
-    # virtualisation.nix and ai-hardening.nix). nftables.enable = true is
-    # a second, separate flag nixpkgs' legacy nat-iptables.nix checks
-    # unconditionally — without it, its iptables-flush teardown script
-    # gets injected into firewall.extraCommands regardless of nat.enable,
-    # tripping the nftables-backend firewall module's own assertion.
-    nftables.enable = true;
-    nftables.tables.virtualisation-nat = {
-      family = "inet";
-      content = ''
-        chain prerouting {
-          type nat hook prerouting priority dstnat; policy accept;
-          tcp dport 11434 dnat ip to 10.85.46.126:11434
+    # NVIDIA's JetPack 6 vendor kernel (5.15.199-tegra) defconfig lacks
+    # CONFIG_NFT_CT, CONFIG_NFT_REDIR, and CONFIG_NFT_FIB_IPV4, preventing
+    # nftables from loading connection-tracking or redirect rules.
+    # Legacy iptables/xtables (CONFIG_IP_NF_*, CONFIG_NETFILTER_XT_*) is fully
+    # supported. Revert to iptables backend on JetPack 6.
+    nftables.enable = false;
+    nat = {
+      enable = true;
+      internalInterfaces = [ "cbr0" ];
+      externalInterface = "enP8p1s0";
+      forwardPorts = [
+        {
+          sourcePort = 11434;
+          destination = "10.85.46.126:11434";
+          proto = "tcp";
         }
-        chain postrouting {
-          type nat hook postrouting priority srcnat; policy accept;
-          iifname "cbr0" oifname "enP8p1s0" masquerade
-          ip daddr 10.85.46.126 tcp dport 11434 masquerade
-        }
+      ];
+      # Hairpin NAT and mesh forwarding for llama-cpp over NetBird/LAN
+      extraCommands = ''
+        iptables -w -t nat -A PREROUTING -p tcp --dport 11434 -j DNAT --to-destination 10.85.46.126:11434
+        iptables -w -t nat -A POSTROUTING -d 10.85.46.126 -p tcp --dport 11434 -j MASQUERADE
+        iptables -w -t filter -A FORWARD -d 10.85.46.126 -p tcp --dport 11434 -j ACCEPT
+      '';
+      extraStopCommands = ''
+        iptables -w -t nat -D PREROUTING -p tcp --dport 11434 -j DNAT --to-destination 10.85.46.126:11434 2>/dev/null || true
+        iptables -w -t nat -D POSTROUTING -d 10.85.46.126 -p tcp --dport 11434 -j MASQUERADE 2>/dev/null || true
+        iptables -w -t filter -D FORWARD -d 10.85.46.126 -p tcp --dport 11434 -j ACCEPT 2>/dev/null || true
       '';
     };
     firewall = {
       enable = true;
-      backend = "nftables";
-      # extraForwardRules is silently unused without this — the module
-      # only emits its "forward"/"forward-allow" chains at all when
-      # filterForward = true (default false).
-      filterForward = true;
+      backend = "iptables";
+      package = pkgs.iptables-legacy;
       trustedInterfaces = [ "cbr0" ];
       # SSH only over NetBird — not exposed on LAN
       interfaces."wt0".allowedTCPPorts = [
@@ -102,11 +102,6 @@
         22
         11434
       ];
-      extraForwardRules = ''
-        iifname "cbr0" oifname "enP8p1s0" accept
-        iifname "enP8p1s0" oifname "cbr0" ct state { established, related } accept
-        oifname "cbr0" ip daddr 10.85.46.126 tcp dport 11434 accept
-      '';
     };
   };
 

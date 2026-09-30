@@ -18,7 +18,14 @@ in
     # Firmware auto-updates are now safe because we pull the pre-built firmware
     # capsules directly from the anduril cachix, bypassing the pkg_resources bug
     # in nixos-unstable.
+    #
+    # JetPack 7 (L4T R39.x / Linux 6.8) Migration Target:
+    # - Kernel Store Path: /nix/store/qymmphigdmsr9bn4db0ylmwn7acbllbs-linux-6.8.12
+    # - Kernel Derivation: /nix/store/dwizr55d8av85yqb7qaz6zqf8sr9c6rf-linux-6.8.12.drv
+    # - Toplevel Drv:      /nix/store/2fbby2n0cjaq2kr16mx6i85qzka4zrdx-nixos-system-orin-nano-26.11.20260928.7a0f122.drv
+    # - Toplevel Path:     /nix/store/gzcd9pr2r17q2g0w45hrvva6bwfj8315-nixos-system-orin-nano-26.11.20260928.7a0f122
     nvidia-jetpack = {
+      # majorVersion = "7"; # Switch when QSPI firmware is flashed over USB-C
       firmware.autoUpdate = false;
       super = true; # Enable 25W "Super Mode" for Orin Nano Plus
       maxClock = true; # Always run at maximum clock speed
@@ -27,10 +34,10 @@ in
   };
 
   services = {
-    # Set Power Profile to Mode 0 (MAXN / 25W in Super Mode)
+    # Set Power Profile to Mode 1 (25W in Super Mode)
     nvpmodel = {
       enable = true;
-      profileNumber = 0;
+      profileNumber = 1;
     };
     # High-performance fan profile for AI workloads
     nvfancontrol.enable = true;

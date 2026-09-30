@@ -52,7 +52,7 @@
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
     services.tang.enable = true;
-    security.ai-hardening.enable = true; # AI workloads benefit from the strict-egress airlock
+    security.ai-hardening.enable = false; # Orin Nano runs no airlocked AI webapps; ai-airlock requires CONFIG_NFT_REDIR which JP6 lacks
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";
 
@@ -61,7 +61,7 @@
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       containers =
         let
-          excludeFromUpdater = [ ];
+          excludeFromUpdater = [ "llama-cpp" ];
           allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
         in
         lib.subtractLists excludeFromUpdater allEnabled;
@@ -77,6 +77,7 @@
       };
       llama-cpp = {
         enable = true; # Serving Gemma via llama.cpp (CUDA)
+        enableCuda = true;
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-3-4b-it-Q4_K_M.gguf"; # Gemma 3 4B — fits 8GB unified mem with headroom
         contextSize = 8192; # KV cache is q4_0-quantized + flash-attn, so cheap even at 8k
