@@ -25,10 +25,12 @@ python3 "$SCRIPT_DIR/generate-system-reference.py" \
   --meta "$META_ROOT" \
   "$@"
 
-# Regenerate the machine-readable my.* options + imports indexes.
+# Regenerate the machine-readable my.* options + imports indexes + AI infrastructure manifest.
 if command -v python3 &>/dev/null; then
   python3 "$SCRIPT_DIR/generate-options-index.py" || echo "⚠️  Options index generation failed (non-fatal)"
   python3 "$SCRIPT_DIR/generate-imports-index.py" || echo "⚠️  Imports index generation failed (non-fatal)"
+  python3 "$SCRIPT_DIR/generate-infra-yaml.py" || echo "⚠️  Infrastructure YAML generation failed (non-fatal)"
 else
   echo "⚠️  python3 not found — skipping AI index regeneration"
 fi
+

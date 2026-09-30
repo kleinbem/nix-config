@@ -49,12 +49,12 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/workstation.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/vault-anythingllm-sync.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
 - **Other inputs:** `disko:disko`, `nix-gantry:updater`
-- **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./network.nix`, `./secrets.nix`, `./specialisations.nix`, `./vault-anythingllm-sync.nix`
+- **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./network.nix`, `./secrets.nix`, `./specialisations.nix`
 
 ### `orin-nano`
 
@@ -89,7 +89,6 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./secrets.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
 - `./services.nix` ← orin-nano
 - `./specialisations.nix` ← nixos-nvme
-- `./vault-anythingllm-sync.nix` ← nixos-nvme
 - `disko:disko` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
 - `modules/nix-on-droid/dashboard.nix` ← phone
 - `modules/nixos/ai-hardening.nix` ← orin-nano
@@ -113,6 +112,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← core-pi
+- `modules/nixos/services/vault-anythingllm-sync.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano
 - `modules/nixos/workstation.nix` ← nixos-nvme
 - `nix-gantry:host` ← core-pi, hass-pi, mac-mini, nasbook

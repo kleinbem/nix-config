@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # SOURCE OF TRUTH: nix-config/scripts/debug_market.py
-import requests
 import argparse
+
+import requests
 
 
 def search_marketplace(query, use_openvsx=False):
@@ -29,7 +30,7 @@ def search_marketplace(query, use_openvsx=False):
                 print(f"Version: {version}")
                 print("-" * 20)
 
-        except Exception as e:
+        except (requests.RequestException, KeyError, ValueError) as e:
             print(f"Error querying Open VSX: {e}")
 
     else:
@@ -67,7 +68,7 @@ def search_marketplace(query, use_openvsx=False):
                 print(f"Version: {version}")
                 print("-" * 20)
 
-        except Exception as e:
+        except (requests.RequestException, KeyError, ValueError) as e:
             print(f"Error querying VS Code Marketplace: {e}")
 
 

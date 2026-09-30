@@ -4,12 +4,13 @@ Primary consumer flake. Owns hosts, users, system modules, the inventory, and gr
 
 ## Before editing
 
-1. **`docs/OPTIONS.md`** — auto-generated index of every `my.*` option, its declaration site, and which hosts/users opt in. Grep this first to see blast radius.
-2. **`docs/IMPORTS.md`** — auto-generated per-host import map (modules, presets, hardware, users) plus reverse index. Use when editing a module that has no `my.*` options.
-3. **`docs/SYSTEM_REFERENCE.md`** — current nixpkgs revisions, managed hosts, active services. Auto-generated.
-4. **`inventory.nix`** — master source for NixOS *and* OpenWrt infrastructure. Hosts referenced here.
+1. **`docs/INFRASTRUCTURE.yaml`** (or `~/Develop/github.com/kleinbem/INFRASTRUCTURE.yaml`) — **Primary Ground Truth**. The complete, evaluated, cross-repo AI manifest containing hosts, Disko storage, network subnets, container services, system modules, personas, and secrets. **Read this first** to get the full picture of the fleet.
+2. **`docs/OPTIONS.md`** — auto-generated index of every `my.*` option, its declaration site, and which hosts/users opt in. Grep this to see blast radius.
+3. **`docs/IMPORTS.md`** — auto-generated per-host import map (modules, presets, hardware, users) plus reverse index. Use when editing a module that has no `my.*` options.
+4. **`docs/SYSTEM_REFERENCE.md`** — high-level human overview of nixpkgs revisions, managed hosts, active services.
+5. **`inventory.nix`** — master source for NixOS *and* OpenWrt infrastructure. Hosts referenced here.
 
-All three auto-generated docs regenerate via `just maintenance::sync-agent` (run from repo root).
+All ground-truth docs regenerate via `just maintenance::sync-agent` (run from repo root).
 
 ## Layout
 

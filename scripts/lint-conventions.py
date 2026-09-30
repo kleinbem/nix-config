@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _nix_options import (  # noqa: E402
+from _nix_options import (
     REPO,
     any_options_decls_in_file,
     iter_nix_files,

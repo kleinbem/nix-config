@@ -26,7 +26,7 @@ document manually.)
 | Listeners | smtp 25, submission 587, imap 143, http 8080 (JMAP + webadmin) | preset |
 | Admin | fallback-admin `admin`; secret `stalwart_admin_password_hash` via systemd `LoadCredential` → `%{file:…}%` macro | preset + `mac-mini/secrets.nix` |
 | Admin secret scope | **per-container**: `kleinbem-secrets/nix/per-container/stalwart.yaml` (not per-host — the mail server is a fleet service that can migrate; `.sops.yaml` catch-all already encrypts it to martin + nixos_nvme + mac_mini) | `mac-mini/secrets.nix` |
-| Mailboxes | one `<first>.<last>@kleinbem.dev` per persona, created **imperatively** by `scripts/persona-scaffold.sh` (`stalwart-cli`), not declared in Nix | `scripts/persona-scaffold.sh` |
+| Mailboxes | one `<first>.<last>@kleinbem.dev` per persona, created **imperatively** by `scripts/persona-scaffold.sh` (`POST /api/principal`, not `stalwart-cli` — see below), not declared in Nix | `scripts/persona-scaffold.sh` |
 | Outbound relay | none (`relaySecretFile` unset) → Stalwart direct delivery; fine for mesh-internal persona↔persona mail | preset |
 | Standalone build | catalogue + import in `hosts/container-factory/default.nix`; mac-mini is a `deploySources` host so `deployedContainers` picks it up | `container-factory/default.nix` |
 
@@ -75,27 +75,83 @@ just in nix-config nixos::switch            # if run ON mac-mini
 ssh mac-mini 'machinectl status stalwart; journalctl -u container@stalwart -n 30'
 
 # 4. mailboxes — one per persona (idempotent)
-#    First confirm the 0.15 stalwart-cli auth flags:
-ssh mac-mini 'machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli --help'
-#      likely: -u https://localhost:8080 -c admin:<password>
+#    NOT stalwart-cli (nixpkgs 1.0.x is schema-driven, fetches /api/schema,
+#    which doesn't exist on our pinned 0.15.5 — 404s immediately). Uses
+#    POST /api/principal directly instead (persona-scaffold.sh, fixed 2026-09-30).
 for p in martin michael-gruber thomas-schmidt daniel-meier rahul-kumar juan-gonzalez; do
   just personas::add "$p"
 done
-ssh mac-mini 'machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli account list'
+ssh mac-mini 'sudo systemd-run --machine=stalwart --pipe --wait /bin/sh -c "curl -sS -u admin:\$(cat /run/credentials/stalwart.service/admin_secret) http://127.0.0.1:8080/api/principal?types=individual"'
 
 # 5. smoke test
 just jj::as michael-gruber save-all "chore: mail smoke test"
 ```
 
-Runtime unknowns (discoverable once up, none block the build): `stalwart-cli`
-0.15 auth flags (step 4); the `queue.route` relay shape (only when a relay
-is added — TODO in the preset); a real TLS cert (self-signed STARTTLS is
-fine on the trusted `cbr0` bridge).
+Runtime unknowns (discoverable once up, none block the build): the
+`queue.route` relay shape (only when a relay is added — TODO in the
+preset); a real TLS cert (self-signed STARTTLS is fine on the trusted
+`cbr0` bridge).
+
+## Mailbox creation — status 2026-09-30
+
+`persona-scaffold.sh` step 6 was tested live and found two more real bugs
+on top of the `stalwart-cli`/schema-version issue above, both now fixed:
+
+1. **Wrong host.** The script ran the `container@stalwart.service`
+   liveness check against whatever host it's invoked from (e.g.
+   `nixos-nvme`), not mac-mini, so it always saw "not running" and
+   deferred. Fixed: step 6 now SSHes to `mac-mini` explicitly for both the
+   check and the mailbox creation.
+2. **Admin secret is a hash, not usable as an HTTP credential.** sops
+   holds only `stalwart_admin_password_hash` (`mkpasswd -m sha-512`); the
+   plaintext lives solely in Bitwarden. `POST /api/principal` needs the
+   **plaintext** over Basic Auth — the hash can't be sent as-is. Rather
+   than requiring Martin to paste the Bitwarden plaintext into a shell
+   every run, the fix is a dedicated **`automation` principal** with its
+   own plaintext password stored (as plaintext, deliberately — it's a
+   machine service credential, not a human one) in
+   `kleinbem-secrets/nix/per-container/stalwart.yaml` as
+   `stalwart_automation_password`. `persona-scaffold.sh` now decrypts that
+   key directly (`sops -d --extract`) and authenticates as `automation`
+   instead of `admin` — no human secret touches the script.
+
+### Automation principal bootstrap (one-time, do this manually)
+
+Not yet done — needs Martin's Bitwarden admin plaintext, which the
+assistant never sees or handles. Run once:
+
+```bash
+# 1. Generate the automation password and store it in kleinbem-secrets
+#    (touches a YubiKey to re-encrypt):
+AUTOMATION_PW=$(openssl rand -base64 32)
+cd kleinbem-secrets
+sops --set "[\"stalwart_automation_password\"] \"$AUTOMATION_PW\"" \
+  nix/per-container/stalwart.yaml
+
+# 2. Create the `automation` principal on the live server, authenticating
+#    as the human fallback-admin ONE TIME with the Bitwarden plaintext
+#    (replace both placeholders):
+jq -n --arg pw "$AUTOMATION_PW" '
+  {type:"individual", name:"automation", description:"persona-scaffold.sh service account",
+   quota:0, emails:[], secrets:[$pw], roles:["admin"]}
+' | ssh mac-mini '
+  sudo systemd-run --machine=stalwart --pipe --quiet --wait /bin/sh -c "
+    curl -sS -u admin:<BITWARDEN_PLAINTEXT_HERE> -H \"Content-Type: application/json\" \
+      -X POST http://127.0.0.1:8080/api/principal --data-binary @-
+  "'
+
+# 3. Verify (should list the new principal, no plaintext needed from here on):
+just personas::add michael-gruber   # re-run — should now print "✓ mailbox created"
+```
+
+`roles:["admin"]` mirrors the fallback-admin so the automation account can
+manage principals; narrow this later if Stalwart's role model supports a
+principals-only permission (not yet checked).
 
 ## Bitwarden entry (the fallback-admin password)
 
-sops holds only the **hash**; the plaintext (webadmin login + `stalwart-cli`)
-isn't recoverable from it — keep it in Bitwarden.
+sops holds only the **hash**; the plaintext (webadmin login + the
+`/api/principal` admin calls) isn't recoverable from it — keep it in Bitwarden.
 
 | Field | Value |
 |---|---|
@@ -112,7 +168,7 @@ Custom fields (text):
 |---|---|
 | sops-key | `stalwart_admin_password_hash` in `kleinbem-secrets/nix/per-container/stalwart.yaml` |
 | host | mac-mini · container `stalwart` · 10.85.50.8 |
-| cli | `machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli -u https://localhost:8080 -c admin:<password>` (verify flags) |
+| cli | `sudo systemd-run --machine=stalwart --pipe --wait curl -u admin:<password> http://127.0.0.1:8080/api/principal?types=individual` |
 | hash-cmd | `mkpasswd -m sha-512` |
 
 Also add a line to `kleinbem-secrets/ROTATIONS.md`.

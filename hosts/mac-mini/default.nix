@@ -463,7 +463,8 @@ in
       # personas it serves are fleet-wide, so its admin secret is scoped
       # per-container (kleinbem-secrets/nix/per-container/stalwart.yaml),
       # not to this host. Mailboxes are created imperatively by
-      # scripts/persona-scaffold.sh (stalwart-cli), not declared in Nix.
+      # scripts/persona-scaffold.sh (POST /api/principal, not stalwart-cli
+      # — see STATUS doc), not declared in Nix.
       # relaySecretFile unset → direct delivery (fine for mesh-internal
       # persona↔persona mail; external delivery needs a relay — STATUS doc).
       stalwart = {

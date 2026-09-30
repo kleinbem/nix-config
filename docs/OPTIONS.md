@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 61  
+**Declarations indexed:** 62  
 **Consumer files scanned:** 22
 
 ---
@@ -18,6 +18,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
+
+## `my.anythingllmVaultSync`
+
+### `my.anythingllmVaultSync`
+
+- **Declared:** `nix-config/modules/nixos/services/vault-anythingllm-sync.nix:37`
+- **Sub-options:** `enable`, `workspaceSlug`
+- **Consumed by:** _(no opt-ins detected)_
 
 ## `my.attic-push`
 

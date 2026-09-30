@@ -320,8 +320,7 @@ def _classify_import(token: str) -> ImportEntry | None:
     if t.startswith('"') and t.endswith('"'):
         inner = t[1:-1]
         # Strip `${self}/` prefix
-        if inner.startswith("${self}/"):
-            inner = inner[len("${self}/") :]
+        inner = inner.removeprefix("${self}/")
         if inner.startswith("users/"):
             parts = inner.split("/")
             if len(parts) >= 2:
@@ -331,7 +330,7 @@ def _classify_import(token: str) -> ImportEntry | None:
             return ImportEntry("module", inner, t)
         return ImportEntry("other", inner, t)
     # Relative path: ./something.nix
-    if t.startswith("./") or t.startswith("../"):
+    if t.startswith(("./", "../")):
         return ImportEntry("local", t, t)
     # Attribute path: inputs.<flake>.nixosModules.<name> etc
     m = re.match(

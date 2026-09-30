@@ -20,7 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _nix_options import (  # noqa: E402
+from _nix_options import (
     REPO,
     extract_imports_in_file,
     relpath,

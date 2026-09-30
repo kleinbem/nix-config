@@ -17,6 +17,10 @@ func TestParseAndFormat(t *testing.T) {
 				"ip": "192.168.1.2",
 				"tags": ["physical", "lxc-host"]
 			},
+			"ap1": {
+				"ip": "192.168.1.3",
+				"tags": ["physical", "ap"]
+			},
 			"brain1": {
 				"ip": "10.0.0.1",
 				"tags": ["brain"]
@@ -28,6 +32,7 @@ func TestParseAndFormat(t *testing.T) {
 	expectedOutput := `# Generated from nix-config/inventory.nix - DO NOT EDIT MANUALLY
 
 [mediatek]
+ap1 ansible_host=192.168.1.3
 node2 ansible_host=192.168.1.2
 router1 ansible_host=192.168.1.1
 
@@ -38,6 +43,7 @@ wan_iface=eth1
 lan_iface=eth0
 
 [routers]
+ap1
 node2
 router1
 
@@ -45,10 +51,10 @@ router1
 router1
 
 [access_points]
-node2
+ap1
 
-[brains]
-brain1 ansible_host=10.0.0.1 ansible_user=root
+[lxc_hosts]
+node2
 `
 
 	result, err := parseAndFormat(mockJSON)

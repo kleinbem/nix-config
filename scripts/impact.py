@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _nix_options import (  # noqa: E402
+from _nix_options import (
     CONSUMER_DIRS,
     REPO,
     consumer_label,

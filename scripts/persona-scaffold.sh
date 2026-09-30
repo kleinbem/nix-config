@@ -168,18 +168,55 @@ else
   echo "     gh api -X POST /user/ssh_signing_keys --field title=\"$PERSONA_EMAIL signing\" --field key=\"$PUBKEY\""
 fi
 
-# --- 6. Create mailbox via Stalwart admin CLI (if Stalwart is running) ---
-if systemctl is-active --quiet container@stalwart.service 2>/dev/null; then
+# --- 6. Create mailbox via Stalwart's principal API (if Stalwart is running) ---
+# NOT `stalwart-cli` (nixpkgs ships 1.0.x): that tool is schema-driven and
+# GETs /api/schema from the server on first use, but the fleet's Stalwart
+# is pinned to 0.15.5 (0.16.x isn't yet compatible with services.stalwart)
+# whose api/v1/openapi.yml has no /schema route — stalwart-cli 404s before
+# it can do anything, no matter the subcommand. The real, version-matched
+# surface on 0.15.5 is the plain JMAP management REST endpoint
+# `POST /api/principal` (see that file's "Create Principal" path), called
+# here with curl from inside the container so the fallback-admin secret
+# never leaves that root shell.
+STALWART_HOST="mac-mini"
+if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
+    'systemctl is-active --quiet container@stalwart.service' 2>/dev/null; then
   echo "  📬 Creating mailbox in Stalwart..."
-  # The mailbox password isn't passed inline (it's set via the API after
-  # decryption inside the container); this just ensures the account exists.
-  sudo machinectl shell stalwart /run/current-system/sw/bin/stalwart-cli \
-    account create "$PERSONA_EMAIL" "$PERSONA_FULLNAME" 2>/dev/null ||
-    echo "    (mailbox may already exist — ignore if so)"
+  MAILBOX_LOCALPART="${PERSONA_EMAIL%%@*}"
+  MAILBOX_PASSWORD="$(yq '.mailbox_password' "$WORK/persona.yaml")"
+  jq -n --arg name "$MAILBOX_LOCALPART" --arg desc "$PERSONA_FULLNAME" \
+    --arg email "$PERSONA_EMAIL" --arg secret "$MAILBOX_PASSWORD" '
+      {type: "individual", name: $name, description: $desc, quota: 0,
+       emails: [$email], secrets: [$secret], roles: ["user"]}
+    ' >"$WORK/principal.json"
+  # Dedicated `automation` principal — NOT the human fallback-admin. Its
+  # plaintext lives in kleinbem-secrets (this IS scriptable, unlike the
+  # human admin's password which is Bitwarden-only by design — see
+  # docs/PHASE1_STALWART_STATUS.md "Automation principal bootstrap"). A
+  # one-time manual bootstrap (using the human admin password once) creates
+  # this principal; after that, this script never needs a human secret.
+  AUTOMATION_PASSWORD="$(sops -d --extract '["stalwart_automation_password"]' \
+    "$SECRETS_REPO/nix/per-container/stalwart.yaml" 2>/dev/null || true)"
+  if [[ -z $AUTOMATION_PASSWORD ]]; then
+    echo "  ⚠️  stalwart_automation_password not in kleinbem-secrets — skipping mailbox creation." >&2
+    echo "     See docs/PHASE1_STALWART_STATUS.md 'Automation principal bootstrap' — one-time setup." >&2
+  else
+    HTTP_CODE=$(ssh -o BatchMode=yes "$STALWART_HOST" \
+      "sudo systemd-run --machine=stalwart --pipe --quiet --wait /bin/sh -c '
+        curl -sS -o /dev/null -w \"%{http_code}\" \
+          -u automation:$AUTOMATION_PASSWORD -H \"Content-Type: application/json\" \
+          -X POST http://127.0.0.1:8080/api/principal --data-binary @-
+      '" <"$WORK/principal.json" 2>/dev/null || echo "000")
+    case "$HTTP_CODE" in
+      200) echo "    ✓ mailbox created" ;;
+      400) echo "    (mailbox may already exist — ignore if so)" ;;
+      401) echo "    ⚠️  401 Unauthorized — automation principal password mismatch, re-check the bootstrap" >&2 ;;
+      *) echo "    ⚠️  unexpected HTTP $HTTP_CODE creating mailbox" >&2 ;;
+    esac
+  fi
 else
-  echo "  ℹ️  Stalwart not running — mailbox creation deferred."
-  echo "     Run after 'just apply' lands the stalwart container:"
-  echo "     sudo machinectl shell stalwart stalwart-cli account create '$PERSONA_EMAIL' '$PERSONA_FULLNAME'"
+  echo "  ℹ️  Stalwart not running on $STALWART_HOST — mailbox creation deferred."
+  echo "     Run after 'just apply' lands the stalwart container (re-run this script)."
 fi
 
 # --- Summary ---

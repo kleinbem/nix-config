@@ -242,6 +242,17 @@
           command = "/run/current-system/sw/bin/systemctl daemon-reload";
           options = [ "NOPASSWD" ];
         }
+        {
+          # Runs a one-off command inside a container's namespace via a
+          # transient unit, with real stdin/stdout piping (unlike
+          # `machinectl shell`'s PTY) — needed by persona-scaffold.sh to
+          # POST to Stalwart's /api/principal from inside the stalwart
+          # container. Wildcarded on --machine= and the trailing command so
+          # it covers any container, matching the `machinectl shell *`
+          # pattern above rather than one-off per invocation.
+          command = "/run/current-system/sw/bin/systemd-run --machine=* --pipe --quiet --wait *";
+          options = [ "NOPASSWD" ];
+        }
       ];
     }
   ];
