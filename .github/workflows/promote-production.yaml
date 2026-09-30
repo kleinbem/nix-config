@@ -177,9 +177,30 @@ jobs:
             # for each closure path and classifies it as "to fetch" (cached) or
             # "to build" (missing everywhere we trust). The runner's store is
             # clean, so this faithfully simulates a fresh device.
-            if ! out="$(nix build --dry-run "$path" $NIX_OVERRIDES 2>&1)"; then
+            #
+            # Retried up to 3 attempts: this specific invocation has crashed
+            # the Nix daemon outright on this (aarch64) runner a few times in
+            # a row while chasing the flake-attr-vs-literal-path bug above —
+            # Crashpad/Sentry noise (elf_dynamic_array_reader, "invalid
+            # multipart data... upload_file_minidump exceeded the size
+            # limit"), never a clean Nix error. Looks like transient
+            # runner/daemon instability rather than anything this script
+            # controls; a short retry is the pragmatic mitigation until it's
+            # reproducible enough to root-cause properly.
+            out=""
+            dry_run_ok=0
+            for attempt in 1 2 3; do
+              if out="$(nix build --dry-run "$path" $NIX_OVERRIDES 2>&1)"; then
+                dry_run_ok=1
+                break
+              fi
+              echo "::warning::$h: dry-run attempt $attempt/3 failed (daemon crash?), retrying..."
               echo "$out"
-              echo "::error::$h: dry-run eval failed — cannot verify cache, refusing to promote."
+              sleep 5
+            done
+            if [ "$dry_run_ok" -ne 1 ]; then
+              echo "$out"
+              echo "::error::$h: dry-run failed 3/3 attempts — cannot verify cache, refusing to promote."
               fail=1
               echo "::endgroup::"
               continue
@@ -232,10 +253,22 @@ jobs:
             # got dropped, with no warning distinguishable from a real
             # cache miss. See the matching fix + comment on the host
             # dry-run step above.
+            # Retried up to 3 attempts — same transient daemon-crash mitigation
+            # as the host dry-run step above (Crashpad/Sentry noise, not a
+            # clean Nix error).
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
-              if out=$(nix build --dry-run "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
+              out=""
+              dry_run_ok=0
+              for attempt in 1 2 3; do
+                if out=$(nix build --dry-run "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
+                  dry_run_ok=1
+                  break
+                fi
+                sleep 5
+              done
+              if [ "$dry_run_ok" -eq 1 ]; then
                 jq --arg n "$name" --arg p "$path" '. + {($n): $p}' "/tmp/ok-$sys.json" > /tmp/ok.tmp && mv /tmp/ok.tmp "/tmp/ok-$sys.json"
               else
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
