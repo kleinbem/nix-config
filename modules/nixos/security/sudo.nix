@@ -37,6 +37,36 @@
           options = [ "NOPASSWD" ];
         }
         {
+          # Standalone container manual staging (nix-gantry's container-stage
+          # script, or a manual bypass when the CI-published manifest is
+          # stale/broken) — same profile-based swap as the system profile
+          # above, just under /nix/var/nix/profiles/containers/.
+          command = "/run/current-system/sw/bin/nix-env --profile /nix/var/nix/profiles/containers/* --set *";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/nix/store/*-nix-*/bin/nix-env --profile /nix/var/nix/profiles/containers/* --set *";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          # Swaps /var/lib/machines/<name>/current to the newly-registered
+          # profile — the other half of the manual container-staging bypass.
+          command = "/run/current-system/sw/bin/ln -sfn /nix/var/nix/profiles/containers/* /var/lib/machines/*/current";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/mkdir -p /var/lib/machines/*";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/nft list table *";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/machinectl show *";
+          options = [ "NOPASSWD" ];
+        }
+        {
           command = "/run/current-system/sw/bin/systemctl start ollama.service";
           options = [ "NOPASSWD" ];
         }
