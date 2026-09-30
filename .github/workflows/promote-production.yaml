@@ -166,7 +166,7 @@ jobs:
             # literal path. Resolving first avoids the flake-attr path
             # entirely, matching how a real device actually fetches (by
             # store path, never by re-evaluating a flake attribute).
-            if ! path="$(nix eval --raw "$target" $NIX_OVERRIDES 2>&1)"; then
+            if ! path="$(nix eval --raw "$target.outPath" $NIX_OVERRIDES 2>&1)"; then
               echo "$path"
               echo "::error::$h: failed to resolve toplevel path — cannot verify cache, refusing to promote."
               fail=1
