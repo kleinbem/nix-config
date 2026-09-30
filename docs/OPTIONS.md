@@ -289,7 +289,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.stalwart`
 
-- **Declared:** `nix-presets/containers/stalwart.nix:35`
+- **Declared:** `nix-presets/containers/stalwart.nix:36`
 - **Sub-options:** `adminPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relaySecretFile`
 - **Consumed by:** `host:mac-mini`
 

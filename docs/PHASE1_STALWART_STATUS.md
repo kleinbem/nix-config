@@ -117,8 +117,17 @@ on top of the `stalwart-cli`/schema-version issue above, both now fixed:
 
 ### Automation principal bootstrap (one-time, do this manually)
 
-Not yet done — needs Martin's Bitwarden admin plaintext, which the
-assistant never sees or handles. Run once:
+**Corrected 2026-10-01** — the original version of step 2 below routed
+curl through `systemd-run --machine=stalwart` into the container's own
+filesystem, which doesn't ship `curl` (same bug found live-testing the
+mailbox-creation step itself, see `persona-scaffold.sh`'s step-6 comment).
+Fixed to curl mac-mini's own shell straight at the container's IP:port —
+no container-namespace hop needed, since we're not reading anything from
+inside the container.
+
+Needs Martin's Bitwarden admin plaintext, which the assistant never sees
+or handles. Run once (safe to re-run — regenerates + re-creates
+consistently even if an earlier attempt partially succeeded):
 
 ```bash
 # 1. Generate the automation password and store it in kleinbem-secrets
@@ -130,15 +139,14 @@ sops --set "[\"stalwart_automation_password\"] \"$AUTOMATION_PW\"" \
 
 # 2. Create the `automation` principal on the live server, authenticating
 #    as the human fallback-admin ONE TIME with the Bitwarden plaintext
-#    (replace both placeholders):
+#    (replace the placeholder):
 jq -n --arg pw "$AUTOMATION_PW" '
   {type:"individual", name:"automation", description:"persona-scaffold.sh service account",
    quota:0, emails:[], secrets:[$pw], roles:["admin"]}
 ' | ssh mac-mini '
-  sudo systemd-run --machine=stalwart --pipe --quiet --wait /bin/sh -c "
-    curl -sS -u admin:<BITWARDEN_PLAINTEXT_HERE> -H \"Content-Type: application/json\" \
-      -X POST http://127.0.0.1:8080/api/principal --data-binary @-
-  "'
+  curl -sS -u admin:<BITWARDEN_PLAINTEXT_HERE> -H "Content-Type: application/json" \
+    -X POST http://10.85.50.8:8080/api/principal --data-binary @-
+'
 
 # 3. Verify (should list the new principal, no plaintext needed from here on):
 just personas::add michael-gruber   # re-run — should now print "✓ mailbox created"

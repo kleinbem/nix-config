@@ -175,10 +175,16 @@ fi
 # whose api/v1/openapi.yml has no /schema route — stalwart-cli 404s before
 # it can do anything, no matter the subcommand. The real, version-matched
 # surface on 0.15.5 is the plain JMAP management REST endpoint
-# `POST /api/principal` (see that file's "Create Principal" path), called
-# here with curl from inside the container so the fallback-admin secret
-# never leaves that root shell.
+# `POST /api/principal` (see that file's "Create Principal" path). Called
+# from mac-mini (the HOST, not `machinectl`/`systemd-run` into the
+# container) straight at the container's IP:port — the container's own
+# minimal NixOS closure doesn't ship curl, and there's no longer any
+# reason to run inside its namespace: the automation password below is
+# decrypted client-side, not read from a container-local credential file
+# the way the human fallback-admin's secret is.
 STALWART_HOST="mac-mini"
+STALWART_IP="10.85.50.8" # inventory.nix network.nodes.stalwart
+STALWART_PORT="8080"
 if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
     'systemctl is-active --quiet container@stalwart.service' 2>/dev/null; then
   echo "  📬 Creating mailbox in Stalwart..."
@@ -196,17 +202,22 @@ if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
   # one-time manual bootstrap (using the human admin password once) creates
   # this principal; after that, this script never needs a human secret.
   AUTOMATION_PASSWORD="$(sops -d --extract '["stalwart_automation_password"]' \
-    "$SECRETS_REPO/nix/per-container/stalwart.yaml" 2>/dev/null || true)"
+    "$SECRETS_REPO/nix/per-container/stalwart.yaml")"
   if [[ -z $AUTOMATION_PASSWORD ]]; then
     echo "  ⚠️  stalwart_automation_password not in kleinbem-secrets — skipping mailbox creation." >&2
     echo "     See docs/PHASE1_STALWART_STATUS.md 'Automation principal bootstrap' — one-time setup." >&2
   else
+    # No 2>/dev/null here on purpose: swallowing stderr previously hid the
+    # real failure behind a generic "000" (curl's code for "never got an
+    # HTTP response at all" — connection/SSH-level, not an auth rejection).
+    # AUTOMATION_PASSWORD is base64 (openssl rand -base64 32 in the
+    # bootstrap doc) so it's always safe inside these single quotes — no
+    # embedded quote/backslash characters to worry about.
     HTTP_CODE=$(ssh -o BatchMode=yes "$STALWART_HOST" \
-      "sudo systemd-run --machine=stalwart --pipe --quiet --wait /bin/sh -c '
-        curl -sS -o /dev/null -w \"%{http_code}\" \
-          -u automation:$AUTOMATION_PASSWORD -H \"Content-Type: application/json\" \
-          -X POST http://127.0.0.1:8080/api/principal --data-binary @-
-      '" <"$WORK/principal.json" 2>/dev/null || echo "000")
+      "curl -sS -o /dev/null -w '%{http_code}' \
+        -u automation:$AUTOMATION_PASSWORD -H 'Content-Type: application/json' \
+        -X POST http://$STALWART_IP:$STALWART_PORT/api/principal --data-binary @-" \
+      <"$WORK/principal.json") || HTTP_CODE="000"
     case "$HTTP_CODE" in
       200) echo "    ✓ mailbox created" ;;
       400) echo "    (mailbox may already exist — ignore if so)" ;;
