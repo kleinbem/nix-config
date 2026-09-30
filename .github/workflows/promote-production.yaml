@@ -156,11 +156,28 @@ jobs:
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"
             target=".#nixosConfigurations.$h.config.system.build.toplevel"
+            # Resolve to the literal store path before dry-running it.
+            # `nix build --dry-run <flake-attr>` and `nix build --dry-run
+            # <literal store path>` are NOT equivalent for substitutability
+            # checking — confirmed live 2026-09-30: the exact same,
+            # genuinely-cached output (valid signed narinfo AND fetchable
+            # .nar on cache.kleinbem.dev, verified by hand) reported "will be
+            # built" via the flake-attr form and "will be fetched" via the
+            # literal path. Resolving first avoids the flake-attr path
+            # entirely, matching how a real device actually fetches (by
+            # store path, never by re-evaluating a flake attribute).
+            if ! path="$(nix eval --raw "$target" $NIX_OVERRIDES 2>&1)"; then
+              echo "$path"
+              echo "::error::$h: failed to resolve toplevel path — cannot verify cache, refusing to promote."
+              fail=1
+              echo "::endgroup::"
+              continue
+            fi
             # `nix build --dry-run` NEVER builds; it queries every substituter
             # for each closure path and classifies it as "to fetch" (cached) or
             # "to build" (missing everywhere we trust). The runner's store is
             # clean, so this faithfully simulates a fresh device.
-            if ! out="$(nix build --dry-run "$target" $NIX_OVERRIDES 2>&1)"; then
+            if ! out="$(nix build --dry-run "$path" $NIX_OVERRIDES 2>&1)"; then
               echo "$out"
               echo "::error::$h: dry-run eval failed — cannot verify cache, refusing to promote."
               fail=1
@@ -203,14 +220,26 @@ jobs:
             # Device-faithful filter: same dry-run gate as hosts, per container.
             # Checks the FULL closure (root + deps) against the substituters a
             # device trusts; repeated evals share the flake eval cache.
+            #
+            # Dry-runs the already-resolved literal $path, NOT the flake
+            # attribute — confirmed live 2026-09-30 that these are NOT
+            # equivalent for substitutability checking (a genuinely-cached,
+            # validly-signed, fetchable output still reported "will be
+            # built" via the flake-attr form; the literal path correctly
+            # reported "will be fetched"). This is why the manifest came
+            # back empty on every run since this gate was added, even fully
+            # green ones — every container silently failed this check and
+            # got dropped, with no warning distinguishable from a real
+            # cache miss. See the matching fix + comment on the host
+            # dry-run step above.
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
-              attr=".#nixosConfigurations.$factory.config.containers.\"$name\".path"
-              if out=$(nix build --dry-run "$attr" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
+              if out=$(nix build --dry-run "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1) && ! echo "$out" | grep -qiE 'will be built'; then
                 jq --arg n "$name" --arg p "$path" '. + {($n): $p}' "/tmp/ok-$sys.json" > /tmp/ok.tmp && mv /tmp/ok.tmp "/tmp/ok-$sys.json"
               else
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
+                echo "$out"
               fi
             done
             jq --arg s "$sys" --slurpfile m "/tmp/ok-$sys.json" '. + {($s): $m[0]}' /tmp/systems.json > /tmp/systems.tmp && mv /tmp/systems.tmp /tmp/systems.json
