@@ -219,7 +219,9 @@ def scan_host_containers(nix_config: Path) -> dict[str, list[str]]:
         enabled_containers = set()
         for nix_file in host_dir.rglob("*.nix"):
             try:
-                lines = nix_file.read_text(encoding="utf-8", errors="ignore").splitlines()
+                lines = nix_file.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines()
             except OSError:
                 continue
             in_containers = False
@@ -241,7 +243,10 @@ def scan_host_containers(nix_config: Path) -> dict[str, list[str]]:
                     if m:
                         current_c = m.group(1)
                         continue
-                    m = re.match(r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)", line)
+                    m = re.match(
+                        r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)",
+                        line,
+                    )
                     if m and m.group(3) == "true":
                         enabled_containers.add(m.group(1))
                         continue
@@ -371,12 +376,18 @@ def build_host_matrix(
 
         host_entry: dict[str, Any] = {
             "tier": h_data.get("tags", ["server"])[0],
-            "system": h_data.get("system", "openwrt" if h_data.get("type") == "openwrt" else "unknown"),
-            "deploy_type": h_data.get("deployType", "ansible" if h_data.get("type") == "openwrt" else "ssh"),
+            "system": h_data.get(
+                "system", "openwrt" if h_data.get("type") == "openwrt" else "unknown"
+            ),
+            "deploy_type": h_data.get(
+                "deployType", "ansible" if h_data.get("type") == "openwrt" else "ssh"
+            ),
             "tags": h_data.get("tags", []),
             "ips": {
                 "physical": h_data.get("physicalIp") or h_data.get("ip"),
-                "container_bridge": h_data.get("ip") if h_data.get("physicalIp") else None,
+                "container_bridge": h_data.get("ip")
+                if h_data.get("physicalIp")
+                else None,
                 "netbird": h_data.get("netbirdIp"),
             },
             "mesh_group": mg,
@@ -389,17 +400,27 @@ def build_host_matrix(
 
         # Specific hardware profiles
         if h_name == "nixos-nvme":
-            host_entry["hardware_profile"] = "Intel Core Desktop (Zotac) + renderD128 QuickSync + FIDO2/YubiKey"
+            host_entry["hardware_profile"] = (
+                "Intel Core Desktop (Zotac) + renderD128 QuickSync + FIDO2/YubiKey"
+            )
         elif h_name == "orin-nano":
-            host_entry["hardware_profile"] = "NVIDIA Jetson Orin Nano (6-core ARM Cortex-A78AE, Ampere GPU, TensorRT/CUDA)"
+            host_entry["hardware_profile"] = (
+                "NVIDIA Jetson Orin Nano (6-core ARM Cortex-A78AE, Ampere GPU, TensorRT/CUDA)"
+            )
         elif h_name in ("core-pi", "hass-pi"):
             host_entry["hardware_profile"] = "Raspberry Pi 5 (BCM2712, 4x Cortex-A76)"
         elif h_name == "mac-mini":
-            host_entry["hardware_profile"] = "Apple Mac Mini Mid-2011 (Intel Core i5-2415M, x86_64)"
+            host_entry["hardware_profile"] = (
+                "Apple Mac Mini Mid-2011 (Intel Core i5-2415M, x86_64)"
+            )
         elif h_name == "nasbook":
-            host_entry["hardware_profile"] = "x86_64 Laptop/NAS with dedicated Btrfs /data storage pool"
+            host_entry["hardware_profile"] = (
+                "x86_64 Laptop/NAS with dedicated Btrfs /data storage pool"
+            )
         elif h_name in ("core-gateway", "ap-upstairs"):
-            host_entry["hardware_profile"] = "Banana Pi BPI-R4 (MediaTek MT7988A Filogic 880, Quad-core A73, Wi-Fi 7)"
+            host_entry["hardware_profile"] = (
+                "Banana Pi BPI-R4 (MediaTek MT7988A Filogic 880, Quad-core A73, Wi-Fi 7)"
+            )
 
         matrix[h_name] = host_entry
 
@@ -458,7 +479,13 @@ def build_services_catalog(
             "external_port": node_data.get("externalPort"),
             "domain": node_data.get("domain"),
             "public": node_data.get("public", False),
-            "auth": "Cloudflare Access / SSO" if node_data.get("auth") else ("None (Internal / Anonymous)" if node_data.get("auth") is False else "Default"),
+            "auth": "Cloudflare Access / SSO"
+            if node_data.get("auth")
+            else (
+                "None (Internal / Anonymous)"
+                if node_data.get("auth") is False
+                else "Default"
+            ),
             "mtls": node_data.get("mtls", False),
             "upstream_preset": preset_file,
             "persistence_path": f"/var/lib/machines/{node_name}",
@@ -533,7 +560,9 @@ def build_home_manager_catalog(nix_config: Path) -> dict[str, Any]:
             if u.is_dir():
                 catalog["users"][u.name] = {
                     "path": f"nix-config/users/{u.name}/",
-                    "type": "Primary Operator" if u.name == "martin" else "Collaborator / Persona",
+                    "type": "Primary Operator"
+                    if u.name == "martin"
+                    else "Collaborator / Persona",
                 }
 
     return catalog
@@ -572,7 +601,7 @@ def build_developer_recipes() -> dict[str, Any]:
         "deploy_changes": [
             "Workstation (local): `just in nix-config nixos::switch`",
             "Remote host: `colmena apply --on <host>` or push via CI deploy signal",
-            "Fleet-wide save & push: `just ship-all \"commit message\"`",
+            'Fleet-wide save & push: `just ship-all "commit message"`',
         ],
     }
 
@@ -613,7 +642,9 @@ def generate_manifest() -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate INFRASTRUCTURE.yaml manifest")
+    parser = argparse.ArgumentParser(
+        description="Generate INFRASTRUCTURE.yaml manifest"
+    )
     parser.add_argument(
         "--output",
         "-o",
@@ -630,11 +661,19 @@ def main() -> int:
 
     print(f"Writing YAML manifest to {out_file}...")
     with open(out_file, "w", encoding="utf-8") as f:
-        f.write("# ============================================================================\n")
-        f.write("# INFRASTRUCTURE.yaml — Complete Fleet Knowledge Manifest for AI Assistants\n")
+        f.write(
+            "# ============================================================================\n"
+        )
+        f.write(
+            "# INFRASTRUCTURE.yaml — Complete Fleet Knowledge Manifest for AI Assistants\n"
+        )
         f.write("# Auto-generated by nix-config/scripts/generate-infra-yaml.py\n")
-        f.write("# Regenerate via `just maintenance::sync-agent` or `just sync-infra`\n")
-        f.write("# ============================================================================\n\n")
+        f.write(
+            "# Regenerate via `just maintenance::sync-agent` or `just sync-infra`\n"
+        )
+        f.write(
+            "# ============================================================================\n\n"
+        )
         yaml.dump(
             manifest_data,
             f,

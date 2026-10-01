@@ -186,7 +186,7 @@ STALWART_HOST="mac-mini"
 STALWART_IP="10.85.50.8" # inventory.nix network.nodes.stalwart
 STALWART_PORT="8080"
 if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
-    'systemctl is-active --quiet container@stalwart.service' 2>/dev/null; then
+  'systemctl is-active --quiet container@stalwart.service' 2>/dev/null; then
   echo "  📬 Creating mailbox in Stalwart..."
   MAILBOX_LOCALPART="${PERSONA_EMAIL%%@*}"
   MAILBOX_PASSWORD="$(yq '.mailbox_password' "$WORK/persona.yaml")"
@@ -219,10 +219,10 @@ if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
         -X POST http://$STALWART_IP:$STALWART_PORT/api/principal --data-binary @-" \
       <"$WORK/principal.json") || HTTP_CODE="000"
     case "$HTTP_CODE" in
-      200) echo "    ✓ mailbox created" ;;
-      400) echo "    (mailbox may already exist — ignore if so)" ;;
-      401) echo "    ⚠️  401 Unauthorized — automation principal password mismatch, re-check the bootstrap" >&2 ;;
-      *) echo "    ⚠️  unexpected HTTP $HTTP_CODE creating mailbox" >&2 ;;
+    200) echo "    ✓ mailbox created" ;;
+    400) echo "    (mailbox may already exist — ignore if so)" ;;
+    401) echo "    ⚠️  401 Unauthorized — automation principal password mismatch, re-check the bootstrap" >&2 ;;
+    *) echo "    ⚠️  unexpected HTTP $HTTP_CODE creating mailbox" >&2 ;;
     esac
   fi
 else

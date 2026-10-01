@@ -33,4 +33,3 @@ if command -v python3 &>/dev/null; then
 else
   echo "⚠️  python3 not found — skipping AI index regeneration"
 fi
-
