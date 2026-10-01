@@ -73,7 +73,7 @@ repo_atlas:
   nix-packages:
     path: nix-packages/
     url: git@github.com:kleinbem/nix-packages.git
-    role: 'Custom packages and overlays: antigravity, buzz-desktop, ente-museum, langfuse, oh-my-pi, ricoh-driver.'
+    role: 'Custom packages and overlays: antigravity, buzz-desktop, langfuse, oh-my-pi, ricoh-driver.'
   nix-presets:
     path: nix-presets/
     url: git@github.com:kleinbem/nix-presets.git

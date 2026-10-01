@@ -138,7 +138,7 @@ def get_repo_atlas(repos: dict[str, str]) -> dict[str, Any]:
         "nix-config": "Primary NixOS consumer flake. Owns hosts, users, system & HM modules, inventory, PKI, and docs.",
         "nix-presets": "Shared service and desktop bundles: 30+ container definitions, backup-engine, desktop, terminal, herdr.",
         "nix-hardware": "Custom hardware flakes: nixos-nvme (Intel Core), orin-nano (Jetson Tegra/CUDA), rpi5, lxc-guest.",
-        "nix-packages": "Custom packages and overlays: antigravity, buzz-desktop, ente-museum, langfuse, oh-my-pi, ricoh-driver.",
+        "nix-packages": "Custom packages and overlays: antigravity, buzz-desktop, langfuse, oh-my-pi, ricoh-driver.",
         "nix-devshells": "Developer shells provided via direnv: workspace (just, jj, gh, sops, age), openwrt, etc.",
         "nix-templates": "Flake templates for new services, modules, and projects.",
         "nix-gantry": "Continuous deployment engine and automatic updater.",
