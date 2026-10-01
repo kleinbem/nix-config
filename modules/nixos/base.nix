@@ -91,6 +91,28 @@
         doInstallCheck = false;
       });
 
+      # herdr 0.9.1 fails to link on Linux with nixpkgs b4fd65b's toolchain
+      # (ld.bfd: ".eh_frame_hdr refers to overlapping FDEs") — the bundled
+      # libghostty-vt bakes in its own compiler_rt/ubsan_rt. Broke every
+      # herdr host's toplevel (mac-mini first), blocking all promotes
+      # 2026-10-01. Backport of upstream NixOS/nixpkgs#568618 (merged
+      # 2026-09-30, not yet in nixos-unstable). Self-retiring: skipped as
+      # soon as the pinned herdr already carries that postPatch — delete
+      # this block once it does.
+      herdr =
+        if lib.hasInfix "bundle_compiler_rt" (prev.herdr.postPatch or "") then
+          prev.herdr
+        else
+          prev.herdr.overrideAttrs (old: {
+            postPatch =
+              (old.postPatch or "")
+              + lib.optionalString prev.stdenv.hostPlatform.isLinux ''
+                substituteInPlace vendor/libghostty-vt/src/build/GhosttyLibVt.zig \
+                  --replace-fail 'lib.bundle_compiler_rt = true;' 'lib.bundle_compiler_rt = false;' \
+                  --replace-fail 'lib.bundle_ubsan_rt = true;' 'lib.bundle_ubsan_rt = false;'
+              '';
+          });
+
       # Fix pygount build failure in nix-hardware (strict chardet bound)
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (_python-final: python-prev: {
