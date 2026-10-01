@@ -6,6 +6,13 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
+    # TEMPORARY (2026-10-01): last nixos-unstable rev where zotero 10.0.2
+    # built (and is on cache.nixos.org). zotero fails to build at b4fd65b
+    # (NixOS/nixpkgs#568692, fix PR #569006 still open). Used only by the
+    # zotero overlay in modules/nixos/base.nix — delete both once #569006
+    # is in nixos-unstable. Not nixpkgs-stable: that has zotero 9.0.6, and a
+    # 10 → 9 downgrade risks a library DB Zotero 9 refuses to open.
+    nixpkgs-zotero.url = "github:NixOS/nixpkgs/7a0f122f5090cf4c2ade2a13a0e229d4e19ba71f";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 

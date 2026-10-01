@@ -91,6 +91,19 @@
         doInstallCheck = false;
       });
 
+      # zotero 10.0.2 fails to build at nixpkgs b4fd65b ("AboutTranslations
+      # … not found in modules/ActorManagerParent.sys.mjs -- aborting"; via
+      # firejail-wrapped-binaries it broke the workstation toplevels and with
+      # them every promote). Same 10.0.2, from the pinned last-good rev —
+      # see the nixpkgs-zotero input in flake.nix for when to delete this.
+      inherit
+        (import inputs.nixpkgs-zotero {
+          inherit (prev.stdenv.hostPlatform) system;
+          config.allowUnfree = true;
+        })
+        zotero
+        ;
+
       # herdr 0.9.1 fails to link on Linux with nixpkgs b4fd65b's toolchain
       # (ld.bfd: ".eh_frame_hdr refers to overlapping FDEs") — the bundled
       # libghostty-vt bakes in its own compiler_rt/ubsan_rt. Broke every
