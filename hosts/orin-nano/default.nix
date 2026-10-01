@@ -186,15 +186,17 @@ in
   # dropped:
   #   - root=fstab       : systemd stage-1 mounts the tmpfs root via fstab;
   #                        without it → gpt-auto-root timeout → emergency mode.
-  #   - systemd.machine_id: /etc/machine-id is NOT persisted under systemd-initrd
-  #                        (persistence.nix), so without a fixed id here systemd
-  #                        regenerates a random one every boot ("Detected first
-  #                        boot" each time). Pin it. (nixos-nvme does the same.)
+  #   - systemd.machine_id: machine-id.nix's fleet-wide pin (my.machineId) —
+  #                        without it systemd regenerates a random id every
+  #                        boot ("Detected first boot" each time).
   # console=ttyTCU0 stays LAST so it is the primary /dev/console for the LUKS
   # prompt over the Tegra debug UART — do not reorder the console= entries.
+  # Keep the id this host has always had (pre-dates machine-id.nix's
+  # hostname-derived default).
+  my.machineId = "9fef3c9be6eb4bf29456f7be28ec4d6d";
   boot.kernelParams = lib.mkForce [
     "root=fstab"
-    "systemd.machine_id=9fef3c9be6eb4bf29456f7be28ec4d6d"
+    "systemd.machine_id=${config.my.machineId}"
     "console=tty0"
     "console=ttyTCU0,115200"
   ];

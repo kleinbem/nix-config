@@ -50,6 +50,7 @@
     ./virtualisation.nix
     ./zero-trust.nix
     ./services/timesync.nix
+    ./machine-id.nix # my.machineId — stable machine-id on the tmpfs root (kernel cmdline pin)
     ./backup.nix # my.backup — fleet destinations/keys for nix-presets' backup-engine (off until a host enables it)
     ./heartbeat.nix # my.heartbeat — external dead-man's switch (healthchecks.io); per-host opt-in
   ];
