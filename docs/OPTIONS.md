@@ -109,7 +109,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.buzz`
 
 - **Declared:** `nix-presets/containers/buzz.nix:39`
-- **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
+- **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `package`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.caddy`

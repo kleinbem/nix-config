@@ -877,6 +877,8 @@ hosts:
       desktop:
       - claude.enable
       - gnome.enable
+      machineId:
+      - enabled
       monitoring:
       - node.enable
       security:
@@ -1020,6 +1022,8 @@ hosts:
       herdr-remote-client:
       - enable
       - serverIp
+      machineId:
+      - enabled
       monitoring:
       - node.enable
       network:
@@ -1737,6 +1741,10 @@ modules_system:
     declared_options: []
   keys.nix:
     file: nix-config/modules/nixos/keys.nix
+    purpose: NixOS system module.
+    declared_options: []
+  machine-id.nix:
+    file: nix-config/modules/nixos/machine-id.nix
     purpose: NixOS system module.
     declared_options: []
   network-routing.nix:
