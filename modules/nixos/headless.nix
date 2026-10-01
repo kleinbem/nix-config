@@ -141,4 +141,17 @@
     "systemd.show_status=auto"
     "rd.udev.log_level=3"
   ];
+
+  # ─── Unattended panic recovery ──────────────────────────────
+  # Kernel default panic=0 hangs a headless box forever on a panic — nobody
+  # is at the console. Reboot after 10s instead; efi_pstore (x86) has
+  # already captured the trace by then, and systemd-pstore archives it into
+  # the persisted /var/lib/systemd/pstore on the next boot. Treat an oops as
+  # a panic too: a box that oopsed keeps running half-broken. Set via sysctl,
+  # not the cmdline, so a panic in early boot still halts visibly instead of
+  # boot-looping (see the panic=-1 note in security/hardening.nix).
+  boot.kernel.sysctl = {
+    "kernel.panic" = lib.mkDefault 10;
+    "kernel.panic_on_oops" = lib.mkDefault 1;
+  };
 }

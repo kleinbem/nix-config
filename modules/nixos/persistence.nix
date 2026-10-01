@@ -50,6 +50,7 @@
       "/var/lib/machines" # systemd-machined and systemd-nspawn container state
       "/var/lib/syncthing" # Syncthing device identity and config
       "/var/lib/private/tang" # Tang NBDE keys (DynamicUser → /var/lib/private)
+      "/var/lib/systemd/pstore" # Kernel panic/oops dumps archived from EFI pstore — useless if lost on reboot
     ];
     files = [
       # RSA host key persistence dropped 2026-09-22 — every host's initrd
@@ -60,8 +61,10 @@
       # the RSA key; it was just persisted dead weight.
       "/etc/ssh/ssh_host_ed25519_key"
       "/etc/ssh/ssh_host_ed25519_key.pub"
-    ]
-    ++ lib.optional (!config.boot.initrd.systemd.enable) "/etc/machine-id";
+      # /etc/machine-id deliberately absent: pinned on the kernel cmdline
+      # instead (machine-id.nix) — impermanence can't bind it early enough
+      # under systemd stage-1, which every host uses.
+    ];
 
     # Shell history survives reboots on edge devices with an ephemeral
     # root (hass-pi, and similar Pi/Jetson boxes) — without this it's

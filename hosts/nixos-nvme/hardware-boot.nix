@@ -45,6 +45,10 @@ in
     fallbackMessage = "Tang still unreachable; continuing (FIDO2 or passphrase fallback)";
   };
 
+  # Keep the id this host has always had (pre-dates machine-id.nix's
+  # hostname-derived default) — the systemd.machine_id= param comes from there.
+  my.machineId = "875e6f722d80415e955ebddd39206430";
+
   boot = {
     kernelPackages = pkgs.linuxPackages_zen;
     # Force the JMicron JMS581 (152d:0581) USB-NVMe bridge out of UAS into BOT mode.
@@ -52,7 +56,6 @@ in
     # filesystem corruption when provisioning the Orin SSD over the USB enclosure.
     kernelParams = [
       "usb-storage.quirks=152d:0581:u"
-      "systemd.machine_id=875e6f722d80415e955ebddd39206430"
     ];
     initrd = {
       availableKernelModules = [
