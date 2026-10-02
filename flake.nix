@@ -187,6 +187,7 @@
         ./modules/flake/colmena.nix
         ./modules/flake/nix-on-droid.nix
         ./modules/flake/iac-data.nix
+        ./modules/flake/agent-tools.nix
       ];
       systems = [
         "x86_64-linux"

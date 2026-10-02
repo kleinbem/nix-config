@@ -19,17 +19,28 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 NIX_CONFIG_ROOT="$(dirname "$SCRIPT_DIR")"
 META_ROOT="$(dirname "$NIX_CONFIG_ROOT")"
 
+# Pinned interpreter (nix-config#legacyPackages.<system>.agent-python) so the
+# generators' deps (pyyaml) don't hinge on whichever python3 is first on PATH.
+# Falls back to the ambient python3 if the build fails (e.g. offline).
+SYSTEM="$(nix eval --raw --impure --expr builtins.currentSystem 2>/dev/null || echo x86_64-linux)"
+if PY_ENV="$(nix build --no-link --print-out-paths "$NIX_CONFIG_ROOT#legacyPackages.$SYSTEM.agent-python" 2>/dev/null)"; then
+  PYTHON="$PY_ENV/bin/python3"
+else
+  echo "⚠️  Couldn't build pinned agent-python — falling back to ambient python3"
+  PYTHON="$(command -v python3 || true)"
+fi
+
 echo "🔍 Generating System Reference for AI assistants…"
-python3 "$SCRIPT_DIR/generate-system-reference.py" \
+"$PYTHON" "$SCRIPT_DIR/generate-system-reference.py" \
   --nix-config "$NIX_CONFIG_ROOT" \
   --meta "$META_ROOT" \
   "$@"
 
 # Regenerate the machine-readable my.* options + imports indexes + AI infrastructure manifest.
-if command -v python3 &>/dev/null; then
-  python3 "$SCRIPT_DIR/generate-options-index.py" || echo "⚠️  Options index generation failed (non-fatal)"
-  python3 "$SCRIPT_DIR/generate-imports-index.py" || echo "⚠️  Imports index generation failed (non-fatal)"
-  python3 "$SCRIPT_DIR/generate-infra-yaml.py" || echo "⚠️  Infrastructure YAML generation failed (non-fatal)"
+if [ -n "$PYTHON" ]; then
+  "$PYTHON" "$SCRIPT_DIR/generate-options-index.py" || echo "⚠️  Options index generation failed (non-fatal)"
+  "$PYTHON" "$SCRIPT_DIR/generate-imports-index.py" || echo "⚠️  Imports index generation failed (non-fatal)"
+  "$PYTHON" "$SCRIPT_DIR/generate-infra-yaml.py" || echo "⚠️  Infrastructure YAML generation failed (non-fatal)"
 else
   echo "⚠️  python3 not found — skipping AI index regeneration"
 fi
