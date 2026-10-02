@@ -55,7 +55,7 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 | phone_deployment.md | Nix on Droid setup — evergreen lessons-learned, kept as reference | ✅ Reference |
 | PHASE1_STALWART_STATUS.md | Stalwart email integration | ✅ Shipped 2026-09-03 |
 | PHASE3_AUTHENTIK.md | Authentik SSO deployment | 📅 Future |
-| PHASE45_HRIS_COLLAB.md | HRIS/collaboration stack | 📅 Future |
+| PHASE5_NEXTCLOUD.md | Nextcloud collaboration stack | 📅 Future |
 | rpi-kernel-caching-followups.md | Raspberry Pi kernel caching | ⏳ One on-device confirmation step still open per doc body — not actually Completed |
 
 ---
