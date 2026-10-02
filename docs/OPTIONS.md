@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 62  
+**Declarations indexed:** 63  
 **Consumer files scanned:** 22
 
 ---
@@ -334,6 +334,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/desktop.nix:34`
 - **Sub-options:** `gnome.enable`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
+
+### `my.desktop.bottles`
+
+- **Declared:** `nix-presets/nixosModules/bottles.nix:12`
+- **Sub-options:** `enable`, `gamemodeUsers`
+- **Consumed by:** `host:nixos-nvme`
 
 ### `my.desktop.claude`
 
