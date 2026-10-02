@@ -4,7 +4,7 @@
     # fleet-wide in modules/nixos/base.nix.
 
     # Use host SSH keys for automated decryption
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];
 
     secrets = {
       # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so

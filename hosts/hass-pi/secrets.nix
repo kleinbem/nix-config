@@ -27,7 +27,7 @@ _: {
   sops = {
     # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
     # fleet-wide in modules/nixos/base.nix.
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];
 
     secrets = {
       # Consumed by modules/nixos/networking.nix → netbird-autojoin oneshot,

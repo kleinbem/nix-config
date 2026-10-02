@@ -88,4 +88,13 @@
     "d /var/lib/private 0700 root root - -"
     "d /nix/persist/var/lib/private 0700 root root - -"
   ];
+
+  # Under impermanence, /etc/ssh/ssh_host_ed25519_key is bind-mounted via a
+  # transient systemd unit (persist-nix-persist-etc-ssh-ssh_host_ed25519_key.service).
+  # During switch-to-configuration, that unit may be stopped before sops-install-secrets
+  # executes. Point sops directly to the durable backing path under /nix/persist so
+  # secret decryption never fails due to an unmounted bind.
+  sops.age.sshKeyPaths = lib.mkOverride 900 [
+    "/nix/persist/etc/ssh/ssh_host_ed25519_key"
+  ];
 }

@@ -29,7 +29,7 @@
     # fleet-wide in modules/nixos/base.nix.
 
     # Use host SSH keys for automated decryption (avoids YubiKey prompts for background tasks)
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];
     gnupg.sshKeyPaths = [ ]; # No GPG keys used
     useSystemdActivation = true;
     age.plugins = [
