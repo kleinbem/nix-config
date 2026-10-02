@@ -17,6 +17,9 @@
   options,
   ...
 }:
+let
+  sshKeys = (import ./keys.nix).ssh;
+in
 {
   imports = [
     ./services/tang.nix
@@ -120,14 +123,29 @@
   # When connected via `ssh -A`, sudo authenticates by requesting a signature
   # from the forwarded SSH agent, requiring a physical tap on the local YubiKey
   # rather than typing a password. Falls back to password if no agent is forwarded.
-  security.pam.sshAgentAuth = {
-    enable = true;
-    authorizedKeysFiles = [ "/etc/ssh/authorized_keys.d/%u" ];
+  #
+  # pam_rssh, not pam_ssh_agent_auth: the latter (0.10.x) predates OpenSSH's
+  # security-key types, so it never accepted the sk-ssh-ed25519 keys this
+  # fleet actually uses and always fell through to the password (2026-10-02).
+  #
+  # Dedicated key file, not /etc/ssh/authorized_keys.d: both modules skip
+  # authorized_keys options, so a login-only `restrict,command=` automation
+  # key (caddy-ca-refresh) or the no-touch signing key would also have
+  # satisfied sudo. Only the touch-required FIDO2 keys may.
+  security.pam = {
+    rssh = {
+      enable = true;
+      settings.auth_key_file = "/etc/ssh/sudo_keys.d/$ruser";
+    };
+    services.sudo.rssh = true;
   };
-
-  security.sudo.extraConfig = ''
-    Defaults env_keep += "SSH_AUTH_SOCK"
-  '';
+  environment.etc."ssh/sudo_keys.d/${config.my.username}" = {
+    mode = "0444";
+    text = ''
+      ${sshKeys.fido2}
+      ${sshKeys.fido2-backup}
+    '';
+  };
 
   # ─── Container TUI ──────────────────────────────────────────
   # Headless hosts run nspawn / podman containers (AI services, Frigate,
