@@ -80,6 +80,7 @@
       git-credential-nostr # NIP-98 credential helper for Nostr git repositories
       git-sign-nostr # NIP-GS commit/tag signing program using Nostr secp256k1 keys
       buzz-dev-mcp # Model Context Protocol (MCP) server for Buzz developers and AI coding agents
+      buzz-agent # Minimal, unbreakable ACP-compliant autonomous AI agent for Buzz workspace
 
       # RDP clients for mac-mini's GNOME Remote Desktop (reached via
       # `ssh -L 3389:localhost:3389 mac-mini`, see hosts/mac-mini/default.nix).
