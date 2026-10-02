@@ -51,10 +51,9 @@ in
         # minio_root_password only takes effect on MinIO's first boot — a
         # live deployment needs its root user rotated to match via
         # `mc admin user` BEFORE restarting museum with the new config, or
-        # the app loses its object-storage connection. (postgres_password
-        # is gone since ente moved to native Postgres with socket peer
-        # auth, 2026-10; its ciphertext in ente.yaml can go once the
-        # migration in nix-presets containers/ente.nix is done.)
+        # the app loses its object-storage connection. (No
+        # postgres_password: ente runs native Postgres with socket peer
+        # auth since 2026-10-02.)
         mkPerContainerSecrets {
           container = "ente";
           keys = [
