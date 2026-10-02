@@ -274,7 +274,6 @@ hosts:
       - ente.keyEncryptionFile
       - ente.keyHashFile
       - ente.minioRootPasswordFile
-      - ente.postgresPasswordFile
       - gatus
       - gatus.enable
       - gatus.endpointsFile
@@ -314,7 +313,6 @@ hosts:
     - ente_key_encryption
     - ente_key_hash
     - ente_minio_root_password
-    - ente_postgres_password
     - vaultwarden_admin_token
     hardware_profile: Raspberry Pi 5 (BCM2712, 4x Cortex-A76)
   hass-pi:
@@ -781,6 +779,7 @@ hosts:
       - langflow.ip
       - langfuse
       - langfuse.autoStart
+      - langfuse.dbPasswordFile
       - langfuse.enable
       - langfuse.hostDataDir
       - langfuse.ip
@@ -906,6 +905,7 @@ hosts:
     secrets_consumed:
     - buzz_typesense_api_key
     - github_runner_pat
+    - langfuse_db_password
     - netbird_setup_key
     - paperless_password
     hardware_profile: Intel Core Desktop (Zotac) + renderD128 QuickSync + FIDO2/YubiKey

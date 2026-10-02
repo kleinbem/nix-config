@@ -150,8 +150,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.ente`
 
-- **Declared:** `nix-presets/containers/ente.nix:30`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`, `postgresPasswordFile`
+- **Declared:** `nix-presets/containers/ente.nix:24`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.frigate`
@@ -186,8 +186,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.langfuse`
 
-- **Declared:** `nix-presets/containers/langfuse.nix:13`
-- **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
+- **Declared:** `nix-presets/containers/langfuse.nix:17`
+- **Sub-options:** `autoStart`, `dbPasswordFile`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.litellm`
