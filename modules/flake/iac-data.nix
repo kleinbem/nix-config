@@ -23,6 +23,27 @@
     ) self.nixosConfigurations
   );
 
+  # backup-hosts.json bridge: hosts that register any `my.backup.items` and
+  # so need an R2 key (nix/infra/cloudflare-r2-backup-tokens.tf mints one per
+  # host and tf-apply.sh writes it to that host's sops file). Keyed on items,
+  # not my.backup.enable: the key has to exist BEFORE a host enables backups
+  # (activation needs the secret). Intersected with inventory.hosts so build-
+  # only configs (container-factory, the bootstrap image) never get one.
+  flake.backupHosts =
+    let
+      inherit (inputs.nixpkgs) lib;
+      fleetHosts = lib.attrNames (import ../../inventory.nix).hosts;
+    in
+    lib.attrNames (
+      lib.filterAttrs (
+        name: c:
+        builtins.elem name fleetHosts
+        && c.config ? my
+        && c.config.my ? backup
+        && c.config.my.backup.items != { }
+      ) self.nixosConfigurations
+    );
+
   perSystem =
     {
       config,
