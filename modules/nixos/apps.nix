@@ -12,9 +12,15 @@
   # Shell integrations for system shells
   programs.zsh.interactiveShellInit = ''
     eval "$(zoxide init zsh)"
+    if [ -r /run/secrets/buzz_user_private_key ]; then
+      export BUZZ_PRIVATE_KEY="$(< /run/secrets/buzz_user_private_key)"
+    fi
   '';
   programs.bash.interactiveShellInit = ''
     eval "$(zoxide init bash)"
+    if [ -r /run/secrets/buzz_user_private_key ]; then
+      export BUZZ_PRIVATE_KEY="$(< /run/secrets/buzz_user_private_key)"
+    fi
   '';
 
   # fzf default options

@@ -69,6 +69,13 @@
       buzz_relay_private_key = {
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       };
+      buzz_user_private_key = {
+        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
+        owner = "martin";
+        group = "users";
+        mode = "0400";
+      };
+
       buzz_garage_rpc_secret = {
         sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -hex 32`
