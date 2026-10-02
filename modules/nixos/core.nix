@@ -38,6 +38,16 @@ in
   # NIX SETTINGS & CORE
   # ==========================================
 
+  # Fleet-wide, not just users.nix (desktop/orin): with the default
+  # mutableUsers=true, hashedPasswordFile only applies when a user is FIRST
+  # created, so later martin_password_hash changes in sops never reached
+  # core-pi/hass-pi/mac-mini/nasbook — their sudo password silently stayed
+  # whatever it was at install (found 2026-10-02 on core-pi; same root
+  # cause as the earlier mac-mini "hash drift"). Declarative-only means
+  # every activation re-applies the sops hash. Users without a declared
+  # password (root on headless hosts) get password login locked.
+  users.mutableUsers = false;
+
   time.timeZone = "Europe/Dublin";
   i18n.defaultLocale = "en_IE.UTF-8";
   console.keyMap = "uk";

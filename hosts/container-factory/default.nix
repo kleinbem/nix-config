@@ -195,6 +195,8 @@ let
     };
     ente = {
       ip = "${myInventory.network.nodes.ente.ip}/24"; # core-pi
+      # Real hostname, not a dummy: it's baked into museum's WebAuthn config.
+      inherit (myInventory.network.nodes.ente) domain;
       hostDataDir = dataDir "ente";
       # Non-null so the cached closure's env-setup script includes every
       # `cat` branch (each reads a fixed in-container path — see
