@@ -127,6 +127,22 @@
               '';
           });
 
+      # usbguard 1.1.4 fails to compile against newer abseil-cpp/protobuf
+      # under -std=c++17 ("error: 'upper_bound' has not been declared in
+      # 'using absl::btree_map...'"). Backport of upstream NixOS/nixpkgs#568672
+      # (commit 804af16, merged 2026-09-30, not yet in pinned nixos-unstable).
+      # Self-retiring: skipped as soon as the pinned usbguard already carries -std=c++20.
+      usbguard =
+        if lib.hasInfix "-std=c++20" (prev.usbguard.postPatch or "") then
+          prev.usbguard
+        else
+          prev.usbguard.overrideAttrs (old: {
+            postPatch = (old.postPatch or "") + ''
+              substituteInPlace configure.ac \
+                --replace-fail "-std=c++17" "-std=c++20"
+            '';
+          });
+
       # Fix pygount build failure in nix-hardware (strict chardet bound)
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (_python-final: python-prev: {
