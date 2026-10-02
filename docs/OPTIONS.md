@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 63  
-**Consumer files scanned:** 22
+**Declarations indexed:** 62  
+**Consumer files scanned:** 24
 
 ---
 
@@ -57,7 +57,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:297`
 - **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
-- **Consumed by:** `host:container-factory`, `host:core-pi`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
 
 ## `my.boot`
 
@@ -108,7 +108,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.buzz`
 
-- **Declared:** `nix-presets/containers/buzz.nix:39`
+- **Declared:** `nix-presets/containers/buzz.nix:41`
 - **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `package`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -239,12 +239,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`
 - **Consumed by:** `host:core-pi`
 
-### `my.containers.odoo`
-
-- **Declared:** `nix-presets/containers/odoo.nix:14`
-- **Sub-options:** `addons`, `adminPasswordFile`, `dbPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `oidcUpstream`
-- **Consumed by:** _(no opt-ins detected)_
-
 ### `my.containers.ollama`
 
 - **Declared:** `nix-presets/containers/ollama.nix:13`
@@ -265,7 +259,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.paperless`
 
-- **Declared:** `nix-presets/containers/paperless.nix:12`
+- **Declared:** `nix-presets/containers/paperless.nix:14`
 - **Sub-options:** `enable`, `hostConsumptionDir`, `hostDataDir`, `ip`, `memoryLimit`, `passwordFile`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
 
@@ -337,8 +331,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop.bottles`
 
-- **Declared:** `nix-presets/nixosModules/bottles.nix:12`
-- **Sub-options:** `enable`, `gamemodeUsers`
+- **Declared:** `nix-presets/nixosModules/bottles.nix:13`
+- **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.desktop.claude`

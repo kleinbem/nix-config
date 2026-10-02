@@ -874,9 +874,7 @@ hosts:
       - autoUpgrade.enable
       - autoUpgrade.requireCache
       desktop:
-      - bottles
       - bottles.enable
-      - bottles.gamemodeUsers
       - claude.enable
       - gnome.enable
       machineId:

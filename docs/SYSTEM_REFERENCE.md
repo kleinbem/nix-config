@@ -55,13 +55,13 @@
 - 👥 **AI Agent Team** (`agent-team`) `10.85.47.118:8000` — Enterprise Role-Based Agent Team (CrewAI). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-team.nix:15]_
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
-- 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:12]_
+- 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:14]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### nixos-nvme
 
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
-- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:39]_
+- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:41]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
@@ -84,7 +84,6 @@
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:13]_
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
-- `odoo` _[src: nix-presets/containers/odoo.nix:14]_
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
@@ -95,6 +94,6 @@
 
 ## 🛠️ Workspace Status
 
-- **Devenv**: Available
+- **Devenv**: Not found in path
 
 ## 🤖 AI Capabilities (MCP Tools)
