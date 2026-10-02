@@ -33,7 +33,10 @@ in
       enable = true;
       # GIMP 3 + gimp3-mcp; start the plugin in GIMP via Tools > MCP > Start MCP Server
       gimp.enable = true;
+      # Buzz developer MCP server for workspace AI coding agents
+      buzz.enable = true;
     };
+
     opencode.enable = true;
     herdr.enable = true;
     ai-agents.enable = true;

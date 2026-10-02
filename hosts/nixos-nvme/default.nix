@@ -77,6 +77,8 @@
       google-antigravity-cli # Google Antigravity CLI -> binary: antigravity-cli, agy
       google-chrome # Google Chrome browser (provides system-wide chrome binary)
       buzz-desktop # Client for the self-hosted Buzz relay (containers.nix)
+      buzz-cli # Agent-first CLI for the Buzz relay and workspace (binary: buzz)
+      buzz-acp # Agent Control Protocol (ACP) bridge for autonomous agents
       git-credential-nostr # NIP-98 credential helper for Nostr git repositories
       git-sign-nostr # NIP-GS commit/tag signing program using Nostr secp256k1 keys
       buzz-dev-mcp # Model Context Protocol (MCP) server for Buzz developers and AI coding agents
