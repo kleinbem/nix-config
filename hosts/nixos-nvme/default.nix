@@ -122,6 +122,11 @@
     desktop = {
       gnome.enable = true;
       claude.enable = true;
+      # Windows executables via Bottles (+ GameMode, ntsync, 32-bit graphics)
+      bottles = {
+        enable = true;
+        gamemodeUsers = [ config.my.username ];
+      };
     };
     audio.jabra.preferred = true;
     virtualisation = {
