@@ -29,7 +29,11 @@ in
     # top of real installed PWAs. Full service URL list saved to Obsidian
     # before removal.
     service-launchers.enable = false;
-    mcp.enable = true;
+    mcp = {
+      enable = true;
+      # GIMP 3 + gimp3-mcp; start the plugin in GIMP via Tools > MCP > Start MCP Server
+      gimp.enable = true;
+    };
     opencode.enable = true;
     herdr.enable = true;
     ai-agents.enable = true;
