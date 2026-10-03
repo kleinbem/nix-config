@@ -23,10 +23,6 @@
           executable = "${pkgs.zathura}/bin/zathura";
           profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
         };
-        signal-desktop = {
-          executable = "${pkgs.signal-desktop}/bin/signal-desktop";
-          profile = "${pkgs.firejail}/etc/firejail/signal-desktop.profile";
-        };
         obsidian = {
           executable = "${pkgs.obsidian}/bin/obsidian";
           profile = "${pkgs.firejail}/etc/firejail/obsidian.profile";
