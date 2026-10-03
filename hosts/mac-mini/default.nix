@@ -77,6 +77,9 @@ in
     inputs.nix-presets.nixosModules.persona-runtime
     inputs.nix-presets.nixosModules.stalwart
     inputs.nix-presets.nixosModules.herdr-remote-client
+    # Discord/Element/Signal in nixpak sandboxes — successor to the
+    # firejail.nix wrappers imported above, app by app.
+    inputs.nix-presets.nixosModules.sandboxed-apps
   ];
 
   # Same fleet-wide key set as every other host (modules/nixos/keys.nix).
@@ -206,6 +209,7 @@ in
     # bridges the RDP connection into the resulting session. defaultSession
     # still applies to whatever session GDM starts after that login.
     desktop.gnome.enable = true;
+    desktop.sandboxedApps.enable = true;
 
     # Pull-deploy config itself now comes from pull-deploy-node.nix (imports
     # above) — old, comparatively slow CPU (2011 Sandy Bridge), don't let

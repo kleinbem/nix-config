@@ -41,10 +41,6 @@
         # escape hatches, and hotplug stayed flaky). Chrome is installed as a
         # plain package instead — nix-presets/desktop.nix for martin,
         # hosts/mac-mini/default.nix for that host.
-        discord = {
-          executable = "${pkgs.discord}/bin/discord";
-          profile = "${pkgs.firejail}/etc/firejail/discord.profile";
-        };
         slack = {
           executable = "${pkgs.slack}/bin/slack";
           profile = "${pkgs.firejail}/etc/firejail/slack.profile";

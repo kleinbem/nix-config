@@ -126,6 +126,8 @@
       claude.enable = true;
       # Windows apps via Bottles (ntsync, 32-bit graphics; no gaming tweaks)
       bottles.enable = true;
+      # Discord/Element/Signal in nixpak sandboxes (replacing firejail.nix)
+      sandboxedApps.enable = true;
     };
     audio.jabra.preferred = true;
     virtualisation = {
