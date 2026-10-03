@@ -543,6 +543,28 @@
     },
     "flake-parts_11": {
       "inputs": {
+        "nixpkgs-lib": [
+          "nix-presets",
+          "nixpak",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788450739,
+        "narHash": "sha256-glZLQlzIn1fXH6PazR2iUmTo7kzzyYSshrWhLS9TqCU=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "31729ca8cbdb4fa927b34e5f4353e6a83f39e993",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "flake-parts_12": {
+      "inputs": {
         "nixpkgs-lib": "nixpkgs-lib_8"
       },
       "locked": {
@@ -559,7 +581,7 @@
         "type": "github"
       }
     },
-    "flake-parts_12": {
+    "flake-parts_13": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib_9"
       },
@@ -577,7 +599,7 @@
         "type": "github"
       }
     },
-    "flake-parts_13": {
+    "flake-parts_14": {
       "inputs": {
         "nixpkgs-lib": [
           "nixvim",
@@ -598,7 +620,7 @@
         "type": "github"
       }
     },
-    "flake-parts_14": {
+    "flake-parts_15": {
       "inputs": {
         "nixpkgs-lib": [
           "nur",
@@ -1043,6 +1065,33 @@
       "original": {
         "owner": "cachix",
         "repo": "git-hooks.nix",
+        "type": "github"
+      }
+    },
+    "hercules-ci-effects": {
+      "inputs": {
+        "flake-parts": [
+          "nix-presets",
+          "nixpak",
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nix-presets",
+          "nixpak",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789448436,
+        "narHash": "sha256-fknJsE4XnFjUfo87T9jyZ15ivJZB/varWvsJMYk0BNY=",
+        "owner": "hercules-ci",
+        "repo": "hercules-ci-effects",
+        "rev": "6c58de7236d1cd634deea07bd15d52c7ce470bd3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "hercules-ci-effects",
         "type": "github"
       }
     },
@@ -1644,6 +1693,7 @@
           "nix-packages"
         ],
         "nix-vscode-extensions": "nix-vscode-extensions",
+        "nixpak": "nixpak",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -1651,11 +1701,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1791016128,
-        "narHash": "sha256-G/F5gGkuCCTo6hHvz0MhrFfRcjOJmjLJjLVoJYfVXSk=",
+        "lastModified": 1791022338,
+        "narHash": "sha256-HlNGi0UG8PZ1bSUv1uARhg3KqwRMDk7WSB5rO8eRPGo=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "f64452c68daa277c8db44554a23c474fa9e0c237",
+        "rev": "2deb1e0ea3a17bf44079c6a6bf0d4a4518894804",
         "type": "github"
       },
       "original": {
@@ -1666,7 +1716,7 @@
     },
     "nix-templates": {
       "inputs": {
-        "flake-parts": "flake-parts_11",
+        "flake-parts": "flake-parts_12",
         "git-hooks": "git-hooks_8",
         "nix-devshells": [
           "nix-devshells"
@@ -1692,7 +1742,7 @@
     },
     "nix-topology": {
       "inputs": {
-        "flake-parts": "flake-parts_12",
+        "flake-parts": "flake-parts_13",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -1925,6 +1975,29 @@
       "original": {
         "owner": "NixOS",
         "repo": "nixos-hardware",
+        "type": "github"
+      }
+    },
+    "nixpak": {
+      "inputs": {
+        "flake-parts": "flake-parts_11",
+        "hercules-ci-effects": "hercules-ci-effects",
+        "nixpkgs": [
+          "nix-presets",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790821369,
+        "narHash": "sha256-z9JfAJQ3yk7C1QTMZMl+G8fo7i5wem5PW0I95epjHlQ=",
+        "owner": "nixpak",
+        "repo": "nixpak",
+        "rev": "a7a1f41e342e5f597ae47581dfc76726d03a8be7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixpak",
+        "repo": "nixpak",
         "type": "github"
       }
     },
@@ -2392,7 +2465,7 @@
     },
     "nixvim": {
       "inputs": {
-        "flake-parts": "flake-parts_13",
+        "flake-parts": "flake-parts_14",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -2490,7 +2563,7 @@
     },
     "nur": {
       "inputs": {
-        "flake-parts": "flake-parts_14",
+        "flake-parts": "flake-parts_15",
         "nixpkgs": "nixpkgs_14"
       },
       "locked": {
