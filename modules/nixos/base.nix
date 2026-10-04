@@ -143,6 +143,30 @@
             '';
           });
 
+      # nodejs 26.10.0 fails to compile on aarch64-linux under GCC 16: V8's
+      # NEON-only path in deps/v8/src/base/memcopy.h uses CHAR_BIT without
+      # including <climits> (NixOS/nixpkgs#568974, no fix PR yet). Breaks
+      # every aarch64 host pulling nodejs_latest — orin-nano via its CUDA
+      # llama-cpp (webui build). aarch64-linux only so x86_64 keeps Hydra's
+      # cached build. Self-retiring: skipped once nodejs-slim_26 moves past
+      # 26.10.0 or upstream's postPatch already adds <climits> — delete this
+      # block then.
+      nodejs-slim_26 =
+        if
+          !prev.stdenv.hostPlatform.isAarch64
+          || prev.nodejs-slim_26.version != "26.10.0"
+          || lib.hasInfix "climits" (prev.nodejs-slim_26.postPatch or "")
+        then
+          prev.nodejs-slim_26
+        else
+          prev.nodejs-slim_26.overrideAttrs (old: {
+            postPatch = (old.postPatch or "") + ''
+              substituteInPlace deps/v8/src/base/memcopy.h \
+                --replace-fail '#include <stdlib.h>' '#include <climits>
+              #include <stdlib.h>'
+            '';
+          });
+
       # Fix pygount build failure in nix-hardware (strict chardet bound)
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (_python-final: python-prev: {
