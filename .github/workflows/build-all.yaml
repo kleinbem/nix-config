@@ -240,6 +240,10 @@ jobs:
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "1"
+            # nix-fast-build's per-worker eval budget defaults to 4096 MiB and
+            # is now enforced as a hard failure ("evaluation exceeded the
+            # memory budget"); this eval needs ~8.6 GiB (swap is on above).
+            "--eval-max-memory-size" "10240"
             "--systems" "${{ matrix.system }}"
             "--retries" "2"
             "--attic-cache" "system"
@@ -255,14 +259,18 @@ jobs:
       # nvme/factory: a jetpack/nixpkgs breakage must warn, never block
       # `Promote → production`.
       #
-      # This stays green only while hardware.nvidia-jetpack.firmware.autoUpdate
-      # = false — with firmware ON, the edk2/OP-TEE capsule chain fails to build
-      # (edk2-pytool-extensions → `import pkg_resources`, removed in setuptools
-      # 81+) and fails the toplevel. The KERNEL is a separate derivation, so
-      # even a red toplevel still warms it here (nix-fast-build builds the DAG
-      # node-by-node and pushes each success); add an explicit
-      # `.config.system.build.kernel` target if you want a green kernel signal
-      # independent of firmware state.
+      # The KERNEL is built as its own target first: nix-fast-build only
+      # pushes a target's closure to Attic when that whole target succeeds,
+      # so a red toplevel alone caches nothing — not even the ~30 min kernel
+      # it did build successfully. As a separate target it's cached whenever
+      # it builds, independent of the rest of the toplevel.
+      #
+      # On failure, the root-cause build logs are printed explicitly:
+      # nix-fast-build keeps only the last 10k log lines, and the kernel build
+      # alone overflows that, so the derivation that actually broke (built
+      # early, failed early) scrolls out and only "N dependencies failed" for
+      # the toplevel survives. Any derivation in the closure that has a local
+      # build log but no output is one that was attempted and failed.
       - name: Build orin-nano toplevel (best-effort)
         id: orin-build
         if: matrix.system == 'aarch64-linux' && steps.cache.outputs.push_cache == 'true'
@@ -277,8 +285,29 @@ jobs:
             "--retries" "2"
             "--attic-cache" "system"
           )
+          HOST=".#nixosConfigurations.orin-nano.config"
+          rc=0
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
-            --flake ".#nixosConfigurations.orin-nano.config.system.build.toplevel" $NIX_OVERRIDES
+            --flake "$HOST.system.build.kernel" $NIX_OVERRIDES || rc=1
+          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+            --flake "$HOST.system.build.toplevel" $NIX_OVERRIDES || rc=1
+          [ "$rc" -eq 0 ] && exit 0
+
+          # Root-cause report (see comment above).
+          TOP=$(nix eval --raw "$HOST.system.build.toplevel.drvPath" $NIX_OVERRIDES)
+          echo "### orin-nano: failed derivations" >> "$GITHUB_STEP_SUMMARY"
+          nix-store -qR "$TOP" | grep '\.drv$' | while read -r d; do
+            b=$(basename "$d")
+            log=/nix/var/log/nix/drvs/${b:0:2}/${b:2}.bz2
+            [ -f "$log" ] || continue
+            # shellcheck disable=SC2046 # one store path per output, no spaces
+            nix-store --check-validity $(nix-store -q --outputs "$d") 2>/dev/null && continue
+            echo "- \`${b#*-}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "::group::FAILED ${b#*-} (last 80 log lines)"
+            bzcat "$log" | tail -n 80
+            echo "::endgroup::"
+          done
+          exit 1
 
       # Container factory eval is BLOCKING (and runs on PRs, unlike the build
       # below): if the factory toplevel doesn't evaluate, nix-fast-build reports
@@ -422,7 +451,7 @@ jobs:
           echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. These packages were **not pushed to the cache** and your hosts will build them locally:" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.nvme-build.outcome }}" = "failure" ] && echo "- \`nixos-nvme\` toplevel" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
-          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel (jetpack/L4T kernel — check firmware.autoUpdate is false)" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel (failed derivations listed under it above)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the detailed logs of the failed steps above to see exactly which package (e.g., Electron) ran out of memory or failed to compile." >> $GITHUB_STEP_SUMMARY
 
