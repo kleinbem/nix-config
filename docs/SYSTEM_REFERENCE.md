@@ -47,7 +47,7 @@
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:18]_
-- 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:200]_
+- 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:218]_
 - 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:36]_
 
 ### nasbook
@@ -94,6 +94,6 @@
 
 ## 🛠️ Workspace Status
 
-- **Devenv**: Not found in path
+- **Devenv**: Available
 
 ## 🤖 AI Capabilities (MCP Tools)

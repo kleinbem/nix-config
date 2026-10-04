@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 9  
-**Distinct imports:** 88
+**Distinct imports:** 89
 
 ---
 
@@ -35,7 +35,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `mac-mini`
 
 - **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:stalwart`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:sandboxed-apps`, `nix-presets:stalwart`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
 - **Local:** `./disko.nix`, `./secrets.nix`
@@ -159,6 +159,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:persona-runtime` ← mac-mini
 - `nix-presets:playground` ← container-factory
 - `nix-presets:qdrant` ← container-factory, nasbook
+- `nix-presets:sandboxed-apps` ← mac-mini
 - `nix-presets:stalwart` ← container-factory, mac-mini
 - `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
 - `nix-presets:vaultwarden` ← container-factory, core-pi

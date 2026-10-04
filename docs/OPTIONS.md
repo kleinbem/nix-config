@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 62  
+**Declarations indexed:** 63  
 **Consumer files scanned:** 24
 
 ---
@@ -265,7 +265,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.persona-runtime`
 
-- **Declared:** `nix-presets/containers/persona-runtime.nix:195`
+- **Declared:** `nix-presets/containers/persona-runtime.nix:213`
 - **Sub-options:** `autoStart`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `gitConfigFile`, `hostDataDir`, `ip`, `memoryLimit`, `personas`, `secretsEnvFile`, `signingKeyFile`
 - **Consumed by:** `host:mac-mini`
 
@@ -340,6 +340,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/nixosModules/claude.nix:16`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
+
+### `my.desktop.sandboxedApps`
+
+- **Declared:** `nix-presets/nixosModules/sandboxed-apps.nix:22`
+- **Sub-options:** `apps`, `enable`
+- **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
 ## `my.hardware`
 

@@ -488,6 +488,7 @@ hosts:
       - stalwart.memoryLimit
       desktop:
       - gnome.enable
+      - sandboxedApps.enable
       heartbeat:
       - enable
       herdr-remote-client:
@@ -877,6 +878,7 @@ hosts:
       - bottles.enable
       - claude.enable
       - gnome.enable
+      - sandboxedApps.enable
       machineId:
       - enabled
       monitoring:
