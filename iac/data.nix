@@ -45,6 +45,10 @@ let
 
   cacheGroup = meshGroups.cache or [ ];
 
+  # Group members as NetBird peer names: the netbird root looks peers up by
+  # name, which can differ from the inventory name (e.g. phone).
+  meshPeers = lib.mapAttrs (_: map (h: inventory.hosts.${h}.netbirdName or h)) meshGroups;
+
   inventoryJson = {
     # Minimal host projection — only what the netbird root needs.
     hosts = lib.mapAttrs (_: h: {
@@ -55,7 +59,7 @@ let
       type = h.type or null;
     }) inventory.hosts;
 
-    mesh = meshGroups // {
+    mesh = meshPeers // {
       # The one caddy/attic entrypoint peer that cache.kleinbem.dev and the
       # mesh-only vhosts resolve to (see netbird/dns.tf).
       cache_entrypoint =
@@ -63,7 +67,7 @@ let
           "iac/data.nix: inventory.meshGroups.cache must name exactly one host"
           + " (got: [ ${lib.concatStringsSep " " cacheGroup} ])"
         );
-        lib.head cacheGroup;
+        lib.head meshPeers.cache;
     };
   };
 

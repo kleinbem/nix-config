@@ -93,6 +93,8 @@
       # 4. Update this comment to remove "not yet deployed"
     };
     phone = {
+      # NetBird names peers after the device hostname; meshGroups use this.
+      netbirdName = "xcoverpro2eea";
       system = "aarch64-linux";
       deployType = "local";
       tags = [
@@ -139,6 +141,7 @@
     personal-devices = [
       "nixos-nvme"
       "mac-mini"
+      "phone"
     ];
     # Smart-home / automation nodes (SSH-reachable from personal-devices).
     # nasbook isn't smart-home per se, but needs the same access this group
