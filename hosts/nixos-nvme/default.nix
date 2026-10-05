@@ -30,7 +30,6 @@
     "${self}/modules/nixos/data-disk.nix"
     inputs.disko.nixosModules.disko
     ./ai.nix
-    ./specialisations.nix
     inputs.nix-gantry.nixosModules.updater
 
     ./hardware-boot.nix
@@ -243,7 +242,7 @@
   # is types.lines, so a second definition silently concatenates rather than
   # erroring, duplicating the restore/NVRAM logic.
 
-  # Shorten the boot menu label so specialisation names are visible in systemd-boot.
+  # Short boot menu label (systemd-boot truncates long generation names).
   system.nixos.label = lib.trivial.release;
   system.stateVersion = "25.11";
 

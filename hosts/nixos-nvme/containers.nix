@@ -11,7 +11,7 @@
       container-updater = {
         enable = true;
         manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-        # Auto-derive from actually-enabled containers (specialisations included),
+        # Auto-derive from actually-enabled containers,
         # minus an explicit exclude list. Avoids cron-time failures for containers
         # that aren't deployed on this host.
         containers =
@@ -51,7 +51,7 @@
       };
 
       code-server = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.code-server.ip}/24";
         hostDataDir = config.my.developDir;
         user = config.my.username;
@@ -164,7 +164,7 @@
       };
 
       ollama = {
-        enable = false; # Disabled by default; enabled in playground specialisation
+        enable = false;
         ip = "${myInventory.network.nodes.ollama.ip}/24";
         hostDataDir = "/var/lib/images/ollama";
       };
