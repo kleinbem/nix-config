@@ -250,8 +250,12 @@ jobs:
             "--retries" "2"
             "--attic-cache" "system"
           )
+          ATTR=".#nixosConfigurations.nixos-nvme.config.system.build.toplevel"
+          MARK=$(mktemp) # failure report scopes to logs written after this
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
-            --flake ".#nixosConfigurations.nixos-nvme.config.system.build.toplevel" $NIX_OVERRIDES
+            --flake "$ATTR" $NIX_OVERRIDES && exit 0
+          .github/scripts/report-failed-drvs.sh nixos-nvme "$MARK"
+          exit 1
 
       # Orin Nano (Jetson) toplevel: warm the cache so the workstation's
       # `just apply` / nightly autoUpgrade SUBSTITUTE the jetpack/L4T kernel
@@ -271,8 +275,9 @@ jobs:
       # nix-fast-build keeps only the last 10k log lines, and the kernel build
       # alone overflows that, so the derivation that actually broke (built
       # early, failed early) scrolls out and only "N dependencies failed" for
-      # the toplevel survives. Any derivation in the closure that has a local
-      # build log but no output is one that was attempted and failed.
+      # the toplevel survives. .github/scripts/report-failed-drvs.sh (shared
+      # with the nvme and factory steps) finds every attempted-but-failed
+      # derivation and prints its failure lines + log tail.
       - name: Build orin-nano toplevel (best-effort)
         id: orin-build
         if: matrix.system == 'aarch64-linux' && steps.cache.outputs.push_cache == 'true'
@@ -288,27 +293,14 @@ jobs:
             "--attic-cache" "system"
           )
           HOST=".#nixosConfigurations.orin-nano.config"
+          MARK=$(mktemp) # failure report scopes to logs written after this
           rc=0
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake "$HOST.system.build.kernel" $NIX_OVERRIDES || rc=1
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake "$HOST.system.build.toplevel" $NIX_OVERRIDES || rc=1
           [ "$rc" -eq 0 ] && exit 0
-
-          # Root-cause report (see comment above).
-          TOP=$(nix eval --raw "$HOST.system.build.toplevel.drvPath" $NIX_OVERRIDES)
-          echo "### orin-nano: failed derivations" >> "$GITHUB_STEP_SUMMARY"
-          nix-store -qR "$TOP" | grep '\.drv$' | while read -r d; do
-            b=$(basename "$d")
-            log=/nix/var/log/nix/drvs/${b:0:2}/${b:2}.bz2
-            [ -f "$log" ] || continue
-            # shellcheck disable=SC2046 # one store path per output, no spaces
-            nix-store --check-validity $(nix-store -q --outputs "$d") 2>/dev/null && continue
-            echo "- \`${b#*-}\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "::group::FAILED ${b#*-} (last 80 log lines)"
-            bzcat "$log" | tail -n 80
-            echo "::endgroup::"
-          done
+          .github/scripts/report-failed-drvs.sh orin-nano "$MARK"
           exit 1
 
       # Container factory eval is BLOCKING (and runs on PRs, unlike the build
@@ -406,14 +398,18 @@ jobs:
           fi
           echo "Containers to build: ${CONTAINERS[*]}"
 
-          rc=0
+          MARK=$(mktemp) # failure report scopes to logs written after this
+          failed=()
           for c in "${CONTAINERS[@]}"; do
             echo "::group::nix-fast-build container: $c"
             nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
-              --flake ".#nixosConfigurations.$FACTORY.config.containers.\"$c\".path" $NIX_OVERRIDES || rc=1
+              --flake ".#nixosConfigurations.$FACTORY.config.containers.\"$c\".path" $NIX_OVERRIDES \
+              || failed+=("$c")
             echo "::endgroup::"
           done
-          exit $rc
+          [ "${#failed[@]}" -eq 0 ] && exit 0
+          .github/scripts/report-failed-drvs.sh "$FACTORY (${failed[*]})" "$MARK"
+          exit 1
 
       # The two builds above are continue-on-error so a from-source break (a
       # nixpkgs test regression, a sops manifest drift) never blocks promotion.
@@ -453,9 +449,9 @@ jobs:
           echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. These packages were **not pushed to the cache** and your hosts will build them locally:" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.nvme-build.outcome }}" = "failure" ] && echo "- \`nixos-nvme\` toplevel" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
-          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel (failed derivations listed under it above)" >> $GITHUB_STEP_SUMMARY
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check the detailed logs of the failed steps above to see exactly which package (e.g., Electron) ran out of memory or failed to compile." >> $GITHUB_STEP_SUMMARY
+          echo "The failing derivations are listed per step above; their logs are in the matching \`FAILED <drv>\` groups of the step output." >> $GITHUB_STEP_SUMMARY
 
       - name: Update Commit Statuses for best-effort builds
         if: always() && steps.cache.outputs.push_cache == 'true'
