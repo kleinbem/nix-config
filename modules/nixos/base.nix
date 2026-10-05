@@ -165,6 +165,16 @@
                 --replace-fail '#include <stdlib.h>' '#include <climits>
               #include <stdlib.h>'
             '';
+            # Hydra never gets past the compile error, so nothing upstream has
+            # run this test suite on aarch64 yet. One test fails on the native
+            # GH arm runner: test-tls-hello-parser-failure asserts the client
+            # socket closes *with* an error after the server rejects 1 MiB of
+            # garbage, which depends on RST-vs-FIN timing in the network stack
+            # (build-all run 37293702282: `false !== true` at :64). Skipped the
+            # same way nixpkgs skips its other environment-dependent TLS tests.
+            checkFlags = map (
+              f: if lib.hasPrefix "CI_SKIP_TESTS=" f then f + ",test-tls-hello-parser-failure" else f
+            ) old.checkFlags;
           });
 
       # Fix pygount build failure in nix-hardware (strict chardet bound)
