@@ -252,6 +252,17 @@
         # Reachable over NetBird mesh only for now — no public domain/Caddy
         # vhost set up yet. Switch to wss://buzz.kleinbem.dev once that's wired.
         relayUrl = "ws://${myInventory.network.nodes.buzz.ip}:3000";
+        pairingRelayUrl = "ws://${myInventory.network.nodes.buzz.ip}:3001";
+        # Members-only relay: required for mesh-llm compute sharing, which
+        # takes its roster from the relay's NIP-43 membership snapshot.
+        membership = {
+          require = true;
+          ownerPubkey = "5ce30e89348eb82870fde3213f25775f56f8a70a708ad2c9612118d7261ff936"; # Martin
+          # No declared members: the owner is bootstrapped as a member by the relay,
+          # and agents Buzz creates (Fizz, Pollen, Honey, ...) get in through their
+          # owner attestation (NIP-OA, allowNipOaAuth). Other people join via invites.
+          members = [ ];
+        };
       };
 
       # NOTE: the Stalwart persona-fleet mail server lives on mac-mini, not
