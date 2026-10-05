@@ -24,9 +24,15 @@ on:
   schedule:
     - cron: '0 4 * * 1'
 
+# Only PR runs cancel their superseded predecessor. On main, a newer push
+# queues behind the running one instead (GitHub keeps just the newest pending
+# run): the best-effort toplevels take hours (nvme ~3h) and the lock bot
+# pushes to main several times a day, so cancel-in-progress there meant the
+# heavy cache-warming builds were routinely killed before finishing (e.g. run
+# 37291070182, cancelled by the #98 lock push after 25 min).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-all:
@@ -466,16 +472,16 @@ jobs:
             local context="$1"
             local outcome="$2"
             local desc_prefix="$3"
-            local state="success"
-            local desc="${desc_prefix} succeeded"
-            
-            if [ "$outcome" = "failure" ]; then
-              state="failure"
-              desc="${desc_prefix} failed"
-            elif [ "$outcome" = "skipped" ] || [ -z "$outcome" ]; then
-              state="error"
-              desc="${desc_prefix} was skipped or errored"
-            fi
+            local state desc
+            # Only an actual `success` outcome is success — a cancelled run
+            # used to fall through to the success default and mark builds that
+            # never ran as green.
+            case "$outcome" in
+              success) state="success"; desc="${desc_prefix} succeeded" ;;
+              failure) state="failure"; desc="${desc_prefix} failed" ;;
+              cancelled) state="error"; desc="${desc_prefix} was cancelled" ;;
+              *) state="error"; desc="${desc_prefix} was skipped or errored" ;;
+            esac
             
             gh api "repos/${{ github.repository }}/statuses/$SHA" \
               -f state="$state" \
