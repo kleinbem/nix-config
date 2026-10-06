@@ -48,6 +48,13 @@
       flake = false;
     };
 
+    # Agent skills (Claude Code plugin marketplace), linked into every agent's
+    # skills dir by modules/home-manager/ai-agents.nix.
+    kleinbem-skills = {
+      url = "github:kleinbem/skills";
+      flake = false;
+    };
+
     # Modules & Configurations (Pulled from local submodules for speed)
     nix-hardware = {
       url = "github:kleinbem/nix-hardware";

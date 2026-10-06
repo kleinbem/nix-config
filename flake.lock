@@ -1325,6 +1325,22 @@
         "type": "github"
       }
     },
+    "kleinbem-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791315571,
+        "narHash": "sha256-OWqxd1+AtM+8HEOdwmViiHSLcWx52pr8QZdHhWJV6mc=",
+        "owner": "kleinbem",
+        "repo": "skills",
+        "rev": "c892df3fafd95e7d60b377338ed677e050367e70",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "repo": "skills",
+        "type": "github"
+      }
+    },
     "lanzaboote": {
       "inputs": {
         "crane": "crane",
@@ -2727,6 +2743,7 @@
         "impermanence": "impermanence",
         "jetpack-nixos": "jetpack-nixos",
         "kleinbem-secrets": "kleinbem-secrets",
+        "kleinbem-skills": "kleinbem-skills",
         "lanzaboote": "lanzaboote",
         "nix-devshells": "nix-devshells",
         "nix-flatpak": "nix-flatpak",
