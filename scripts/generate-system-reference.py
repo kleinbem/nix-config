@@ -427,15 +427,6 @@ def render(
             out.append(line)
         out.append("")
 
-    # --- Workspace Status (from system level) ---
-    out.append("## 🛠️ Workspace Status")
-    out.append("")
-    if run_cmd(["devenv", "--version"]) is not None:
-        out.append("- **Devenv**: Available")
-    else:
-        out.append("- **Devenv**: Not found in path")
-    out.append("")
-
     # --- CI Status (overall, per workflow) ---
     if ci:
         out.append("## 🚦 CI Status (latest run per workflow on `main`)")
