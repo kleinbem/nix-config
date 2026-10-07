@@ -34,10 +34,11 @@ in
   };
 
   services = {
-    # Set Power Profile to Mode 1 (25W in Super Mode)
+    # Power profile 2 = MAXN_SUPER (Super Mode without a power cap; 0 = 15W,
+    # 1 = 25W). Switching to it needs no reboot.
     nvpmodel = {
       enable = true;
-      profileNumber = 1;
+      profileNumber = 2;
     };
     # High-performance fan profile for AI workloads
     nvfancontrol.enable = true;
