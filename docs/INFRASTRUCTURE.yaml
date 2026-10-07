@@ -98,6 +98,10 @@ repo_atlas:
     path: openwrt-config/
     url: git@github.com:kleinbem/openwrt-config.git
     role: Runtime router configuration via Ansible (inventory.ini is generated from inventory.nix).
+  skills:
+    path: skills/
+    url: git@github.com:kleinbem/skills.git
+    role: Supporting repository.
 network_topology:
   primary_domain: kleinbem.dev
   global_maintenance: false
@@ -124,6 +128,7 @@ network_topology:
       personal-devices:
       - nixos-nvme
       - mac-mini
+      - phone
       smart-home:
       - hass-pi
       - orin-nano
@@ -730,6 +735,11 @@ hosts:
       - buzz.enable
       - buzz.hostDataDir
       - buzz.ip
+      - buzz.membership
+      - buzz.membership.members
+      - buzz.membership.ownerPubkey
+      - buzz.membership.require
+      - buzz.pairingRelayUrl
       - buzz.relayUrl
       - buzz.secretsFile
       - buzz.typesenseApiKeyFile
@@ -1061,7 +1071,7 @@ hosts:
       physical: null
       container_bridge: null
       netbird: null
-    mesh_group: null
+    mesh_group: personal-devices
     storage_and_boot:
       framework: Disko
       root_filesystem: tmpfs (impermanence, wiped on boot)

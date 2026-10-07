@@ -61,7 +61,9 @@
 ### nixos-nvme
 
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
-- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:41]_
+- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:60]_
+- 💻 **Code Server** (`code-server`) `10.85.46.22:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
+- 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Zotac)** (`syncthing`) `10.85.46.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Main Workstation. _[src: nix-presets/containers/syncthing.nix:12]_
 
@@ -74,7 +76,6 @@
 ### Declared but not currently enabled on any host
 
 - `alertmanager` — Alertmanager
-- `code-server` — Code Server _[src: nix-presets/containers/code-server.nix:14]_
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `garage` — Garage S3
@@ -91,9 +92,5 @@
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
 - `syncthing-orin` — Syncthing (Orin)
 - `vllm` _[src: nix-presets/containers/vllm.nix:12]_
-
-## 🛠️ Workspace Status
-
-- **Devenv**: Available
 
 ## 🤖 AI Capabilities (MCP Tools)

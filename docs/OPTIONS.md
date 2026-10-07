@@ -7,7 +7,7 @@
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
 **Declarations indexed:** 63  
-**Consumer files scanned:** 24
+**Consumer files scanned:** 23
 
 ---
 
@@ -108,8 +108,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.buzz`
 
-- **Declared:** `nix-presets/containers/buzz.nix:41`
-- **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `package`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
+- **Declared:** `nix-presets/containers/buzz.nix:60`
+- **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `membership.members`, `membership.ownerPubkey`, `membership.require`, `memoryLimit`, `package`, `pairingRelayUrl`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.caddy`
