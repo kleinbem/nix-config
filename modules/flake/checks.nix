@@ -60,11 +60,6 @@
           # checks entry just breaks `nix flake check` for every consumer.
           # The config stays exposed as nixOnDroidConfigurations.phone.
 
-          # Specialisation Checks (for complex hosts)
-          specChecks = lib.optionalAttrs (system == "x86_64-linux" && (systemHosts ? "nixos-nvme")) {
-            host-nixos-nvme-playground =
-              self.nixosConfigurations.nixos-nvme.config.specialisation.playground.configuration.system.build.toplevel;
-          };
         in
         {
           pre-commit-check = inputs.git-hooks.lib.${system}.run {
@@ -117,7 +112,6 @@
             inherit inputs;
           };
         }
-        // hostChecks
-        // specChecks;
+        // hostChecks;
     };
 }
