@@ -4,6 +4,8 @@
     nix-community = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=";
     devenv = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
     anduril = "anduril.cachix.org-1:0KJgGiAgDtCE9Pl0wvvyALRJlPhQMLRMMt+43JExFlY=";
+    # What kleinbem/nixpkgs-review-gha builds for open nixpkgs PRs (public).
+    kleinbem-nixpkgs-review = "kleinbem-nixpkgs-review.cachix.org-1:JVJSauhW05AExFFqnrWtsfg4hxNieKFFq7tntGb63q4=";
   };
 
   # Other Binary Cache Public Keys (non-cachix)

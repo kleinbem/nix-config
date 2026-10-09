@@ -51,6 +51,15 @@
       fido2-backup
     ];
 
+  # nixpkgs PR work happens on this host: substitute what nixpkgs-review-gha
+  # already built for the open PRs instead of rebuilding it locally.
+  nix.settings = {
+    substituters = [ "https://kleinbem-nixpkgs-review.cachix.org" ];
+    trusted-public-keys = [
+      (import "${self}/modules/nixos/keys.nix").cachix.kleinbem-nixpkgs-review
+    ];
+  };
+
   environment = {
     etc = { };
     variables = { };
