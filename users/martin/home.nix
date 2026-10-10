@@ -57,6 +57,9 @@ in
     inherit (my) username;
     homeDirectory = my.home;
     stateVersion = "25.11";
+    sessionPath = [
+      "${my.home}/.local/bin"
+    ];
     sessionVariables = {
       DEFAULT_BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
       BROWSER = "${pkgs.google-chrome}/bin/google-chrome-stable";
