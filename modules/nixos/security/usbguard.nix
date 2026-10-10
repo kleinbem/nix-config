@@ -51,6 +51,10 @@ _: {
       # --- Debug & Development ---
       # FTDI FT232R USB UART (USB-to-TTL serial adapter for Jetson serial console)
       allow id 0403:6001
+      # QinHeng Electronics (CH340/CH341/CH343/CH347 USB-to-UART used on ESP32 / Waveshare boards)
+      allow id 1a86:*
+      # Espressif Systems (ESP32 USB-JTAG/CDC / USB-OTG)
+      allow id 303a:*
 
       # --- Mobile Devices ---
       # Trust all Samsung Electronics Co., Ltd devices (MTP, ADB, Download Mode, etc.)

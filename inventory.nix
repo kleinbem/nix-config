@@ -677,19 +677,28 @@
         ip = "10.85.48.133";
         port = 8080;
         externalPort = 443;
-        # Was auth.kleinbem.dev — a placeholder that happened to never
-        # collide with anything until Authentik (whose preset explicitly
-        # reserved that hostname) actually got deployed there. Renamed
-        # 2026-09-21 rather than leave two Caddy vhosts fighting over one
-        # domain (Caddy would refuse to start on the duplicate).
+        domain = "2fa-api.kleinbem.dev";
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
+        auth = false;
+        meta = {
+          name = "Ente Auth API";
+          category = "Identity";
+          icon = "🔐";
+          description = "E2E Encrypted 2FA Backend API.";
+        };
+      };
+      ente-web = {
+        ip = "10.85.48.133";
+        port = 3003;
+        externalPort = 443;
         domain = "2fa.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         auth = false;
         meta = {
-          name = "Ente Auth";
+          name = "Ente Auth Web";
           category = "Identity";
           icon = "🔐";
-          description = "E2E Encrypted 2FA & Authenticator Server.";
+          description = "E2E Encrypted 2FA Web Application.";
         };
       };
       # Self-hosted Bitwarden-compatible password vault for people + personas.
