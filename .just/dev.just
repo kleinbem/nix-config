@@ -151,9 +151,10 @@ apply *args="":
             grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)|Connection closed by.*port 22|failed to start SSH connection' "$errfile"
         }
 
+        export NIX_SSHOPTS="${NIX_SSHOPTS:-} -A"
         try_deploy() {
             : >"$errfile"
-            nixos-rebuild "$MODE" --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --use-remote-sudo --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag 2> >(tee "$errfile" >&2)
+            nixos-rebuild "$MODE" --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --use-remote-sudo --ask-elevate-password --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag 2> >(tee "$errfile" >&2)
         }
 
         if try_deploy; then
