@@ -357,6 +357,16 @@ in
         StartupWMClass = "google-chrome-stable";
       };
     };
+
+    # Hide upstream google-chrome.desktop to prevent duplicate launcher entry
+    # (shadows nixpkgs google-chrome.desktop in favor of google-chrome-stable above)
+    "google-chrome" = {
+      name = "Google Chrome";
+      exec = "google-chrome-stable %U";
+      settings = {
+        NoDisplay = "true";
+      };
+    };
   };
 
   # Silencing evaluation warnings from newer Home Manager
