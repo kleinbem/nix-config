@@ -157,7 +157,6 @@ in
         switcheroo # Batch image format/resize converter (GTK4)
         dialect # Translation front-end (self-hostable backend)
         eyedropper # Color picker / palette builder
-        ente-auth # E2E encrypted 2FA authenticator desktop client
 
         # Screenshot annotation. Satty needs an input image; wire a GNOME
         # Wayland region-capture → satty pipeline (bound to <Super><Shift>s

@@ -18,7 +18,10 @@ in
   ];
 
   modules = {
-    devshell-launchers.enable = true;
+    devshell-launchers = {
+      enable = true;
+      flakePath = "/home/martin/Develop/github.com/kleinbem/nix-devshells";
+    };
     # Disabled 2026-09-22: redundant now that PWAs are installed directly
     # via Chrome's own "Install site as app" (GNOME-integrated), which
     # gives a real app window/icon — these were just inventory-derived
