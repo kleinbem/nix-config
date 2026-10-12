@@ -1283,19 +1283,33 @@ services:
     persistence_path: /var/lib/machines/dashboard
     description: Homelab Landing Page.
   ente:
-    name: Ente Auth
+    name: Ente Auth API
     category: Identity
     host: core-pi
     ip: 10.85.48.133
     port: 8080
     external_port: 443
-    domain: 2fa.kleinbem.dev
+    domain: 2fa-api.kleinbem.dev
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
     upstream_preset: nix-presets/containers/ente.nix
     persistence_path: /var/lib/machines/ente
-    description: E2E Encrypted 2FA & Authenticator Server.
+    description: E2E Encrypted 2FA Backend API.
+  ente-web:
+    name: Ente Auth Web
+    category: Identity
+    host: core-pi
+    ip: 10.85.48.133
+    port: 3003
+    external_port: 443
+    domain: 2fa.kleinbem.dev
+    public: true
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/ente-web
+    description: E2E Encrypted 2FA Web Application.
   frigate:
     name: Frigate NVR
     category: Security
