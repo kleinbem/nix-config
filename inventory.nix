@@ -102,6 +102,16 @@
         "android"
       ];
     };
+    tablet = {
+      # NetBird names peers after the Android device product (MRX-W09NM); meshGroups use this.
+      netbirdName = "MRX-W09NM";
+      system = "aarch64-linux";
+      deployType = "local";
+      tags = [
+        "mobile"
+        "android"
+      ];
+    };
     nasbook = {
       ip = "10.0.0.30"; # infra VLAN — NAS + Tang mesh member (fleet is all-10.x)
       system = "x86_64-linux";
@@ -142,6 +152,7 @@
       "nixos-nvme"
       "mac-mini"
       "phone"
+      "tablet"
     ];
     # Smart-home / automation nodes (SSH-reachable from personal-devices).
     # nasbook isn't smart-home per se, but needs the same access this group
@@ -535,6 +546,9 @@
       home-assistant = {
         ip = "10.85.49.10"; # Hass-Pi
         port = 8123;
+        externalPort = 443;
+        domain = "hass.kleinbem.dev";
+        auth = false; # Home Assistant handles internal auth; forward-auth breaks mobile app
         meta = {
           name = "Home Assistant";
           category = "Apps";
