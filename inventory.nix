@@ -784,6 +784,38 @@
           description = "Persona-fleet mail server (SMTP/IMAP/JMAP).";
         };
       };
+      dev-db = {
+        ip = "10.85.46.132"; # nixos-nvme bridge
+        port = 5432;
+        meta = {
+          name = "Dev Database";
+          category = "Dev";
+          icon = "🗄️";
+          description = "Shared PostgreSQL 17 & Redis instance for devshells.";
+        };
+      };
+      caido = {
+        ip = "10.85.46.133"; # nixos-nvme bridge
+        port = 8080;
+        domain = "caido.kleinbem.dev";
+        meta = {
+          name = "Caido Security";
+          category = "Security";
+          icon = "🛡️";
+          description = "Headless web security proxy & auditing daemon.";
+        };
+      };
+      qbittorrent = {
+        ip = "10.85.47.134"; # nasbook subnet
+        port = 8080;
+        domain = "torrents.kleinbem.dev";
+        meta = {
+          name = "qBittorrent";
+          category = "Apps";
+          icon = "📥";
+          description = "Headless torrent downloader with WebUI.";
+        };
+      };
     };
   };
 }

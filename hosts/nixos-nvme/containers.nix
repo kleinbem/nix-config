@@ -269,6 +269,18 @@
       # here — nixos-nvme is a workstation, not a 24/7 host, and a mailserver
       # must always be up. See hosts/mac-mini/default.nix and
       # docs/PHASE1_STALWART_STATUS.md.
+
+      dev-db = {
+        enable = false;
+        ip = "${myInventory.network.nodes.dev-db.ip}/24";
+        hostDataDir = "/var/lib/images/dev-db";
+      };
+
+      caido = {
+        enable = false;
+        ip = "${myInventory.network.nodes.caido.ip}/24";
+        hostDataDir = "/var/lib/images/caido";
+      };
     };
 
   };

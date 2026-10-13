@@ -242,6 +242,19 @@ let
     netdata = { };
     syncthing.ip = "${myInventory.network.nodes.syncthing.ip}/24"; # nasbook
     backup.ip = "${myInventory.network.nodes.backup.ip}/24"; # nasbook
+    dev-db = {
+      ip = "${myInventory.network.nodes.dev-db.ip}/24"; # nixos-nvme
+      hostDataDir = dataDir "dev-db";
+    };
+    caido = {
+      ip = "${myInventory.network.nodes.caido.ip}/24"; # nixos-nvme
+      hostDataDir = dataDir "caido";
+    };
+    qbittorrent = {
+      ip = "${myInventory.network.nodes.qbittorrent.ip}/24"; # nasbook
+      hostDataDir = dataDir "qbittorrent";
+      downloadsDir = "/var/lib/factory/downloads";
+    };
     # OCI/podman containers (comfyui, vllm, langflow) are deliberately absent:
     # they run via virtualisation.oci-containers, pull upstream images at
     # runtime, and produce no `config.containers.<name>` closure to cache.
@@ -306,6 +319,9 @@ in
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.authentik
     inputs.nix-presets.nixosModules.gatus
+    inputs.nix-presets.nixosModules.dev-db
+    inputs.nix-presets.nixosModules.caido
+    inputs.nix-presets.nixosModules.qbittorrent
     # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
     # option slot as dashboard-homepage above, so it cannot be imported
     # alongside it in one host. To cache the homer skin instead, swap the

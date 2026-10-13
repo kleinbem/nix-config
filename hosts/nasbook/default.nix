@@ -41,6 +41,7 @@ in
     inputs.nix-presets.nixosModules.backup
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.herdr-remote-client
+    inputs.nix-presets.nixosModules.qbittorrent
 
     # Needs SOPS to unlock the secrets below
     ./secrets.nix
@@ -186,6 +187,13 @@ in
         systemTargets = {
           "/var/lib/images" = "/var/lib/images";
         };
+      };
+
+      qbittorrent = {
+        enable = false;
+        ip = "${myInventory.network.nodes.qbittorrent.ip}/24";
+        hostDataDir = "/var/lib/images/qbittorrent";
+        downloadsDir = "/mnt/data/Downloads";
       };
     };
     monitoring.node.enable = true;

@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 9  
-**Distinct imports:** 88
+**Distinct imports:** 91
 
 ---
 
@@ -15,7 +15,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `container-factory`
 
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`, `nix-presets:vllm`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`, `nix-presets:vllm`
 - **Local:** `../../modules/nixos/options.nix`
 
 ### `core-pi`
@@ -43,7 +43,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `nasbook`
 
 - **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
-- **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qdrant`, `nix-presets:syncthing`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:syncthing`
 - **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
 - **Local:** `./data-disk.nix`, `./disko.nix`, `./secrets.nix`
 
@@ -130,11 +130,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:backup` ← container-factory, nasbook
 - `nix-presets:buzz` ← container-factory
 - `nix-presets:caddy` ← container-factory, core-pi
+- `nix-presets:caido` ← container-factory
 - `nix-presets:code-server` ← container-factory
 - `nix-presets:comfyui` ← container-factory
 - `nix-presets:crowdsec` ← container-factory, core-pi
 - `nix-presets:cups` ← container-factory, core-pi
 - `nix-presets:dashboard-homepage` ← container-factory, core-pi
+- `nix-presets:dev-db` ← container-factory
 - `nix-presets:ente` ← container-factory, core-pi
 - `nix-presets:frigate` ← container-factory, orin-nano
 - `nix-presets:gatus` ← container-factory, core-pi
@@ -157,6 +159,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:paperless` ← container-factory, nasbook
 - `nix-presets:persona-runtime` ← mac-mini
 - `nix-presets:playground` ← container-factory
+- `nix-presets:qbittorrent` ← container-factory, nasbook
 - `nix-presets:qdrant` ← container-factory, nasbook
 - `nix-presets:sandboxed-apps` ← mac-mini
 - `nix-presets:stalwart` ← container-factory, mac-mini
