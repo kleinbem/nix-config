@@ -17,6 +17,7 @@ mod deployment  '.just/deployment.just'
 mod access      '.just/access.just'
 mod maintenance '.just/maintenance.just'
 mod personas    '.just/personas.just'
+mod containers  '.just/containers.just'
 
 # Per-host operations (ping/shell/logs/gui)
 mod orin        '.just/orin.just'
