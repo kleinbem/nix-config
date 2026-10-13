@@ -83,13 +83,30 @@ update name host="":
     TARGET="{{ host }}"
     echo "🔄 Staging update for container '{{ name }}'..."
     if [ -z "$TARGET" ] || [ "$TARGET" = "$(hostname)" ] || [ "$TARGET" = "localhost" ]; then
-        sudo systemctl start "container-updater-stage@{{ name }}.service"
+        sudo systemctl start "update-container-stage@{{ name }}.service"
         echo "🚀 Activating updated container '{{ name }}'..."
-        sudo systemctl start "container-updater-activate@{{ name }}.service"
+        sudo systemctl start "update-container-activate@{{ name }}.service"
         echo "✅ Done. Active generation:"
         ls -l "/var/lib/machines/{{ name }}/current" || true
     else
-        ssh "$TARGET" "sudo systemctl start 'container-updater-stage@{{ name }}.service' && sudo systemctl start 'container-updater-activate@{{ name }}.service'"
+        ssh "$TARGET" "sudo systemctl start 'update-container-stage@{{ name }}.service' && sudo systemctl start 'update-container-activate@{{ name }}.service'"
+        echo "✅ Done on $TARGET. Active generation:"
+        ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
+    fi
+
+# Roll back a container to its previous generation
+[group("Containers")]
+rollback name host="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TARGET="{{ host }}"
+    echo "⏪ Rolling back container '{{ name }}'..."
+    if [ -z "$TARGET" ] || [ "$TARGET" = "$(hostname)" ] || [ "$TARGET" = "localhost" ]; then
+        sudo systemctl start "update-container-rollback@{{ name }}.service"
+        echo "✅ Done. Active generation:"
+        ls -l "/var/lib/machines/{{ name }}/current" || true
+    else
+        ssh "$TARGET" "sudo systemctl start 'update-container-rollback@{{ name }}.service'"
         echo "✅ Done on $TARGET. Active generation:"
         ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
     fi
