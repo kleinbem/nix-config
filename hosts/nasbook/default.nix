@@ -170,7 +170,7 @@ in
 
       syncthing = {
         enable = true;
-        ip = "10.85.47.127/24";
+        ip = "${myInventory.network.nodes.syncthing.ip}/24";
         hostDataDir = "/var/lib/images/syncthing";
       };
 

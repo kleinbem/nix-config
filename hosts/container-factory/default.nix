@@ -240,13 +240,7 @@ let
     ntfy.ip = "${myInventory.network.nodes.ntfy.ip}/24"; # core-pi
     agent-team.ip = "${myInventory.network.nodes.agent-team.ip}/24"; # nasbook
     netdata = { };
-    # NOT wired to myInventory like its siblings: inventory.nix's syncthing
-    # node says 10.85.46.127, but nasbook's own my.containers.syncthing
-    # (the one with enable = true — nixos-nvme also declares syncthing but
-    # with enable = false) hardcodes 10.85.47.127 instead, a real mismatch
-    # discovered 2026-09-21 while auditing this file. Flagged to the user
-    # rather than silently resolved either way — not this refactor's call.
-    syncthing.ip = "10.85.47.127/24"; # nasbook
+    syncthing.ip = "${myInventory.network.nodes.syncthing.ip}/24"; # nasbook
     backup.ip = "${myInventory.network.nodes.backup.ip}/24"; # nasbook
     # OCI/podman containers (comfyui, vllm, langflow) are deliberately absent:
     # they run via virtualisation.oci-containers, pull upstream images at

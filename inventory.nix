@@ -579,7 +579,7 @@
         };
       };
       syncthing = {
-        ip = "10.85.46.127";
+        ip = "10.85.47.127";
         port = 8384;
         externalPort = 8384;
         # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
@@ -589,10 +589,10 @@
         domain = "syncthing.kleinbem.dev";
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
-          name = "Syncthing (Zotac)";
+          name = "Syncthing (Nasbook)";
           category = "Infrastructure";
           icon = "🔄";
-          description = "File synchronization for the Main Workstation.";
+          description = "File synchronization for the Fleet (Nasbook).";
         };
       };
       syncthing-orin = {
