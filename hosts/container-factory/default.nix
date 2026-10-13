@@ -330,10 +330,18 @@ in
     # which container the module actually emits).
   ];
 
-  # This host doesn't import base.nix, but container presets that run a
-  # nix-packages-built service in their innerConfig (langfuse, cups) need
-  # pkgs.<name> to resolve during the factory's closure eval.
-  nixpkgs.overlays = [ inputs.nix-packages.overlays.default ];
+  nixpkgs.overlays = [
+    inputs.nix-packages.overlays.default
+    (_final: prev: {
+      inherit
+        (import inputs.nixpkgs-stable {
+          inherit (prev.stdenv.hostPlatform) system;
+          config.allowUnfree = true;
+        })
+        qdrant
+        ;
+    })
+  ];
 
   # Minimal host scaffolding to satisfy NixOS assertions during evaluation.
   fileSystems."/" = {

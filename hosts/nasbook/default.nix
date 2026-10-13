@@ -158,12 +158,9 @@ in
       };
 
       qdrant = {
-        # Disabled fleet-wide-broken, not nasbook-specific: nixpkgs' current
-        # rustc/LLVM pin fails to build qdrant's `quantization` crate with
-        # "intrinsic signature mismatch for llvm.x86.avx512.vpdpbusd.512" —
-        # an upstream stdarch/LLVM drift (rust-lang/rust#111137), not a
-        # config issue. Re-enable once nixpkgs bumps past the fix.
-        enable = false;
+        # Upstream nixos-unstable rustc/LLVM stdarch drift (rust-lang/rust#111137).
+        # Kept active via the fleet's transparent nixpkgs-stable circuit-breaker fallback.
+        enable = true;
         ip = "${myInventory.network.nodes.qdrant.ip}/24";
         hostDataDir = "/var/lib/images/qdrant";
         memoryLimit = "2G";

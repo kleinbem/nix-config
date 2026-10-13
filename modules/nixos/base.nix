@@ -83,6 +83,23 @@
         config.allowUnfree = true;
       };
 
+      # -----------------------------------------------------------------------
+      # Fleet Resilience Pattern: Circuit Breaker Fallbacks
+      # Instead of disabling services or applications when an upstream regression
+      # breaks nixos-unstable, route them through pre-built cached binaries from
+      # nixpkgs-stable or a micro-pinned commit.
+      # -----------------------------------------------------------------------
+
+      # qdrant: upstream nixos-unstable rustc/LLVM stdarch drift (rust-lang/rust#111137).
+      # Transparent circuit-breaker fallback to nixpkgs-stable until unstable bumps past the fix.
+      inherit
+        (import inputs.nixpkgs-stable {
+          inherit (prev.stdenv.hostPlatform) system;
+          config.allowUnfree = true;
+        })
+        qdrant
+        ;
+
       # flashrom 1.8.0's cmocka test suite fails on aarch64
       # (`write_chip_bad_status_test`), which breaks raspberrypi-eeprom →
       # rpi-eeprom-update.service → the whole core-pi/hass-pi toplevel.

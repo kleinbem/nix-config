@@ -641,6 +641,7 @@ hosts:
     - loki
     - paperless
     - qbittorrent
+    - qdrant
     - syncthing
     secrets_consumed:
     - attic_pull_token

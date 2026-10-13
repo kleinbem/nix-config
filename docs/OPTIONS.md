@@ -295,8 +295,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.qdrant`
 
-- **Declared:** `nix-presets/containers/qdrant.nix:13`
-- **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`
+- **Declared:** `nix-presets/containers/qdrant.nix:14`
+- **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `package`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.stalwart`
