@@ -49,6 +49,7 @@
       yubikey
       fido2
       fido2-backup
+      tablet-termux
     ];
 
   # nixpkgs PR work happens on this host: substitute what nixpkgs-review-gha

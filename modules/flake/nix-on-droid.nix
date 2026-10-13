@@ -16,5 +16,18 @@ in
       extraSpecialArgs = { inherit inputs self myInventory; };
       modules = [ ../../hosts/phone/default.nix ];
     };
+
+    tablet = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+      pkgs = import inputs.nixpkgs {
+        system = "aarch64-linux";
+        config = {
+          allowUnfree = true;
+          allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "olivetin";
+        };
+        overlays = [ inputs.nix-on-droid.overlays.default ];
+      };
+      extraSpecialArgs = { inherit inputs self myInventory; };
+      modules = [ ../../hosts/tablet/default.nix ];
+    };
   };
 }

@@ -5,9 +5,9 @@ set working-directory := ".."
 # --- Android / Phone & Tablet Management ---
 
 PHONE_SERIAL  := "R5CW617ZWCF"
-TABLET_SERIAL := "R52R70HSE9T"
+TABLET_SERIAL := "QBK6R20825000010"
 PHONE_IP      := "10.0.0.8"
-TABLET_IP     := "10.0.0.56"
+TABLET_IP     := "10.0.0.215"
 DHIRUJAAN_PHONE_SERIAL := "RFCT90BVPNE"
 DHIRUJAAN_PHONE_IP     := "10.0.0.238"
 
@@ -110,6 +110,62 @@ android-deploy:
 android-backup:
     @echo "📥 Fetching latest Nix-on-Droid backups..."
     @adb pull "/sdcard/Download/nix-on-droid-snapshot-*.tar" . || echo "No snapshot found."
+
+# One-command Termux provisioning for connected phone or tablet
+[group("Maintenance")]
+termux-provision device="phone":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    DEV="{{device}}"
+    SERIAL=$(adb devices | grep -v "List" | grep "device$" | head -n 1 | cut -f1)
+    if [ -z "$SERIAL" ]; then
+        echo "❌ No ADB device found. Connect device via USB or WiFi first."
+        exit 1
+    fi
+    echo "📱 Pushing Termux provisioning script to $SERIAL ($DEV)..."
+    adb -s "$SERIAL" push scripts/provision-termux.sh /sdcard/Download/setup-termux.sh
+    adb -s "$SERIAL" shell am start -n com.termux/.app.TermuxActivity >/dev/null 2>&1 || true
+    echo "⚡ Executing in Termux..."
+    sleep 1
+    adb -s "$SERIAL" shell input text "bash\\ /sdcard/Download/setup-termux.sh\\ $DEV"
+    adb -s "$SERIAL" shell input keyevent 66
+    echo "⏳ Waiting for key generation..."
+    sleep 4
+    PUB="/sdcard/Download/${DEV}_termux.pub"
+    if adb -s "$SERIAL" pull "$PUB" /tmp/${DEV}_termux.pub 2>/dev/null; then
+        echo ""
+        echo "🔑 Extracted $DEV public key:"
+        cat "/tmp/${DEV}_termux.pub"
+        echo ""
+        echo "Add this key to nix-config/modules/nixos/keys.nix to authorize it."
+    fi
+
+# Start Shizuku server via ADB on connected device (for silent Aurora Store updates)
+[group("Maintenance")]
+start-shizuku:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SERIAL=$(adb devices | grep -v "List" | grep "device$" | head -n 1 | cut -f1)
+    if [ -z "$SERIAL" ]; then
+        echo "❌ No ADB device found."
+        exit 1
+    fi
+    echo "⚡ Starting Shizuku on $SERIAL..."
+    adb -s "$SERIAL" shell "
+        APK_PATH=\$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+        if [ -n \"\$APK_PATH\" ]; then
+            LIB_DIR=\"\$(dirname \"\$APK_PATH\")/lib/arm64\"
+            if [ -f \"\$LIB_DIR/libshizuku.so\" ]; then
+                \"\$LIB_DIR/libshizuku.so\"
+                echo \"✅ Shizuku started.\"
+            else
+                echo \"⚠️ libshizuku.so not found in \$LIB_DIR\"
+            fi
+        else
+            echo \"⚠️ Shizuku is not installed on \$SERIAL.\"
+        fi
+    "
+
 
 # Keeping the hub for discovery
 [group("Hub")]

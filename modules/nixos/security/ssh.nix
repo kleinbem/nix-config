@@ -36,6 +36,11 @@
         MaxSessions = 2;
         TCPKeepAlive = "no";
       };
+      extraConfig = ''
+        # Allow key-only auth from NetBird mesh (WireGuard authenticated) and trusted local LAN
+        Match Address 100.117.0.0/16,10.0.0.0/16
+          AuthenticationMethods publickey
+      '';
     };
 
     fail2ban = {
