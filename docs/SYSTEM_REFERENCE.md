@@ -56,13 +56,16 @@
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
 - 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:14]_
+- 📥 **qBittorrent** (`qbittorrent`) `10.85.47.134:8080` → `torrents.kleinbem.dev` — Headless torrent downloader with WebUI. _[src: nix-presets/containers/qbittorrent.nix:16]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### nixos-nvme
 
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:60]_
+- 🛡️ **Caido Security** (`caido`) `10.85.46.133:8080` → `caido.kleinbem.dev` — Headless web security proxy & auditing daemon. _[src: nix-presets/containers/caido.nix:16]_
 - 💻 **Code Server** (`code-server`) `10.85.46.22:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
+- 🗄️ **Dev Database** (`dev-db`) `10.85.46.132:5432` — Shared PostgreSQL 17 & Redis instance for devshells. _[src: nix-presets/containers/dev-db.nix:16]_
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
@@ -76,10 +79,8 @@
 ### Declared but not currently enabled on any host
 
 - `alertmanager` — Alertmanager
-- `caido` — Caido Security _[src: nix-presets/containers/caido.nix:16]_
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
-- `dev-db` — Dev Database _[src: nix-presets/containers/dev-db.nix:16]_
 - `ente-web` — Ente Auth Web
 - `garage` — Garage S3
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
@@ -91,7 +92,6 @@
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
-- `qbittorrent` — qBittorrent _[src: nix-presets/containers/qbittorrent.nix:16]_
 - `qdrant` — Qdrant DB _[src: nix-presets/containers/qdrant.nix:13]_
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
 - `syncthing-orin` — Syncthing (Orin)

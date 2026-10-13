@@ -640,6 +640,7 @@ hosts:
     - backup
     - loki
     - paperless
+    - qbittorrent
     - syncthing
     secrets_consumed:
     - attic_pull_token
@@ -923,7 +924,9 @@ hosts:
     containers_hosted:
     - backup
     - buzz
+    - caido
     - code-server
+    - dev-db
     - monitoring
     - netdata
     - syncthing

@@ -190,7 +190,7 @@ in
       };
 
       qbittorrent = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.qbittorrent.ip}/24";
         hostDataDir = "/var/lib/images/qbittorrent";
         downloadsDir = "/mnt/data/Downloads";

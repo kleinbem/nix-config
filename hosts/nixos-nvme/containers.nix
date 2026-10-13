@@ -271,13 +271,13 @@
       # docs/PHASE1_STALWART_STATUS.md.
 
       dev-db = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.dev-db.ip}/24";
         hostDataDir = "/var/lib/images/dev-db";
       };
 
       caido = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.caido.ip}/24";
         hostDataDir = "/var/lib/images/caido";
       };
