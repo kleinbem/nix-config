@@ -46,13 +46,9 @@ META_ROOT = NIX_CONFIG.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 try:
     from _nix_options import (
-        CONSUMER_DIRS,
-        MODULE_DIRS,
-        REPO,
         consumer_paths_in_file,
         declarations_in_file,
         extract_imports_in_file,
-        iter_nix_files,
     )
 except ImportError:
     print("Warning: _nix_options.py not importable directly", file=sys.stderr)
@@ -75,7 +71,7 @@ def run_cmd(args: list[str], cwd: Path | None = None) -> str | None:
             timeout=30,
         )
         return res.stdout.strip()
-    except Exception:
+    except (subprocess.SubprocessError, OSError):
         return None
 
 
@@ -165,7 +161,6 @@ def get_repo_atlas(repos: dict[str, str]) -> dict[str, Any]:
 
 def get_network_topology(inventory: dict[str, Any]) -> dict[str, Any]:
     net = inventory.get("network", {})
-    hosts = inventory.get("hosts", {})
     tang = inventory.get("tangServers", [])
     mesh = inventory.get("meshGroups", {})
 
@@ -691,7 +686,7 @@ def main() -> int:
         rel_target = os.path.relpath(out_file, META_ROOT)
         root_symlink.symlink_to(rel_target)
         print(f"Created symlink: {root_symlink} -> {rel_target}")
-    except Exception as e:
+    except OSError as e:
         print(f"Warning: Failed to create root symlink: {e}", file=sys.stderr)
 
     print("Successfully generated INFRASTRUCTURE.yaml!")
