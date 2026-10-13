@@ -1717,11 +1717,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1791831777,
-        "narHash": "sha256-ELfwkvNW0G/WtkAHFAg+QrNIZ3BcQvT3uuS6JT5ffcg=",
+        "lastModified": 1791853402,
+        "narHash": "sha256-BmgdHEvoywdp3aCVLMQY6gQa4te1WDSNerIReFSbOQo=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "b5db751b5779f103f67b5c7cd7e529001d6d0b1c",
+        "rev": "ab7cd6f1b29d9b6b55ae546b73b8e6930e00446a",
         "type": "github"
       },
       "original": {
