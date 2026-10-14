@@ -31,6 +31,7 @@ let
     "syncthing.kleinbem.dev"
     "alertmanager.kleinbem.dev"
     "paperless.kleinbem.dev"
+    "hass.kleinbem.dev"
   ];
 in
 {
