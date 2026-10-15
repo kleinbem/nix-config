@@ -50,6 +50,10 @@ repo_atlas:
     path: kleinbem-site/
     url: git@github.com:kleinbem/kleinbem-site.git
     role: kleinbem.dev personal portfolio website.
+  mesh-llm-ci:
+    path: mesh-llm-ci/
+    url: git@github.com:kleinbem/mesh-llm-ci.git
+    role: Supporting repository.
   nix:
     path: nix/
     url: git@github.com:kleinbem/nix.git
