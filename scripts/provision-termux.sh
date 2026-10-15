@@ -22,8 +22,8 @@ mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 
 if [ ! -f ~/.ssh/id_ed25519 ]; then
-    echo "🔑 Generating dedicated device SSH key..."
-    ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C "martin-${DEVICE_TAG}-termux"
+  echo "🔑 Generating dedicated device SSH key..."
+  ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C "martin-${DEVICE_TAG}-termux"
 fi
 
 PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)"
@@ -32,10 +32,10 @@ echo "   $PUB_KEY"
 
 # Export key for host retrieval via ADB or file transfer
 mkdir -p /sdcard/Download 2>/dev/null || true
-echo "$PUB_KEY" > "/sdcard/Download/${DEVICE_TAG}_termux.pub" 2>/dev/null || true
+echo "$PUB_KEY" >"/sdcard/Download/${DEVICE_TAG}_termux.pub" 2>/dev/null || true
 
 # 3. Fleet ~/.ssh/config
-cat << 'EOF' > ~/.ssh/config
+cat <<'EOF' >~/.ssh/config
 # ─── Workstation Herdr (Live Agent Session) ───
 Host herdr
     HostName 100.117.212.232
@@ -96,7 +96,7 @@ chmod 600 ~/.ssh/config
 # 4. Smart CLI Launchers in $PREFIX/bin
 mkdir -p "$PREFIX/bin"
 
-cat << 'EOF' > "$PREFIX/bin/herdr"
+cat <<'EOF' >"$PREFIX/bin/herdr"
 #!/data/data/com.termux/files/usr/bin/bash
 if (echo > /dev/tcp/100.117.212.232/22) >/dev/null 2>&1; then
     exec ssh herdr "$@"
@@ -108,19 +108,19 @@ fi
 EOF
 chmod +x "$PREFIX/bin/herdr"
 
-cat << 'EOF' > "$PREFIX/bin/herdr-lan"
+cat <<'EOF' >"$PREFIX/bin/herdr-lan"
 #!/data/data/com.termux/files/usr/bin/bash
 exec ssh herdr-lan "$@"
 EOF
 chmod +x "$PREFIX/bin/herdr-lan"
 
-cat << 'EOF' > "$PREFIX/bin/herdr-mesh"
+cat <<'EOF' >"$PREFIX/bin/herdr-mesh"
 #!/data/data/com.termux/files/usr/bin/bash
 exec ssh herdr "$@"
 EOF
 chmod +x "$PREFIX/bin/herdr-mesh"
 
-cat << 'EOF' > "$PREFIX/bin/nvme"
+cat <<'EOF' >"$PREFIX/bin/nvme"
 #!/data/data/com.termux/files/usr/bin/bash
 if (echo > /dev/tcp/100.117.212.232/22) >/dev/null 2>&1; then
     exec ssh nvme "$@"
@@ -132,20 +132,20 @@ fi
 EOF
 chmod +x "$PREFIX/bin/nvme"
 
-cat << 'EOF' > "$PREFIX/bin/nvme-lan"
+cat <<'EOF' >"$PREFIX/bin/nvme-lan"
 #!/data/data/com.termux/files/usr/bin/bash
 exec ssh nvme-lan "$@"
 EOF
 chmod +x "$PREFIX/bin/nvme-lan"
 
-cat << 'EOF' > "$PREFIX/bin/agents"
+cat <<'EOF' >"$PREFIX/bin/agents"
 #!/data/data/com.termux/files/usr/bin/bash
 exec "$PREFIX/bin/herdr" "$@"
 EOF
 chmod +x "$PREFIX/bin/agents"
 
 # 5. Shell profile integration
-cat << 'EOF' > ~/.bashrc
+cat <<'EOF' >~/.bashrc
 # Kleinbem Fleet shortcuts
 alias herdr="herdr"
 alias herdr-lan="herdr-lan"
@@ -158,10 +158,10 @@ alias nas="ssh nas"
 alias orin="ssh orin"
 EOF
 
-echo '[[ -f ~/.bashrc ]] && source ~/.bashrc' > ~/.bash_profile
+echo '[[ -f ~/.bashrc ]] && source ~/.bashrc' >~/.bash_profile
 
 if [ -f ~/.zshrc ]; then
-    cat ~/.bashrc > ~/.zshrc
+  cat ~/.bashrc >~/.zshrc
 fi
 
 echo "✅ Provisioning complete for $DEVICE_NAME!"

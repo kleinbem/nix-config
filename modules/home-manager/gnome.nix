@@ -342,7 +342,7 @@
       # Notification banners: anchored to top-right corner, 3.5s auto-dismiss
       "org/gnome/shell/extensions/notification-banner-re-reloaded" = {
         anchor-horizontal = 2; # Top-right corner
-        anchor-vertical = 0;   # Top
+        anchor-vertical = 0; # Top
         animation-direction = 2; # Slide in from right
         animation-time = 200;
       };

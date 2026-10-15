@@ -43,7 +43,8 @@ in
     # Ensure the user is in the adbusers and uinput groups
     users.users.${config.my.username}.extraGroups = [
       "adbusers"
-    ] ++ lib.optional cfg.weylus "uinput";
+    ]
+    ++ lib.optional cfg.weylus "uinput";
 
     # v4l2loopback kernel module creates /dev/video10 for DroidCam virtual camera
     boot = lib.mkIf cfg.loopbackCam {
