@@ -128,8 +128,7 @@ apply *args="":
             just dev::check
         else
             echo "✅ Verifying NixOS configuration for $TARGET_HOST..."
-            {{LOCK_CMD}} {{TIMER}} nix eval --raw .#nixosConfigurations."$TARGET_HOST".config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
-            echo
+            {{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations."$TARGET_HOST".config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
         fi
         cov=0
         just dev::attic-coverage "$TARGET_HOST" || cov=$?
@@ -237,8 +236,7 @@ preflight:
 [group("Development")]
 check:
     @echo "✅ Verifying NixOS configuration..."
-    @{{LOCK_CMD}} {{TIMER}} nix eval --raw .#nixosConfigurations.nixos-nvme.config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
-    @echo
+    @{{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations.nixos-nvme.config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
 
 [group("Development")]
 check-hosts *args="--impure":
