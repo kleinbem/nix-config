@@ -34,8 +34,7 @@ in
         heimdall # Samsung flashing tool (optional, but good to have)
       ]
       ++ lib.optionals cfg.loopbackCam [
-        droidcam
-        droidcam-cli
+        droidcam # ships droidcam-cli too
       ]
       ++ lib.optionals cfg.weylus [
         weylus
