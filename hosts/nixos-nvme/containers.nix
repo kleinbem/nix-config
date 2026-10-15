@@ -204,6 +204,10 @@
           "/etc/ssh" = "/etc/ssh";
           "/var/lib/sops" = "/var/lib/sops";
           "/nix/persist/var/lib/sbctl" = "/nix/persist/var/lib/sbctl";
+        }
+        # Only while the caddy container (ai.nix) exists to create its data
+        # dir; a missing dir fails the whole backup container start.
+        // lib.optionalAttrs config.my.containers.caddy.enable {
           "/var/lib/caddy" = "/var/lib/caddy";
         }
         # Named per-app state dirs, NOT /var/lib/images wholesale: that also
