@@ -224,6 +224,26 @@ jobs:
       # blocking `Promote → production` (which gates the whole fleet).
       # Harden into the main target list once green for a full cycle.
       # Skipped on PRs: without a cache push the artifacts are thrown away.
+      # Flake input SOURCES aren't build outputs, so nix-fast-build never pushes
+      # them; devices then download every new input revision as a tarball from
+      # api.github.com, and a lock update can hit GitHub's per-IP archive limit
+      # (HTTP 429, seen 2026-10-15 for NousResearch/hermes-agent on nixos-nvme
+      # although its Nix token works). Locked inputs carry a narHash, and Nix
+      # looks a narHash'd source up in its substituters before fetching
+      # (builtins.fetchTree docs), so with the sources in Attic devices fetch
+      # them from here instead. `nix flake archive` lists every input,
+      # transitive ones included. Sources are system-independent: x86_64 only.
+      - name: Push flake input sources to Attic (best-effort)
+        if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
+          nix flake archive --json $NIX_OVERRIDES . \
+            | jq -r '[.. | objects | .path? // empty] | unique | .[]' > "$RUNNER_TEMP/flake-sources.txt"
+          echo "flake input sources: $(wc -l < "$RUNNER_TEMP/flake-sources.txt")"
+          xargs -a "$RUNNER_TEMP/flake-sources.txt" attic push system
+
       - name: Add swap for heavy evals
         # Workstation + container-factory evals run near the hosted runner's
         # memory ceiling; spill to the SSD instead of getting SIGTERM'd.
