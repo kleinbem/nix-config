@@ -222,6 +222,9 @@
           "bluetooth-quick-connect@bjarosze.gmail.com"
           "quick-settings-audio-panel@rayzeq.github.io"
           "rounded-window-corners@fxgn"
+          "notification-icons@jiggak.io"
+          "notification-banner-re-reloaded@chrhuang"
+          "notification-timeout@chlumskyvaclav.gmail.com"
         ];
         # Explicit empty list: GNOME writes disabled UUIDs here whenever an
         # extension errors out (or a user disables one via the Extensions app),
@@ -334,6 +337,24 @@
         notify-on-copy = false;
         history-size = 200;
         move-item-first = true;
+      };
+
+      # Notification banners: anchored to top-right corner, 3.5s auto-dismiss
+      "org/gnome/shell/extensions/notification-banner-re-reloaded" = {
+        anchor-horizontal = 2; # Top-right corner
+        anchor-vertical = 0;   # Top
+        animation-direction = 2; # Slide in from right
+        animation-time = 200;
+      };
+
+      "org/gnome/shell/extensions/notification-timeout" = {
+        timeout = 3500; # Auto-dismiss after 3.5 seconds
+        ignore-idle = true;
+        always-normal = true;
+      };
+
+      "org/gnome/shell/extensions/notification-icons" = {
+        show-count = true;
       };
 
       "org/gnome/shell/extensions/tiling-assistant" = {

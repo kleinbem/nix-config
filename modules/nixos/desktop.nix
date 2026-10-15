@@ -128,6 +128,9 @@ in
         gnomeExtensions.bluetooth-quick-connect # Connect paired BT devices from Quick Settings
         gnomeExtensions.quick-settings-audio-panel # Per-app volume + output switcher in QS
         gnomeExtensions.rounded-window-corners-reborn # Completes the blur-my-shell aesthetic
+        gnomeExtensions.top-panel-notification-icons-w-count # Individual app icons with unread badges in top panel
+        gnomeExtensions.notification-banner-re-reloaded # Anchor notification banners to top-right corner
+        gnomeExtensions.notification-timeout # Configurable auto-dismiss timeout for notification banners
 
         # Modern GNOME Apps & Utilities (Premium Suite)
         ptyxis # Container-aware terminal
