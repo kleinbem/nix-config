@@ -60,5 +60,18 @@ in
 
     # Uinput permissions for Weylus stylus/touch injection
     hardware.uinput.enable = lib.mkIf cfg.weylus true;
+
+    # Open companion ports on the NetBird mesh interface (wt0) so tablet/phone can
+    # reach Weylus, GNOME RDP, and DroidCam when untethered from USB.
+    networking.firewall.interfaces."wt0" = {
+      allowedTCPPorts =
+        lib.optionals cfg.weylus [
+          1701 # Weylus stylus/touch
+          3389 # GNOME RDP virtual display
+        ]
+        ++ lib.optionals cfg.loopbackCam [
+          4747 # DroidCam video/audio feed
+        ];
+    };
   };
 }
