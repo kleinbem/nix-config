@@ -4,20 +4,29 @@ set working-directory := ".."
 
 # --- Local Development Workflows ---
 
+# Probe cache coverage; exit 0 = cached, 1 = would build locally, 2 = probe failed.
 [group("Development")]
 attic-coverage host="$(hostname)":
     #!/usr/bin/env bash
-    set -e
+    set -uo pipefail
     echo "🔍 Probing cache coverage for {{host}} closure..."
-    output=$({{LOCK_CMD}} nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel {{OVERRIDES}} --impure 2>&1) || true
+    rc=0
+    output=$({{LOCK_CMD}} nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel {{OVERRIDES}} --impure 2>&1) || rc=$?
+    if [ "$rc" -ne 0 ]; then
+        # An evaluation error leaves no "will be built" list either; don't report it as covered.
+        echo "❌ Coverage probe failed (exit $rc) — the closure doesn't evaluate or build-plan:"
+        echo "$output" | grep -E 'error' | head -5
+        exit 2
+    fi
     if echo "$output" | grep -qE "will be built"; then
-        echo "⚠️  These derivations would build locally (not in any cache):"
+        n=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -cE '^\s+/nix/store')
+        echo "⚠️  $n derivations would build locally (not in any cache):"
         echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
         echo ""
         echo "   Tip: commit + push so CI builds them → pulls into Attic → just jj::pull-all && just dev::apply {{host}}"
-    else
-        echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
+        exit 1
     fi
+    echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
 
 [group("Development")]
 apply *args="":
@@ -31,6 +40,7 @@ apply *args="":
     DEBUG=0
     AUTH=""
     ROLLBACK=0
+    ALLOW_LOCAL=0
 
     show_help() {
         cat <<'HELP'
@@ -50,6 +60,8 @@ apply *args="":
                         Use when you trust the current state and want speed.
       --debug           Verbose nh output + --show-trace on the build.
       --auth sudo       Cache the sudo timestamp up front; avoids mid-run prompt.
+      --allow-local-build
+                        Don't ask when paths would build locally (CI not green yet).
 
       -h, --help        Print this help and exit.
 
@@ -71,6 +83,7 @@ apply *args="":
             --debug) DEBUG=1; shift ;;
             --boot) MODE="boot"; shift ;;
             --rollback) ROLLBACK=1; shift ;;
+            --allow-local-build) ALLOW_LOCAL=1; shift ;;
             --auth) AUTH="$2"; shift 2 ;;
             --auth=*) AUTH="${1#--auth=}"; shift ;;
             -*) echo "❌ Unknown flag: $1" >&2; echo "Try: just dev::apply --help" >&2; exit 2 ;;
@@ -115,9 +128,26 @@ apply *args="":
             just dev::check
         else
             echo "✅ Verifying NixOS configuration for $TARGET_HOST..."
-            {{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations."$TARGET_HOST".config.system.build.toplevel {{OVERRIDES}} --impure
+            {{LOCK_CMD}} {{TIMER}} nix eval --raw .#nixosConfigurations."$TARGET_HOST".config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
+            echo
         fi
-        just dev::attic-coverage "$TARGET_HOST"
+        cov=0
+        just dev::attic-coverage "$TARGET_HOST" || cov=$?
+        if [ "$cov" -eq 2 ]; then
+            echo "❌ Not applying: the coverage probe failed." >&2
+            exit 1
+        fi
+        if [ "$cov" -eq 1 ] && [ "$ALLOW_LOCAL" -eq 0 ]; then
+            # Usually CI for this commit isn't green or hasn't pushed to Attic yet;
+            # building locally can take hours (2026-10-15: buzz-* for 2.5 h).
+            if [ -t 0 ]; then
+                read -r -p "Build these locally anyway? [y/N] " answer
+                case "$answer" in y|Y|yes) ;; *) echo "Not applying. Wait for CI, or rerun with --allow-local-build."; exit 1 ;; esac
+            else
+                echo "❌ Not applying: paths would build locally. Wait for CI, or rerun with --allow-local-build." >&2
+                exit 1
+            fi
+        fi
     fi
 
     # 4. Deploy!
@@ -189,10 +219,26 @@ apply *args="":
     # 5. Regenerate Antigravity reference docs
     just dev::sync-agent
 
+# (2026-10-15: an unformatted commit left CI red, an undefined package broke eval.)
+# Before pushing to main: formatting, CI's pre-commit-check and the host evaluation.
+[group("Development")]
+preflight:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🧹 Formatting (treefmt, whole tree)..."
+    nix fmt -- --fail-on-change
+    echo "🔎 pre-commit-check (as CI)..."
+    {{LOCK_CMD}} nix build --no-link ".#checks.$(nix eval --raw --impure --expr builtins.currentSystem).pre-commit-check" {{OVERRIDES}} --impure
+    just dev::check
+    echo "✅ Preflight passed."
+
+# (`nix eval` of the toplevel itself prints evaluation errors inline and exits 0.)
+# Evaluate the host's derivation path, so evaluation errors fail.
 [group("Development")]
 check:
     @echo "✅ Verifying NixOS configuration..."
-    @{{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations.nixos-nvme.config.system.build.toplevel {{OVERRIDES}} --impure
+    @{{LOCK_CMD}} {{TIMER}} nix eval --raw .#nixosConfigurations.nixos-nvme.config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
+    @echo
 
 [group("Development")]
 check-hosts *args="--impure":
