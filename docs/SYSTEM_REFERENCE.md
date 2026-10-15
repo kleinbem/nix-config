@@ -19,6 +19,7 @@
 - **nixos-nvme** (`10.85.46.1`, x86_64-linux, local) — workstation, desktop
 - **orin-nano** (`10.0.0.15`, aarch64-linux, ssh) — edge, ai, jetson
 - **phone** (`no-ip`, aarch64-linux, local) — mobile, android
+- **tablet** (`no-ip`, aarch64-linux, local) — mobile, android
 
 ## 📡 Network Services (by host)
 
@@ -37,7 +38,7 @@
 
 ### hass-pi
 
-- 🏠 **Home Assistant** (`home-assistant`) `10.85.49.10:8123` — Smart Home Automation. _[src: nix-presets/containers/home-assistant.nix:14]_
+- 🏠 **Home Assistant** (`home-assistant`) `10.85.49.10:8123` → `hass.kleinbem.dev` — Smart Home Automation. _[src: nix-presets/containers/home-assistant.nix:14]_
 - 🐾 **OpenClaw** (`openclaw`) `10.85.49.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
 ### mac-mini

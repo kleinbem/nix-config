@@ -6,7 +6,7 @@
 
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
-**Hosts indexed:** 9  
+**Hosts indexed:** 10  
 **Distinct imports:** 91
 
 ---
@@ -75,6 +75,10 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 - **Modules:** `modules/nix-on-droid/dashboard.nix`
 
+### `tablet`
+
+- **Modules:** `modules/nix-on-droid/dashboard.nix`
+
 ## Reverse index — import → hosts
 
 - `../../modules/nixos/options.nix` ← container-factory
@@ -89,7 +93,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./secrets.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
 - `./services.nix` ← orin-nano
 - `disko:disko` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
-- `modules/nix-on-droid/dashboard.nix` ← phone
+- `modules/nix-on-droid/dashboard.nix` ← phone, tablet
 - `modules/nixos/ai-hardening.nix` ← orin-nano
 - `modules/nixos/ananicy.nix` ← orin-nano
 - `modules/nixos/apps.nix` ← nixos-nvme

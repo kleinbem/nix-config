@@ -129,6 +129,7 @@ network_topology:
       - nixos-nvme
       - mac-mini
       - phone
+      - tablet
       smart-home:
       - hass-pi
       - orin-nano
@@ -1101,6 +1102,30 @@ hosts:
     enabled_subsystems: {}
     containers_hosted: []
     secrets_consumed: []
+  tablet:
+    tier: mobile
+    system: aarch64-linux
+    deploy_type: local
+    tags:
+    - mobile
+    - android
+    ips:
+      physical: null
+      container_bridge: null
+      netbird: null
+    mesh_group: personal-devices
+    storage_and_boot:
+      framework: Disko
+      root_filesystem: tmpfs (impermanence, wiped on boot)
+      persist_paths:
+      - /persist
+      bootloader: systemd-boot (UEFI)
+      encryption: LUKS with Clevis initrd NBDE Tang unlock
+    imports:
+    - '[module] modules/nix-on-droid/dashboard.nix'
+    enabled_subsystems: {}
+    containers_hosted: []
+    secrets_consumed: []
 services:
   agent-team:
     name: AI Agent Team
@@ -1431,10 +1456,10 @@ services:
     host: hass-pi
     ip: 10.85.49.10
     port: 8123
-    external_port: null
-    domain: null
+    external_port: 443
+    domain: hass.kleinbem.dev
     public: false
-    auth: Default
+    auth: None (Internal / Anonymous)
     mtls: false
     upstream_preset: nix-presets/containers/home-assistant.nix
     persistence_path: /var/lib/machines/home-assistant

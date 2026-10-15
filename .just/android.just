@@ -23,6 +23,84 @@ phone *args:
 tablet *args:
     @just android::scrcpy-dispatch "{{TABLET_SERIAL}}" "{{TABLET_IP}}" "24M" {{args}}
 
+[group("Tablet")]
+tablet-desk:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SERIAL="{{TABLET_SERIAL}}"
+    echo "🖥️  Bringing MatePad Pro into Desk Companion mode..."
+
+    # 1. Forward and reverse ADB ports over USB
+    echo "🔌 Establishing USB port tunnels..."
+    adb -s "$SERIAL" forward tcp:4747 tcp:4747   # DroidCam (Camera/Mic -> PC)
+    adb -s "$SERIAL" reverse tcp:1701 tcp:1701   # Weylus (Touch/Stylus Canvas PC -> Tablet)
+    adb -s "$SERIAL" reverse tcp:3389 tcp:3389   # GNOME Remote Desktop (Extended 3rd Desktop)
+
+    # 2. Power & Display optimizations for desk companion use
+    echo "⚡ Applying desk companion power settings..."
+    adb -s "$SERIAL" shell settings put global stay_on_while_plugged_in 7
+    adb -s "$SERIAL" shell "echo 80 > /sys/class/power_supply/Battery/charge_control_limit_max 2>/dev/null || settings put global UsercustomedMAXChargeValue 80"
+    adb -s "$SERIAL" shell dumpsys deviceidle disable >/dev/null 2>&1 || true
+
+    # 3. Ensure persistent 3-key navigation bar is active
+    adb -s "$SERIAL" shell settings put secure secure_gesture_navigation 0
+    adb -s "$SERIAL" shell settings put secure navigation_mode 0
+
+    # 4. Start Shizuku if available
+    just android::start-shizuku || true
+
+    echo "✅ Desk companion active!"
+    echo "   • DroidCam webcam/mic: adb port 4747 (use 'just android::tablet-cam')"
+    echo "   • Weylus interactive canvas: http://localhost:1701 (use 'just android::tablet-screen')"
+    echo "   • GNOME RDP 3rd screen: localhost:3389 via aFreeRDP (use 'just android::tablet-rdp')"
+    echo "   • GSConnect / KDE Connect paired: clipboard & file sync active"
+
+[group("Tablet")]
+tablet-cam:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SERIAL="{{TABLET_SERIAL}}"
+    echo "📷 Launching DroidCam webcam bridge..."
+    adb -s "$SERIAL" forward tcp:4747 tcp:4747
+    adb -s "$SERIAL" shell am start -n com.dev47apps.droidcam/.DroidCam 2>/dev/null || true
+    sleep 1
+    if lsmod | grep -q v4l2loopback; then
+        echo "🎥 Connecting video loopback to /dev/video10..."
+        droidcam-cli 127.0.0.1 4747
+    else
+        echo "💡 v4l2loopback not currently loaded in kernel. Opening DroidCam GUI..."
+        droidcam &
+    fi
+
+[group("Tablet")]
+tablet-screen:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SERIAL="{{TABLET_SERIAL}}"
+    echo "🎨 Launching Weylus touch & stylus canvas..."
+    adb -s "$SERIAL" reverse tcp:1701 tcp:1701
+    if ! ss -tulpn | grep -q ":1701 "; then
+        echo "🚀 Starting Weylus server..."
+        weylus --wayland-support --no-gui --auto-start &
+        sleep 1
+    fi
+    echo "📱 Opening canvas on tablet..."
+    adb -s "$SERIAL" shell am start -a android.intent.action.VIEW -d "http://localhost:1701" com.android.chrome >/dev/null
+    echo "✨ Weylus active on tablet screen with multi-touch & M-Pencil support."
+
+[group("Tablet")]
+tablet-rdp:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SERIAL="{{TABLET_SERIAL}}"
+    echo "🖥️  Configuring GNOME RDP extended desktop on tablet..."
+    adb -s "$SERIAL" reverse tcp:3389 tcp:3389
+    grdctl rdp enable 2>/dev/null || true
+    grdctl rdp disable-view-only 2>/dev/null || true
+    echo "📱 Launching aFreeRDP on tablet..."
+    adb -s "$SERIAL" shell monkey -p com.freerdp.afreerdp -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
+    echo "✨ Connect in aFreeRDP to: localhost (or 127.0.0.1:3389)"
+
 [group("Dhirujaan")]
 dhirujaan *args:
     @just android::scrcpy-dispatch "{{DHIRUJAAN_PHONE_SERIAL}}" "{{DHIRUJAAN_PHONE_IP}}" "16M" {{args}}

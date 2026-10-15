@@ -16,7 +16,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.android`
 
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
-- **Sub-options:** `enable`
+- **Sub-options:** `enable`, `loopbackCam`, `weylus`
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.anythingllmVaultSync`
@@ -401,7 +401,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.security.ai-hardening`
 
-- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:37`
+- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:38`
 - **Sub-options:** `airlockIPs`, `enable`, `strictEgress`, `whitelistDomains`
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
