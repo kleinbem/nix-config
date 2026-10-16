@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(gh api -X DELETE repos/kleinbem/*/git/refs/heads/*)"
+    ]
+  },
+  "theme": "dark",
+  "autoCompactEnabled": true,
+  "remoteControlAtStartup": false,
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Bash(jj status:*)",
+      "Bash(jj diff:*)",
+      "Bash(just status-all:*)",
+      "Bash(just diff-all:*)",
+      "Bash(nix-instantiate:*)",
+      "Merging pull requests in kleinbem/* repositories with gh pr merge, when Martin explicitly asked for that merge in the conversation"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(just push-all:*)",
+      "Bash(just ship-all:*)",
+      "Bash(tofu apply:*)"
+    ]
+  }
+}

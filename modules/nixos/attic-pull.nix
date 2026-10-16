@@ -55,10 +55,17 @@ in
   };
 
   config = lib.mkIf (config.sops.secrets ? attic_pull_token) {
-    sops.templates."attic-netrc".content = ''
-      machine cache.kleinbem.dev
-      password ${config.sops.placeholder.attic_pull_token}
-    '';
+    # Readable by wheel so user-run nix commands (nix copy, nix path-info
+    # --store https://cache.kleinbem.dev) authenticate with the same token,
+    # instead of a hand-made plaintext copy in ~/.config/nix/netrc.
+    sops.templates."attic-netrc" = {
+      content = ''
+        machine cache.kleinbem.dev
+        password ${config.sops.placeholder.attic_pull_token}
+      '';
+      group = "wheel";
+      mode = "0440";
+    };
 
     nix.settings.netrc-file = config.sops.templates."attic-netrc".path;
 

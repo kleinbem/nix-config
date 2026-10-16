@@ -165,6 +165,43 @@ in
   programs = {
     home-manager.enable = true;
 
+    gh-dash = {
+      enable = true;
+      settings = {
+        prSections = [
+          {
+            title = "My PRs";
+            filters = "is:open author:@me org:kleinbem";
+          }
+          {
+            title = "Dependabot";
+            filters = "is:open org:kleinbem author:app/dependabot";
+          }
+          {
+            title = "Fleet PRs";
+            filters = "is:open org:kleinbem -author:@me -author:app/dependabot";
+          }
+        ];
+        issuesSections = [
+          {
+            title = "My Issues";
+            filters = "is:open assignee:@me org:kleinbem";
+          }
+          {
+            title = "Fleet Issues";
+            filters = "is:open org:kleinbem -assignee:@me";
+          }
+        ];
+        repoPaths."kleinbem/*" = "~/Develop/github.com/kleinbem/*";
+        defaults = {
+          view = "prs";
+          refetchIntervalMinutes = 30;
+          prsLimit = 30;
+          issuesLimit = 30;
+        };
+      };
+    };
+
     # Inject hardware-protected signing keys from centralized proxy
     git.settings.user.signingKey = "${my.home}/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.pub";
     # jj's ssh backend wants a public-key file path; the `key::<blob>` form
