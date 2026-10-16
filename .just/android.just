@@ -103,15 +103,81 @@ tablet-rdp:
 
 [group("Tablet")]
 tablet-status:
-    @matepad status
+    #!/usr/bin/env bash
+    if command -v matepad >/dev/null 2>&1; then
+        matepad status
+    else
+        SERIAL="{{TABLET_SERIAL}}"
+        echo "=== Huawei MatePad Pro (MRX-W09) Status ==="
+        echo -e "\n[Battery & Power]"
+        adb -s "$SERIAL" shell dumpsys battery | awk '
+            /AC powered:/ { ac=$3 }
+            /USB powered:/ { usb=$3 }
+            /level:/ { lvl=$2 }
+            /temperature:/ { temp=$2/10 }
+            /status:/ { st=($2==5?"Full":( $2==2?"Charging":"Discharging" )) }
+            END { printf "  Status: %s (Level: %s%%, Temp: %.1f°C, AC: %s, USB: %s)\n", st, lvl, temp, ac, usb }
+        '
+        echo -e "\n[ADB Reverse Tunnels]"
+        tunnels=$(adb -s "$SERIAL" reverse --list)
+        if [ -n "$tunnels" ]; then
+            echo "$tunnels" | sed 's/^/  /'
+        else
+            echo "  (No reverse tunnels active)"
+        fi
+        echo -e "\n[Shizuku Daemon]"
+        if adb -s "$SERIAL" shell ps -ef | grep -q "shizuku_server"; then
+            pid=$(adb -s "$SERIAL" shell ps -ef | grep "shizuku_server" | awk '{print $2}' | head -n 1)
+            echo "  Running (PID: $pid)"
+        else
+            echo "  Stopped (Run 'just android::start-shizuku' to start)"
+        fi
+        echo -e "\n[Power Safety Guardrail]"
+        if adb -s "$SERIAL" shell pm list packages -d | grep -q "com.google.android.googlequicksearchbox"; then
+            echo "  OK: Google Search spinloop is disabled"
+        else
+            echo "  WARNING: Google Search is ENABLED! Risk of 100% CPU battery drain!"
+        fi
+        echo -e "\n[Foreground Window]"
+        fg=$(adb -s "$SERIAL" shell "dumpsys window | grep -E 'mCurrentFocus' | tail -n 1" | sed 's/^[[:space:]]*//')
+        echo "  $fg"
+    fi
 
 [group("Tablet")]
 tablet-install app:
-    @matepad install {{app}}
+    #!/usr/bin/env bash
+    if command -v matepad >/dev/null 2>&1; then
+        matepad install {{app}}
+    elif command -v apkeep >/dev/null 2>&1; then
+        TARGET="{{app}}"
+        SERIAL="{{TABLET_SERIAL}}"
+        if [ -f "$TARGET" ]; then
+            adb -s "$SERIAL" install -r -d "$TARGET"
+        else
+            mkdir -p /tmp/apkeep_cache
+            apkeep -d f-droid -a "$TARGET" /tmp/apkeep_cache 2>/dev/null || apkeep -d apk-pure -a "$TARGET" -o "acknowledge_dangers=true" /tmp/apkeep_cache
+            APK=$(find /tmp/apkeep_cache -name "${TARGET}*.apk" | head -n 1)
+            adb -s "$SERIAL" install -r -d "$APK"
+            rm -f "$APK"
+        fi
+    else
+        echo "Install apkeep or run 'just switch' to apply the updated Home Manager profile." >&2
+        exit 1
+    fi
 
 [group("Tablet")]
 tablet-devcheck:
-    @matepad devcheck
+    #!/usr/bin/env bash
+    if command -v matepad >/dev/null 2>&1; then
+        matepad devcheck
+    else
+        SERIAL="{{TABLET_SERIAL}}"
+        adb -s "$SERIAL" shell pm grant flar2.devcheck android.permission.BATTERY_STATS || true
+        adb -s "$SERIAL" shell pm grant flar2.devcheck android.permission.DUMP || true
+        adb -s "$SERIAL" shell pm grant flar2.devcheck android.permission.PACKAGE_USAGE_STATS || true
+        adb -s "$SERIAL" shell cmd appops set flar2.devcheck moe.shizuku.manager.permission.API_V23 allow || true
+        adb -s "$SERIAL" shell monkey -p flar2.devcheck -c android.intent.category.LAUNCHER 1 >/dev/null
+    fi
 
 [group("Dhirujaan")]
 dhirujaan *args:
