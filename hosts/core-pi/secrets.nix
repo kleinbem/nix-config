@@ -2,6 +2,7 @@
   inputs,
   config,
   lib,
+  secretFile,
   ...
 }:
 let
@@ -71,16 +72,16 @@ in
         # config schema, discovered while packaging it from source — the
         # original hand-written museum.yaml never set them at all.
         ente_key_encryption = {
-          sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/ente-keys.yaml";
+          sopsFile = secretFile "nix/per-container/ente-keys.yaml";
         };
         ente_key_hash = {
-          sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/ente-keys.yaml";
+          sopsFile = secretFile "nix/per-container/ente-keys.yaml";
         };
       }
       // {
         # Attic Binary Cache
         attic_server_token_rs256 = {
-          sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
+          sopsFile = secretFile "nix/per-host/core-pi.yaml";
         };
         # Read-only pull token — activates modules/nixos/attic-pull.nix (netrc
         # Bearer auth + NetBird routing). Without it the host gets 401 from the
@@ -116,13 +117,13 @@ in
 
         # Cloudflare Tunnel
         cloudflare_account_id = {
-          sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
+          sopsFile = secretFile "nix/per-host/core-pi.yaml";
         };
         cloudflare_tunnel_id = {
-          sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
+          sopsFile = secretFile "nix/per-host/core-pi.yaml";
         };
         cloudflare_tunnel_secret = {
-          sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/core-pi.yaml";
+          sopsFile = secretFile "nix/per-host/core-pi.yaml";
         };
       };
 

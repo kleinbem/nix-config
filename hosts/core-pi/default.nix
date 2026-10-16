@@ -6,6 +6,7 @@
   inputs,
   self,
   myInventory,
+  secretFile,
   ...
 }:
 let
@@ -210,7 +211,7 @@ in
       enable = true;
       luksDevice = luksVolumeName;
       hostIp = "10.0.0.22";
-      secretFile = "${inputs.kleinbem-secrets}/initrd/cryptroot_core-pi.jwe";
+      secretFile = secretFile "initrd/cryptroot_core-pi.jwe";
     };
 
     herdr-remote-client = {

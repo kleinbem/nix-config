@@ -9,7 +9,7 @@
   config,
   pkgs,
   lib,
-  inputs,
+  secretFile,
   ...
 }:
 {
@@ -23,10 +23,10 @@
   # falling through to the default.
   sops = {
     secrets.garage_rpc_secret = {
-      sopsFile = "${inputs.kleinbem-secrets}/infra/terraform.yaml";
+      sopsFile = secretFile "infra/terraform.yaml";
     };
     secrets.garage_admin_token = {
-      sopsFile = "${inputs.kleinbem-secrets}/infra/terraform.yaml";
+      sopsFile = secretFile "infra/terraform.yaml";
     };
 
     # Rendered env file injected into the service (keeps secrets OUT of the

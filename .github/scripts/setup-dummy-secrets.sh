@@ -7,7 +7,6 @@
 #   nix/shared.yaml                  defaultSopsFile on every host
 #   nix/per-host/<host>.yaml         per-host sopsFile overrides
 #   initrd/cryptroot_<host>.jwe      my.boot.clevis-initrd secretFile
-#   initrd/ssh_host_ed25519_key_*    rpi5-node + orin-nano initrd SSH host keys
 #   personas/contact.nix             hosts/mac-mini/default.nix's personasView
 #
 # personas/*.yaml (sops-encrypted, per-persona signing/API keys) are NOT
@@ -34,11 +33,6 @@ done
 
 for host in nixos-nvme core-pi hass-pi orin-nano; do
   echo "ci-dummy-jwe-placeholder" >"$out/initrd/cryptroot_${host}.jwe"
-  # Real key format in case anything parses it at build time.
-  if [ ! -f "$out/initrd/ssh_host_ed25519_key_${host}" ]; then
-    ssh-keygen -q -t ed25519 -N "" -C "ci-dummy" \
-      -f "$out/initrd/ssh_host_ed25519_key_${host}"
-  fi
 done
 
 {

@@ -19,6 +19,7 @@ in
       nixpkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
       specialArgs = {
         inherit inputs self myInventory;
+        secretFile = import ../../lib/secret-file.nix { inherit inputs; };
       };
     };
 

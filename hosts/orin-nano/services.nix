@@ -2,8 +2,8 @@
   config,
   lib,
   pkgs,
-  inputs,
   myInventory,
+  secretFile,
   ...
 }:
 {
@@ -23,7 +23,7 @@
   # Create it before setting environmentFile back to a path; see the container
   # preset's environmentFile option. Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
   sops.secrets.frigate_rtsp_env = lib.mkIf (config.my.containers.frigate.environmentFile != null) {
-    sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/orin-nano.yaml";
+    sopsFile = secretFile "nix/per-host/orin-nano.yaml";
   };
 
   # ─── Frigate data disk (second SSD, nvme1n1) ────────────────
@@ -47,7 +47,7 @@
       # JWE lives in kleinbem-secrets (private): Tang-wrapped LUKS key material
       # must not sit in this public repo.
       secretFile = pkgs.writeText "cryptroot.jwe" (
-        builtins.readFile "${inputs.kleinbem-secrets}/initrd/cryptroot_orin-nano.jwe"
+        builtins.readFile (secretFile "initrd/cryptroot_orin-nano.jwe")
       );
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };

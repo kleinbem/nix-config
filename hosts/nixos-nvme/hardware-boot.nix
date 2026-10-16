@@ -1,8 +1,9 @@
 {
+  config,
   lib,
   pkgs,
-  inputs,
   self,
+  secretFile,
   ...
 }:
 
@@ -41,7 +42,7 @@ in
   my.boot.clevis-initrd = {
     enable = true;
     luksDevice = "cryptroot";
-    secretFile = "${inputs.kleinbem-secrets}/initrd/cryptroot_nixos-nvme.jwe";
+    secretFile = secretFile "initrd/cryptroot_nixos-nvme.jwe";
     fallbackMessage = "Tang still unreachable; continuing (FIDO2 or passphrase fallback)";
   };
 
@@ -74,7 +75,7 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_nixos-nvme");
+          enable = true;
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
@@ -84,9 +85,7 @@ in
           hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_nixos-nvme" ];
         };
       };
-      secrets."/etc/ssh/ssh_host_ed25519_key_nixos-nvme" = lib.mkForce (
-        inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_nixos-nvme"
-      );
+      secrets."/etc/ssh/ssh_host_ed25519_key_nixos-nvme" = lib.mkForce config.my.hostSecrets.initrdSshKey;
       systemd = {
         enable = true;
         tpm2.enable = true;

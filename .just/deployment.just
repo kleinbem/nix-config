@@ -202,6 +202,20 @@ push-cache +args:
             echo "  ✓ $label: nothing to push (fully covered upstream, or closure not realised locally)."
             return 0
         fi
+        # Never upload the secrets repo (or anything shaped like it). Its
+        # source once rode along in every closure via sops file references
+        # and ended up in Attic; lib/secret-file.nix fixed the cause, this
+        # stops a regression from leaking again.
+        local leaked
+        leaked=$(printf '%s\n' "$to_push" | while read -r p; do
+            if [ -f "$p/.sops.yaml" ] || { [ -d "$p/initrd" ] && [ -d "$p/nix/per-host" ]; }; then echo "$p"; fi
+        done)
+        if [ -n "$leaked" ]; then
+            echo "❌ $label: refusing to push to Attic, the closure contains the secrets repo:" >&2
+            printf '     %s\n' $leaked >&2
+            echo "   Find the reference with: nix why-depends $root <path>" >&2
+            return 1
+        fi
         echo "  ☁️ $label: pushing $(printf '%s\n' "$to_push" | wc -l) non-upstream path(s) to Attic..."
         printf '%s\n' "$to_push" | \
             nix run nixpkgs#attic-client -- push --no-closure --stdin system -j 2 \

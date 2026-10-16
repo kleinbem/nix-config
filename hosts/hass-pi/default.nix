@@ -6,6 +6,7 @@
   config,
   lib,
   pkgs,
+  secretFile,
   ...
 }:
 let
@@ -74,7 +75,7 @@ in
       enable = true;
       luksDevice = luksVolumeName;
       hostIp = "10.0.0.21";
-      secretFile = "${inputs.kleinbem-secrets}/initrd/cryptroot_hass-pi.jwe";
+      secretFile = secretFile "initrd/cryptroot_hass-pi.jwe";
     };
 
     herdr-remote-client = {

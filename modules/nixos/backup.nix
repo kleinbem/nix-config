@@ -3,6 +3,7 @@
   config,
   lib,
   pkgs,
+  secretFile,
   ...
 }:
 # Fleet wiring for nix-presets' backup-engine: WHERE backups go and with
@@ -56,7 +57,7 @@ in
 
   config = lib.mkIf cfg.enable {
     sops.secrets = {
-      backup_r2_rclone_config.sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/${host}.yaml";
+      backup_r2_rclone_config.sopsFile = secretFile "nix/per-host/${host}.yaml";
       rclone_config = { };
       restic_password = { };
       ntfy_alert_topic = { };
