@@ -165,7 +165,11 @@ in
     };
 
     # HM defaults match the standard dirs plus ~/Projects.
-    userDirs.enable = true;
+    userDirs = {
+      enable = true;
+      # New HM default; set explicitly to silence the eval warning.
+      setSessionVariables = false;
+    };
 
     # Linked from the package, so it can't go stale like the entry
     # netbird-ui wrote itself (pinned to a store path that got collected).
