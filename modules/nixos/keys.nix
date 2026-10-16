@@ -78,4 +78,34 @@
     yubikey-backup = "age1yubikey1qg379rzgajvstx6vhk2fsvc0eu9zyjjk7q24pd3pf5dq22xvlqew23e08l2";
     host-nvme = "age1tag1qg5qj4sam725ez6a53hkp5mnerf8m9dq4wy4nsfaraj3y5v6x8h0qexzvt7";
   };
+
+  # Initrd (remote-unlock) SSH host keys, port 2222. Private halves live only
+  # on each host in /nix/persist/secrets (my.hostSecrets), generated
+  # 2026-10-16 with `just access::host-keygen <host>`.
+  initrdHostKeys = {
+    nixos-nvme = {
+      ip = "10.0.0.5";
+      key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILCPyhYle/z0elgfzurxQgh4UHZbbw6xxeAlYRCS8o0i";
+    };
+    core-pi = {
+      ip = "10.0.0.22";
+      key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICHxR4gtUWFxs/3Cpb8mzp7GiELddhoyJufCo9bGRIO1";
+    };
+    hass-pi = {
+      ip = "10.0.0.21";
+      key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMoYz5JmoKxqyDuu32bAQwpLTnDHpu47i5/kinYnyOc8";
+    };
+    mac-mini = {
+      ip = "10.0.0.16";
+      key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHfwhPmhv2GBuMOllaoTNSeiQLTqizKpQ2HlwYH2fGCx";
+    };
+    nasbook = {
+      ip = "10.0.0.30";
+      key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIED1MCkRGoF5mSh/5UUJHLkzysk1JA1EkslAwQlczYv+";
+    };
+    orin-nano = {
+      ip = "10.0.0.15";
+      key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8AzB6jowZtkTZoz3Zq58PTb38XdXLW/6qi2rxFHxQy";
+    };
+  };
 }
