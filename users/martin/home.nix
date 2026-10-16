@@ -45,6 +45,7 @@ in
     ai-agents.enable = true;
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet
+    android.enable = true; # User tools (apkeep, matepad CLI) for MatePad Pro
   };
 
   # Bitwarden PWA removed along with the PWA framework (nix-presets pwa.nix,
