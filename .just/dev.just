@@ -5,6 +5,10 @@ set working-directory := ".."
 # --- Local Development Workflows ---
 
 # Probe cache coverage; exit 0 = cached, 1 = would build locally, 2 = probe failed.
+# Missing derivations that only assemble the system (activation scripts, unit
+# files, sops manifests, anything marked preferLocalBuild) still count as
+# covered: CI builds with placeholder secrets, so those never match its cache,
+# and they build in seconds.
 [group("Development")]
 attic-coverage host="$(hostname)":
     #!/usr/bin/env bash
@@ -15,18 +19,38 @@ attic-coverage host="$(hostname)":
     if [ "$rc" -ne 0 ]; then
         # An evaluation error leaves no "will be built" list either; don't report it as covered.
         echo "❌ Coverage probe failed (exit $rc) — the closure doesn't evaluate or build-plan:"
-        echo "$output" | grep -E 'error' | head -5
+        echo "$output" | grep -iE 'error' | head -5
         exit 2
     fi
-    if echo "$output" | grep -qE "will be built"; then
-        n=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -cE '^\s+/nix/store')
-        echo "⚠️  $n derivations would build locally (not in any cache):"
-        echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | head -25
-        echo ""
-        echo "   Tip: commit + push so CI builds them → pulls into Attic → just jj::pull-all && just dev::apply {{host}}"
-        exit 1
+    mapfile -t built < <(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -oE '/nix/store/[^ ]+\.drv')
+    if [ "${#built[@]}" -eq 0 ]; then
+        echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
+        exit 0
     fi
-    echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
+    prefer_local=$(nix derivation show "${built[@]}" 2>/dev/null \
+        | jq -r '(.derivations // .) | to_entries[] | select(.value.env.preferLocalBuild == "1" or .value.structuredAttrs.preferLocalBuild == true) | .key | sub(".*/"; "")')
+    assembly='^(nixos-system-.*|activate|dry-activate|etc|system-units|user-units|unit-.*|manifest(-for-users)?\.json|boot\.json|append-initrd-secrets)$'
+    heavy=()
+    small=0
+    for drv in "${built[@]}"; do
+        base=${drv##*/}
+        name=${base:33}
+        name=${name%.drv}
+        if [[ "$name" =~ $assembly ]] || grep -qxF "$base" <<<"$prefer_local"; then
+            small=$((small + 1))
+        else
+            heavy+=("$drv")
+        fi
+    done
+    if [ "${#heavy[@]}" -eq 0 ]; then
+        echo "✓ Covered except $small small system-assembly steps (build locally in seconds)."
+        exit 0
+    fi
+    echo "⚠️  ${#heavy[@]} derivations would build locally (not in any cache), plus $small small system-assembly steps:"
+    printf '  %s\n' "${heavy[@]}" | head -25
+    echo ""
+    echo "   Tip: commit + push so CI builds them → pulls into Attic → just jj::pull-all && just dev::apply {{host}}"
+    exit 1
 
 [group("Development")]
 apply *args="":
@@ -141,7 +165,9 @@ apply *args="":
             # building locally can take hours (2026-10-15: buzz-* for 2.5 h).
             if [ -t 0 ]; then
                 read -r -p "Build these locally anyway? [y/N] " answer
-                case "$answer" in y|Y|yes) ;; *) echo "Not applying. Wait for CI, or rerun with --allow-local-build."; exit 1 ;; esac
+                # Strip stray whitespace/CR (some terminal modes send \r with Enter).
+                answer=$(printf '%s' "$answer" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+                case "$answer" in y|yes) ;; *) echo "Not applying. Wait for CI, or rerun with --allow-local-build."; exit 1 ;; esac
             else
                 echo "❌ Not applying: paths would build locally. Wait for CI, or rerun with --allow-local-build." >&2
                 exit 1
