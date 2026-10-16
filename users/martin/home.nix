@@ -165,7 +165,11 @@ in
     };
 
     # HM defaults match the standard dirs plus ~/Projects.
-    userDirs.enable = true;
+    userDirs = {
+      enable = true;
+      # New HM default; set explicitly to silence the eval warning.
+      setSessionVariables = false;
+    };
 
     # Linked from the package, so it can't go stale like the entry
     # netbird-ui wrote itself (pinned to a store path that got collected).
@@ -173,6 +177,20 @@ in
       enable = true;
       entries = [ "${osConfig.services.netbird.ui.package}/share/applications/netbird.desktop" ];
     };
+
+    # Native messaging host for the Open in App extension
+    # (kleinbem/chrome-open-in-app). force: replaces the copies its
+    # install.sh wrote, which pointed at a hand-built ~/.local/bin binary.
+    configFile =
+      lib.genAttrs
+        (map (browser: "${browser}/NativeMessagingHosts/com.kleinbem.open_in_app.json") [
+          "google-chrome"
+          "chromium"
+        ])
+        (_: {
+          source = "${pkgs.chrome-open-in-app-host}/etc/chromium/native-messaging-hosts/com.kleinbem.open_in_app.json";
+          force = true;
+        });
   };
 
   programs = {
