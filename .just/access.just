@@ -98,3 +98,35 @@ nasbook-data-drop-old-key:
       cryptsetup open --test-passphrase --key-file "$new" "$dev" || { echo "new key does not open $dev; refusing" >&2; exit 1; }; \
       cryptsetup luksRemoveKey --key-file "$old" "$dev"; \
       cryptsetup luksDump "$dev" | grep -E "^ *[0-9]+: luks2" '
+
+# Read-only unlock check for <host> (needs its sudo password once). Unlock
+# policy, every host: Tang (any other host) → primary/backup YubiKey (FIDO2) →
+# passphrase → initrd SSH on :2222 to type the passphrase.
+[group("Access")]
+[doc("Read-only: which unlock methods <host>'s root disk has, whether its Tang JWE opens it, and whether its Tang key matches inventory.nix.")]
+unlock-audit host:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    crypt=$(nix eval --raw .#nixosConfigurations.{{host}}.config.my.boot.clevis-initrd.luksDevice)
+    thp=$(nix eval --raw --impure --expr '(import ./inventory.nix).tang."{{host}}".thp')
+    jwe=$(base64 -w0 < "${KLEINBEM_SECRETS:-../kleinbem-secrets}/initrd/cryptroot_{{host}}.jwe")
+    script=$(cat <<SCRIPT
+    set -u
+    dev=\$(cryptsetup status $crypt | sed -n 's/^ *device: *//p')
+    dump=\$(cryptsetup luksDump "\$dev")
+    slots=\$(echo "\$dump" | grep -cE '^ +[0-9]+: luks2')
+    fido=\$(echo "\$dump" | grep -c 'systemd-fido2' || true)
+    clev=\$(echo "\$dump" | grep -c 'clevis' || true)
+    tpm=\$(echo "\$dump" | grep -c 'systemd-tpm2' || true)
+    echo "== {{host}} (\$dev)"
+    echo "   key slots: \$slots  (FIDO2: \$fido, clevis-in-header: \$clev, TPM2: \$tpm, other incl. passphrase: \$((slots - fido - clev - tpm)))"
+    if echo $jwe | base64 -d | nix shell nixpkgs#clevis -c clevis decrypt 2>/dev/null | cryptsetup open --test-passphrase --key-file - "\$dev" 2>/dev/null; then
+      echo "   Tang JWE opens the disk: yes"
+    else
+      echo "   Tang JWE opens the disk: NO"
+    fi
+    own=\$(nix shell nixpkgs#jose -c sh -c 'for k in /var/lib/tang/*.jwk /var/lib/private/tang/*.jwk; do [ -f "\$k" ] && jose jwk use -i "\$k" -r -u verify -o /dev/null 2>/dev/null && jose jwk thp -i "\$k"; done' 2>/dev/null | head -n 1)
+    if [ "\$own" = "$thp" ]; then echo "   Tang key matches inventory: yes"; else echo "   Tang key matches inventory: NO (\${own:-none found})"; fi
+    SCRIPT
+    )
+    just access::_on_host {{host}} "$script"

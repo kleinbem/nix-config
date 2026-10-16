@@ -387,30 +387,26 @@ pc_fido2_enroll_dual() {
 }
 
 # ── clevis / Tang ─────────────────────────────────────────────────────────────
-# Bind a LUKS container to the Tang cluster (t=1: any one server unlocks). Uses
-# the repo's tang-adv.jws advertisements — keep those in sync with the live Tang
-# servers or the resulting binding won't decrypt. $1=crypt-name $2=optional
-# keyfile with the EXISTING passphrase (non-interactive); omit for the normal
-# interactive prompt.
+# Bind a LUKS container to every OTHER host's Tang server (t=1: any one
+# unlocks), each pinned by thumbprint from inventory.nix (scripts/tang-config.sh).
+# $1=crypt-name $2=host $3=optional keyfile with the EXISTING passphrase
+# (non-interactive); omit for the normal interactive prompt.
 pc_clevis_bind_tang() {
-  local crypt="$1" keyfile="${2:-}" luks_dev
-  echo "🔗 Binding $crypt to the Tang cluster for silent boot..."
+  local crypt="$1" host="$2" keyfile="${3:-}" luks_dev cfg
+  echo "🔗 Binding $crypt to the Tang servers for silent boot..."
   luks_dev=$(sudo cryptsetup status "$crypt" | awk '/device:/ {print $2}')
   if [ -z "$luks_dev" ]; then
     echo "⚠️  Could not find mapped device $crypt for Tang binding."
     return 0
   fi
+  cfg=$(bash scripts/tang-config.sh "$host")
   local bind_opts=(-d "$luks_dev")
   if [ -n "$keyfile" ]; then
     bind_opts+=(-y -f -k "$keyfile")
   else
+    bind_opts+=(-y)
     echo "   (will prompt for the LUKS passphrase to authorize the binding)"
   fi
-  sudo clevis luks bind "${bind_opts[@]}" sss \
-    '{"t": 1, "pins": {"tang": [
-            {"url": "http://10.0.0.5:7654",  "adv": "hosts/nixos-nvme/tang-adv.jws"},
-            {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"},
-            {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}
-        ]}}' ||
+  sudo clevis luks bind "${bind_opts[@]}" sss "$cfg" ||
     echo "⚠️  Tang binding failed — you may need to enter the passphrase on boot."
 }

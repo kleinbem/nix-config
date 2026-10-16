@@ -437,7 +437,7 @@ orin-install-usb device="/dev/sdb":
     echo "📋 orin-nano age public key: ${AGE_PUB}"
     pc_sops_add_and_reencrypt "$AGE_PUB" orin-nano
 
-    pc_clevis_bind_tang "$CRYPT"
+    pc_clevis_bind_tang "$CRYPT" "orin-nano"
 
     pc_teardown "$MNT" "$CRYPT" "$VG"
     echo ""
@@ -505,9 +505,14 @@ orin-update-usb device="/dev/sdb":
 
 
 [group("Provisioning")]
-[doc("Generate/rotate a host's Tang-wrapped LUKS unlock secret (kleinbem-secrets/initrd/cryptroot_<host>.jwe), consumed by my.boot.clevis-initrd.secretFile. Prompts for the LUKS passphrase — must match what's actually set on that host's LUKS container, or the JWE decrypts to the wrong passphrase and auto-unlock fails.")]
+[doc("(Re)bind a host's Tang-wrapped LUKS passphrase (kleinbem-secrets/initrd/cryptroot_<host>.jwe) to every other host's Tang server from inventory.nix. Re-wraps the current JWE content when it still decrypts; otherwise prompts for the LUKS passphrase.")]
 generate-jwe host:
     @bash scripts/generate-jwe.sh {{host}}
+
+[group("Provisioning")]
+[doc("Check every host's Tang JWE is bound to exactly the servers inventory.nix asks for (reads headers only).")]
+tang-check:
+    @bash scripts/check-tang-bindings.sh
 
 [group("Provisioning")]
 [confirm("💿 WIPE the USB-attached SSD and install NixOS for mac-mini? This is destructive. A random LUKS passphrase will be generated and printed at the end for you to save.")]
@@ -642,7 +647,7 @@ mac-mini-install-usb device:
     sudo cp "${ENTRY}" "${ESP}/loader/entries/nixos-1.conf"; rm "${ENTRY}"
     rm -f /tmp/mac-mini-system
 
-    pc_clevis_bind_tang "$CRYPT" "$PASS_FILE"
+    pc_clevis_bind_tang "$CRYPT" "mac-mini" "$PASS_FILE"
 
     pc_teardown "$MNT" "$CRYPT"
     echo ""
@@ -932,7 +937,7 @@ nasbook-install-usb device:
     # No FIDO2 enrollment on nasbook (unlike the other headless hosts) —
     # Tang is the silent primary path, the recovery passphrase over initrd
     # SSH or the physical console is the fallback.
-    pc_clevis_bind_tang "$CRYPT" "$PASS_FILE"
+    pc_clevis_bind_tang "$CRYPT" "nasbook" "$PASS_FILE"
 
     pc_teardown "$MNT" "$CRYPT"
 
@@ -950,10 +955,9 @@ nasbook-install-usb device:
     echo "        passphrase at the console only if that fails."
     echo "   4. just deployment::update nasbook   (or wait for the nightly autoUpgrade"
     echo "        pull — nasbook is requireCache-gated) once it's reachable over SSH"
-    echo "   5. Once nasbook's own tang service is confirmed live, fetch its"
-    echo "        advertisement (see hosts/nixos-nvme/tang-adv.jws for the pattern)"
-    echo "        and add it as a 4th pin to pc_clevis_bind_tang + generate-jwe.sh,"
-    echo "        so other hosts can use nasbook as a tang source too."
+    echo "   5. Once nasbook's own tang service is live, add its url and thumbprint"
+    echo "        to inventory.nix \`tang\` and run just deployment::generate-jwe"
+    echo "        for the other hosts, so they can use nasbook as a tang source too."
     echo ""
     echo "🔑 LUKS fallback passphrase for nasbook (save to Bitwarden now, then close"
     echo "   this terminal — it is NOT stored anywhere by this script; only needed"
@@ -1085,7 +1089,7 @@ pi-install-usb host device="/dev/sdc":
         sudo chmod 644 "${persist}/etc/ssh/ssh_host_ed25519_key.pub" "${persist}/etc/ssh/ssh_host_rsa_key.pub"
     fi
 
-    pc_clevis_bind_tang "$CRYPT"
+    pc_clevis_bind_tang "$CRYPT" "{{host}}"
 
     pc_teardown "$MNT" "$CRYPT"
     echo "✅ Installation complete — put the SSD in the Pi and boot."
@@ -1255,7 +1259,7 @@ core-rebind-tang device="/dev/sdf":
         sudo clevis luks unbind -d "$LUKS_DEV" -s 1 || echo "No old key in slot 1 or failed to unbind."
         echo "🔗 Binding LUKS partition to Tang CLUSTER for silent boot..."
         echo "Will prompt for LUKS password to authorize Tang cluster binding..."
-        sudo clevis luks bind -d "$LUKS_DEV" sss '{"t": 1, "pins": {"tang": [{"url": "http://10.0.0.5:7654", "adv": "hosts/nixos-nvme/tang-adv.jws"}, {"url": "http://10.0.0.21:7654", "adv": "hosts/hass-pi/tang-adv.jws"}, {"url": "http://10.0.0.15:7654", "adv": "hosts/orin-nano/tang-adv.jws"}]}}'
+        sudo clevis luks bind -y -d "$LUKS_DEV" sss "$(bash scripts/tang-config.sh core-pi)"
     else
         echo "⚠️ Could not find mapped device core_crypt for Tang binding."
     fi
