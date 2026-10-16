@@ -43,7 +43,10 @@ in
 
     opencode.enable = true;
     herdr.enable = true;
-    ai-agents.enable = true;
+    ai-agents = {
+      enable = true;
+      claude.settings = lib.importJSON ./files/claude-settings.json;
+    };
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet
     android.enable = true; # User tools (apkeep, matepad CLI) for MatePad Pro
