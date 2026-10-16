@@ -101,6 +101,18 @@ tablet-rdp:
     adb -s "$SERIAL" shell monkey -p com.freerdp.afreerdp -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
     echo "✨ Connect in aFreeRDP to: localhost (or 127.0.0.1:3389)"
 
+[group("Tablet")]
+tablet-status:
+    @matepad status
+
+[group("Tablet")]
+tablet-install app:
+    @matepad install {{app}}
+
+[group("Tablet")]
+tablet-devcheck:
+    @matepad devcheck
+
 [group("Dhirujaan")]
 dhirujaan *args:
     @just android::scrcpy-dispatch "{{DHIRUJAAN_PHONE_SERIAL}}" "{{DHIRUJAAN_PHONE_IP}}" "16M" {{args}}
