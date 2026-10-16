@@ -118,6 +118,20 @@ in
       description = "Link every skill from the kleinbem/skills repo into every agent's skills dir.";
     };
 
+    claude.settings = lib.mkOption {
+      type = lib.types.attrsOf lib.types.anything;
+      default = { };
+      example = {
+        permissions.defaultMode = "auto";
+      };
+      description = ''
+        Keys to enforce in ~/.claude/settings.json. Claude Code writes to that
+        file itself, so it stays a real file: on every activation these keys
+        are deep-merged over it (lists are replaced, not appended) and every
+        key not declared here is left alone.
+      '';
+    };
+
     crashHandler.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -168,6 +182,29 @@ in
         )
       );
     };
+
+    # Same reason as herdr's config.toml (nix-presets/herdr.nix): a store
+    # symlink would make Claude Code's own writes fail, so merge instead.
+    home.activation.claudeSettings = lib.mkIf (cfg.claude.settings != { }) (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        settingsPath="${config.home.homeDirectory}/.claude/settings.json"
+        declared=${pkgs.writeText "claude-settings.json" (builtins.toJSON cfg.claude.settings)}
+        if [ -L "$settingsPath" ]; then
+          run rm -f "$settingsPath"
+        fi
+        if [ -s "$settingsPath" ] && ${pkgs.jq}/bin/jq -e 'type == "object"' "$settingsPath" >/dev/null 2>&1; then
+          tmp=$(mktemp)
+          ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$settingsPath" "$declared" > "$tmp"
+          run install -m644 "$tmp" "$settingsPath"
+          rm -f "$tmp"
+        else
+          if [ -e "$settingsPath" ]; then
+            run mv "$settingsPath" "$settingsPath.invalid"
+          fi
+          run install -Dm644 "$declared" "$settingsPath"
+        fi
+      ''
+    );
 
     # Follow the system journal for coredumps and nudge toward crash-to-agent.
     # No privilege needed: martin is in `wheel`, which can read the journal.
