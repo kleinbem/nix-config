@@ -15,14 +15,15 @@
       ssh-to-age
     ];
 
-    # scdaemon talks to the YubiKey through pcscd instead of its own CCID
-    # driver, so it shares the reader with ykman and friends.
-    file.".gnupg/scdaemon.conf".text = ''
-      disable-ccid
-    '';
     file.".gnupg/common.conf".text = ''
       use-keyboxd
     '';
+  };
+  programs.gpg = {
+    enable = true;
+    # scdaemon talks to the YubiKey through pcscd instead of its own CCID
+    # driver, so it shares the reader with ykman and friends.
+    scdaemonSettings.disable-ccid = true;
   };
   services.gpg-agent = {
     enable = true;
