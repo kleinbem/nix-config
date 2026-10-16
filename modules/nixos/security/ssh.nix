@@ -1,4 +1,7 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
+let
+  keys = import ../keys.nix;
+in
 {
   environment.variables = {
     SSH_ASKPASS_REQUIRE = "force";
@@ -9,6 +12,18 @@
   '';
 
   programs.ssh = {
+    # Verify each host's initrd SSH (remote unlock) instead of trusting it on
+    # first use: that's the moment a LUKS passphrase gets typed.
+    knownHosts = lib.mapAttrs' (
+      host: k:
+      lib.nameValuePair "initrd-${host}" {
+        hostNames = [
+          "[${k.ip}]:2222"
+          "[${host}]:2222"
+        ];
+        publicKey = k.key;
+      }
+    ) keys.initrdHostKeys;
     # Start the standard OpenSSH agent system-wide (replaces HM service)
     startAgent = true;
 

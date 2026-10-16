@@ -12,6 +12,7 @@
   inputs,
   self,
   myInventory,
+  secretFile,
   ...
 }:
 let
@@ -257,9 +258,9 @@ in
     # the next rebuild/redeploy; no further code change needed. Same pattern
     # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
     boot.clevis-initrd = {
-      enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/cryptroot_mac-mini.jwe");
+      enable = builtins.pathExists (secretFile "initrd/cryptroot_mac-mini.jwe");
       luksDevice = "mac_mini_crypt";
-      secretFile = inputs.kleinbem-secrets + "/initrd/cryptroot_mac-mini.jwe";
+      secretFile = secretFile "initrd/cryptroot_mac-mini.jwe";
       fallbackMessage = "Tang still unreachable; falling back to initrd SSH (no physical console on this host)";
       # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
     };
@@ -804,7 +805,7 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_mac-mini");
+          enable = true;
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
@@ -814,9 +815,7 @@ in
           hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_mac-mini" ];
         };
       };
-      secrets."/etc/ssh/ssh_host_ed25519_key_mac-mini" = lib.mkForce (
-        inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_mac-mini"
-      );
+      secrets."/etc/ssh/ssh_host_ed25519_key_mac-mini" = lib.mkForce config.my.hostSecrets.initrdSshKey;
     };
 
     loader.systemd-boot = {

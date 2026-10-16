@@ -7,9 +7,9 @@
 #
 # No FIDO2 on this host (see disko.nix) and this disk isn't needed for
 # boot, so instead of adding another Tang/passphrase ceremony it unlocks
-# silently via a keyfile embedded into initrd — same plain-file-in-
-# kleinbem-secrets/initrd/ convention as the SSH host key and Tang JWE.
-{ inputs, ... }:
+# silently via a keyfile embedded into initrd. The keyfile is generated on
+# nasbook itself (my.hostSecrets) and never enters the Nix store.
+{ config, ... }:
 {
   my.dataDisk = {
     enable = true;
@@ -23,8 +23,8 @@
     keyFilePath = "/etc/nasbook-data.key";
   };
 
-  boot.initrd.secrets."/etc/nasbook-data.key" =
-    inputs.kleinbem-secrets + "/initrd/data_luks_key_nasbook";
+  # Generated on nasbook (my.hostSecrets), never a store path.
+  boot.initrd.secrets."/etc/nasbook-data.key" = "${config.my.hostSecrets.dir}/nasbook-data.key";
 
   # Same requirement disko.nix already documents for /nix and /nix/persist:
   # environment.persistence (impermanence) asserts every filesystem backing

@@ -5,6 +5,7 @@
 #   2. mkOidcSecret: plug-and-play Authentik OIDC client secret + template generator
 { lib, inputs }:
 let
+  secretFile = import ./secret-file.nix { inherit inputs; };
   mkPerContainerSecrets =
     {
       container,
@@ -20,7 +21,7 @@ let
         suffix:
         lib.nameValuePair "${prefix}_${suffix}" (
           {
-            sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/${container}.yaml";
+            sopsFile = secretFile "nix/per-container/${container}.yaml";
           }
           // lib.optionalAttrs (!fullKey) { key = suffix; }
         )
@@ -41,7 +42,7 @@ let
       envVar ? "OAUTH_CLIENT_SECRET",
     }:
     let
-      sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/${yamlFile}.yaml";
+      sopsFile = secretFile "nix/per-container/${yamlFile}.yaml";
       hasSecret =
         builtins.pathExists sopsFile && lib.hasInfix "\n${secretKey}:" ("\n" + builtins.readFile sopsFile);
     in

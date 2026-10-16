@@ -2,6 +2,7 @@
   inputs,
   config,
   lib,
+  secretFile,
   ...
 }:
 let
@@ -13,7 +14,7 @@ let
   # exists in mac-mini.yaml would freeze every other secret on this host
   # (discord_bot_token, stalwart's admin hash, etc.) until someone notices,
   # same landmine documented in the persona comment further down.
-  macMiniSopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
+  macMiniSopsFile = secretFile "nix/per-host/mac-mini.yaml";
   macMiniHasField = field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
 
   secretHelpers = import ../../lib/secrets.nix { inherit lib inputs; };
@@ -36,7 +37,7 @@ let
     claude-code = "anthropic_api_key";
   };
   invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
-  personaSopsFile = name: "${inputs.kleinbem-secrets}/personas/${name}.yaml";
+  personaSopsFile = name: secretFile "personas/${name}.yaml";
 
   # sops-install-secrets validates its ENTIRE manifest atomically before
   # writing anything — one declared secret whose key doesn't exist yet in
@@ -132,7 +133,7 @@ in
       # Lives in kleinbem-secrets' per-host scope now (nix/per-host/mac-mini.yaml,
       # cutover 2026-08-07) rather than the old shared secrets.yaml.
       discord_bot_token = {
-        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
+        sopsFile = secretFile "nix/per-host/mac-mini.yaml";
       };
 
       # Comma-separated Discord user IDs allowed to talk to the Hermes bot
@@ -145,7 +146,7 @@ in
       # mac-mini.yaml`, edit hermes_discord_allowed_users to a comma-joined
       # list.
       hermes_discord_allowed_users = {
-        sopsFile = "${inputs.kleinbem-secrets}/nix/per-host/mac-mini.yaml";
+        sopsFile = secretFile "nix/per-host/mac-mini.yaml";
       };
 
     }
@@ -178,7 +179,7 @@ in
       # other container-bind-mounted secrets in this fleet) rather than
       # chasing exact UID parity across a package-version-dependent uid.
       monitoring_grafana_oauth_client_secret = {
-        sopsFile = "${inputs.kleinbem-secrets}/nix/per-container/monitoring.yaml";
+        sopsFile = secretFile "nix/per-container/monitoring.yaml";
         mode = "0444";
       };
     }

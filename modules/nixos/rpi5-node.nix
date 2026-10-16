@@ -14,13 +14,7 @@ let
   keys = import "${self}/modules/nixos/keys.nix";
   hostName = config.networking.hostName;
   hostIp = config.my.boot.clevis-initrd.hostIp;
-  # CI uses --override-input kleinbem-secrets /tmp/dummy-secrets, which lacks the
-  # initrd/ subtree. Both consumers below — `network.ssh.enable` and
-  # `boot.initrd.secrets` — gate on this, otherwise make-initrd-ng tries to
-  # walk a path component that isn't on disk and aborts with
-  # "failed to get symlink metadata for <…>/initrd".
-  initrdSshKey = "${inputs.kleinbem-secrets}/initrd/ssh_host_ed25519_key_${hostName}";
-  hasInitrdSshKey = builtins.pathExists initrdSshKey;
+  initrdHostKey = "/etc/ssh/ssh_host_ed25519_key_${hostName}";
 in
 {
   # ─── Common Imports ──────────────────────────────────────────
@@ -159,24 +153,50 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = hasInitrdSshKey;
+          enable = true;
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
             keys.ssh.fido2
             keys.ssh.fido2-backup
           ];
-          hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_${hostName}" ];
+          # extlinux can't append initrd secrets, and NixOS would otherwise
+          # bake the key into a world-readable store path. The key is
+          # generated on the host (my.hostSecrets), staged on the root-only
+          # boot partition below and copied in by initrd-ssh-hostkey.
+          hostKeys = [ ];
+          ignoreEmptyHostKeys = true;
+          extraConfig = "HostKey ${initrdHostKey}";
         };
       };
-      secrets = lib.optionalAttrs hasInitrdSshKey {
-        "/etc/ssh/ssh_host_ed25519_key_${hostName}" = lib.mkForce initrdSshKey;
-      };
+      supportedFilesystems.vfat = true;
 
       systemd = {
         enable = true;
         # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
         tpm2.enable = lib.mkForce false;
+
+        mounts = [
+          {
+            what = config.fileSystems."/boot".device;
+            where = "/run/bootpart";
+            type = "vfat";
+            options = "ro,umask=0077";
+            unitConfig.DefaultDependencies = false;
+          }
+        ];
+        services.initrd-ssh-hostkey = {
+          description = "Copy the initrd SSH host key from the boot partition";
+          wantedBy = [ "sshd.service" ];
+          before = [ "sshd.service" ];
+          requires = [ "run-bootpart.mount" ];
+          after = [ "run-bootpart.mount" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig.Type = "oneshot";
+          script = ''
+            install -m 0600 /run/bootpart/initrd-secrets/ssh_host_ed25519_key ${initrdHostKey}
+          '';
+        };
       };
     };
 
@@ -280,6 +300,25 @@ in
   # Kernel compilation requires ~15GB of temporary space.
   systemd = {
     services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
+    # Stage the host-local initrd SSH key on the root-only boot partition,
+    # where initrd-ssh-hostkey picks it up on the next boot.
+    services.stage-initrd-ssh-hostkey = {
+      description = "Stage the initrd SSH host key on the boot partition";
+      wantedBy = [ "multi-user.target" ];
+      unitConfig.RequiresMountsFor = [
+        "/boot"
+        config.my.hostSecrets.dir
+      ];
+      serviceConfig.Type = "oneshot";
+      script = ''
+        src=${config.my.hostSecrets.initrdSshKey}
+        if [ ! -f "$src" ]; then
+          echo "$src is missing; generate it with: just access::host-keygen ${hostName}" >&2
+          exit 1
+        fi
+        install -D -m 0600 "$src" /boot/initrd-secrets/ssh_host_ed25519_key
+      '';
+    };
     tmpfiles.rules = [
       "d /nix/persist/tmp/nix-builds 1777 root root 7d"
     ];

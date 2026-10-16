@@ -1,6 +1,6 @@
 {
+  config,
   lib,
-  inputs,
   self,
   ...
 }:
@@ -63,7 +63,7 @@ in
       network = {
         enable = true;
         ssh = {
-          enable = builtins.pathExists "${inputs.kleinbem-secrets}/initrd/ssh_host_ed25519_key_orin-nano";
+          enable = true;
           port = 2222;
           authorizedKeys = [
             keys.ssh.yubikey
@@ -73,9 +73,7 @@ in
           hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_orin-nano" ];
         };
       };
-      secrets."/etc/ssh/ssh_host_ed25519_key_orin-nano" = lib.mkForce (
-        inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_orin-nano"
-      );
+      secrets."/etc/ssh/ssh_host_ed25519_key_orin-nano" = lib.mkForce config.my.hostSecrets.initrdSshKey;
       systemd = {
         enable = true;
       };

@@ -4,6 +4,7 @@
   lib,
   config,
   options,
+  secretFile,
   ...
 }:
 let
@@ -144,7 +145,7 @@ in
   # `nix copy --from ssh://<host>` verifies them — see keys.nix and
   # nix.settings.secret-key-files above.
   sops.secrets.nix_signing_key = {
-    sopsFile = "${inputs.kleinbem-secrets}/nix/shared-signing.yaml";
+    sopsFile = secretFile "nix/shared-signing.yaml";
     mode = "0400";
     owner = "root";
   };

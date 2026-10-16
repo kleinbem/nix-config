@@ -3,6 +3,7 @@
   config,
   lib,
   myInventory,
+  secretFile,
   ...
 }:
 # Foundational modules every deployed NixOS host should pull in by default.
@@ -53,13 +54,14 @@
     ./machine-id.nix # my.machineId — stable machine-id on the tmpfs root (kernel cmdline pin)
     ./backup.nix # my.backup — fleet destinations/keys for nix-presets' backup-engine (off until a host enables it)
     ./heartbeat.nix # my.heartbeat — external dead-man's switch (healthchecks.io); per-host opt-in
+    ./host-secrets.nix # my.hostSecrets — host-local plaintext keys (initrd SSH, LUKS key files), never in the store
   ];
 
   # Fleet-wide sops defaults — every host used to repeat these 3 lines
   # verbatim in its own secrets.nix; hoisted here 2026-09-11. mkDefault so a
   # host can still override (none currently need to).
   sops = {
-    defaultSopsFile = lib.mkDefault "${inputs.kleinbem-secrets}/nix/shared.yaml";
+    defaultSopsFile = lib.mkDefault (secretFile "nix/shared.yaml");
     defaultSopsFormat = lib.mkDefault "yaml";
     # Don't fail the *build* validating secret presence against the sops
     # file. CI builds every host's toplevel with an empty dummy
@@ -211,7 +213,7 @@
     useGlobalPkgs = true;
     useUserPackages = true;
     extraSpecialArgs = {
-      inherit inputs myInventory;
+      inherit inputs myInventory secretFile;
       inherit (config) my;
     };
     backupFileExtension = "backup";

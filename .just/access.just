@@ -47,3 +47,54 @@ notouch-status device:
     @ssh {{device}} "grep 'GitHubNoTouchV2' ~/.ssh/authorized_keys 2>/dev/null" \
         && echo "^ grant present on {{device}} (see expiry-time above)" \
         || echo "no grant present on {{device}}"
+
+# Host-local plaintext keys (modules/nixos/host-secrets.nix) are generated on
+# the host itself and never leave it. The script travels base64-encoded so
+# sudo can read its password from the TTY while the script comes on stdin.
+_on_host host script:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    b64=$(printf '%s' {{ quote(script) }} | base64 -w0)
+    if [ "{{host}}" = "$(hostname)" ]; then
+        printf '%s' "$b64" | base64 -d | sudo bash
+    else
+        ssh -t {{host}} "printf '%s' '$b64' | base64 -d | sudo bash"
+    fi
+
+[group("Access")]
+[doc("Generate <host>'s initrd SSH host key in /nix/persist/secrets (root-only, never in the store). Keeps an existing key; prints the public key.")]
+host-keygen host:
+    @just access::_on_host {{host}} '\
+      set -eu; d=/nix/persist/secrets/initrd; \
+      install -d -m 0700 /nix/persist/secrets "$d"; \
+      [ -f "$d/ssh_host_ed25519_key" ] || ssh-keygen -q -t ed25519 -N "" -C "initrd@{{host}}" -f "$d/ssh_host_ed25519_key"; \
+      chmod 0600 "$d/ssh_host_ed25519_key"; \
+      cat "$d/ssh_host_ed25519_key.pub"'
+
+# Step 1 of moving nasbook's data-disk key out of kleinbem-secrets: create a
+# new random key on nasbook and add it to the LUKS header next to the old one
+# (the old one is still in nasbook's store from the repo copy). Deploy, reboot,
+# confirm /mnt/data unlocks, then run nasbook-data-drop-old-key.
+[group("Access")]
+[doc("nasbook: add a new host-local data-disk LUKS key (old key stays until nasbook-data-drop-old-key).")]
+nasbook-data-rekey:
+    @just access::_on_host nasbook '\
+      set -eu; new=/nix/persist/secrets/nasbook-data.key; \
+      dev=$(cryptsetup status nasbook_data_crypt | sed -n "s/^ *device: *//p"); \
+      old=$(ls -1 /nix/store/*-source/initrd/data_luks_key_nasbook 2>/dev/null | head -n 1); \
+      [ -n "$dev" ] && [ -n "$old" ] || { echo "data disk not open or old key not found" >&2; exit 1; }; \
+      install -d -m 0700 /nix/persist/secrets; \
+      if [ ! -f "$new" ]; then (umask 077; head -c 64 /dev/urandom > "$new"); fi; \
+      cryptsetup luksAddKey --key-file "$old" "$dev" "$new" 2>/dev/null || cryptsetup open --test-passphrase --key-file "$new" "$dev"; \
+      cryptsetup open --test-passphrase --key-file "$new" "$dev" && echo "new key works on $dev"'
+
+[group("Access")]
+[doc("nasbook: remove the old (leaked) data-disk key from the LUKS header. Run only after a reboot unlocked /mnt/data with the new key.")]
+nasbook-data-drop-old-key:
+    @just access::_on_host nasbook '\
+      set -eu; new=/nix/persist/secrets/nasbook-data.key; \
+      dev=$(cryptsetup status nasbook_data_crypt | sed -n "s/^ *device: *//p"); \
+      old=$(ls -1 /nix/store/*-source/initrd/data_luks_key_nasbook 2>/dev/null | head -n 1); \
+      cryptsetup open --test-passphrase --key-file "$new" "$dev" || { echo "new key does not open $dev; refusing" >&2; exit 1; }; \
+      cryptsetup luksRemoveKey --key-file "$old" "$dev"; \
+      cryptsetup luksDump "$dev" | grep -E "^ *[0-9]+: luks2" '

@@ -5,6 +5,7 @@
   self,
   myInventory,
   config,
+  secretFile,
   ...
 }:
 let
@@ -70,10 +71,10 @@ in
     # is gated on the JWE existing rather than hardcoded true: nasbook-install-usb
     # generates it during provisioning, same as every other clevis-initrd host.
     boot.clevis-initrd = {
-      enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/cryptroot_nasbook.jwe");
+      enable = builtins.pathExists (secretFile "initrd/cryptroot_nasbook.jwe");
       luksDevice = "nasbook_crypt";
       hostIp = "10.0.0.30"; # inventory.nix — excludes nasbook's own tang server from the wait loop
-      secretFile = inputs.kleinbem-secrets + "/initrd/cryptroot_nasbook.jwe";
+      secretFile = secretFile "initrd/cryptroot_nasbook.jwe";
       fallbackMessage = "Tang still unreachable; falling back to the recovery passphrase over initrd SSH or the HDMI/TTY console.";
     };
 
@@ -303,7 +304,7 @@ in
     # Remote unlock fallback, same pattern as nixos-nvme/mac-mini — lets us
     # unlock over SSH instead of needing physical HDMI/keyboard access.
     network.ssh = {
-      enable = builtins.pathExists (inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_nasbook");
+      enable = true;
       port = 2222;
       authorizedKeys = [
         keys.ssh.yubikey
@@ -312,9 +313,7 @@ in
       ];
       hostKeys = [ "/etc/ssh/ssh_host_ed25519_key_nasbook" ];
     };
-    secrets."/etc/ssh/ssh_host_ed25519_key_nasbook" = lib.mkForce (
-      inputs.kleinbem-secrets + "/initrd/ssh_host_ed25519_key_nasbook"
-    );
+    secrets."/etc/ssh/ssh_host_ed25519_key_nasbook" = lib.mkForce config.my.hostSecrets.initrdSshKey;
   };
 
   system.stateVersion = "25.11"; # Or whatever the current state version is

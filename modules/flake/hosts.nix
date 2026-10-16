@@ -14,6 +14,7 @@ let
     inputs.nixpkgs.lib.nixosSystem {
       specialArgs = {
         inherit inputs self myInventory;
+        secretFile = import ../../lib/secret-file.nix { inherit inputs; };
       }
       // extraSpecialArgs;
       modules = [

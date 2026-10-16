@@ -2,6 +2,7 @@
   pkgs,
   inputs,
   config,
+  secretFile,
   ...
 }:
 
@@ -11,7 +12,7 @@
   ];
 
   sops = {
-    defaultSopsFile = "${inputs.kleinbem-secrets}/nix/shared.yaml";
+    defaultSopsFile = secretFile "nix/shared.yaml";
     defaultSopsFormat = "yaml";
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/host.txt";
 
