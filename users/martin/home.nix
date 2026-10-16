@@ -1,5 +1,6 @@
 {
   inputs,
+  osConfig,
   pkgs,
   lib,
   my,
@@ -147,18 +148,30 @@ in
     };
   };
 
-  xdg.mimeApps = {
-    enable = true;
-    # mkForce: nix-presets/desktop.nix sets these same keys to the stock
-    # google-chrome.desktop — force wins the merge so martin gets the custom
-    # google-chrome-stable.desktop entry (with the StartupWMClass fix, see
-    # xdg.desktopEntries below) instead.
-    defaultApplications = lib.mkForce {
-      "text/html" = [ "google-chrome-stable.desktop" ];
-      "x-scheme-handler/http" = [ "google-chrome-stable.desktop" ];
-      "x-scheme-handler/https" = [ "google-chrome-stable.desktop" ];
-      "x-scheme-handler/about" = [ "google-chrome-stable.desktop" ];
-      "x-scheme-handler/unknown" = [ "google-chrome-stable.desktop" ];
+  xdg = {
+    mimeApps = {
+      enable = true;
+      # mkForce: nix-presets/desktop.nix sets these same keys to the stock
+      # google-chrome.desktop — force wins the merge so martin gets the custom
+      # google-chrome-stable.desktop entry (with the StartupWMClass fix, see
+      # xdg.desktopEntries below) instead.
+      defaultApplications = lib.mkForce {
+        "text/html" = [ "google-chrome-stable.desktop" ];
+        "x-scheme-handler/http" = [ "google-chrome-stable.desktop" ];
+        "x-scheme-handler/https" = [ "google-chrome-stable.desktop" ];
+        "x-scheme-handler/about" = [ "google-chrome-stable.desktop" ];
+        "x-scheme-handler/unknown" = [ "google-chrome-stable.desktop" ];
+      };
+    };
+
+    # HM defaults match the standard dirs plus ~/Projects.
+    userDirs.enable = true;
+
+    # Linked from the package, so it can't go stale like the entry
+    # netbird-ui wrote itself (pinned to a store path that got collected).
+    autostart = lib.mkIf osConfig.services.netbird.ui.enable {
+      enable = true;
+      entries = [ "${osConfig.services.netbird.ui.package}/share/applications/netbird.desktop" ];
     };
   };
 
