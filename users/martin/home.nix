@@ -173,6 +173,20 @@ in
       enable = true;
       entries = [ "${osConfig.services.netbird.ui.package}/share/applications/netbird.desktop" ];
     };
+
+    # Native messaging host for the Open in App extension
+    # (kleinbem/chrome-open-in-app). force: replaces the copies its
+    # install.sh wrote, which pointed at a hand-built ~/.local/bin binary.
+    configFile =
+      lib.genAttrs
+        (map (browser: "${browser}/NativeMessagingHosts/com.kleinbem.open_in_app.json") [
+          "google-chrome"
+          "chromium"
+        ])
+        (_: {
+          source = "${pkgs.chrome-open-in-app-host}/etc/chromium/native-messaging-hosts/com.kleinbem.open_in_app.json";
+          force = true;
+        });
   };
 
   programs = {
