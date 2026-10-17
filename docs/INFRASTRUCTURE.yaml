@@ -26,6 +26,10 @@ repo_atlas:
     path: .github/
     url: git@github.com:kleinbem/.github.git
     role: Organization-wide GitHub Actions workflows and issue templates.
+  chrome-open-in-app:
+    path: chrome-open-in-app/
+    url: git@github.com:kleinbem/chrome-open-in-app.git
+    role: Supporting repository.
   github-config:
     path: github-config/
     url: git@github.com:kleinbem/github-config.git
@@ -1841,6 +1845,11 @@ modules_system:
     purpose: NixOS system module.
     declared_options:
     - my.heartbeat
+  host-secrets.nix:
+    file: nix-config/modules/nixos/host-secrets.nix
+    purpose: NixOS system module.
+    declared_options:
+    - my.hostSecrets
   hosts.nix:
     file: nix-config/modules/nixos/hosts.nix
     purpose: NixOS system module.
@@ -1943,6 +1952,9 @@ modules_user:
     ai-agents.nix:
       file: nix-config/modules/home-manager/ai-agents.nix
       purpose: Local AI agent CLI tools (Claude Code, Antigravity, Aider, OpenClaw).
+    android.nix:
+      file: nix-config/modules/home-manager/android.nix
+      purpose: Home-Manager user module.
     anyrun.nix:
       file: nix-config/modules/home-manager/anyrun.nix
       purpose: Wayland application launcher.
