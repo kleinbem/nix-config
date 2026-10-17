@@ -1199,7 +1199,7 @@ services:
     port: 8080
     external_port: 443
     domain: cache.kleinbem.dev
-    public: true
+    public: false
     auth: Default
     mtls: false
     upstream_preset: nix-presets/containers/attic.nix
