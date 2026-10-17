@@ -146,12 +146,12 @@ network_topology:
     purpose: Network-Bound Disk Encryption (NBDE) unlocking root LUKS in initrd via Clevis
     port: 7654
     servers:
-    - http://10.0.0.5:7654
-    - http://10.0.0.15:7654
     - http://10.0.0.22:7654
-    - http://10.0.0.30:7654
     - http://10.0.0.21:7654
     - http://10.0.0.16:7654
+    - http://10.0.0.30:7654
+    - http://10.0.0.5:7654
+    - http://10.0.0.15:7654
 hosts:
   ap-upstairs:
     tier: physical
