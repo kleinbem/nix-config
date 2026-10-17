@@ -74,7 +74,7 @@
 
 ### orin-nano
 
-- 📹 **Frigate NVR** (`frigate`) `10.85.46.39:5000` → `frigate.kleinbem.dev` — NVR with AI object detection (NVIDIA TensorRT). _[src: nix-presets/containers/frigate.nix:32]_
+- 📹 **Frigate NVR** (`frigate`) `10.85.46.39:80` → `frigate.kleinbem.dev` — NVR with AI object detection (NVIDIA TensorRT). _[src: nix-presets/containers/frigate.nix:32]_
 - 📦 **llama-cpp** (`llama-cpp`) _[src: nix-presets/containers/llama-cpp.nix:23]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 

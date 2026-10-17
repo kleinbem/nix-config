@@ -1393,7 +1393,7 @@ services:
     category: Security
     host: orin-nano
     ip: 10.85.46.39
-    port: 5000
+    port: 80
     external_port: 443
     domain: frigate.kleinbem.dev
     public: false
