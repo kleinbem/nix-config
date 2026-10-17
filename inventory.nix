@@ -668,7 +668,8 @@ in
         # the wire, only for anything (like a single fleet-wide netbird
         # route or static LAN route) that tries to key purely off the /24.
         ip = "10.85.46.39";
-        port = 5000;
+        # nginx from the NixOS frigate module; 5000 was never served.
+        port = 80;
         externalPort = 443;
         domain = "frigate.kleinbem.dev";
         auth = true; # Authentik forward-auth in front (was Authelia until 2026-09-22); mesh-only (NVR — never on the public tunnel)
