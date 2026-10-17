@@ -23,7 +23,9 @@ META_ROOT="$(dirname "$NIX_CONFIG_ROOT")"
 # generators' deps (pyyaml) don't hinge on whichever python3 is first on PATH.
 # Falls back to the ambient python3 if the build fails (e.g. offline).
 SYSTEM="$(nix eval --raw --impure --expr builtins.currentSystem 2>/dev/null || echo x86_64-linux)"
-if PY_ENV="$(nix build --no-link --print-out-paths "$NIX_CONFIG_ROOT#legacyPackages.$SYSTEM.agent-python" 2>/dev/null)"; then
+# NIX_OVERRIDES: extra flags, e.g. CI's --override-input kleinbem-secrets <dummy>.
+# shellcheck disable=SC2086
+if PY_ENV="$(nix build --no-link --print-out-paths "$NIX_CONFIG_ROOT#legacyPackages.$SYSTEM.agent-python" ${NIX_OVERRIDES:-} 2>/dev/null)"; then
   PYTHON="$PY_ENV/bin/python3"
 else
   echo "⚠️  Couldn't build pinned agent-python — falling back to ambient python3"
