@@ -2,19 +2,16 @@
   config,
   lib,
   pkgs,
-  myInventory,
   ...
 }:
 
 let
   cfg = config.my.boot.clevis-initrd;
 
-  # Generate list of remote Tang servers (filtering out our own IP if set)
-  remoteTangServers =
-    if cfg.hostIp != null then
-      lib.filter (s: !lib.hasInfix cfg.hostIp s) myInventory.tangServers
-    else
-      myInventory.tangServers;
+  # The Tang servers this host's JWE is bound to: every other host's
+  # (lib/tang.nix). Matching by host name, not IP substring: 10.0.0.1 would
+  # also have matched 10.0.0.15.
+  remoteTangServers = map (t: t.url) ((import ../../lib/tang.nix).servers config.networking.hostName);
 
   waitForTang = pkgs.writeShellScript "wait-for-tang" ''
     has_carrier=false

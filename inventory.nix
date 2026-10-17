@@ -1,18 +1,43 @@
+let
+  # ─── Tang NBDE Servers ──────────────────────────────────────
+  # Every host runs Tang and is a clevis client of all the OTHERS (sss, t=1:
+  # any one server unlocks). A host's own Tang isn't up during its own initrd
+  # unlock, so lib/tang.nix leaves it out of that host's binding.
+  # thp = SHA-256 thumbprint of the server's signing key; clevis verifies the
+  # advertisement against it, so binding needs no trust prompt and can't be
+  # redirected. Read from each server on 2026-10-17.
+  tang = {
+    nixos-nvme = {
+      url = "http://10.0.0.5:7654";
+      thp = "Zzi7JNtxV2LGgZVLxlJWo8xv1fVQaAgOy-2vKnJDRx8";
+    };
+    orin-nano = {
+      url = "http://10.0.0.15:7654";
+      thp = "UkXCd9RwLEKLDg46rFNuooViEpRO1Qy61kC3cuFuPZE";
+    };
+    core-pi = {
+      url = "http://10.0.0.22:7654";
+      thp = "jpULSo9iS7Cw9MjLWA9u7kIcHWyWDu3o1OtQCJcjQfM";
+    };
+    nasbook = {
+      url = "http://10.0.0.30:7654";
+      thp = "m_9W5Qh7Jo6a_c6dcSIVmTQhpL6tq27VoTWf6G5xhb0";
+    };
+    hass-pi = {
+      url = "http://10.0.0.21:7654";
+      thp = "3PlF5Uf9K64iCsOckD0N1sdGWzP5eeziibcKRz0xOSI";
+    };
+    mac-mini = {
+      url = "http://10.0.0.16:7654";
+      thp = "DUgzr8GGZH2CemMFsEgxg3ZD3-a59Zcx8IWrAYlfXzg";
+    };
+  };
+in
 {
   user = "martin";
 
-  # ─── Tang NBDE Servers ──────────────────────────────────────
-  # All physical hosts that run the Tang service (my.services.tang.enable = true).
-  # waitForTang in each host's initrd polls this list; clevis only needs one
-  # server to respond. A host's own Tang is not up during its own initrd unlock.
-  tangServers = [
-    "http://10.0.0.5:7654" # nixos-nvme (LAN interface)
-    "http://10.0.0.15:7654" # orin-nano
-    "http://10.0.0.22:7654" # core-pi
-    "http://10.0.0.30:7654" # nasbook
-    "http://10.0.0.21:7654" # hass-pi (planned, not yet active)
-    "http://10.0.0.16:7654" # mac-mini
-  ];
+  inherit tang;
+  tangServers = map (t: t.url) (builtins.attrValues tang);
 
   # ─── Managed Hosts ──────────────────────────────────────────
   hosts = {
