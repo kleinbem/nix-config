@@ -165,6 +165,31 @@ topology:
     @echo "✅ Rendered to: $(cat /tmp/topo-path)/main.svg"
     @if [ -n "$DISPLAY" ]; then xdg-open "$(cat /tmp/topo-path)/main.svg"; else echo "🔗 File path: $(cat /tmp/topo-path)/main.svg"; fi
 
+# Attic client with the admin token from sops, e.g.
+#   just nixos::attic cache info system
+#   just nixos::attic cache configure system --private
+# The config (with the token) lives on tmpfs for this one command, so no
+# token sits in ~/.config/attic any more.
+[group("System")]
+[doc("Run the attic client with the admin token from sops (tmpfs config, nothing left in ~/.config/attic). E.g. `cache info system`.")]
+attic *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cfg=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}")
+    trap 'rm -rf "$cfg"' EXIT
+    mkdir -p "$cfg/attic"
+    {
+        printf 'default-server = "kleinbem"\n[servers.kleinbem]\nendpoint = "https://cache.kleinbem.dev/"\ntoken = "'
+        sops -d --extract '["attic_admin_token"]' ../kleinbem-secrets/nix/per-host/nixos-nvme.yaml
+        printf '"\n'
+    } >"$cfg/attic/config.toml"
+    XDG_CONFIG_HOME="$cfg" nix run nixpkgs#attic-client -- {{args}}
+
+# Rotate the Attic signing key and re-issue every token (scripts/attic-rotate.sh).
+[group("System")]
+attic-rotate:
+    @bash scripts/attic-rotate.sh
+
 [group("System")]
 attic-token:
     @echo "🔑 Generating new Attic Admin Token (Valid for 1y)..."
