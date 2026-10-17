@@ -517,6 +517,12 @@ in
       enable = true;
       port = 3000;
       openFirewall = true;
+      # AdGuard's default bind is 0.0.0.0:53, which collides with resolved's
+      # stub (127.0.0.53/.54), NetBird's DNS and podman's aardvark — it never
+      # started on this host ("bind: address already in use"). Serve DNS on
+      # the LAN address only; port 53 is opened on that interface below
+      # (openFirewall covers just the web UI).
+      settings.dns.bind_hosts = [ myInventory.hosts.mac-mini.ip ];
     };
 
     # Whatever session GDM starts after a successful login (see the NOT
@@ -933,6 +939,11 @@ in
         ip daddr ${myInventory.network.nodes.alertmanager.ip} tcp dport ${toString myInventory.network.nodes.alertmanager.port} ip saddr { ${myInventory.hosts.core-pi.ip}, 10.85.50.1 } accept
         ip daddr ${myInventory.network.nodes.alertmanager.ip} tcp dport ${toString myInventory.network.nodes.alertmanager.port} drop
       '';
+      # AdGuard Home DNS (services.adguardhome, bound to the LAN address).
+      interfaces."enp2s0f0" = {
+        allowedTCPPorts = [ 53 ];
+        allowedUDPPorts = [ 53 ];
+      };
     };
 
     interfaces."enp2s0f0" = {
