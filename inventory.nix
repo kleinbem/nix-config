@@ -261,7 +261,10 @@ in
         port = 8080;
         externalPort = 443;
         domain = "cache.kleinbem.dev";
-        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
+        # Mesh-only: every consumer (hosts, CI runners) reaches it over
+        # NetBird, and the tunnel path 413s on large NARs anyway. Off the
+        # public tunnel since 2026-10-17, after it served the secrets repo
+        # source to the internet. Pulls also need a token.
         meta = {
           name = "Attic Binary Cache";
           category = "Infrastructure";
