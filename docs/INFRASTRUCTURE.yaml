@@ -1204,7 +1204,7 @@ services:
     mtls: false
     upstream_preset: nix-presets/containers/attic.nix
     persistence_path: /var/lib/machines/attic
-    description: Nix binary cache server.
+    description: Nix binary cache server (sync-docs test).
   authentik:
     name: Authentik
     category: Identity
