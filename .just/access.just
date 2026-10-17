@@ -99,6 +99,25 @@ nasbook-data-drop-old-key:
       cryptsetup luksRemoveKey --key-file "$old" "$dev"; \
       cryptsetup luksDump "$dev" | grep -E "^ *[0-9]+: luks2" '
 
+# nasbook's data disk has a single key slot: the host-local keyfile. Keep an
+# encrypted copy in kleinbem-secrets (nix/per-host/nasbook.yaml,
+# nasbook_data_luks_key, base64) so a reinstall can restore it with
+#   sops -d --extract '["nasbook_data_luks_key"]' nix/per-host/nasbook.yaml | base64 -d
+# Nix never reads it. The plaintext only travels through the SSH pipe into sops.
+[group("Access")]
+[doc("Back up nasbook's data-disk key into kleinbem-secrets, sops-encrypted (sudo on nasbook, YubiKey for sops).")]
+nasbook-data-backup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    f="${KLEINBEM_SECRETS:-../kleinbem-secrets}/nix/per-host/nasbook.yaml"
+    out=$(ssh -t nasbook 'sudo sh -c "printf KEY:; base64 -w0 /nix/persist/secrets/nasbook-data.key; echo"')
+    b64=$(printf '%s' "$out" | tr -d '\r' | sed -n 's/.*KEY:\([A-Za-z0-9+/=]*\).*/\1/p' | tail -n 1)
+    unset out
+    [ "${#b64}" -eq 88 ] || { echo "unexpected key length (${#b64}); nothing written" >&2; exit 1; }
+    printf '%s' "$b64" | jq -Rs . | sops set --value-stdin "$f" '["nasbook_data_luks_key"]'
+    unset b64
+    echo "✓ nasbook_data_luks_key stored in nix/per-host/nasbook.yaml; commit kleinbem-secrets"
+
 # Read-only unlock check for <host> (needs its sudo password once). Unlock
 # policy, every host: Tang (any other host) → primary/backup YubiKey (FIDO2) →
 # passphrase → initrd SSH on :2222 to type the passphrase.
