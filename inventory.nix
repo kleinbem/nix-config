@@ -269,7 +269,7 @@ in
           name = "Attic Binary Cache";
           category = "Infrastructure";
           icon = "📦";
-          description = "Nix binary cache server.";
+          description = "Nix binary cache server (sync-docs test).";
         };
       };
       ntfy = {
