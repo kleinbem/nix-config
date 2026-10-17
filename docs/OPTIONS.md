@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 66  
+**Declarations indexed:** 67  
 **Consumer files scanned:** 30
 
 ---
@@ -388,6 +388,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/herdr-remote-client.nix:12`
 - **Sub-options:** `enable`, `serverAlias`, `serverIp`, `serverUser`, `shellAlias`
 - **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
+
+## `my.hostSecrets`
+
+### `my.hostSecrets`
+
+- **Declared:** `nix-config/modules/nixos/host-secrets.nix:13`
+- **Sub-options:** `dir`, `initrdSshKey`
+- **Consumed by:** _(no opt-ins detected)_
 
 ## `my.monitoring`
 
