@@ -37,9 +37,10 @@ in
       replace = true;
       # A fresh registration and work directory for every job.
       ephemeral = true;
+      # Besides the module's bash, coreutils, git and nix: the canary script's tools.
       extraPackages = with pkgs; [
-        config.nix.package
         curl
+        gawk
         gnugrep
         gnused
         jq
