@@ -74,8 +74,6 @@
 
 ### orin-nano
 
-- 📹 **Frigate NVR** (`frigate`) `10.85.46.39:80` → `frigate.kleinbem.dev` — NVR with AI object detection (NVIDIA TensorRT). _[src: nix-presets/containers/frigate.nix:32]_
-- 📦 **llama-cpp** (`llama-cpp`) _[src: nix-presets/containers/llama-cpp.nix:23]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### Declared but not currently enabled on any host
@@ -84,11 +82,13 @@
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `ente-web` — Ente Auth Web
+- `frigate` — Frigate NVR _[src: nix-presets/containers/frigate.nix:32]_
 - `garage` — Garage S3
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:12]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:17]_
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
+- `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:23]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:15]_
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_

@@ -51,21 +51,26 @@
       );
       fallbackMessage = "Tang still unreachable; continuing (clevis falls back to passphrase)";
     };
-    services.tang.enable = true;
+    services = {
+      tang.enable = true;
+      # The Orin is reserved for the mesh-llm GPU tests (2026-10-18), so llama-cpp
+      # and Frigate are off below. See modules/nixos/services/mesh-llm-gpu-runner.nix.
+      meshLlmGpuRunner.enable = true;
+
+      container-updater = {
+        enable = true;
+        manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+        containers =
+          let
+            excludeFromUpdater = [ "llama-cpp" ];
+            allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+          in
+          lib.subtractLists excludeFromUpdater allEnabled;
+      };
+    };
     security.ai-hardening.enable = false; # Orin Nano runs no airlocked AI webapps; ai-airlock requires CONFIG_NFT_REDIR which JP6 lacks
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";
-
-    services.container-updater = {
-      enable = true;
-      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      containers =
-        let
-          excludeFromUpdater = [ "llama-cpp" ];
-          allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
-        in
-        lib.subtractLists excludeFromUpdater allEnabled;
-    };
 
     containers = {
       ollama = {
@@ -76,7 +81,7 @@
         memoryLimit = "6G";
       };
       llama-cpp = {
-        enable = true; # Serving Gemma via llama.cpp (CUDA)
+        enable = false; # Off while the Orin runs the mesh-llm GPU tests; was serving Gemma via llama.cpp (CUDA)
         enableCuda = true;
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-3-4b-it-Q4_K_M.gguf"; # Gemma 3 4B — fits 8GB unified mem with headroom
@@ -91,7 +96,7 @@
         #   jetson = true, detector = "tensorrt" (after building the engine
         #   on-device and confirming the jetsonDevices set), add cameras, create
         #   the frigate_rtsp_env secret and point environmentFile back at it.
-        enable = true;
+        enable = false; # Off while the Orin runs the mesh-llm GPU tests (camera-less smoke test until then)
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "cpu"; # temp — bundled CPU model; target is "tensorrt"
         enableGPU = false; # temp — no GPU passthrough during the smoke test

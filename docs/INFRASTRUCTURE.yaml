@@ -58,6 +58,10 @@ repo_atlas:
     path: mesh-llm-ci/
     url: git@github.com:kleinbem/mesh-llm-ci.git
     role: Supporting repository.
+  mesh-llm-gpu:
+    path: mesh-llm-gpu/
+    url: git@github.com:kleinbem/mesh-llm-gpu.git
+    role: Supporting repository.
   nix:
     path: nix/
     url: git@github.com:kleinbem/nix.git
@@ -1075,10 +1079,9 @@ hosts:
       - container-updater.containers
       - container-updater.enable
       - container-updater.manifestUrl
+      - meshLlmGpuRunner.enable
       - tang.enable
     containers_hosted:
-    - frigate
-    - llama-cpp
     - syncthing
     secrets_consumed:
     - attic_push_token
@@ -1391,7 +1394,7 @@ services:
   frigate:
     name: Frigate NVR
     category: Security
-    host: orin-nano
+    host: nixos-nvme
     ip: 10.85.46.39
     port: 80
     external_port: 443
