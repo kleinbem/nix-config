@@ -54,9 +54,8 @@
     services = {
       tang.enable = true;
       # The Orin is reserved for the mesh-llm GPU tests (2026-10-18), so llama-cpp
-      # and Frigate are off below. Set this once the runner's PAT is in sops (see
-      # modules/nixos/services/mesh-llm-gpu-runner.nix).
-      meshLlmGpuRunner.enable = false;
+      # and Frigate are off below. See modules/nixos/services/mesh-llm-gpu-runner.nix.
+      meshLlmGpuRunner.enable = true;
 
       container-updater = {
         enable = true;
