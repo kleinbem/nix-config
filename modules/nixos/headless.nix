@@ -23,6 +23,7 @@ in
 {
   imports = [
     ./services/tang.nix
+    ./services/mesh-llm-gpu-runner.nix
   ];
 
   services = {
