@@ -11,6 +11,7 @@
 #   attic_pull_token          nix/shared.yaml               sub fleet-pull: pull system
 #   attic_push_token          nix/per-host/orin-nano.yaml   sub orin-nano: pull+push system
 #   attic_ci_push_token       infra/terraform.yaml          sub github-ci: pull+push system
+#   attic_ci_pull_token       infra/terraform.yaml          sub github-ci-pull: pull system (PR builds)
 #   attic_admin_token         nix/per-host/nixos-nvme.yaml  sub admin: everything; only via `just nixos::attic`
 #
 # Afterwards: commit kleinbem-secrets, bump it in nix-config, deploy core-pi
@@ -59,6 +60,7 @@ printf '%s' "$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64" | put nix/per-host/core-pi
 mint --sub fleet-pull --pull system | put nix/shared.yaml attic_pull_token
 mint --sub orin-nano --pull system --push system | put nix/per-host/orin-nano.yaml attic_push_token
 mint --sub github-ci --pull system --push system | put infra/terraform.yaml attic_ci_push_token
+mint --sub github-ci-pull --pull system | put infra/terraform.yaml attic_ci_pull_token
 mint --sub admin --pull '*' --push '*' --delete '*' --create-cache '*' --configure-cache '*' \
   --configure-cache-retention '*' --destroy-cache '*' | put nix/per-host/nixos-nvme.yaml attic_admin_token
 unset ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
@@ -68,7 +70,7 @@ cat <<'NEXT'
 ✅ Done. Old tokens die when core-pi restarts Attic with the new key. Next:
    1. Commit kleinbem-secrets; bump it in nix-config (nix flake update kleinbem-secrets).
    2. Deploy core-pi, then the other hosts (new pull token).
-   3. nix: tools/tf-apply.sh  (ATTIC_PUSH_TOKEN for CI)
+   3. nix: tools/tf-apply.sh  (ATTIC_PUSH_TOKEN and ATTIC_PULL_TOKEN for CI)
    4. just nixos::attic cache configure system --private
    5. rm ~/.config/attic/config.toml   (old admin tokens, now dead)
 NEXT

@@ -31,10 +31,10 @@ jobs:
       - name: Nix fleet setup
         uses: ./.github/actions/nix-fleet-setup
         with:
-          # Prefer the ephemeral key (auto-expiring runner peers); fall back to
-          # the persistent key until the ephemeral secret is distributed.
-          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL || secrets.NETBIRD_SETUP_KEY }}
-          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
+          # Ephemeral key only: runner peers land in ci-runners (cache-only
+          # policy) and auto-expire after the run.
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
+          attic-token: ${{ secrets.ATTIC_PULL_TOKEN }}
 
       - name: Realize nixos-nvme closure (local store / cache)
         run: |
