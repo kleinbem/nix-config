@@ -1607,14 +1607,15 @@
         "nixpkgs": [
           "nixpkgs"
         ],
+        "nixpkgs-mesh": "nixpkgs-mesh",
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1792438412,
-        "narHash": "sha256-timdwkdUv/KYP/MIU+33qqjuICrzIW6HL59UO3b+u4U=",
+        "lastModified": 1792451243,
+        "narHash": "sha256-gdBE4FlseNDgI+KnaW2U2PkxOmSJFVXOQD4YYs2x62Q=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "5b9c60914b451e1699e0fc730297a94ede623e34",
+        "rev": "dafa8b4e09ab080329a6adb9855f55db547fc1d6",
         "type": "github"
       },
       "original": {
@@ -1646,11 +1647,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1792450286,
-        "narHash": "sha256-9hAQjE20u/pIBmw2cv/1kGHd/w3opYDAgAssyveiVuo=",
+        "lastModified": 1792451264,
+        "narHash": "sha256-mKt7lMNdge82CV+IyIi0/EZKXe6R7w7airlYnO0h02s=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "98a78e9f3fa1070b09bccedf2695ccf55b8af79c",
+        "rev": "de6cde13c3225a9bfccfc730094fba39ecc06b82",
         "type": "github"
       },
       "original": {
@@ -2154,6 +2155,23 @@
       "original": {
         "owner": "NixOS",
         "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-mesh": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792416486,
+        "narHash": "sha256-CUMcmewmEibaRitBttprIir9FAKeFTOMD2SXeaVH1gw=",
+        "owner": "kleinbem",
+        "repo": "nixpkgs",
+        "rev": "6ef4d05c78a8cc7f289f822a2e7d4c5ee3561dc6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "ref": "mesh-llm-next",
         "repo": "nixpkgs",
         "type": "github"
       }
