@@ -268,10 +268,10 @@ jobs:
             "--eval-workers" "1"
             # nix-fast-build's per-worker eval budget defaults to 4096 MiB and
             # is now enforced as a hard failure ("evaluation exceeded the
-            # memory budget"). This eval measured ~10.2 GiB on 2026-10-04 (run
-            # 37221940445 blew a 10240 cap); 14 GiB leaves headroom on the
-            # 15 GiB runner + 3 GiB swap enabled in the step above.
-            "--eval-max-memory-size" "14336"
+            # memory budget"). The eval peaked at 4.6 GiB on 2026-10-19 (10.2
+            # GiB before #102 dropped the specialisations). 8 GiB leaves room to
+            # grow, and a blowup like that one still fails here early.
+            "--eval-max-memory-size" "8192"
             "--systems" "${{ matrix.system }}"
             "--retries" "2"
             "--attic-cache" "system"
