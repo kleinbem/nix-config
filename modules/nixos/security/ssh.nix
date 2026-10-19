@@ -27,11 +27,32 @@ in
     # Start the standard OpenSSH agent system-wide (replaces HM service)
     startAgent = true;
 
+    # The agent gets the PIN dialog too, so a YubiKey key forwarded with
+    # `ssh -A` can sign sudo on the fleet hosts (pam_rssh, headless.nix). The
+    # NixOS default ties this to X11, and this desktop runs on Wayland.
+    enableAskPassword = true;
+
     # Wrap lxqt-openssh-askpass to strip the trailing newline character
     # This prevents the "incorrect passphrase" error when entering FIDO2 PINs via the GUI!
     askPassword = "${pkgs.writeShellScript "ssh-askpass-clean" ''
       ${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass "$@" | tr -d '\n'
     ''}";
+  };
+
+  # Logins use the key file directly (IdentityAgent none), so the YubiKey key
+  # never reaches the agent on its own. Load its handle for `ssh -A` sudo;
+  # adding it needs no PIN or touch, signing does.
+  systemd.user.services.ssh-add-yubikey = {
+    description = "Add the YubiKey SSH key to the agent";
+    wantedBy = [ "default.target" ];
+    after = [ "ssh-agent.service" ];
+    requires = [ "ssh-agent.service" ];
+    unitConfig.ConditionPathExists = "%h/.ssh/id_ed25519_sk";
+    environment.SSH_AUTH_SOCK = "%t/ssh-agent";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.openssh}/bin/ssh-add %h/.ssh/id_ed25519_sk";
+    };
   };
 
   services = {
