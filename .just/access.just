@@ -31,7 +31,7 @@ grant-notouch device duration="24h":
     # Terse units -> GNU date words ("24h" -> "24 hours", "3d" -> "3 days")
     spec="$(echo "{{duration}}" | sed -E 's/^([0-9]+)h$/\1 hours/; s/^([0-9]+)d$/\1 days/; s/^([0-9]+)m$/\1 minutes/')"
     expiry="$(ssh {{device}} "date -d '+${spec}' +%Y%m%d%H%M%S")"
-    remote_script="set -euo pipefail; mkdir -p ~/.ssh; chmod 700 ~/.ssh; touch ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; grep -v 'GitHubNoTouchV2' ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.tmp || true; mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys; echo 'expiry-time=\"${expiry}\" {{_notouch_pubkey}}' >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys"
+    remote_script="set -euo pipefail; mkdir -p ~/.ssh; chmod 700 ~/.ssh; touch ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; grep -v 'GitHubNoTouchV2' ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.tmp || true; mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys; echo 'no-touch-required,expiry-time=\"${expiry}\" {{_notouch_pubkey}}' >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys"
     ssh {{device}} "$remote_script"
     echo "✅ {{device}}: no-touch access granted until ${expiry} (device-local time, {{duration}} from now)."
 
