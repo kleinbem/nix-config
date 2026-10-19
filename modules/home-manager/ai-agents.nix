@@ -47,6 +47,28 @@ let
 
   defaultExe = agents.${cfg.defaultAgent}.exe;
 
+  # The MCP servers nix-presets' modules.mcp registers for every other client
+  # (claude desktop, gemini, antigravity …), as goose stdio extensions, so
+  # goose gets the same tools. Keyed by server name; goose.settings wins on
+  # conflicts, e.g. to disable one. `cmd` may be a bare program (atlas): goose
+  # resolves it from PATH like the other clients do.
+  mcpServers = lib.optionalAttrs (lib.attrByPath [ "modules" "mcp" "enable" ] false config) (
+    lib.attrByPath [ "modules" "mcp" "servers" ] { } config
+  );
+  gooseMcpExtensions = lib.mapAttrs (name: server: {
+    type = "stdio";
+    inherit name;
+    enabled = true;
+    cmd = server.command;
+    inherit (server) args;
+    envs = server.env;
+    env_keys = [ ];
+    timeout = 300;
+  }) mcpServers;
+  gooseFinalSettings = lib.recursiveUpdate (lib.optionalAttrs cfg.goose.mcpExtensions {
+    extensions = gooseMcpExtensions;
+  }) cfg.goose.settings;
+
   # Every agent we must put on PATH: the default plus any explicit extras.
   wantedAgents = lib.unique ([ cfg.defaultAgent ] ++ cfg.installAgents);
   agentPackages =
@@ -151,46 +173,64 @@ in
       '';
     };
 
-    goose.settings = lib.mkOption {
-      type = lib.types.attrsOf lib.types.anything;
-      default = { };
-      example = lib.literalExpression ''
-        {
-          active_provider = "claude-acp";
-          providers.claude-acp = {
-            enabled = true;
-            configured = true;
-            model = "current";
-          };
-          extensions.buzz = {
-            type = "stdio";
-            name = "buzz";
-            enabled = true;
-            cmd = lib.getExe pkgs.buzz-dev-mcp;
-            args = [ ];
-            timeout = 300;
-          };
-        }
-      '';
-      description = ''
-        Keys to enforce in ~/.config/goose/config.yaml (provider, extensions,
-        GOOSE_* settings). goose writes that file itself (`goose configure`,
-        provider migrations), so it stays a real file: on every activation
-        these keys are deep-merged over it (lists are replaced, not appended)
-        and every key not declared here is left alone. API keys never belong
-        here; goose ignores them in config.yaml (keyring or env instead).
-      '';
-    };
+    goose = {
+      settings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
+        default = { };
+        example = lib.literalExpression ''
+          {
+            active_provider = "claude-acp";
+            providers.claude-acp = {
+              enabled = true;
+              configured = true;
+              model = "current";
+            };
+            extensions.buzz = {
+              type = "stdio";
+              name = "buzz";
+              enabled = true;
+              cmd = lib.getExe pkgs.buzz-dev-mcp;
+              args = [ ];
+              timeout = 300;
+            };
+          }
+        '';
+        description = ''
+          Keys to enforce in ~/.config/goose/config.yaml (provider, extensions,
+          GOOSE_* settings). goose writes that file itself (`goose configure`,
+          provider migrations), so it stays a real file: on every activation
+          these keys are deep-merged over it (lists are replaced, not appended)
+          and every key not declared here is left alone. API keys never belong
+          here; goose ignores them in config.yaml (keyring or env instead).
+        '';
+      };
 
-    goose.extraPackages = lib.mkOption {
-      type = lib.types.listOf lib.types.package;
-      default = [ ];
-      example = lib.literalExpression "[ pkgs.claude-agent-acp ]";
-      description = ''
-        Packages goose needs on PATH next to itself, such as the ACP adapter
-        of the provider in `goose.settings` (goose resolves `claude-agent-acp`
-        and friends from PATH). Only installed when goose is a selected agent.
-      '';
+      mcpExtensions = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Register every server of `modules.mcp` (nix-presets) as a goose stdio
+          extension, keyed by its name, so goose has the same tools as the other
+          clients. Override single ones in `goose.settings.extensions.<name>`.
+        '';
+      };
+
+      finalSettings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
+        readOnly = true;
+        description = "What the activation merges into goose's config.yaml: the MCP extensions plus `goose.settings`.";
+      };
+
+      extraPackages = lib.mkOption {
+        type = lib.types.listOf lib.types.package;
+        default = [ ];
+        example = lib.literalExpression "[ pkgs.claude-agent-acp ]";
+        description = ''
+          Packages goose needs on PATH next to itself, such as the ACP adapter
+          of the provider in `goose.settings` (goose resolves `claude-agent-acp`
+          and friends from PATH). Only installed when goose is a selected agent.
+        '';
+      };
     };
 
     crashHandler.enable = lib.mkOption {
@@ -268,10 +308,12 @@ in
     );
 
     # Same merge for goose's config.yaml (YAML, so yq instead of jq).
-    home.activation.gooseSettings = lib.mkIf (cfg.goose.settings != { }) (
+    modules.ai-agents.goose.finalSettings = gooseFinalSettings;
+
+    home.activation.gooseSettings = lib.mkIf (gooseFinalSettings != { }) (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         settingsPath="${config.home.homeDirectory}/.config/goose/config.yaml"
-        declared=${pkgs.writeText "goose-config.yaml" (builtins.toJSON cfg.goose.settings)}
+        declared=${pkgs.writeText "goose-config.yaml" (builtins.toJSON gooseFinalSettings)}
         if [ -L "$settingsPath" ]; then
           run rm -f "$settingsPath"
         fi
