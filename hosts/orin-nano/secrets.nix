@@ -25,6 +25,8 @@
       attic_pull_token = { };
       attic_push_token = {
         sopsFile = secretFile "nix/per-host/orin-nano.yaml";
+        # attic-login stores the token once for the post-build hook.
+        restartUnits = [ "attic-login.service" ];
       };
       github_pat = {
         owner = "martin";
