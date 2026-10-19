@@ -929,6 +929,9 @@ hosts:
       - container-updater.containers
       - container-updater.enable
       - container-updater.manifestUrl
+      - meshLlm
+      - meshLlm.enable
+      - meshLlm.models
       - printing.enable
       - tang.enable
       - threeDPrinting.enable
@@ -1079,9 +1082,14 @@ hosts:
       - container-updater.containers
       - container-updater.enable
       - container-updater.manifestUrl
+      - meshLlm
+      - meshLlm.enable
+      - meshLlm.models
+      - meshLlm.package
       - meshLlmGpuRunner.enable
       - tang.enable
     containers_hosted:
+    - frigate
     - syncthing
     secrets_consumed:
     - attic_push_token
@@ -1394,7 +1402,7 @@ services:
   frigate:
     name: Frigate NVR
     category: Security
-    host: nixos-nvme
+    host: orin-nano
     ip: 10.85.46.39
     port: 80
     external_port: 443
