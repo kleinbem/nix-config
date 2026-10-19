@@ -190,6 +190,12 @@ attic *args:
 attic-rotate:
     @bash scripts/attic-rotate.sh
 
+# Mint one token with the current signing key into sops (scripts/attic-mint.sh),
+# e.g. `just nixos::attic-mint infra/terraform.yaml attic_ci_pull_token --sub github-ci-pull --pull system`.
+[group("System")]
+attic-mint file key *args:
+    @bash scripts/attic-mint.sh {{ file }} {{ key }} {{ args }}
+
 [group("System")]
 attic-token:
     @echo "🔑 Generating new Attic Admin Token (Valid for 1y)..."
