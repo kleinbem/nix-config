@@ -6,6 +6,17 @@
 }:
 
 {
+  # This workstation's MeshLLM node (Vulkan on the iGPU, 64 GB RAM): a
+  # mixture-of-experts coder, 30B of weights but 3B active per token, which is
+  # what makes a big model usable without a discrete GPU. It joins the mesh
+  # that orin-nano creates once the join token is in sops (see the module);
+  # until then it serves standalone. goose reaches it at 127.0.0.1:9337
+  # (users/martin/home.nix).
+  my.services.meshLlm = {
+    enable = true;
+    models = [ "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M" ];
+  };
+
   my.containers = {
     litellm = {
       enable = false;

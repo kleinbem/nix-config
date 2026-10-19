@@ -53,9 +53,18 @@
     };
     services = {
       tang.enable = true;
-      # The Orin is reserved for the mesh-llm GPU tests (2026-10-18), so llama-cpp
-      # and Frigate are off below. See modules/nixos/services/mesh-llm-gpu-runner.nix.
+      # Nightly GPU half of the nix-packages mesh-llm canary; it serves on its
+      # own ports (29337/23131/27842), so it coexists with the node below.
       meshLlmGpuRunner.enable = true;
+      # The fleet's MeshLLM node that creates the mesh (always on, CUDA). It
+      # replaced the llama-cpp container on 2026-10-19: same job (a small
+      # model on the GPU), but any node in the mesh can route to it. Qwen3-4B
+      # instead of the old Gemma file because goose needs tool calling.
+      meshLlm = {
+        enable = true;
+        package = pkgs.mesh-llm-cuda;
+        models = [ "Qwen3-4B-Q4_K_M" ];
+      };
 
       container-updater = {
         enable = true;
@@ -81,7 +90,7 @@
         memoryLimit = "6G";
       };
       llama-cpp = {
-        enable = false; # Off while the Orin runs the mesh-llm GPU tests; was serving Gemma via llama.cpp (CUDA)
+        enable = false; # Replaced by my.services.meshLlm above (2026-10-19); /mnt/models/gemma-3-4b-it-Q4_K_M.gguf can go
         enableCuda = true;
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-3-4b-it-Q4_K_M.gguf"; # Gemma 3 4B — fits 8GB unified mem with headroom
@@ -96,7 +105,7 @@
         #   jetson = true, detector = "tensorrt" (after building the engine
         #   on-device and confirming the jetsonDevices set), add cameras, create
         #   the frigate_rtsp_env secret and point environmentFile back at it.
-        enable = false; # Off while the Orin runs the mesh-llm GPU tests (camera-less smoke test until then)
+        enable = true; # Back on 2026-10-19 after the mesh-llm GPU tests; still the camera-less smoke test
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "cpu"; # temp — bundled CPU model; target is "tensorrt"
         enableGPU = false; # temp — no GPU passthrough during the smoke test
@@ -122,7 +131,7 @@
         ];
         mediaDir = "/mnt/data/frigate";
         hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
-        memoryLimit = "3G"; # leave room for llama-cpp + syncthing + system on 8GB host
+        memoryLimit = "3G"; # leave room for mesh-llm (Qwen3-4B, ~3 GB) + syncthing + system on 8GB host
         # Camera RTSP creds: sops secret → env-file → Frigate {VAR} substitution.
         # null during the camera-less smoke test (nothing to substitute, and it
         # keeps sops.secrets.frigate_rtsp_env from being required — see the gate
