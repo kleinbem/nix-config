@@ -37,7 +37,7 @@ while read -r log; do
   echo "- \`${b#*-}\`" >>"$summary"
   echo "::group::FAILED ${b#*-}"
   echo "--- failure lines (whole log, max 60) ---"
-  bzcat "$log" | grep -E '^=== release|^Path: |not ok [0-9]|FAIL|[Ee]rror[: ]|Killed|No space left|out of memory|Segmentation fault' | head -n 60
+  bzcat "$log" | grep -aE '^=== release|^Path: |not ok [0-9]|FAIL|[Ee]rror[: ]|Killed|No space left|out of memory|Segmentation fault' | head -n 60
   echo "--- last 80 lines ---"
   bzcat "$log" | tail -n 80
   echo "::endgroup::"
