@@ -109,12 +109,24 @@ nasbook-data-drop-old-key:
 nasbook-data-backup:
     #!/usr/bin/env bash
     set -euo pipefail
-    f="${KLEINBEM_SECRETS:-../kleinbem-secrets}/nix/per-host/nasbook.yaml"
-    out=$(ssh -t nasbook 'sudo sh -c "printf KEY:; base64 -w0 /nix/persist/secrets/nasbook-data.key; echo"')
-    b64=$(printf '%s' "$out" | tr -d '\r' | sed -n 's/.*KEY:\([A-Za-z0-9+/=]*\).*/\1/p' | tail -n 1)
-    unset out
+    secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+    f=nix/per-host/nasbook.yaml
+    # No TTY, so the output is only the key: with `ssh -t` inside $(…) the sudo
+    # prompt was captured too and never shown. sudo reads the password from stdin.
+    read -rsp "sudo password on nasbook: " pw; echo
+    b64=$(printf '%s\n' "$pw" | ssh nasbook 'sudo -S -p "" base64 -w0 /nix/persist/secrets/nasbook-data.key') \
+      || { unset pw; echo "reading the key on nasbook failed; nothing written" >&2; exit 1; }
+    unset pw
     [ "${#b64}" -eq 88 ] || { echo "unexpected key length (${#b64}); nothing written" >&2; exit 1; }
-    printf '%s' "$b64" | jq -Rs . | sops set --value-stdin "$f" '["nasbook_data_luks_key"]'
+    cd "$secrets"
+    if [ -f "$f" ]; then
+      printf '%s' "$b64" | jq -Rs . | sops set --value-stdin "$f" '["nasbook_data_luks_key"]'
+    else
+      # The first secret creates the file, with the recipients from .sops.yaml.
+      printf 'nasbook_data_luks_key: %s\n' "$b64" \
+        | sops encrypt --input-type yaml --output-type yaml --filename-override "$f" /dev/stdin > "$f.new"
+      mv "$f.new" "$f"
+    fi
     unset b64
     echo "✓ nasbook_data_luks_key stored in nix/per-host/nasbook.yaml; commit kleinbem-secrets"
 
