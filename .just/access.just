@@ -111,12 +111,13 @@ nasbook-data-backup:
     set -euo pipefail
     secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
     f=nix/per-host/nasbook.yaml
-    # No TTY, so the output is only the key: with `ssh -t` inside $(…) the sudo
-    # prompt was captured too and never shown. sudo reads the password from stdin.
-    read -rsp "sudo password on nasbook: " pw; echo
-    b64=$(printf '%s\n' "$pw" | ssh nasbook 'sudo -S -p "" base64 -w0 /nix/persist/secrets/nasbook-data.key') \
-      || { unset pw; echo "reading the key on nasbook failed; nothing written" >&2; exit 1; }
-    unset pw
+    # sudo asks on nasbook's TTY. Everything but the key line goes to the
+    # terminal (the prompt ends in a newline, so it shows at once); only the
+    # KEY: line is captured. Piping the password into `sudo -S` was rejected.
+    remote=$'sudo -p "sudo password on nasbook:\n" sh -c "printf KEY:; base64 -w0 /nix/persist/secrets/nasbook-data.key; echo"'
+    b64=$(ssh -t nasbook "$remote" \
+      | awk '{ sub(/\r$/, "") } /^KEY:/ { print substr($0, 5); next } { print > "/dev/stderr"; fflush("/dev/stderr") }') \
+      || { echo "reading the key on nasbook failed; nothing written" >&2; exit 1; }
     [ "${#b64}" -eq 88 ] || { echo "unexpected key length (${#b64}); nothing written" >&2; exit 1; }
     cd "$secrets"
     if [ -f "$f" ]; then
