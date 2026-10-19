@@ -3,17 +3,13 @@ description: 'Shared CI preamble for the nix-config flake: installs Nix, sets su
 
 inputs:
   netbird-setup-key:
-    description: 'NetBird setup key (only required when enable-cache=true).'
+    description: 'NetBird setup key. With attic-token, the job joins the mesh to reach the Attic cache.'
     required: false
     default: ''
   attic-token:
-    description: 'Attic push token (only required when enable-cache=true).'
+    description: 'Attic token: ATTIC_PULL_TOKEN for jobs that only read (PR builds, VM tests), ATTIC_PUSH_TOKEN for jobs that push. Whether a job pushes is decided by the workflow.'
     required: false
     default: ''
-  enable-cache:
-    description: 'Bring up NetBird, trust the internal Caddy CA, and configure the Attic cache. Set to "false" for matrix-gen / eval-only jobs that do not push.'
-    required: false
-    default: 'true'
   configure-auto-gc:
     description: 'Configure Nix auto-gc (min-free / max-free) — recommended for big closure builds, skip for small jobs.'
     required: false
@@ -22,10 +18,6 @@ inputs:
     description: 'Reclaim ~20 GiB by deleting preinstalled toolchains. Set true for big-closure jobs (NixOS System); leave false for containers/devshells/packages — saves ~30s of overhead per job.'
     required: false
     default: 'false'
-  netbird:
-    description: 'Bring up the NetBird WireGuard tunnel for Attic push. Set true only when the closure NAR may exceed Cloudflare''s 100 MiB upload limit (NixOS System). Direct HTTPS push is ~15-20s faster and works fine for smaller NARs.'
-    required: false
-    default: 'true'
 
 runs:
   using: 'composite'
@@ -90,7 +82,9 @@ runs:
         sudo systemctl restart nix-daemon
 
     - name: Setup NetBird VPN
-      if: inputs.enable-cache == 'true' && inputs.netbird == 'true'
+      # The cache is mesh-only (#137): every job that uses Attic, pushing or
+      # only reading, reaches it over NetBird. Fork PRs have neither secret.
+      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
       shell: bash
       run: |
         set -euo pipefail
@@ -113,7 +107,7 @@ runs:
         sudo netbird up --setup-key "${{ inputs.netbird-setup-key }}"
 
     - name: Route Attic over NetBird (fail-closed)
-      if: inputs.enable-cache == 'true' && inputs.netbird == 'true'
+      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
       shell: bash
       run: |
         set -euo pipefail
@@ -181,7 +175,7 @@ runs:
         fi
 
     - name: Trust internal Caddy CA
-      if: inputs.enable-cache == 'true'
+      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
       shell: bash
       run: |
         sudo cp pki/caddy-root.crt /usr/local/share/ca-certificates/caddy-root.crt
@@ -191,16 +185,15 @@ runs:
 
     - name: Setup Attic Cache
       # Run whenever a token is available — NOT only when pushing. PR builds
-      # (enable-cache=false) still need Attic as a READ substituter: the custom
+      # still need Attic as a READ substituter: the custom
       # linux-rpi kernel/modules are absent from cache.nixos.org, so without
       # Attic configured, nix-fast-build --skip-cached treats them as uncached
-      # and recompiles the modules from source (~2h45m) on every PR. As a read
-      # substituter this is resolved over the public Cloudflare tunnel (no
-      # NetBird): --skip-cached's narinfo queries are tiny, so a PR that doesn't
-      # change a host closure finds the toplevel cached and skips it entirely.
-      # NetBird + push stay gated on enable-cache (non-PR) below. (Empty token on
-      # fork PRs → step skips → falls back to building, same as before.)
-      if: inputs.attic-token != ''
+      # and recompiles the modules from source (~2h45m) on every PR. Reads go
+      # over NetBird like pushes (the cache has no public route since #137); a
+      # PR that doesn't change a host closure finds the toplevel cached and
+      # skips it. The workflow decides whether to push. (Fork PRs have no
+      # secrets → step skips → falls back to building.)
+      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
       uses: ryanccn/attic-action@v0
       with:
         endpoint: https://cache.kleinbem.dev/

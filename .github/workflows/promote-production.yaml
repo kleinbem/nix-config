@@ -66,18 +66,16 @@ jobs:
           fetch-depth: 0
 
       - name: Nix fleet setup (pull-only)
-        # enable-cache wires up NetBird + Attic as a SUBSTITUTER with the pull
-        # token (skip-push keeps it read-only) and sets NIX_OVERRIDES to the same
+        # Wires up NetBird + Attic as a SUBSTITUTER with the pull token and
+        # sets NIX_OVERRIDES to the same
         # github: sibling refs build-all used — so the closure we evaluate here
         # matches the one that was cached.
         uses: ./.github/actions/nix-fleet-setup
         with:
-          enable-cache: 'true'
-          # Prefer the ephemeral key (auto-expiring runner peers); fall back to
-          # the persistent key until the ephemeral secret is distributed.
-          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL || secrets.NETBIRD_SETUP_KEY }}
-          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
-          netbird: 'true'
+          # Ephemeral key only: runner peers land in ci-runners (cache-only
+          # policy) and auto-expire after the run.
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
+          attic-token: ${{ secrets.ATTIC_PULL_TOKEN }}
           free-disk-space: 'false'
 
       # Lock-honesty gate: every check in this job so far evaluates with
