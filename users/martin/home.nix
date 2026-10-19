@@ -46,6 +46,22 @@ in
     ai-agents = {
       enable = true;
       claude.settings = lib.importJSON ./files/claude-settings.json;
+      # goose (Block's agent) next to Claude Code, driving Claude Code through
+      # its ACP adapter: same subscription, no API key, goose's extensions
+      # reach Claude as MCP servers. "current" is goose's sentinel for the
+      # agent's own model; without a model goose refuses to start a session.
+      installAgents = [ "goose" ];
+      goose = {
+        extraPackages = [ pkgs.claude-agent-acp ];
+        settings = {
+          active_provider = "claude-acp";
+          providers.claude-acp = {
+            enabled = true;
+            configured = true;
+            model = "current";
+          };
+        };
+      };
     };
     gnome.enable = true;
     syncthing.enable = false; # Migrated to system container fleet

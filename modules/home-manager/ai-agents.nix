@@ -35,13 +35,23 @@ let
       package = pkgs.codex;
       skillDir = ".codex/skills";
     };
+    # goose reads ~/.agents/skills itself (plus ~/.claude/skills and
+    # ~/.config/goose/skills), so it needs no skills dir of its own: a second
+    # link would list every skill twice.
+    goose = {
+      exe = "goose";
+      package = pkgs.goose-cli;
+      skillDir = null;
+    };
   };
 
   defaultExe = agents.${cfg.defaultAgent}.exe;
 
   # Every agent we must put on PATH: the default plus any explicit extras.
   wantedAgents = lib.unique ([ cfg.defaultAgent ] ++ cfg.installAgents);
-  agentPackages = lib.filter (p: p != null) (map (name: agents.${name}.package) wantedAgents);
+  agentPackages =
+    lib.filter (p: p != null) (map (name: agents.${name}.package) wantedAgents)
+    ++ lib.optionals (builtins.elem "goose" wantedAgents) cfg.goose.extraPackages;
 
   # Every skill in the kleinbem/skills repo (a Claude Code plugin marketplace:
   # plugins/<plugin>/skills/<skill>/SKILL.md), fanned out to every agent below.
@@ -132,6 +142,48 @@ in
       '';
     };
 
+    goose.settings = lib.mkOption {
+      type = lib.types.attrsOf lib.types.anything;
+      default = { };
+      example = lib.literalExpression ''
+        {
+          active_provider = "claude-acp";
+          providers.claude-acp = {
+            enabled = true;
+            configured = true;
+            model = "current";
+          };
+          extensions.buzz = {
+            type = "stdio";
+            name = "buzz";
+            enabled = true;
+            cmd = lib.getExe pkgs.buzz-dev-mcp;
+            args = [ ];
+            timeout = 300;
+          };
+        }
+      '';
+      description = ''
+        Keys to enforce in ~/.config/goose/config.yaml (provider, extensions,
+        GOOSE_* settings). goose writes that file itself (`goose configure`,
+        provider migrations), so it stays a real file: on every activation
+        these keys are deep-merged over it (lists are replaced, not appended)
+        and every key not declared here is left alone. API keys never belong
+        here; goose ignores them in config.yaml (keyring or env instead).
+      '';
+    };
+
+    goose.extraPackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = [ ];
+      example = lib.literalExpression "[ pkgs.claude-agent-acp ]";
+      description = ''
+        Packages goose needs on PATH next to itself, such as the ACP adapter
+        of the provider in `goose.settings` (goose resolves `claude-agent-acp`
+        and friends from PATH). Only installed when goose is a selected agent.
+      '';
+    };
+
     crashHandler.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -178,7 +230,7 @@ in
                 recursive = true;
               };
             }) skills
-          ) (lib.mapAttrsToList (_: a: a.skillDir) agents ++ [ ".agents/skills" ])
+          ) (lib.filter (d: d != null) (lib.mapAttrsToList (_: a: a.skillDir) agents) ++ [ ".agents/skills" ])
         )
       );
     };
@@ -202,6 +254,31 @@ in
             run mv "$settingsPath" "$settingsPath.invalid"
           fi
           run install -Dm644 "$declared" "$settingsPath"
+        fi
+      ''
+    );
+
+    # Same merge for goose's config.yaml (YAML, so yq instead of jq).
+    home.activation.gooseSettings = lib.mkIf (cfg.goose.settings != { }) (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        settingsPath="${config.home.homeDirectory}/.config/goose/config.yaml"
+        declared=${pkgs.writeText "goose-config.yaml" (builtins.toJSON cfg.goose.settings)}
+        if [ -L "$settingsPath" ]; then
+          run rm -f "$settingsPath"
+        fi
+        if [ -s "$settingsPath" ] && ${pkgs.yq-go}/bin/yq -e 'type == "!!map"' "$settingsPath" >/dev/null 2>&1; then
+          tmp=$(mktemp)
+          ${pkgs.yq-go}/bin/yq eval-all '. as $item ireduce ({}; . * $item)' "$settingsPath" "$declared" > "$tmp"
+          run install -m644 "$tmp" "$settingsPath"
+          rm -f "$tmp"
+        else
+          if [ -e "$settingsPath" ]; then
+            run mv "$settingsPath" "$settingsPath.invalid"
+          fi
+          tmp=$(mktemp)
+          ${pkgs.yq-go}/bin/yq -P '.' "$declared" > "$tmp"
+          run install -Dm644 "$tmp" "$settingsPath"
+          rm -f "$tmp"
         fi
       ''
     );
