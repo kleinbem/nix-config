@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 67  
+**Declarations indexed:** 68  
 **Consumer files scanned:** 30
 
 ---
@@ -414,6 +414,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.services`
+
+### `my.services.meshLlm`
+
+- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:29`
+- **Sub-options:** `enable`, `extraArgs`, `joinTokenSecret`, `meshPort`, `models`, `package`
+- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.printing`
 
