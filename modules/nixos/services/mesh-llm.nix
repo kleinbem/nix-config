@@ -14,6 +14,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   inputs,
   secretFile,
@@ -95,8 +96,15 @@ in
       environmentFile = lib.mkIf (cfg.joinTokenSecret != null) config.sops.templates."mesh-llm.env".path;
     };
 
-    # The model cache: large, re-downloadable, and not worth a backup; but
-    # the node identity in HOME decides which join tokens stay valid, so it
-    # lives in the persisted state directory like every other service here.
+    # The fleet's hosts run a tmpfs root (persistence.nix), and /var is a
+    # few GB of RAM: the node's state directory holds its identity (which
+    # join tokens stay valid), its config and the model cache, so it lives
+    # on /nix/persist. Both hosts have room there; a dedicated data disk
+    # can come later. DynamicUser puts the directory under /var/lib/private
+    # (as tang's). Found the hard way on 2026-10-20: a 19 GB download into
+    # the tmpfs.
+    environment.persistence = lib.mkIf (options.environment ? persistence) {
+      "/nix/persist".directories = [ "/var/lib/private/mesh-llm" ];
+    };
   };
 }
