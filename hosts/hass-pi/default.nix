@@ -62,6 +62,13 @@ in
       backend = "nftables";
       allowedTCPPorts = [ 8123 ]; # direct LAN access to HA — see forwardPorts note below
       interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
+      # Only the container bridge may reach the host-side Matter server
+      # websocket and the OTBR REST API; Home Assistant talks to both at
+      # ${hostAddress} from inside its container.
+      interfaces."cbr0".allowedTCPPorts = [
+        5580 # matterjs-server
+        8081 # openthread-border-router REST
+      ];
     };
   };
 
@@ -154,7 +161,7 @@ in
       # fails with "mount path not canonical" (see matter-server).
       "/var/lib/node-red"
       "/var/lib/private/esphome"
-      "/var/lib/private/matter-server"
+      "/var/lib/private/matterjs-server"
       "/var/lib/wyoming"
     ];
   };
@@ -179,8 +186,34 @@ in
       address = "0.0.0.0";
     };
 
-    matter-server = {
+    # Matter controller for Home Assistant's matter integration
+    # (ws://10.85.49.1:5580/ws from inside the container). matterjs-server
+    # replaces python-matter-server, which upstream archived in 2026-06 and
+    # whose last release (8.1.2) dies at start-up with cryptography 49
+    # (rejects one PAA root cert from the CSA DCL) — the unit stayed
+    # "active" here with nothing on :5580 since 2026-10-13. Same WebSocket
+    # API, fresh fabric: no Matter devices were ever commissioned.
+    matterjs-server = {
       enable = true;
+      listenAddress = "10.85.49.1";
+      bluetoothSupport = true; # commission over BLE with the Pi's adapter
+    };
+
+    # Thread border router for the Home Assistant SkyConnect (the Thread
+    # radio the HAOS install used; device id from its config entry).
+    # Prepared ahead of the dongle actually moving to this host: the
+    # ConditionPathExists below keeps otbr-agent inactive (not failed, no
+    # crash loop) until the device appears. HA's otbr/thread integrations
+    # then point at http://10.85.49.1:8081.
+    openthread-border-router = {
+      enable = true;
+      backboneInterfaces = [ "end0" ];
+      rest.listenAddress = "10.85.49.1";
+      radio = {
+        device = "/dev/serial/by-id/usb-Nabu_Casa_SkyConnect_v1.0_3e82cd21b5d8ed11b11a796162c613ac-if00-port0";
+        baudRate = 460800; # SkyConnect / Connect ZBT-1 firmware default
+        flowControl = true;
+      };
     };
 
     # Voice Pipeline
@@ -220,6 +253,11 @@ in
   # (still real esphome) stays on PATH for it via the base module's own
   # `path = [ cfg.package ];`, this just adds the new dashboard binary
   # alongside it.
+  # See services.openthread-border-router above: stay inactive until the
+  # SkyConnect dongle is plugged in rather than failing on a missing radio.
+  systemd.services.otbr-agent.unitConfig.ConditionPathExists =
+    config.services.openthread-border-router.radio.device;
+
   systemd.services.esphome = {
     path = [ pkgs.esphome-device-builder ];
     serviceConfig.ExecStart = lib.mkForce (
