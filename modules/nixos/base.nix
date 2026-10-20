@@ -42,6 +42,9 @@
     # Pull-based fleet auto-upgrade option (my.deploy.autoUpgrade).
     # Option only — default disabled. Hosts opt in per-host.
     ./auto-upgrade.nix
+    # Its successor: comin polls the production branch (my.deploy.comin).
+    # Option only — hosts opt in, mutually exclusive with autoUpgrade.
+    ./comin.nix
 
     # Core services / system-wide concerns
     ./networking.nix

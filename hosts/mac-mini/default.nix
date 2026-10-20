@@ -212,10 +212,17 @@ in
     desktop.gnome.enable = true;
     desktop.sandboxedApps.enable = true;
 
-    # Pull-deploy config itself now comes from pull-deploy-node.nix (imports
-    # above) — old, comparatively slow CPU (2011 Sandy Bridge), don't let
-    # nightly auto-upgrade fall back to a multi-hour local compile if Attic
-    # ever misses, same reasoning as every other host in that tier.
+    # First comin host (fleet canary for the pull-deploy switch): follows
+    # the production branch instead of the nightly tag poll. requireCache
+    # keeps the 2011 Sandy Bridge from ever compiling a closure locally,
+    # same rule as the rest of the pull-deploy tier.
+    deploy = {
+      autoUpgrade.enable = false;
+      comin = {
+        enable = true;
+        requireCache = true;
+      };
+    };
 
     monitoring.node.enable = true;
 

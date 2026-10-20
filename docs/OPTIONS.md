@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 68  
+**Declarations indexed:** 69  
 **Consumer files scanned:** 30
 
 ---
@@ -337,7 +337,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:mac-mini`, `host:nixos-nvme`, `host:orin-nano`
+
+### `my.deploy.comin`
+
+- **Declared:** `nix-config/modules/nixos/comin.nix:36`
+- **Sub-options:** `branch`, `buildTimeout`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Explicit overrides:** `host:mac-mini`
 
 ## `my.desktop`
 
