@@ -335,8 +335,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.autoUpgrade`
 
-- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
-- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
+- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:50`
+- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.deploy.comin`
