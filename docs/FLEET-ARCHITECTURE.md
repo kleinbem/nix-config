@@ -54,7 +54,7 @@ Edge Hub            core-pi              SSH + auto-upg  nix-config
 
 Edge Nodes          orin-nano            SSH             nix-config
                     nasbook              SSH             nix-config
-                    hass-pi              SSH (planned)   nix-config
+                    hass-pi              SSH             nix-config
 
 Mobile              phone (Android)      Nix on Droid    nix-config
                     (local only)
@@ -116,7 +116,7 @@ LAN: 10.0.0.0/24 (wired infrastructure)
 ├─ 10.0.0.5    = nixos-nvme (workstation, x86_64)
 ├─ 10.0.0.15   = orin-nano (NVIDIA Jetson, aarch64)
 ├─ 10.0.0.16   = mac-mini (x86_64, legacy hardware)
-├─ 10.0.0.21   = hass-pi (Raspberry Pi 5, aarch64, planned)
+├─ 10.0.0.21   = hass-pi (Raspberry Pi 5, aarch64, Home Assistant)
 ├─ 10.0.0.22   = core-pi (Raspberry Pi 5, aarch64, hub)
 └─ 10.0.0.30   = nasbook (QNAP NAS, x86_64)
 
