@@ -250,6 +250,10 @@ jobs:
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "1"
+            # mac-mini and core-pi exceed nix-eval-jobs' 4096 MiB default
+            # (seen 2026-10-20: "evaluation exceeded the memory budget ...
+            # even when run alone"); one worker on a 16 GB runner has room.
+            "--eval-max-memory-size" "8192"
             "--systems" "$SYSTEM"
             "--retries" "2"
             "--attic-cache" "system"
@@ -337,6 +341,7 @@ jobs:
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "1"
+            "--eval-max-memory-size" "8192"
             "--systems" "${{ matrix.system }}"
             "--retries" "2"
             "--attic-cache" "system"

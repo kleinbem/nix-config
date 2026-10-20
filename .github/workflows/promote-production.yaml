@@ -161,6 +161,7 @@ jobs:
           # lock through every time; the device then compiled until
           # RuntimeMaxSec killed it.
           HOSTS=(hass-pi core-pi mac-mini nasbook)
+          err=$(mktemp)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"
@@ -175,8 +176,11 @@ jobs:
             # literal path. Resolving first avoids the flake-attr path
             # entirely, matching how a real device actually fetches (by
             # store path, never by re-evaluating a flake attribute).
-            if ! path="$(nix eval --raw "$target.outPath" 2>&1)"; then
-              echo "$path"
+            # stderr stays separate: evaluation warnings otherwise end up in
+            # $path and path-info then checks garbage (seen 2026-10-20).
+            if ! path="$(nix eval --raw "$target.outPath" 2>"$err")" \
+               || [[ "$path" != /nix/store/* ]]; then
+              cat "$err"
               echo "::error::$h: failed to resolve toplevel path — cannot verify cache, refusing to promote."
               fail=1
               echo "::endgroup::"
