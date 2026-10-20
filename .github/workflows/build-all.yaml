@@ -26,7 +26,7 @@ on:
 
 # Only PR runs cancel their superseded predecessor. On main, a newer push
 # queues behind the running one instead (GitHub keeps just the newest pending
-# run): the best-effort toplevels take hours (nvme ~3h) and the lock bot
+# run): the best-effort toplevels take hours and the lock bot
 # pushes to main several times a day, so cancel-in-progress there meant the
 # heavy cache-warming builds were routinely killed before finishing (e.g. run
 # 37291070182, cancelled by the #98 lock push after 25 min).
@@ -126,8 +126,9 @@ jobs:
           #   core-pi hardcoded native on aarch64, mac-mini + nasbook
           #   hardcoded native on x86_64 — they pull production via
           #   my.deploy.autoUpgrade with requireCache = true, same "must never
-          #   build on-device" contract as the RPi5 pair; nixos-nvme is its own best-effort job
-          #   because its ~8.6 GiB eval needs swap + isolation; Orin/routers
+          #   build on-device" contract as the RPi5 pair; nixos-nvme builds in
+          #   its own workflow (build-nvme.yaml) because its ~8.6 GiB eval
+          #   needs swap + isolation and promote must not wait for it; Orin/routers
           #   deliberately never build in CI — jetpack/bespoke kernels).
           #   Enumerating them here would re-add those giant builds blocking.
           # What this restores is the real checks — pre-commit-check and the
@@ -542,137 +543,3 @@ jobs:
           if [ "$SYSTEM" = "aarch64-linux" ]; then
             update_status "orin-nano" "${{ steps.orin-build.outcome }}" "Orin Nano toplevel build"
           fi
-
-  # Workstation (nixos-nvme) toplevel: CI is the main builder, so warm the
-  # cache for the workstation too — `just apply` and its nightly autoUpgrade
-  # then substitute instead of compiling locally. Committed lock + real
-  # secrets, like the blocking host step in the job above.
-  #
-  # Own JOB on its own runner, not a continue-on-error step: this closure is
-  # the biggest in the fleet (eval ~4.6 GiB, hours of from-source builds)
-  # and it has killed the hosted x86 runner outright twice — "The hosted
-  # runner lost communication with the server" after ~4 h in this step
-  # (runs 39370850633, 39385551311, 2026-10-20). A dead runner fails the
-  # whole job no matter what continue-on-error says, which took the
-  # blocking factory eval and `Promote → production` down with it: nothing
-  # reached any host until the next run survived. Job-level
-  # continue-on-error keeps the workflow conclusion `success` for promote
-  # even when this job dies. Skipped on PRs: without a cache push the
-  # artifacts are thrown away.
-  build-nvme:
-    name: "Build nixos-nvme toplevel (best-effort)"
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    permissions:
-      statuses: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-
-      - name: Nix fleet setup
-        uses: ./.github/actions/nix-fleet-setup
-        with:
-          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
-          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
-          configure-auto-gc: 'true'
-          free-disk-space: 'true'
-
-      - name: Initialize commit status
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-            -f state="pending" \
-            -f context="CI/nixos-nvme" \
-            -f description="Workstation toplevel build is pending" \
-            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: Mint GitHub App token for kleinbem-secrets
-        id: app-token
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: |
-            kleinbem-secrets
-
-      - name: Add swap for the eval
-        # The eval runs near the hosted runner's memory ceiling; spill to the
-        # SSD instead of getting SIGTERM'd.
-        run: |
-          sudo fallocate -l 12G /swapfile-ci
-          sudo chmod 600 /swapfile-ci
-          sudo mkswap /swapfile-ci
-          sudo swapon /swapfile-ci
-          free -h
-
-      - name: Build nixos-nvme toplevel (best-effort)
-        id: nvme-build
-        continue-on-error: true
-        env:
-          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
-        run: |
-          set -o pipefail
-          COMMON=(
-            "--no-nom"
-            "--skip-cached"
-            "--eval-workers" "1"
-            # nix-fast-build's per-worker eval budget defaults to 4096 MiB and
-            # is now enforced as a hard failure ("evaluation exceeded the
-            # memory budget"). The eval peaked at 4.6 GiB on 2026-10-19 (10.2
-            # GiB before #102 dropped the specialisations). 8 GiB leaves room to
-            # grow, and a blowup like that one still fails here early.
-            "--eval-max-memory-size" "8192"
-            "--systems" "x86_64-linux"
-            "--retries" "2"
-            "--attic-cache" "system"
-          )
-          ATTR=".#nixosConfigurations.nixos-nvme.config.system.build.toplevel"
-          MARK=$(mktemp) # failure report scopes to logs written after this
-          nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
-            --flake "$ATTR" && exit 0
-          .github/scripts/report-failed-drvs.sh nixos-nvme "$MARK"
-          exit 1
-
-      # Same alerting as the matrix job's best-effort steps: a red build here
-      # must reach the phone, not hide behind a green run.
-      - name: Alert build failure via ntfy
-        if: always() && steps.nvme-build.outcome == 'failure'
-        continue-on-error: true
-        env:
-          NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
-        run: |
-          set -euo pipefail
-          if [ -z "$NTFY_TOPIC" ]; then
-            echo "NTFY_ALERT_TOPIC secret not set — skipping alert."
-            exit 0
-          fi
-          curl -fsS --max-time 15 \
-            -H "Title: best-effort toplevel build failed (x86_64-linux)" \
-            -H "Tags: warning" \
-            -H "Priority: default" \
-            -d "Run stayed green but the nixos-nvme toplevel failed to build from source. Cache is not being warmed for it — the workstation will compile locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
-
-      - name: Update commit status
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          case "${{ steps.nvme-build.outcome }}" in
-            success) state="success"; desc="Workstation toplevel build succeeded" ;;
-            failure) state="failure"; desc="Workstation toplevel build failed" ;;
-            cancelled) state="error"; desc="Workstation toplevel build was cancelled" ;;
-            *) state="error"; desc="Workstation toplevel build was skipped or errored" ;;
-          esac
-          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-            -f state="$state" \
-            -f context="CI/nixos-nvme" \
-            -f description="$desc" \
-            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
