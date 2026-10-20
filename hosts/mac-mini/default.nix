@@ -90,11 +90,10 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
-  users.users.root.openssh.authorizedKeys.keys = [
-    keys.ssh.yubikey
-    keys.ssh.fido2
-    keys.ssh.fido2-backup
-  ];
+  # No root keys: PermitRootLogin is prohibit-password (security/ssh.nix),
+  # and without an authorized key that means no root login at all. Every
+  # remote task goes through martin + sudo (the per-command allowlist in
+  # security/sudo.nix, pam_rssh touch key for the rest).
 
   # Same GNOME look/feel/keybindings/extensions martin uses on nixos-nvme
   # (blur-my-shell, dash-to-dock, workspace shortcuts, etc.) —

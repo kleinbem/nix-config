@@ -10,14 +10,14 @@ ping:
 
 [group("NASbook")]
 shell:
-    @ssh root@nasbook.local
+    @ssh martin@nasbook.local
 
 [group("NASbook")]
 logs service="paperless":
-    @ssh root@nasbook.local "journalctl -u {{service}} -n 50 --no-pager"
+    @ssh martin@nasbook.local "journalctl -u {{service}} -n 50 --no-pager"
 
 # Forward a Wayland app from nasbook to your local display via SSH.
 # The app must be installed on nasbook. Example: `just nasbook::gui gnome-disk-utility`
 [group("NASbook")]
 gui app:
-    @waypipe ssh root@nasbook.local "{{app}}"
+    @waypipe ssh martin@nasbook.local "{{app}}"
