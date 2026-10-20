@@ -72,7 +72,7 @@ restart name host="":
     if [ -z "$TARGET" ] || [ "$TARGET" = "$(hostname)" ] || [ "$TARGET" = "localhost" ]; then
         sudo systemctl restart "container@{{ name }}.service"
     else
-        ssh "$TARGET" "sudo systemctl restart 'container@{{ name }}.service'"
+        ssh -t "$TARGET" "sudo systemctl restart 'container@{{ name }}.service'"
     fi
 
 # Trigger an immediate pull and activation from the container manifest (nix-gantry)
@@ -89,7 +89,7 @@ update name host="":
         echo "✅ Done. Active generation:"
         ls -l "/var/lib/machines/{{ name }}/current" || true
     else
-        ssh "$TARGET" "sudo systemctl start 'update-container-stage@{{ name }}.service' && sudo systemctl start 'update-container-activate@{{ name }}.service'"
+        ssh -t "$TARGET" "sudo systemctl start 'update-container-stage@{{ name }}.service' && sudo systemctl start 'update-container-activate@{{ name }}.service'"
         echo "✅ Done on $TARGET. Active generation:"
         ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
     fi
@@ -106,7 +106,7 @@ rollback name host="":
         echo "✅ Done. Active generation:"
         ls -l "/var/lib/machines/{{ name }}/current" || true
     else
-        ssh "$TARGET" "sudo systemctl start 'update-container-rollback@{{ name }}.service'"
+        ssh -t "$TARGET" "sudo systemctl start 'update-container-rollback@{{ name }}.service'"
         echo "✅ Done on $TARGET. Active generation:"
         ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
     fi

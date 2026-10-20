@@ -164,18 +164,11 @@ in
     "martin"
   ];
 
-  # colmena deploys as martin (PermitRootLogin = "no" in security.nix)
-  security.sudo.extraRules = [
-    {
-      users = [ "martin" ];
-      commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
+  # colmena deploys as martin (PermitRootLogin = "no" in security.nix).
+  # The blanket `ALL NOPASSWD` that used to live here is gone: the
+  # fleet-wide per-command allowlist (modules/nixos/security/sudo.nix)
+  # applies. Set `my.security.sudo.unattendedDeploy = true` if colmena
+  # push deploys to this host must stay prompt-free.
 
   # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
   services.snapper.configs = lib.mkForce { };
