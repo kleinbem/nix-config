@@ -18,8 +18,13 @@
     };
   };
 
-  # Security: Disable unauthenticated stage-1 shell now that system boots correctly
-  boot.initrd.systemd.emergencyAccess = true;
+  # No unauthenticated stage-1 emergency shell. `true` here meant anyone at
+  # the console got a root shell in the initrd whenever a unit failed —
+  # after the Tang/TPM unlock, with the decrypted root in reach — which
+  # undid Secure Boot (lanzaboote) on the workstation. Rescue path stays
+  # the initrd SSH listener on :2222 (hardware-boot.nix / rpi5-node.nix),
+  # which needs one of the fleet's hardware keys.
+  boot.initrd.systemd.emergencyAccess = false;
 
   sops.secrets.root_password_hash = {
     neededForUsers = true;
