@@ -1,0 +1,135 @@
+# Waveshare ESP32-P4 Smart 86 Box — wall-panel: 4" 720x720 touch, voice,
+# RJ45, RS485, 2 relays. One file per physical unit: copy, change `name`.
+substitutions:
+  name: smart-86-box-1
+  friendly_name: Smart 86 Box 1
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  platformio_options:
+    board_build.flash_mode: dio
+
+esp32:
+  board: esp32-p4_r3
+  variant: esp32p4
+  # ESPHome defaults the P4 to 400MHz, which it flags experimental
+  # (esphome/esphome#13425); 360MHz is the safe clock.
+  cpu_frequency: 360MHz
+  framework:
+    type: esp-idf
+  flash_size: 16MB
+
+psram:
+  mode: hex
+  speed: 200MHz
+
+# Wi-Fi lives on the on-board ESP32-C6 (SDIO). Pins = Espressif P4
+# reference design; verify against the Waveshare wiki.
+esp32_hosted:
+  variant: ESP32C6
+  slot: 1
+  active_high: true
+  reset_pin: GPIO54 # verify
+  cmd_pin: GPIO19 # verify
+  clk_pin: GPIO18 # verify
+  d0_pin: GPIO14 # verify
+  d1_pin: GPIO15 # verify
+  d2_pin: GPIO16 # verify
+  d3_pin: GPIO17 # verify
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: ${friendly_name} Fallback
+
+# Wired alternative (the RJ45 goes through an IP101 PHY on the P4's EMAC).
+# Enable instead of wifi/esp32_hosted once the pins are confirmed:
+# ethernet:
+#   type: IP101
+#   mdc_pin: GPIO31 # verify
+#   mdio_pin: GPIO52 # verify
+#   clk_mode: GPIO50_OUT # verify
+#   phy_addr: 1
+
+api:
+  encryption:
+    key: !secret api_key_smart_86_box_1
+ota:
+  - platform: esphome
+    password: !secret ota_password
+logger:
+  level: INFO
+captive_portal:
+
+i2c:
+  - id: bus_a
+    sda: GPIO7 # verify
+    scl: GPIO8 # verify
+    frequency: 400kHz
+
+# The P4's MIPI-DSI PHY is powered from internal LDO channel 3 at 2.5V
+# (Espressif reference design; same on the Waveshare boards).
+esp_ldo:
+  - id: ldo_mipi_phy
+    channel: 3
+    voltage: 2.5V
+
+display:
+  - platform: mipi_dsi
+    id: lcd
+    model: WAVESHARE-P4-86-PANEL
+    update_interval: never
+    auto_clear_enabled: false
+
+touchscreen:
+  - platform: gt911
+    id: touch
+    i2c_id: bus_a
+    display: lcd
+
+output:
+  - platform: ledc
+    id: backlight_pwm
+    pin: GPIO23 # verify
+light:
+  - platform: monochromatic
+    id: backlight
+    name: Backlight
+    output: backlight_pwm
+    restore_mode: ALWAYS_ON
+
+switch:
+  - platform: gpio
+    name: Relay 1
+    pin: GPIO33 # verify
+  - platform: gpio
+    name: Relay 2
+    pin: GPIO32 # verify (GPIO34 is a strapping pin, avoid)
+
+# RS485 (Modbus etc.) — uncomment once the transceiver pins are confirmed.
+# uart:
+#   - id: rs485
+#     tx_pin: GPIO37 # verify
+#     rx_pin: GPIO38 # verify
+#     baud_rate: 9600
+
+# Voice: ES8311 codec over I2S + micro_wake_word → Home Assistant Assist
+# (hass-pi runs Whisper/Piper via Wyoming). Fill in once the audio pins are
+# confirmed; see the ESPHome voice-assistant docs for the full block.
+# i2s_audio:
+#   - id: i2s_bus
+#     i2s_lrclk_pin: GPIO ...
+#     i2s_bclk_pin: GPIO ...
+#     i2s_mclk_pin: GPIO ...
+
+lvgl:
+  displays: [lcd]
+  touchscreens: [touch]
+  pages:
+    - id: main_page
+      widgets:
+        - label:
+            align: CENTER
+            text: ${friendly_name}
