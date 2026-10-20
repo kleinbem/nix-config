@@ -8,6 +8,15 @@
 let
   mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
 
+  # alertmanager-ntfy: basic-auth password of the `monitoring` ntfy user
+  # (nix/per-host/mac-mini.yaml ntfy_monitoring_password) plus the shared
+  # secret alert topic. Gated on the plaintext key name so eval works
+  # before the value exists; sops-nix fails activation on a missing key.
+  hostSops = secretFile "nix/per-host/mac-mini.yaml";
+  hasMonitoringNtfy =
+    builtins.pathExists hostSops
+    && lib.hasInfix "\nntfy_monitoring_password:" ("\n" + builtins.readFile hostSops);
+
   # Guards the not-yet-provisioned cloudflare_dyndns_token the same way
   # personaHasField guards persona API keys below — sops-install-secrets
   # validates its whole manifest atomically, so declaring a key before it
@@ -203,6 +212,20 @@ in
     // personaRuntimeSecrets;
 
     templates = {
+      # Merged on top of alertmanager-ntfy's settings inside the monitoring
+      # container (my.containers.monitoring.ntfy.authConfigFile).
+      "alertmanager-ntfy.yml" = lib.mkIf hasMonitoringNtfy {
+        mode = "0444";
+        content = ''
+          ntfy:
+            auth:
+              basic:
+                username: monitoring
+                password: ${config.sops.placeholder.ntfy_monitoring_password}
+            notification:
+              topic: ${config.sops.placeholder.ntfy_alert_topic}
+        '';
+      };
       "hermes.env" = {
         mode = "0444";
         content = ''

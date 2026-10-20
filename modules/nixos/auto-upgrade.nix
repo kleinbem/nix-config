@@ -2,11 +2,20 @@
   config,
   lib,
   pkgs,
+  secretFile,
   ...
 }:
 
 let
   cfg = config.my.deploy.autoUpgrade;
+
+  # ntfy_deploy_token (nix/shared.yaml): read-only token on the deploy topic
+  # once ntfy runs with auth. Gated on the plaintext key name so eval works
+  # before the value exists; sops-nix fails activation on a missing key.
+  sharedSops = secretFile "nix/shared.yaml";
+  hasDeployToken =
+    builtins.pathExists sharedSops
+    && lib.hasInfix "\nntfy_deploy_token:" ("\n" + builtins.readFile sharedSops);
 
   # Pre-flight gate for `nixos-upgrade.service`. The Attic binary cache is only
   # reachable over the NetBird mesh (wt0 -> caddy DNAT). The fixed nightly timer
@@ -173,9 +182,20 @@ in
         type = lib.types.str;
         default = "/run/secrets/ntfy_deploy_topic";
         description = ''
-          File containing the secret topic name (sops-provisioned; the
-          unguessable name is the access control on the public vhost).
-          The listener is inert (ConditionPathExists) until it exists.
+          File containing the secret topic name (sops-provisioned). The
+          listener is inert (ConditionPathExists) until it exists.
+        '';
+      };
+
+      tokenFile = lib.mkOption {
+        type = lib.types.str;
+        default = "/run/secrets/ntfy_deploy_token";
+        description = ''
+          File containing an ntfy access token with read access to the
+          deploy topic, sent as a bearer token. Needed once the server
+          runs with auth-default-access = deny-all (nix-presets ntfy
+          secretsFile). If the file is absent the poll is unauthenticated,
+          which only works while the server is still open.
         '';
       };
 
@@ -209,6 +229,8 @@ in
       inherit (cfg) dates randomizedDelaySec allowReboot;
       operation = "switch";
     };
+
+    sops.secrets.ntfy_deploy_token = lib.mkIf (cfg.ntfy.enable && hasDeployToken) { };
 
     # Cache-dependent hosts: order after the mesh, gate on cache reachability,
     # and cap runtime. The cap is the last line of defence; `--max-jobs 0`
@@ -263,7 +285,11 @@ in
       script = ''
         topic="$(cat ${cfg.ntfy.topicFile})"
         stamp=/run/nixos-upgrade-listener.last
-        curl -fsN --max-time 3600 "${cfg.ntfy.url}/$topic/json?since=30s" \
+        auth=()
+        if [ -r ${cfg.ntfy.tokenFile} ]; then
+          auth=(-H "Authorization: Bearer $(cat ${cfg.ntfy.tokenFile})")
+        fi
+        curl -fsN --max-time 3600 "''${auth[@]}" "${cfg.ntfy.url}/$topic/json?since=30s" \
         | while IFS= read -r line; do
             [ "$(printf '%s' "$line" | jq -r '.event // empty')" = "message" ] || continue
             now=$(date +%s)

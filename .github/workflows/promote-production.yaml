@@ -371,6 +371,9 @@ jobs:
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_DEPLOY_TOPIC }}
+          # Bearer token for the authenticated ntfy server; empty while the
+          # server is still open (nix/infra github-secrets.tf NTFY_CI_TOKEN).
+          NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -378,6 +381,7 @@ jobs:
             exit 0
           fi
           curl -fsS --max-time 15 \
+            ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
             -H "Title: production promoted" \
             -H "Tags: rocket" \
             -d "production → ${{ steps.target.outputs.sha }}" \
