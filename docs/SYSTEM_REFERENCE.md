@@ -68,7 +68,6 @@
 - 🛡️ **Caido Security** (`caido`) `10.85.46.133:8080` → `caido.kleinbem.dev` — Headless web security proxy & auditing daemon. _[src: nix-presets/containers/caido.nix:16]_
 - 💻 **Code Server** (`code-server`) `10.85.46.22:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
 - 🗄️ **Dev Database** (`dev-db`) `10.85.46.132:5432` — Shared PostgreSQL 17 & Redis instance for devshells. _[src: nix-presets/containers/dev-db.nix:16]_
-- 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:18]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 
