@@ -257,20 +257,32 @@ ssh 10.0.0.2    # ap-upstairs
 
 ### Promote-Production Workflow
 
-Current setup uses GitHub Actions to:
-1. Build all configs in parallel
-2. Push to cache (Attic)
-3. Signal devices to upgrade nightly
+Hosts deploy themselves; nothing pushes over SSH in normal operation.
 
-```bash
-# Triggers: push to main, manual dispatch
-# Runs: Every push
-# Action: publish new containers + host closures to Attic
+1. A push to `main` runs **Build & Cache All**: every host toplevel and
+   container closure is built and pushed to Attic.
+2. **Promote → production** verifies each pull-deploy host's closure is
+   fully fetchable from the caches a device trusts, then moves the
+   `production` tag *and* the `production` branch to that SHA and
+   publishes the container manifest.
+3. Hosts pick it up:
+   - `my.deploy.comin` (modules/nixos/comin.nix): comin polls the
+     `production` branch every 60 s, verifies the head is signed by
+     GitHub's merge key (pki/github-web-flow.asc) or Martin's SSH keys, and
+     runs `switch-to-configuration switch`. `requireCache` runs its nix
+     client with `max-jobs = 0`, so a cache miss fails in seconds. State in
+     `/var/lib/comin` (persisted). Metrics on port 4243 over NetBird.
+     Push a `testing-<host>` branch on top of `production` to canary a
+     change on one host with `switch-to-configuration test`; delete it to
+     fall back. `comin status` on the host shows what is deployed.
+   - `my.deploy.autoUpgrade` (modules/nixos/auto-upgrade.nix): the previous
+     mechanism, nightly `nixos-rebuild switch` against the `production` tag
+     plus an ntfy fast path. Hosts still on it migrate to comin one by one;
+     the tag and the ntfy signal go once the last one has moved.
+   - `container-updater.service`: nightly pull of the container manifest.
 
-# Devices subscribe via:
-#   - auto-upgrade.nix (regular nixos-rebuild)
-#   - container-updater.service (nightly refresh)
-```
+`just deployment::deploy <host>` (colmena over SSH) remains the emergency
+path for a host whose agent cannot reach the repo or the cache.
 
 ### CI Checks
 

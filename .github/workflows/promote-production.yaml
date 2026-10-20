@@ -335,13 +335,29 @@ jobs:
             -f sha="$SHA" \
             -F force=true
           echo "✅ production → $SHA"
+          # comin hosts (my.deploy.comin) follow a production BRANCH: comin
+          # tracks branches, not tags, and only ever moves to a descendant of
+          # what it last deployed. Advance it alongside the tag; the tag goes
+          # once every host runs comin.
+          if gh api "repos/${{ github.repository }}/git/ref/heads/production" >/dev/null 2>&1; then
+            gh api -X PATCH \
+              "repos/${{ github.repository }}/git/refs/heads/production" \
+              -f sha="$SHA" \
+              -F force=true
+          else
+            gh api -X POST \
+              "repos/${{ github.repository }}/git/refs" \
+              -f ref="refs/heads/production" \
+              -f sha="$SHA"
+          fi
+          echo "✅ production branch → $SHA"
           {
             echo "## 🚀 Promoted to production"
             echo ""
             echo "- **SHA**: \`$SHA\`"
             echo "- **Trigger**: ${{ github.event_name }}"
             echo ""
-            echo "Hosts running \`my.deploy.autoUpgrade\` will pick this up on their next cycle (default 04:00 ±30min)."
+            echo "Hosts running \`my.deploy.comin\` switch within a minute; \`my.deploy.autoUpgrade\` hosts on their next cycle (default 04:00 ±30min)."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Advisory push signal: hosts running my.deploy.autoUpgrade.ntfy long-poll
