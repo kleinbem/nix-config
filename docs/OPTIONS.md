@@ -417,7 +417,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.services.meshLlm`
 
-- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:29`
+- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:30`
 - **Sub-options:** `enable`, `extraArgs`, `joinTokenSecret`, `meshPort`, `models`, `package`
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
