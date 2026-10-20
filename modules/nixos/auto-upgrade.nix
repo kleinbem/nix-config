@@ -216,15 +216,29 @@ in
     # ignored — the only trusted input is the production tag the upgrade unit
     # pulls itself. Reconnects forever (Restart=always); curl's --max-time
     # bounds each poll so half-dead connections through the tunnel recover.
+    #
+    # The poll must survive a WAN outage (the router gets firmware updates
+    # regularly, ~15 min offline each). curl then fails instantly, the
+    # script exits 0 right away and Restart=always re-runs it every 30 s —
+    # with systemd's default start-rate limit that is 5 starts in a row and
+    # the unit ends up *failed* for good (start-limit-hit on mac-mini,
+    # nasbook and hass-pi on 2026-10-20), until a manual reset-failed or the
+    # next switch. So: no start-rate limit, and back off 30 s → 5 min while
+    # the network is down instead of hammering a dead resolver.
     systemd.services.nixos-upgrade-listener = lib.mkIf cfg.ntfy.enable {
       description = "Start nixos-upgrade on fleet-deploy ntfy signal";
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
-      unitConfig.ConditionPathExists = cfg.ntfy.topicFile;
+      unitConfig = {
+        ConditionPathExists = cfg.ntfy.topicFile;
+        StartLimitIntervalSec = 0;
+      };
       serviceConfig = {
         Restart = "always";
         RestartSec = "30s";
+        RestartSteps = 5;
+        RestartMaxDelaySec = "5min";
       };
       path = [
         pkgs.curl
