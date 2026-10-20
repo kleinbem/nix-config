@@ -80,6 +80,18 @@
   # can do `pkgs.stable.X` from headless and workstation modules alike.
   nixpkgs.overlays = [
     inputs.nix-packages.overlays.default
+    # TEMPORARY (2026-10-20): nixos-unstable at 09063bd defaults Python
+    # packages to __structuredAttrs = true but doesn't yet carry the sphinx
+    # hook fix for that (NixOS/nixpkgs#573479, merged to master 2026-10-13),
+    # so every package with several sphinxBuilders builds only the first and
+    # loses its `man` output. reuse is the one in our closures (amberol and
+    # metadata-cleaner build with it, desktop.nix), and it broke every
+    # desktop host's build. Drop this once the pin includes f77944fa.
+    (_final: prev: {
+      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+        (_pfinal: pprev: { reuse = pprev.reuse.overrideAttrs { __structuredAttrs = false; }; })
+      ];
+    })
     (_final: prev: {
       stable = import inputs.nixpkgs-stable {
         inherit (prev.stdenv.hostPlatform) system;
