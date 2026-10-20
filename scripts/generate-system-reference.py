@@ -108,7 +108,14 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
         n8n.enable = true;
         n8n = { enable = true; ... };
         n8n.enable = lib.mkForce true;
-    inside (or near) a `my.containers = {...}` or `containers = {...}` block.
+    directly inside a `my.containers = {...}` or `containers = {...}` block.
+
+    Only the block's direct children name a container, and only an `enable`
+    directly inside such a child counts for it: nested option blocks
+    (`tls = { enable = true; }`, `githubMetrics = { enable = true; }`) used to
+    be credited to the enclosing container, and because the file walk was
+    unsorted, two files of one host could disagree in CI-dependent order
+    (the nixos-nvme "monitoring" line flapped on every docs sync).
 
     Returns {host: {container: enabled_bool}}.
     """
@@ -116,6 +123,56 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
     hosts_dir = nix_config / "hosts"
     if not hosts_dir.is_dir():
         return result
+    for host_dir in sorted(hosts_dir.iterdir()):
+        if not host_dir.is_dir():
+            continue
+        host_state: dict[str, bool] = {}
+        for nix_file in sorted(host_dir.rglob("*.nix")):
+            try:
+                lines = nix_file.read_text().splitlines()
+            except OSError:
+                continue
+            in_containers = False
+            depth = 0  # brace depth inside the containers block; 1 = direct child
+            current_container = None
+            for raw in lines:
+                line = raw.strip()
+                # Track when we enter a my.containers or containers block
+                if not in_containers:
+                    if re.search(r"\b(my\.containers|containers)\s*=\s*\{", line):
+                        in_containers = True
+                        depth = line.count("{") - line.count("}")
+                    continue
+                depth_before = depth
+                depth += line.count("{") - line.count("}")
+                if depth <= 0:
+                    in_containers = False
+                    current_container = None
+                    continue
+                # Leaving the current container's own block
+                if current_container and depth < 2:
+                    current_container = None
+                # name = { ... } sub-block: a container only as a direct child
+                m = re.match(r"([a-z][a-z0-9-]*)\s*=\s*\{", line)
+                if m:
+                    if depth_before == 1:
+                        current_container = m.group(1)
+                    continue
+                # name.enable = true|false, as a direct child
+                m = re.match(
+                    r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)",
+                    line,
+                )
+                if m and depth_before == 1:
+                    host_state[m.group(1)] = m.group(3) == "true"
+                    continue
+                # enable = true|false directly inside the container's block
+                m = re.match(r"enable\s*=\s*(lib\.mkForce\s+)?(true|false)", line)
+                if m and current_container and depth_before == 2:
+                    host_state[current_container] = m.group(2) == "true"
+        if host_state:
+            result[host_dir.name] = host_state
+    return result
     for host_dir in sorted(hosts_dir.iterdir()):
         if not host_dir.is_dir():
             continue
