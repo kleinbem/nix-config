@@ -241,14 +241,6 @@ in
   };
 
   systemd = {
-    # Declarative ESPHome device configs (hosts/hass-pi/esphome/*.yaml) for
-    # the Waveshare ESP32-P4 panels, linked read-only into the dashboard's
-    # state dir so it compiles/OTAs them while this repo stays the source of
-    # truth. Secrets stay in the dashboard's own secrets.yaml (state).
-    tmpfiles.rules = map (f: "L+ /var/lib/esphome/${f} - - - - ${./esphome}/${f}") (
-      builtins.filter (f: lib.hasSuffix ".yaml" f) (builtins.attrNames (builtins.readDir ./esphome))
-    );
-
     # See services.openthread-border-router above: stay inactive until the
     # SkyConnect dongle is plugged in rather than failing on a missing radio.
     services.otbr-agent.unitConfig.ConditionPathExists =
@@ -269,6 +261,19 @@ in
     # alongside it.
     services.esphome = {
       path = [ pkgs.esphome-device-builder ];
+      # Declarative ESPHome device configs (hosts/hass-pi/esphome/*.yaml)
+      # for the Waveshare ESP32-P4 panels, linked read-only into the
+      # dashboard's state dir so it compiles/OTAs them while this repo
+      # stays the source of truth. Done from the unit itself (runs as the
+      # DynamicUser inside its own StateDirectory) rather than tmpfiles:
+      # systemd-tmpfiles refuses to write into a directory owned by
+      # another user ("unsafe path transition"), which is what
+      # /var/lib/private/esphome is, so the tmpfiles variant silently
+      # created nothing. Secrets stay in the dashboard's own secrets.yaml.
+      preStart = lib.concatMapStrings (f: "ln -sfn ${./esphome}/${f} /var/lib/esphome/${f}
+") (
+        builtins.filter (f: lib.hasSuffix ".yaml" f) (builtins.attrNames (builtins.readDir ./esphome))
+      );
       serviceConfig.ExecStart = lib.mkForce (
         let
           cfg = config.services.esphome;
