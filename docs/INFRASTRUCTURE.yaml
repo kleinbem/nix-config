@@ -1854,6 +1854,10 @@ modules_system:
     file: nix-config/modules/nixos/firejail.nix
     purpose: NixOS system module.
     declared_options: []
+  forward-auth-guard.nix:
+    file: nix-config/modules/nixos/forward-auth-guard.nix
+    purpose: NixOS system module.
+    declared_options: []
   headless.nix:
     file: nix-config/modules/nixos/headless.nix
     purpose: NixOS system module.
