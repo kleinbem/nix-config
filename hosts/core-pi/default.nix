@@ -287,6 +287,11 @@ in
       ntfy = {
         enable = true;
         ip = "${myInventory.network.nodes.ntfy.ip}/24";
+        # Declarative users/ACLs/tokens rendered by secrets.nix once the
+        # ntfy_auth_* keys exist in nix/per-host/core-pi.yaml; the server
+        # runs deny-all from then on. null = today's open server.
+        secretsFile =
+          if config.sops.templates ? "ntfy.env" then config.sops.templates."ntfy.env".path else null;
       };
 
       ente = {

@@ -299,6 +299,7 @@ hosts:
       - ntfy
       - ntfy.enable
       - ntfy.ip
+      - ntfy.secretsFile
       - vaultwarden
       - vaultwarden.adminTokenFile
       - vaultwarden.enable
@@ -481,6 +482,7 @@ hosts:
       - monitoring.hostDataDir
       - monitoring.ip
       - monitoring.nodeTargets
+      - monitoring.ntfy.authConfigFile
       - open-webui
       - open-webui.enable
       - open-webui.hostDataDir

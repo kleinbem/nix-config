@@ -393,6 +393,7 @@ jobs:
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+          NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -400,6 +401,7 @@ jobs:
             exit 0
           fi
           curl -fsS --max-time 15 \
+            ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
             -H "Title: container-factory eval failed (${{ matrix.system }})" \
             -H "Tags: rotating_light" \
             -H "Priority: high" \
@@ -479,6 +481,7 @@ jobs:
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+          NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -489,6 +492,7 @@ jobs:
           [ "${{ steps.factory-build.outcome }}" = "failure" ] && failed="container-factory"
           [ "${{ steps.orin-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }orin-nano"
           curl -fsS --max-time 15 \
+            ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
             -H "Title: best-effort toplevel build failed (${{ matrix.system }})" \
             -H "Tags: warning" \
             -H "Priority: default" \

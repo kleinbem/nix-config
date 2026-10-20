@@ -327,6 +327,16 @@ in
         enable = true;
         ip = "10.85.50.2/24";
         hostDataDir = "/var/lib/monitoring";
+        # alertmanager-ntfy credentials + the secret alert topic, rendered
+        # by secrets.nix once ntfy_monitoring_password exists in
+        # nix/per-host/mac-mini.yaml. Until then alerts go to the preset's
+        # default topic "alerts" — guessable and, on the still-open ntfy
+        # server, readable by anyone.
+        ntfy.authConfigFile =
+          if config.sops.templates ? "alertmanager-ntfy.yml" then
+            config.sops.templates."alertmanager-ntfy.yml".path
+          else
+            null;
         nodeTargets = [
           myInventory.hosts.nixos-nvme.ip
           myInventory.hosts.core-gateway.ip
