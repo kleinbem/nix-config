@@ -50,8 +50,13 @@ runs:
       shell: bash
       run: |
         # nix-config CI uses github: refs for sibling sub-flakes (matches the
-        # existing ci.yml pattern). Each build evaluates against whatever's on
-        # the sibling's main branch — same semantics as the per-sub-flake CIs.
+        # existing ci.yml pattern). Checks, container builds and PR host
+        # builds evaluate against whatever's on the sibling's main branch —
+        # same semantics as the per-sub-flake CIs, and the early warning for
+        # cross-repo breakage. NOT used for the host toplevels built on main
+        # and for promote's cache gate: devices resolve the committed lock
+        # with zero overrides, so those steps do too (build-all.yaml,
+        # "committed lock" step).
         echo "NIX_OVERRIDES=\
           --override-input kleinbem-secrets /tmp/dummy-secrets \
           --override-input nix-devshells github:kleinbem/nix-devshells \

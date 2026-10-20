@@ -116,9 +116,16 @@ in
              it can't be reached (instead of building the closure locally),
           3. cap the run with `RuntimeMaxSec = maxRuntime` so a cache miss
              that slips past the probe can't run away into a multi-hour
-             on-device build — the run is killed and retried next cycle.
+             on-device build — the run is killed and retried next cycle,
+          4. run `nixos-rebuild` with `--max-jobs 0`, so a closure the cache
+             does not hold fails within seconds ("unable to start any
+             build") instead of compiling until the cap kills it. CI builds
+             the exact closure these hosts resolve (build-all's
+             committed-lock step) and promote-production verifies it is
+             cached before the `production` tag moves, so a miss here is a
+             pipeline bug to fix, never something to build around.
         Leave false for hosts that can legitimately build locally
-        (e.g. the x86 workstation).
+        (e.g. orin-nano's on-device jetpack kernel).
       '';
     };
 
@@ -192,13 +199,20 @@ in
       flags = [
         "--refresh"
         "-L"
+      ]
+      # Substitute-only: see requireCache. No pull-deploy host has remote
+      # builders configured, so this forbids every build, not just local ones.
+      ++ lib.optionals cfg.requireCache [
+        "--max-jobs"
+        "0"
       ];
       inherit (cfg) dates randomizedDelaySec allowReboot;
       operation = "switch";
     };
 
     # Cache-dependent hosts: order after the mesh, gate on cache reachability,
-    # and cap runtime so a cache miss can't trigger a multi-hour local rebuild.
+    # and cap runtime. The cap is the last line of defence; `--max-jobs 0`
+    # above is what actually stops a cache miss from turning into a build.
     systemd.services.nixos-upgrade = lib.mkIf cfg.requireCache {
       after = [
         "network-online.target"

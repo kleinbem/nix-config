@@ -140,16 +140,27 @@ jobs:
           exit $fail
 
       - name: Assert no deployed host would build
+        env:
+          # Same App token as the eval gate: the device closure includes the
+          # private kleinbem-secrets input.
+          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
         run: |
           set -euo pipefail
-          # The hosts that pull `production` via my.deploy.autoUpgrade and must
-          # never build on-device. Mirrors build-all's hardcoded-native toplevel
-          # targets (hass-pi/core-pi on aarch64, mac-mini on x86_64 — all three
-          # set my.deploy.autoUpgrade.requireCache = true).
-          # Excluded (deliberately, same as build-all): nixos-nvme (IS the cache
-          # host — builds locally, never pulls), orin-nano + routers (build
+          # The hosts that pull `production` via my.deploy.autoUpgrade with
+          # requireCache = true: since 2026-10-20 they run `nixos-rebuild
+          # --max-jobs 0`, so anything missing from the cache fails their
+          # upgrade outright. Mirrors build-all's committed-lock step
+          # (hass-pi/core-pi on aarch64, mac-mini/nasbook on x86_64).
+          # Excluded (deliberately, same as build-all): nixos-nvme (best-effort
+          # build, Martin deploys it by hand), orin-nano + routers (build
           # on-device by design). Edit this list as hosts opt into pull-deploy.
-          HOSTS=(hass-pi core-pi mac-mini)
+          #
+          # Resolved WITHOUT $NIX_OVERRIDES: committed lock, real secrets —
+          # the exact closure the device evaluates. Checking the floated
+          # closure instead (as this step did until 2026-10-20) let a lagging
+          # lock through every time; the device then compiled until
+          # RuntimeMaxSec killed it.
+          HOSTS=(hass-pi core-pi mac-mini nasbook)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"
@@ -164,7 +175,7 @@ jobs:
             # literal path. Resolving first avoids the flake-attr path
             # entirely, matching how a real device actually fetches (by
             # store path, never by re-evaluating a flake attribute).
-            if ! path="$(nix eval --raw "$target.outPath" $NIX_OVERRIDES 2>&1)"; then
+            if ! path="$(nix eval --raw "$target.outPath" 2>&1)"; then
               echo "$path"
               echo "::error::$h: failed to resolve toplevel path — cannot verify cache, refusing to promote."
               fail=1
@@ -193,10 +204,10 @@ jobs:
             # of "will be built" (no flake attribute means Nix has no build
             # recipe to offer as a fallback) — so the exit code is ignored
             # and both phrasings count as a miss.
-            out="$(nix path-info -r "$path" $NIX_OVERRIDES 2>&1 || true)"
+            out="$(nix path-info -r "$path" 2>&1 || true)"
             echo "$out"
             if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
-              echo "::error::$h closure is NOT fully cached — a device would compile on-device. Blocking promotion."
+              echo "::error::$h closure is NOT fully cached — the device's --max-jobs 0 upgrade would fail. Blocking promotion."
               fail=1
             else
               echo "✅ $h: fully cached (fetch-only)."
