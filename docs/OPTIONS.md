@@ -187,7 +187,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.home-assistant`
 
 - **Declared:** `nix-presets/containers/home-assistant.nix:14`
-- **Sub-options:** `enable`, `enableBluetooth`, `enableUSB`, `hostDataDir`, `ip`, `memoryLimit`
+- **Sub-options:** `enable`, `enableBluetooth`, `enableUSB`, `hostDataDir`, `ip`, `lanUrl`, `memoryLimit`
 - **Consumed by:** `host:hass-pi`
 
 ### `my.containers.langflow`
