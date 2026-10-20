@@ -221,6 +221,32 @@
             nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ python-prev.pythonRelaxDepsHook ];
             pythonRelaxDeps = [ "chardet" ];
           });
+
+          # pyopenjtalk-plus 0.4.1-post9's test suite expects the exception
+          # text of Cython < 3.3 ("must be str"); nixos-unstable 09063bd
+          # ships Cython 3.3.0 ("Expected str, got int"), so one test fails
+          # on every platform (hydra builds 349753099/349753109) and with it
+          # piper-tts → wyoming-piper → the hass-pi toplevel. Upstream fixed
+          # the test in tsukumijima/pyopenjtalk-plus@90b644f and
+          # NixOS/nixpkgs#576063 backports it. Self-retiring: a no-op once
+          # the pinned package already carries a cython patch — delete this
+          # block once #576063 reaches nixos-unstable.
+          pyopenjtalk-plus =
+            if
+              lib.any (p: lib.hasInfix "cython" (p.name or "")) (python-prev.pyopenjtalk-plus.patches or [ ])
+            then
+              python-prev.pyopenjtalk-plus
+            else
+              python-prev.pyopenjtalk-plus.overrideAttrs (old: {
+                patches = (old.patches or [ ]) ++ [
+                  (prev.fetchpatch {
+                    name = "fix-cython-3.3.0.patch";
+                    url = "https://github.com/tsukumijima/pyopenjtalk-plus/commit/90b644f9e9d397882e6eafe4dcd1843a4fde6a63.patch";
+                    includes = [ "tests/test_frontend.py" ];
+                    hash = "sha256-Jb7T/bRUHxqwBLwV6xYC/teaFHm5GmqJxA7sCX+oiNI=";
+                  })
+                ];
+              });
         })
       ];
     })
