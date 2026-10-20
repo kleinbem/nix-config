@@ -240,45 +240,47 @@ in
     };
   };
 
-  # Upstream ESPHome removed its built-in `dashboard` command (confirmed via
-  # `esphome dashboard` erroring "The built-in dashboard has been removed
-  # from ESPHome" on 2026.8.0, the version nixpkgs currently ships); the
-  # NixOS services.esphome module (nixos/modules/services/home-automation/
-  # esphome.nix) hasn't been updated to match and still hardcodes that
-  # subcommand, so esphome.service crash-looped on every start. nixpkgs
-  # already packages the replacement dashboard tool, esphome-device-builder
-  # — override just this ExecStart to use it (same default port 6052,
-  # equivalent --host/--port flags) rather than waiting on upstream nixpkgs.
-  # Firmware compilation itself is untouched: services.esphome.package
-  # (still real esphome) stays on PATH for it via the base module's own
-  # `path = [ cfg.package ];`, this just adds the new dashboard binary
-  # alongside it.
-  # Declarative ESPHome device configs (hosts/hass-pi/esphome/*.yaml) for
-  # the Waveshare ESP32-P4 panels, linked read-only into the dashboard's
-  # state dir so it compiles/OTAs them while this repo stays the source of
-  # truth. Secrets stay in the dashboard's own secrets.yaml (state).
-  systemd.tmpfiles.rules = map (f: "L+ /var/lib/esphome/${f} - - - - ${./esphome}/${f}") (
-    builtins.filter (f: lib.hasSuffix ".yaml" f) (builtins.attrNames (builtins.readDir ./esphome))
-  );
-
-  # See services.openthread-border-router above: stay inactive until the
-  # SkyConnect dongle is plugged in rather than failing on a missing radio.
-  systemd.services.otbr-agent.unitConfig.ConditionPathExists =
-    config.services.openthread-border-router.radio.device;
-
-  systemd.services.esphome = {
-    path = [ pkgs.esphome-device-builder ];
-    serviceConfig.ExecStart = lib.mkForce (
-      let
-        cfg = config.services.esphome;
-        args =
-          if cfg.enableUnixSocket then
-            "--socket /run/esphome/esphome.sock"
-          else
-            "--host ${cfg.address} --port ${toString cfg.port}";
-      in
-      "${pkgs.esphome-device-builder}/bin/esphome-device-builder ${args} /var/lib/esphome"
+  systemd = {
+    # Declarative ESPHome device configs (hosts/hass-pi/esphome/*.yaml) for
+    # the Waveshare ESP32-P4 panels, linked read-only into the dashboard's
+    # state dir so it compiles/OTAs them while this repo stays the source of
+    # truth. Secrets stay in the dashboard's own secrets.yaml (state).
+    tmpfiles.rules = map (f: "L+ /var/lib/esphome/${f} - - - - ${./esphome}/${f}") (
+      builtins.filter (f: lib.hasSuffix ".yaml" f) (builtins.attrNames (builtins.readDir ./esphome))
     );
+
+    # See services.openthread-border-router above: stay inactive until the
+    # SkyConnect dongle is plugged in rather than failing on a missing radio.
+    services.otbr-agent.unitConfig.ConditionPathExists =
+      config.services.openthread-border-router.radio.device;
+
+    # Upstream ESPHome removed its built-in `dashboard` command (confirmed via
+    # `esphome dashboard` erroring "The built-in dashboard has been removed
+    # from ESPHome" on 2026.8.0, the version nixpkgs currently ships); the
+    # NixOS services.esphome module (nixos/modules/services/home-automation/
+    # esphome.nix) hasn't been updated to match and still hardcodes that
+    # subcommand, so esphome.service crash-looped on every start. nixpkgs
+    # already packages the replacement dashboard tool, esphome-device-builder
+    # — override just this ExecStart to use it (same default port 6052,
+    # equivalent --host/--port flags) rather than waiting on upstream nixpkgs.
+    # Firmware compilation itself is untouched: services.esphome.package
+    # (still real esphome) stays on PATH for it via the base module's own
+    # `path = [ cfg.package ];`, this just adds the new dashboard binary
+    # alongside it.
+    services.esphome = {
+      path = [ pkgs.esphome-device-builder ];
+      serviceConfig.ExecStart = lib.mkForce (
+        let
+          cfg = config.services.esphome;
+          args =
+            if cfg.enableUnixSocket then
+              "--socket /run/esphome/esphome.sock"
+            else
+              "--host ${cfg.address} --port ${toString cfg.port}";
+        in
+        "${pkgs.esphome-device-builder}/bin/esphome-device-builder ${args} /var/lib/esphome"
+      );
+    };
   };
 
 }
