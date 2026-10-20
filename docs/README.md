@@ -40,6 +40,7 @@ Quick navigation for the kleinbem fleet NixOS configuration.
 | [DEVICE-TIERS.md](DEVICE-TIERS.md) | Device tier definitions & setup checklist | ✅ Verified (2026-09-11) |
 | [MODULE-ORGANIZATION.md](MODULE-ORGANIZATION.md) | Module patterns & import strategies | ✅ Verified (2026-09-11) |
 | [CONTAINER-HOST-SETUP.md](CONTAINER-HOST-SETUP.md) | Container hosting module & setup | ✅ Verified (2026-09-11) |
+| [HOME-ASSISTANT.md](HOME-ASSISTANT.md) | Home Assistant on hass-pi: access, auth, updates, host services, MCP, restore | ✅ Current (2026-10-20) |
 | [HOME-MANAGER-SETUP.md](HOME-MANAGER-SETUP.md) | User environment & dotfiles configuration | ✅ Verified (2026-09-11) |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Diagnostics for common issues | ✅ Verified (2026-09-11) |
 | [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md) | Secure secrets with sops + age | ✅ Verified (2026-09-11) |
