@@ -75,7 +75,10 @@ in
           "${host}-alive" = {
             kind = "alive";
             timeout = 300; # timer below pings every 5 min
-            grace = 900;
+            # Must outlast a planned WAN outage: the router gets firmware
+            # updates regularly and is offline ~15 min each time (16 min on
+            # 2026-10-20, which blew through the previous 15 min grace).
+            grace = 1800;
           };
         }
         // lib.listToAttrs (
