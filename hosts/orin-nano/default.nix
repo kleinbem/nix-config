@@ -97,8 +97,39 @@ in
           jpOverlayAttrNames = builtins.attrNames (inputs.jetpack-nixos.overlays.default final prev);
           jetpackNames = lib.filter (lib.hasPrefix "nvidia-jetpack") jpOverlayAttrNames;
           jetpackOverrides = lib.genAttrs jetpackNames (name: jpPkgs.${name});
+          # nixpkgs 09063bd ships System.map in kernel.dev (for
+          # linuxPackages.rebuildImage), so kbuild's modules_install now runs
+          # depmod for the out-of-tree L4T modules too. Their modules.dep then
+          # collides with the kernel's in aggregateModules ("two given paths
+          # contain a conflicting subpath", build-all run 39385551311). The
+          # aggregator runs depmod over everything anyway, so skip it here,
+          # like nixpkgs' amneziawg does. Self-retiring: skipped once
+          # jetpack-nixos passes DEPMOD itself.
+          withoutOotDepmod =
+            jp:
+            if !(jp ? kernelPackagesOverlay) then
+              jp
+            else
+              jp
+              // {
+                kernelPackagesOverlay = lib.composeExtensions jp.kernelPackagesOverlay (
+                  _: kprev:
+                  lib.optionalAttrs (kprev ? nvidia-oot-modules) {
+                    nvidia-oot-modules =
+                      if lib.any (lib.hasPrefix "DEPMOD=") (kprev.nvidia-oot-modules.makeFlags or [ ]) then
+                        kprev.nvidia-oot-modules
+                      else
+                        kprev.nvidia-oot-modules.overrideAttrs (old: {
+                          makeFlags = (old.makeFlags or [ ]) ++ [ "DEPMOD=true" ];
+                        });
+                  }
+                );
+              };
         in
         jetpackOverrides
+        // {
+          nvidia-jetpack = withoutOotDepmod prev.nvidia-jetpack;
+        }
         // lib.optionalAttrs (config.hardware.nvidia-jetpack.majorVersion == "6") {
           cudaPackages = final.cudaPackages_12_6;
         }
