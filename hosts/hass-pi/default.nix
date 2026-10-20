@@ -13,6 +13,10 @@ let
   # Single source of truth for this host's LUKS volume name — feeds both
   # rpi5-disko.nix (via _module.args below) and my.boot.clevis-initrd.
   luksVolumeName = "hass_crypt";
+  hostSops = secretFile "nix/per-host/hass-pi.yaml";
+  hasNodeRedAdminHash =
+    builtins.pathExists hostSops
+    && lib.hasInfix "\nnode_red_admin_hash:" ("\n" + builtins.readFile hostSops);
 in
 {
   imports = [
@@ -35,6 +39,12 @@ in
   ];
 
   _module.args.luksName = luksVolumeName;
+
+  # bcrypt hash for Node-RED's editor login (see services.node-red below).
+  sops.secrets.node_red_admin_hash = lib.mkIf hasNodeRedAdminHash {
+    sopsFile = hostSops;
+    owner = config.services.node-red.user;
+  };
 
   networking = {
     hostName = "hass-pi";
@@ -171,6 +181,28 @@ in
     node-red = {
       enable = true;
       openFirewall = true;
+      # Node-RED's editor has no login by default, and its exec/function
+      # nodes run arbitrary commands as the node-red user — with the port
+      # open on the LAN that was code execution on this host for any LAN
+      # device. adminAuth is wired once `node_red_admin_hash` exists in
+      # kleinbem-secrets nix/per-host/hass-pi.yaml (bcrypt, generate with
+      # `node-red admin hash-pw`); until then the editor stays open, so
+      # add the key. Gated on the plaintext key name so eval works before
+      # the value is there; sops-nix would fail activation on a missing key.
+      configFile = pkgs.writeText "node-red-settings.js" ''
+        const base = require("${config.services.node-red.package}/lib/node_modules/node-red/packages/node_modules/node-red/settings.js");
+        ${lib.optionalString hasNodeRedAdminHash ''
+          base.adminAuth = {
+            type: "credentials",
+            users: [{
+              username: "martin",
+              password: require("fs").readFileSync("${config.sops.secrets.node_red_admin_hash.path}", "utf8").trim(),
+              permissions: "*",
+            }],
+          };
+        ''}
+        module.exports = base;
+      '';
     };
 
     esphome = {
