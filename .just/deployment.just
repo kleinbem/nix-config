@@ -281,7 +281,7 @@ push-cache +args:
 [confirm("🔐 Seal the TPM key on the Orin Nano? This can only be done once after boot.")]
 orin-seal:
     @echo "🔐 Sealing Orin Nano TPM keys..."
-    @ssh root@orin-nano.local "tpm2_pcrseal -g sha256 -l 7 -o /persist/tpm-seal.bin"
+    @ssh -t martin@orin-nano.local "sudo tpm2_pcrseal -g sha256 -l 7 -o /persist/tpm-seal.bin"
 
 [group("Provisioning")]
 [confirm("🟢 Install minimal NixOS bootstrap onto USB SSD for Orin Nano? This is destructive.")]

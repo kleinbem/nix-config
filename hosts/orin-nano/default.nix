@@ -193,11 +193,9 @@ in
       keys.ssh.fido2
       keys.ssh.fido2-backup
     ];
-    root.openssh.authorizedKeys.keys = [
-      keys.ssh.yubikey
-      keys.ssh.fido2
-      keys.ssh.fido2-backup
-    ];
+    # No root keys (see hosts/mac-mini/default.nix for the reasoning); the
+    # bootstrap installer image is the only root@ login left, and only
+    # until `just deployment::orin-promote` replaces it.
   };
 
   # No desktop specialisation: orin-nano is a pure headless AI edge device.

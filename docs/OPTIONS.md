@@ -222,8 +222,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.monitoring`
 
-- **Declared:** `nix-presets/containers/monitoring.nix:18`
-- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
+- **Declared:** `nix-presets/containers/monitoring.nix:20`
+- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.authConfigFile`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
 - **Default-enabled** (no hosts import the declaring file)
 - **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 
@@ -248,7 +248,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.ntfy`
 
 - **Declared:** `nix-presets/containers/ntfy.nix:13`
-- **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`
+- **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.ollama`

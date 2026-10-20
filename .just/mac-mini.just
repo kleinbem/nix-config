@@ -27,7 +27,7 @@ ping:
 
 [group("mac-mini")]
 shell:
-    @ssh root@10.0.0.16
+    @ssh martin@10.0.0.16
 
 [group("mac-mini")]
 logs service="gnome-remote-desktop":
