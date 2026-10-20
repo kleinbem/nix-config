@@ -54,6 +54,13 @@
       url = "github:kleinbem/skills";
       flake = false;
     };
+    # Upstream Home Assistant agent skills (automations, helpers, templates,
+    # dashboards, backups best practices) from the ha-mcp authors; fanned out
+    # next to the kleinbem ones. Kept current by the lock bot.
+    home-assistant-skills = {
+      url = "github:homeassistant-ai/skills";
+      flake = false;
+    };
 
     # Modules & Configurations (Pulled from local submodules for speed)
     nix-hardware = {

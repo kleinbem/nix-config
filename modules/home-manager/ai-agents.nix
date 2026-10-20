@@ -58,13 +58,22 @@ let
   # kleinbem-fleet teaches any agent how this workspace is shaped; the deep
   # detail lives in each repo's AGENTS.md and in nix-config/docs/*.md.
   skillsRepo = inputs.kleinbem-skills;
-  skills = lib.concatMapAttrs (
-    plugin: _:
-    let
-      dir = "${skillsRepo}/plugins/${plugin}/skills";
-    in
-    lib.mapAttrs (skill: _: "${dir}/${skill}") (builtins.readDir dir)
-  ) (builtins.readDir "${skillsRepo}/plugins");
+  # Plus the upstream Home Assistant skills (homeassistant-ai/skills, the
+  # ha-mcp authors' marketplace: skills/<skill>/SKILL.md at the repo root).
+  # They teach the agent HA automation/helper/dashboard conventions for the
+  # home-assistant MCP server (modules.mcp.homeAssistant).
+  haSkillsRepo = inputs.home-assistant-skills;
+  skills =
+    lib.concatMapAttrs (
+      plugin: _:
+      let
+        dir = "${skillsRepo}/plugins/${plugin}/skills";
+      in
+      lib.mapAttrs (skill: _: "${dir}/${skill}") (builtins.readDir dir)
+    ) (builtins.readDir "${skillsRepo}/plugins")
+    // lib.mapAttrs (skill: _: "${haSkillsRepo}/skills/${skill}") (
+      lib.filterAttrs (_: type: type == "directory") (builtins.readDir "${haSkillsRepo}/skills")
+    );
 
   # `agent` — launch the configured default agent. Omarchy calls its
   # equivalent `a`; we ship both.
