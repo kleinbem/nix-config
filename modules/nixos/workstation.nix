@@ -29,7 +29,6 @@
   ];
 
   imports = [
-    ./hardening.nix
     ./snapper.nix
     inputs.lanzaboote.nixosModules.lanzaboote
   ];

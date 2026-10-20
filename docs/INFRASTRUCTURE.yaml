@@ -985,6 +985,7 @@ hosts:
     - '[module] modules/nixos/headless.nix'
     - '[module] modules/nixos/hosts.nix'
     - '[module] modules/nixos/kernel.nix'
+    - '[module] modules/nixos/security/hardening.nix'
     - '[module] modules/nixos/audit.nix'
     - '[module] modules/nixos/users.nix'
     - '[module] modules/nixos/ai-hardening.nix'
@@ -995,7 +996,6 @@ hosts:
     - '[user] user:martin'
     - '[other] nix-gantry:updater'
     - '[hardware] nix-hardware:orin-nano'
-    - '[preset] nix-presets:ollama'
     enabled_subsystems:
       attic-push:
       - enable
@@ -1851,10 +1851,6 @@ modules_system:
     declared_options: []
   firejail.nix:
     file: nix-config/modules/nixos/firejail.nix
-    purpose: NixOS system module.
-    declared_options: []
-  hardening.nix:
-    file: nix-config/modules/nixos/hardening.nix
     purpose: NixOS system module.
     declared_options: []
   headless.nix:
