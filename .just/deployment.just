@@ -28,7 +28,7 @@ update host:
     @if [ "{{host}}" = "$(hostname)" ]; then \
         sudo systemctl start nixos-upgrade.service; \
     else \
-        ssh "{{host}}" "sudo systemctl start nixos-upgrade.service"; \
+        ssh -t "{{host}}" "sudo systemctl start nixos-upgrade.service"; \
     fi
     @echo "✅ Upgrade triggered! To watch progress, run:"
     @if [ "{{host}}" = "$(hostname)" ]; then \
