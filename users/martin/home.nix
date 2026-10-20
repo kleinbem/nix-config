@@ -55,11 +55,23 @@ in
         extraPackages = [ pkgs.claude-agent-acp ];
         settings = {
           active_provider = "claude-acp";
-          providers.claude-acp = {
-            enabled = true;
-            configured = true;
-            model = "current";
+          providers = {
+            claude-acp = {
+              enabled = true;
+              configured = true;
+              model = "current";
+            };
+            # The fleet mesh (my.services.meshLlm, hosts/nixos-nvme/ai.nix):
+            # OpenAI-compatible on this host, no key (goose sends no auth header
+            # without one). `goose session --provider openai` or
+            # GOOSE_PROVIDER=openai picks it for a session.
+            openai = {
+              enabled = true;
+              configured = true;
+              model = "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M";
+            };
           };
+          OPENAI_HOST = "http://127.0.0.1:9337";
         };
       };
     };
