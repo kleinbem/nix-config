@@ -20,7 +20,8 @@ in
     # Edge-device modules orin needs (curated — default.nix's workstation
     # bundle would also pull in snapper/printing/security/android which
     # don't apply to this host).
-    "${self}/modules/nixos/kernel.nix" # AI-tuned sysctl, BBR, swappiness
+    "${self}/modules/nixos/kernel.nix" # BBR, memory tuning
+    "${self}/modules/nixos/security/hardening.nix" # fleet hardening baseline (nix-mineral is x86-only)
     "${self}/modules/nixos/audit.nix" # security audit rules
     "${self}/modules/nixos/users.nix" # sops-backed root password, mutableUsers=false
     "${self}/modules/nixos/ai-hardening.nix" # AI workload sandboxing
