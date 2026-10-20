@@ -15,9 +15,20 @@ in
   hardware = {
     graphics.enable = true;
     enableRedistributableFirmware = true;
-    # Firmware auto-updates are now safe because we pull the pre-built firmware
-    # capsules directly from the anduril cachix, bypassing the pkg_resources bug
-    # in nixos-unstable.
+    # Firmware (UEFI capsule) auto-update: with firmware.autoUpdate the
+    # capsule for the pinned L4T release becomes part of the bootloader
+    # install step. Every `switch`/`boot` runs ota-check-firmware; on a
+    # mismatch it stages the capsule on the ESP and the NEXT reboot flashes
+    # the inactive A/B slot (falls back to the old slot if the new one
+    # doesn't reach UEFI). A deploy never reboots on its own.
+    #
+    # It was off from 2026-07 to 2026-10 because the edk2 build timed out
+    # under qemu in CI. The orin-nano toplevel is built on a native arm
+    # runner now, and the capsule + Tegra-edk2 build are in Attic (first
+    # built on the Orin itself for the manual 36.5.0 -> 36.5.2 update on
+    # 2026-10-20). Nothing comes from anduril.cachix.org: jetpack-nixos is
+    # built against our nixpkgs, so the hashes never match theirs.
+    # Escape hatch for a one-off deploy: JETPACK_NIXOS_SKIP_CAPSULE_UPDATE=1.
     #
     # JetPack 7 (L4T R39.x / Linux 6.8) Migration Target:
     # - Kernel Store Path: /nix/store/qymmphigdmsr9bn4db0ylmwn7acbllbs-linux-6.8.12
@@ -26,7 +37,7 @@ in
     # - Toplevel Path:     /nix/store/gzcd9pr2r17q2g0w45hrvva6bwfj8315-nixos-system-orin-nano-26.11.20260928.7a0f122
     nvidia-jetpack = {
       # majorVersion = "7"; # Switch when QSPI firmware is flashed over USB-C
-      firmware.autoUpdate = false;
+      firmware.autoUpdate = true;
       super = true; # Enable 25W "Super Mode" for Orin Nano Plus
       maxClock = true; # Always run at maximum clock speed
     };
