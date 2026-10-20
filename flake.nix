@@ -180,8 +180,6 @@
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";
 
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid/release-24.05";
       # NOTE: Do NOT follow nixpkgs here. nix-on-droid needs its own pinned
