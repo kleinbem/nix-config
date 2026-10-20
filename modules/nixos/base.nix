@@ -103,6 +103,23 @@
         qdrant
         ;
 
+      # reuse: nixos-unstable's python builder now hands attrs over as
+      # structured attrs, but sphinxHook still expands `$sphinxBuilders` as a
+      # string, so only the first builder (html) runs and the `man` output is
+      # never produced ("failed to produce output path for output 'man'";
+      # khal hits the same, NixOS/nixpkgs#576161). amberol needs reuse at
+      # build time, so every x86 desktop toplevel (mac-mini in CI) fails and
+      # promote-production never publishes a container manifest. The real
+      # fix is NixOS/nixpkgs#573479, merged to staging 2026-10-13 — drop
+      # this once it reaches nixos-unstable. Until then skip the man build.
+      reuse = prev.python3Packages.toPythonApplication (
+        prev.python3Packages.reuse.overrideAttrs (old: {
+          # keep out/doc/dist (the python builder adds dist itself)
+          outputs = prev.lib.remove "man" old.outputs;
+          sphinxBuilders = [ "html" ];
+        })
+      );
+
       # flashrom 1.8.0's cmocka test suite fails on aarch64
       # (`write_chip_bad_status_test`), which breaks raspberrypi-eeprom →
       # rpi-eeprom-update.service → the whole core-pi/hass-pi toplevel.
