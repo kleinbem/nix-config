@@ -504,6 +504,11 @@ hosts:
       - stalwart.hostDataDir
       - stalwart.ip
       - stalwart.memoryLimit
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       desktop:
       - gnome.enable
       - sandboxedApps.enable
@@ -1817,6 +1822,11 @@ modules_system:
     file: nix-config/modules/nixos/colmena-version-metadata.nix
     purpose: NixOS system module.
     declared_options: []
+  comin.nix:
+    file: nix-config/modules/nixos/comin.nix
+    purpose: NixOS system module.
+    declared_options:
+    - my.deploy.comin
   core.nix:
     file: nix-config/modules/nixos/core.nix
     purpose: Base NixOS settings, locale, nix-daemon, nixpkgs flakes, zsh, sudo.
