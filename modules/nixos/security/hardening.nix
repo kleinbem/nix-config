@@ -6,9 +6,9 @@
   ...
 }:
 # The fleet's one hardening layer. nix-mineral carries the bulk of it where
-# it can run (x86_64); the manual baseline below covers what nix-mineral
-# doesn't set, plus the same Lynis sysctls on hosts where nix-mineral is
-# off (aarch64: its boot params panic the Jetson/RPi kernels).
+# it can run (x86_64; its boot params panic the Jetson/RPi kernels); the
+# manual baseline below covers what nix-mineral doesn't set. The Lynis
+# sysctls every host needs live in security/sysctl.nix.
 #
 # Compatibility overrides live here too, so a host never has to fight this
 # module with mkForce: nspawn needs user namespaces, perf needs a relaxed
@@ -32,47 +32,12 @@ in
     };
   };
 
-  boot = {
-    # Lynis NETW-3200 plus the PC speaker. nix-mineral's own module
-    # blacklist is off under the compatibility preset, so this list is
-    # the fleet's.
-    blacklistedKernelModules = [
-      "dccp"
-      "sctp"
-      "rds"
-      "tipc"
-      "pcspkr"
-      "snd_pcsp"
-    ];
-
-    kernel.sysctl = lib.mkMerge [
-      # Baseline nix-mineral would otherwise provide (same values). Only
-      # declared where nix-mineral is off, so the two never disagree.
-      (lib.mkIf (!mineral) {
-        "kernel.sysrq" = 4; # sync, unmount, reboot only
-        "kernel.kptr_restrict" = 2;
-        "kernel.unprivileged_bpf_disabled" = 1;
-        "kernel.dmesg_restrict" = 1;
-        "kernel.randomize_va_space" = 2;
-        "net.core.bpf_jit_harden" = 2;
-        "vm.unprivileged_userfaultfd" = 0;
-        "net.ipv4.conf.all.rp_filter" = 1;
-        "net.ipv4.conf.default.rp_filter" = 1;
-        "net.ipv4.conf.all.accept_redirects" = 0;
-        "net.ipv4.conf.default.accept_redirects" = 0;
-        "net.ipv6.conf.all.accept_redirects" = 0;
-        "net.ipv6.conf.default.accept_redirects" = 0;
-        "net.ipv4.conf.all.log_martians" = 1;
-        "net.ipv4.conf.default.log_martians" = 1;
-        "net.ipv4.conf.all.send_redirects" = 0;
-        "net.ipv4.conf.default.send_redirects" = 0;
-      })
-      {
-        # Compatibility overrides, everywhere.
-        "kernel.unprivileged_userns_clone" = 1; # systemd-nspawn
-        "kernel.perf_event_paranoid" = 2; # perf for unprivileged users (nix-mineral: 3)
-      }
-    ];
+  # The Lynis sysctls and the module blacklist are fleet-wide in
+  # security/sysctl.nix (core.nix); nix-mineral's identical values win
+  # there by priority. Only the compatibility overrides stay here.
+  boot.kernel.sysctl = {
+    "kernel.unprivileged_userns_clone" = 1; # systemd-nspawn
+    "kernel.perf_event_paranoid" = 2; # perf for unprivileged users (nix-mineral: 3)
   };
 
   security = {
