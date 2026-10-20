@@ -400,6 +400,7 @@ hosts:
     - openclaw
     secrets_consumed:
     - netbird_setup_key
+    - node_red_admin_hash
     hardware_profile: Raspberry Pi 5 (BCM2712, 4x Cortex-A76)
   mac-mini:
     tier: desktop
