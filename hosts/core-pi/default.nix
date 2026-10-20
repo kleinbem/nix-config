@@ -47,6 +47,15 @@ let
         conditions = [ "[STATUS] < 500" ];
       }
       {
+        # Through Caddy on this host to the container on hass-pi. HA answers
+        # its login page unauthenticated, so a 200 proves the whole path.
+        name = "Home Assistant";
+        group = "Apps";
+        url = "https://hass.kleinbem.dev";
+        interval = "3m";
+        conditions = [ "[STATUS] < 500" ];
+      }
+      {
         name = "Vaultwarden";
         group = "Identity";
         url = "https://vault.kleinbem.dev";
