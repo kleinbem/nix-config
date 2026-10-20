@@ -39,6 +39,9 @@ in
       gimp.enable = true;
       # Buzz developer MCP server for workspace AI coding agents
       buzz.enable = true;
+      # Several Claude tabs build at once on this workstation; agents that use
+      # run_task queue their builds and tests instead.
+      agentTaskQueue.enable = true;
     };
 
     opencode.enable = true;
