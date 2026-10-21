@@ -126,9 +126,12 @@ in
           3. cap the run with `RuntimeMaxSec = maxRuntime` so a cache miss
              that slips past the probe can't run away into a multi-hour
              on-device build — the run is killed and retried next cycle,
-          4. run `nixos-rebuild` with `--max-jobs 0`, so a closure the cache
-             does not hold fails within seconds ("unable to start any
-             build") instead of compiling until the cap kills it. CI builds
+          4. run `nixos-rebuild` with `--max-jobs 0` (plus
+             `always-allow-substitutes`, so derivations nixpkgs marks
+             `allowSubstitutes = false` are fetched instead of built), so
+             a closure the cache does not hold fails within seconds
+             ("local builds are disabled") instead of compiling until the
+             cap kills it. CI builds
              the exact closure these hosts resolve (build-all's
              committed-lock step) and promote-production verifies it is
              cached before the `production` tag moves, so a miss here is a
@@ -222,9 +225,22 @@ in
       ]
       # Substitute-only: see requireCache. No pull-deploy host has remote
       # builders configured, so this forbids every build, not just local ones.
+      #
+      # always-allow-substitutes: nixpkgs marks cheap derivations
+      # `allowSubstitutes = false` (buildEnv → system-path, etc,
+      # system-units, every writeText*), so Nix never asks the cache for
+      # them and builds them locally. With max-jobs = 0 that is a hard
+      # failure ("local builds are disabled") on every upgrade that changes
+      # the system, even though CI pushed the whole closure (first hit
+      # 2026-10-21 on core-pi/hass-pi/nasbook with #227-#229, the first
+      # upgrades that ever ran with max-jobs = 0). The setting makes Nix
+      # substitute those too.
       ++ lib.optionals cfg.requireCache [
         "--max-jobs"
         "0"
+        "--option"
+        "always-allow-substitutes"
+        "true"
       ];
       inherit (cfg) dates randomizedDelaySec allowReboot;
       operation = "switch";
