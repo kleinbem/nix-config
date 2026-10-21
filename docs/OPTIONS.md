@@ -16,7 +16,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.android`
 
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
-- **Sub-options:** `enable`, `loopbackCam`, `weylus`
+- **Sub-options:** `autoShizuku`, `enable`, `loopbackCam`, `weylus`
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.anythingllmVaultSync`
