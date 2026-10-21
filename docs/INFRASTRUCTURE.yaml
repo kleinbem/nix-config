@@ -389,6 +389,11 @@ hosts:
       - openclaw.hostDataDir
       - openclaw.ip
       - openclaw.memoryLimit
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
@@ -641,6 +646,11 @@ hosts:
       - device
       - enable
       - keyFilePath
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
@@ -1069,8 +1079,11 @@ hosts:
       - syncthing.ip
       - syncthing.vaults
       deploy:
-      - autoUpgrade
       - autoUpgrade.enable
+      - comin
+      - comin.buildTimeout
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
