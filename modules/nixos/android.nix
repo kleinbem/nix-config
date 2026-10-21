@@ -27,7 +27,7 @@ in
     autoShizuku = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Automatically start Shizuku daemon via udev/systemd when MatePad Pro tablet is connected via USB";
+      description = "Automatically start Shizuku daemon via udev/systemd when an Android device is connected via USB";
     };
   };
 
@@ -100,48 +100,52 @@ in
         ];
     };
 
-    # Auto-start Shizuku daemon via ADB when MatePad Pro USB is connected
+    # Auto-start Shizuku daemon via ADB when any fleet Android device is connected via USB
     services.udev.extraRules = lib.mkIf cfg.autoShizuku ''
-      ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="12d1", ATTR{idProduct}=="107e", ATTR{serial}=="QBK6R20825000010", TAG+="systemd", ENV{SYSTEMD_WANTS}+="shizuku-matepad.service"
+      ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="12d1|04e8|18d1|2717|05c6|0bb4|1004|22b8", TAG+="systemd", ENV{SYSTEMD_WANTS}+="shizuku-auto.service"
     '';
 
-    systemd.services.shizuku-matepad = lib.mkIf cfg.autoShizuku {
-      description = "Auto-start Shizuku daemon on MatePad Pro via ADB";
+    systemd.services.shizuku-auto = lib.mkIf cfg.autoShizuku {
+      description = "Auto-start Shizuku daemon on connected Android devices via ADB";
       after = [ "network.target" ];
       serviceConfig = {
         Type = "oneshot";
         User = config.my.username;
-        ExecStart = pkgs.writeShellScript "shizuku-matepad-start" ''
-          SERIAL="QBK6R20825000010"
+        ExecStart = pkgs.writeShellScript "shizuku-auto-start" ''
           ADB="${pkgs.android-tools}/bin/adb"
 
-          for i in $(seq 1 15); do
-            if $ADB devices | grep -q "$SERIAL.*device"; then
+          # Allow up to 10 seconds for ADB devices to register after USB plug
+          for i in $(seq 1 10); do
+            DEVS=$($ADB devices 2>/dev/null | grep -v "List" | grep "device$" | cut -f1 || true)
+            if [ -n "$DEVS" ]; then
               break
             fi
             sleep 1
           done
 
-          if ! $ADB devices | grep -q "$SERIAL.*device"; then
-            echo "Device $SERIAL not found or not authorized via ADB" >&2
+          DEVS=$($ADB devices 2>/dev/null | grep -v "List" | grep "device$" | cut -f1 || true)
+          if [ -z "$DEVS" ]; then
+            echo "No authorized ADB devices found." >&2
             exit 0
           fi
 
-          if $ADB -s "$SERIAL" shell ps -ef | grep -q "shizuku_server"; then
-            echo "Shizuku server is already running on $SERIAL."
-            exit 0
-          fi
-
-          echo "Starting Shizuku on $SERIAL..."
-          $ADB -s "$SERIAL" shell '
-            APK_PATH=$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
-            if [ -n "$APK_PATH" ]; then
-              LIB_DIR="$(dirname "$APK_PATH")/lib/arm64"
-              if [ -f "$LIB_DIR/libshizuku.so" ]; then
-                "$LIB_DIR/libshizuku.so"
-              fi
+          for SERIAL in $DEVS; do
+            if $ADB -s "$SERIAL" shell ps -ef 2>/dev/null | grep -q "shizuku_server"; then
+              echo "Shizuku server is already running on $SERIAL."
+              continue
             fi
-          '
+
+            echo "Starting Shizuku on $SERIAL..."
+            $ADB -s "$SERIAL" shell '
+              APK_PATH=$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+              if [ -n "$APK_PATH" ]; then
+                LIB_DIR="$(dirname "$APK_PATH")/lib/arm64"
+                if [ -f "$LIB_DIR/libshizuku.so" ]; then
+                  "$LIB_DIR/libshizuku.so"
+                fi
+              fi
+            ' || true
+          done
         '';
       };
     };
