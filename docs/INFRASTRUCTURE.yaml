@@ -305,6 +305,11 @@ hosts:
       - vaultwarden.enable
       - vaultwarden.hostDataDir
       - vaultwarden.ip
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
