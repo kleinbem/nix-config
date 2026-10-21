@@ -1069,8 +1069,11 @@ hosts:
       - syncthing.ip
       - syncthing.vaults
       deploy:
-      - autoUpgrade
       - autoUpgrade.enable
+      - comin
+      - comin.buildTimeout
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
