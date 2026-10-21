@@ -61,11 +61,19 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # Orin Nano needs to compile its own kernel/L4T locally.
-    # We do NOT set requireCache = true here, so there is no 30-minute
-    # timeout to brutally kill the build. It will take as long as it needs.
-    deploy.autoUpgrade = {
-      enable = true;
+    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
+    # after the mac-mini canary (#201): follow the production branch, signed
+    # heads only. Unlike the Pi tier this host still compiles its own
+    # kernel/L4T closure on-device (build-all does not build orin-nano), so
+    # requireCache stays off and comin's build timeout (default 30 min) is
+    # raised to 12 h, the same "as long as it needs" rule autoUpgrade had.
+    deploy = {
+      autoUpgrade.enable = false;
+      comin = {
+        enable = true;
+        requireCache = false;
+        buildTimeout = 12 * 3600;
+      };
     };
 
     attic-push = {
