@@ -279,8 +279,10 @@ in
     # Forward mDNS discovery (ESPHome, Cast, Apple TV) to containers
     avahi = {
       enable = true;
-      reflector = true;
-      allowInterfaces = [ "end0" ]; # Forward from physical LAN
+      settings = {
+        reflector.enable-reflector = true;
+        server.allow-interfaces = [ "end0" ]; # Forward from physical LAN
+      };
     };
   };
 
