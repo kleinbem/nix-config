@@ -70,12 +70,14 @@ let
 
     cmd_tunnels() {
       check_device
-      echo "Ensuring reverse tunnels..."
+      echo "Ensuring ADB tunnels..."
+      $ADB forward tcp:4747 tcp:4747
       $ADB reverse tcp:1701 tcp:1701
       $ADB reverse tcp:3389 tcp:3389
-      $ADB reverse tcp:4747 tcp:4747
-      echo "Tunnels active:"
+      echo "Reverse tunnels active:"
       $ADB reverse --list | sed 's/^/  /'
+      echo "Forward tunnels active:"
+      $ADB forward --list | sed 's/^/  /'
     }
 
     cmd_shizuku() {
@@ -84,7 +86,15 @@ let
         echo "Shizuku server is already running."
       else
         echo "Starting Shizuku server..."
-        $ADB shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
+        $ADB shell '
+          APK_PATH=$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            LIB_DIR="$(dirname "$APK_PATH")/lib/arm64"
+            if [ -f "$LIB_DIR/libshizuku.so" ]; then
+              "$LIB_DIR/libshizuku.so"
+            fi
+          fi
+        '
         sleep 1
         if $ADB shell ps -ef | grep -q "shizuku_server"; then
           echo "Shizuku server successfully started."
