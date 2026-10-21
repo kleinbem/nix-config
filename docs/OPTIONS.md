@@ -210,7 +210,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.llama-cpp`
 
-- **Declared:** `nix-presets/containers/llama-cpp.nix:23`
+- **Declared:** `nix-presets/containers/llama-cpp.nix:24`
 - **Sub-options:** `contextSize`, `enable`, `enableCuda`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
 - **Consumed by:** `host:orin-nano`
 
