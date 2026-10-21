@@ -389,6 +389,11 @@ hosts:
       - openclaw.hostDataDir
       - openclaw.ip
       - openclaw.memoryLimit
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
