@@ -50,6 +50,7 @@
       fido2
       fido2-backup
       tablet-termux
+      phone-termux
     ];
 
   # nixpkgs PR work happens on this host: substitute what nixpkgs-review-gha

@@ -42,6 +42,9 @@
     # Dedicated SSH key for Huawei MatePad Pro (Termux)
     tablet-termux = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGoNas82bJQ8pUEz5Ks22UrUwvAposKYXH8fp7yY1DAy martin-tablet-termux";
 
+    # Dedicated SSH key for Samsung Galaxy XCover 6 Pro (Termux)
+    phone-termux = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJUdmrp/ONOwEEzJFtojToFYXOQSDBiOCcr608xqbF42 martin-phone--termux";
+
     # Plain (non-FIDO2) key for nixos-nvme's daily unattended pull of Caddy's
     # internal root CA from core-pi (hosts/nixos-nvme/caddy-ca-refresh.nix) —
     # a systemd user timer, so it can't wait for a YubiKey touch the way the
