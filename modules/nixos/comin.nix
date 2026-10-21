@@ -152,7 +152,14 @@ in
 
         # Scoped to comin's own nix client (root is a trusted user, so the
         # daemon honours it) instead of the host-wide nix.settings.max-jobs.
-        systemd.services.comin.environment.NIX_CONFIG = lib.mkIf cfg.requireCache "max-jobs = 0";
+        # always-allow-substitutes: nixpkgs marks system-path, etc,
+        # system-units and every writeText* `allowSubstitutes = false`;
+        # without it Nix builds them locally, which max-jobs = 0 forbids,
+        # and every real upgrade fails (same fix as autoUpgrade.requireCache).
+        systemd.services.comin.environment.NIX_CONFIG = lib.mkIf cfg.requireCache ''
+          max-jobs = 0
+          always-allow-substitutes = true
+        '';
 
         networking.firewall.interfaces.wt0.allowedTCPPorts = lib.mkIf cfg.exporter.enable [
           cfg.exporter.port
