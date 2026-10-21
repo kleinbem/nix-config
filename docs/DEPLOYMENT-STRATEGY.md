@@ -277,8 +277,9 @@ Hosts deploy themselves; nothing pushes over SSH in normal operation.
      fall back. `comin status` on the host shows what is deployed.
    - `my.deploy.autoUpgrade` (modules/nixos/auto-upgrade.nix): the previous
      mechanism, nightly `nixos-rebuild switch` against the `production` tag
-     plus an ntfy fast path. Hosts still on it migrate to comin one by one;
-     the tag and the ntfy signal go once the last one has moved.
+     plus an ntfy fast path. Only nixos-nvme still uses it (nightly timer
+     as catch-up, `just dev::apply` by hand); the tag and the ntfy signal go
+     once it has moved too.
    - `container-updater.service`: nightly pull of the container manifest.
 
 `just deployment::deploy <host>` (colmena over SSH) remains the emergency
