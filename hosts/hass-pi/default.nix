@@ -87,6 +87,18 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
+    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
+    # after the mac-mini canary (#201): follow the production branch, signed
+    # heads only. autoUpgrade off (pull-deploy-node.nix sets it with
+    # mkDefault). requireCache: this host never compiles a closure, CI builds
+    # its toplevel (build-all) before promote moves the branch.
+    deploy = {
+      autoUpgrade.enable = false;
+      comin = {
+        enable = true;
+        requireCache = true;
+      };
+    };
     # ─── Clevis LUKS & Network Identity ─────────────────────────
     boot.clevis-initrd = {
       enable = true;
