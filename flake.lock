@@ -1256,11 +1256,11 @@
     "kleinbem-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1792532135,
-        "narHash": "sha256-0j+HxCBZqbJhAIgM3GQIJDbFfvbBKqfJzPwBeN1vWaI=",
+        "lastModified": 1792574945,
+        "narHash": "sha256-6+vTtHHOZ02+pMsnnqKHNAs2mlZRFcMFUk6YzuVqgM0=",
         "owner": "kleinbem",
         "repo": "skills",
-        "rev": "12017acf70dae418d575569dfc3689a0782c25fa",
+        "rev": "f08597cd87734445d6a3ca1c275158a1723f2907",
         "type": "github"
       },
       "original": {
@@ -2148,11 +2148,11 @@
     },
     "nixpkgs-master_2": {
       "locked": {
-        "lastModified": 1792570119,
-        "narHash": "sha256-SaZHQX1CiTGDrrnFR4C9XBk/NLAlLQ+rk+Yvo/Cv6jk=",
+        "lastModified": 1792574004,
+        "narHash": "sha256-l8LEEvP8fH/eTbLQOUpOn6Dp1KmET3RaVK0Qq6oKFe8=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1ca49987068aca44217838819b3a7b7fb81b59bd",
+        "rev": "a5109ba4569d4a68e2f2ec741f4846dcdd68d986",
         "type": "github"
       },
       "original": {
@@ -2533,11 +2533,11 @@
         "nixpkgs": "nixpkgs_13"
       },
       "locked": {
-        "lastModified": 1792568219,
-        "narHash": "sha256-Ows5FV85KOmKiUKntJtExuQwH5LSigKdpxMQPFqHj3U=",
+        "lastModified": 1792574926,
+        "narHash": "sha256-/jC7FGtBu8Butqkd61Hvc1nsSzy4wML5hN3u5B0RUkg=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "3befc081173211ae480392f2391c766d9b3188e8",
+        "rev": "9e0024e0b92595f43350403bb671377b1b27c179",
         "type": "github"
       },
       "original": {
