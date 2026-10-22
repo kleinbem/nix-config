@@ -23,6 +23,12 @@ in
       default = true;
       description = "Enable Weylus and uinput rules for tablet touch & stylus screen extension";
     };
+
+    autoShizuku = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Automatically start Shizuku daemon via udev/systemd when MatePad Pro tablet is connected via USB";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -92,6 +98,52 @@ in
         ++ lib.optionals cfg.loopbackCam [
           4747 # DroidCam video/audio feed
         ];
+    };
+
+    # Auto-start Shizuku daemon via ADB when MatePad Pro USB is connected
+    services.udev.extraRules = lib.mkIf cfg.autoShizuku ''
+      ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="12d1", ATTR{idProduct}=="107e", ATTR{serial}=="QBK6R20825000010", TAG+="systemd", ENV{SYSTEMD_WANTS}+="shizuku-matepad.service"
+    '';
+
+    systemd.services.shizuku-matepad = lib.mkIf cfg.autoShizuku {
+      description = "Auto-start Shizuku daemon on MatePad Pro via ADB";
+      after = [ "network.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = config.my.username;
+        ExecStart = pkgs.writeShellScript "shizuku-matepad-start" ''
+          SERIAL="QBK6R20825000010"
+          ADB="${pkgs.android-tools}/bin/adb"
+
+          for i in $(seq 1 15); do
+            if $ADB devices | grep -q "$SERIAL.*device"; then
+              break
+            fi
+            sleep 1
+          done
+
+          if ! $ADB devices | grep -q "$SERIAL.*device"; then
+            echo "Device $SERIAL not found or not authorized via ADB" >&2
+            exit 0
+          fi
+
+          if $ADB -s "$SERIAL" shell ps -ef | grep -q "shizuku_server"; then
+            echo "Shizuku server is already running on $SERIAL."
+            exit 0
+          fi
+
+          echo "Starting Shizuku on $SERIAL..."
+          $ADB -s "$SERIAL" shell '
+            APK_PATH=$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+            if [ -n "$APK_PATH" ]; then
+              LIB_DIR="$(dirname "$APK_PATH")/lib/arm64"
+              if [ -f "$LIB_DIR/libshizuku.so" ]; then
+                "$LIB_DIR/libshizuku.so"
+              fi
+            fi
+          '
+        '';
+      };
     };
   };
 }

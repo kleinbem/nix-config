@@ -83,9 +83,18 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # Pull-deploy config itself now comes from pull-deploy-node.nix (imports
-    # above) — this laptop is too weak for long builds, same reasoning as
-    # every other host in that tier.
+    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
+    # after the mac-mini canary (#201): follow the production branch, signed
+    # heads only. autoUpgrade off (pull-deploy-node.nix sets it with
+    # mkDefault). requireCache: this host never compiles a closure, CI builds
+    # its toplevel (build-all) before promote moves the branch.
+    deploy = {
+      autoUpgrade.enable = false;
+      comin = {
+        enable = true;
+        requireCache = true;
+      };
+    };
 
     # Confirmed via lspci on the real hardware 2026-09-17: enp4s0 is the
     # connected port (Realtek RTL8111/8168, r8169). enp3s0 (Intel I210,

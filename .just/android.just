@@ -42,11 +42,7 @@ tablet-desk:
     adb -s "$SERIAL" shell "echo 80 > /sys/class/power_supply/Battery/charge_control_limit_max 2>/dev/null || settings put global UsercustomedMAXChargeValue 80"
     adb -s "$SERIAL" shell dumpsys deviceidle disable >/dev/null 2>&1 || true
 
-    # 3. Ensure persistent 3-key navigation bar is active
-    adb -s "$SERIAL" shell settings put secure secure_gesture_navigation 0
-    adb -s "$SERIAL" shell settings put secure navigation_mode 0
-
-    # 4. Start Shizuku if available
+    # 3. Start Shizuku if available
     just android::start-shizuku || true
 
     echo "✅ Desk companion active!"

@@ -87,7 +87,7 @@
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:12]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:17]_
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
-- `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:23]_
+- `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:24]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:15]_
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_

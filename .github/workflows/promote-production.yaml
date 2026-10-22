@@ -161,56 +161,29 @@ jobs:
           # lock through every time; the device then compiled until
           # RuntimeMaxSec killed it.
           HOSTS=(hass-pi core-pi mac-mini nasbook)
-          err=$(mktemp)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"
             target=".#nixosConfigurations.$h.config.system.build.toplevel"
-            # Resolve to the literal store path before dry-running it.
-            # `nix build --dry-run <flake-attr>` and `nix build --dry-run
-            # <literal store path>` are NOT equivalent for substitutability
-            # checking — confirmed live 2026-09-30: the exact same,
-            # genuinely-cached output (valid signed narinfo AND fetchable
-            # .nar on cache.kleinbem.dev, verified by hand) reported "will be
-            # built" via the flake-attr form and "will be fetched" via the
-            # literal path. Resolving first avoids the flake-attr path
-            # entirely, matching how a real device actually fetches (by
-            # store path, never by re-evaluating a flake attribute).
-            # stderr stays separate: evaluation warnings otherwise end up in
-            # $path and path-info then checks garbage (seen 2026-10-20).
-            if ! path="$(nix eval --raw "$target.outPath" 2>"$err")" \
-               || [[ "$path" != /nix/store/* ]]; then
-              cat "$err"
-              echo "::error::$h: failed to resolve toplevel path — cannot verify cache, refusing to promote."
+            # Run exactly what a device runs: `--max-jobs 0` plus
+            # `always-allow-substitutes` (nixpkgs marks system-path, etc,
+            # system-units and every writeText* `allowSubstitutes = false`;
+            # without the option Nix reports "will be built" for cached
+            # paths, which is what fooled the 2026-09-30 flake-attr check,
+            # and the devices failed the same way on 2026-10-21). Anything
+            # the runner's substituters (Attic + upstreams) cannot provide
+            # shows up as "will be built"; a path only in the local store
+            # of the runner cannot happen here (fresh runner, nothing built).
+            if ! out="$(nix build --dry-run --max-jobs 0 \
+                  --option always-allow-substitutes true "$target" 2>&1)"; then
+              echo "$out"
+              echo "::error::$h: dry-run failed — cannot verify cache, refusing to promote."
               fail=1
               echo "::endgroup::"
               continue
             fi
-            # `nix build --dry-run <literal store path>` crashes the Nix
-            # daemon outright on this (aarch64) runner, consistently and
-            # reproducibly (confirmed live 2026-09-30: 3/3 attempts, every
-            # host, identical Crashpad/Sentry noise —
-            # elf_dynamic_array_reader tag errors, "upload_file_minidump
-            # exceeded the size limit" — never a clean Nix error). A bare
-            # store path apparently exercises the build-scheduler/sandbox
-            # setup path (note the /sys/devices/.../cpufreq probes in the
-            # crash, typical of build resource planning) even under
-            # --dry-run, which a literal path was never meant to reach.
-            #
-            # `nix path-info -r` queries the same substituter/closure
-            # information (it's what --dry-run itself queries under the
-            # hood) without ever entering that scheduler path — confirmed
-            # to give an identical, correct pass/fail signal for this exact
-            # closure by hand, with no crash. It exits non-zero even on
-            # success (the path isn't actually realized locally, so
-            # path-info's own "is this path valid" check fails afterward)
-            # and phrases a hard miss as "don't know how to build" instead
-            # of "will be built" (no flake attribute means Nix has no build
-            # recipe to offer as a fallback) — so the exit code is ignored
-            # and both phrasings count as a miss.
-            out="$(nix path-info -r "$path" 2>&1 || true)"
-            echo "$out"
-            if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
+            echo "$out" | grep -vE '^(evaluation warning|warning):' || true
+            if echo "$out" | grep -qE 'will be built|do.?n.?t know how to build'; then
               echo "::error::$h closure is NOT fully cached — the device's --max-jobs 0 upgrade would fail. Blocking promotion."
               fail=1
             else

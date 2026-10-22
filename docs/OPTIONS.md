@@ -16,7 +16,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.android`
 
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
-- **Sub-options:** `enable`, `loopbackCam`, `weylus`
+- **Sub-options:** `autoShizuku`, `enable`, `loopbackCam`, `weylus`
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.anythingllmVaultSync`
@@ -210,7 +210,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.llama-cpp`
 
-- **Declared:** `nix-presets/containers/llama-cpp.nix:23`
+- **Declared:** `nix-presets/containers/llama-cpp.nix:24`
 - **Sub-options:** `contextSize`, `enable`, `enableCuda`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
 - **Consumed by:** `host:orin-nano`
 
@@ -337,14 +337,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:50`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:mac-mini`, `host:nixos-nvme`, `host:orin-nano`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.deploy.comin`
 
 - **Declared:** `nix-config/modules/nixos/comin.nix:36`
 - **Sub-options:** `branch`, `buildTimeout`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
-- **Explicit overrides:** `host:mac-mini`
+- **Explicit overrides:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
 ## `my.desktop`
 
