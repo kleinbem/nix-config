@@ -29,7 +29,6 @@
   ];
 
   imports = [
-    ./hardening.nix
     ./snapper.nix
     inputs.lanzaboote.nixosModules.lanzaboote
   ];
@@ -37,12 +36,14 @@
   services.avahi = {
     enable = true;
     nssmdns4 = true;
-    reflector = true; # Allow mDNS discovery across the container bridge
-    publish = {
-      enable = true;
-      addresses = true;
-      workstation = true;
-      userServices = true;
+    settings = {
+      reflector.enable-reflector = true; # Allow mDNS discovery across the container bridge
+      publish = {
+        disable-publishing = false;
+        publish-addresses = true;
+        publish-workstation = true;
+        disable-user-service-publishing = false;
+      };
     };
     openFirewall = true;
   };

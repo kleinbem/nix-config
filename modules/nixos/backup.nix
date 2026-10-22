@@ -41,13 +41,26 @@ let
   keys = import ./keys.nix;
   host = config.networking.hostName;
 
+  # ntfy_alert_token (nix/shared.yaml): write token on the alert topic once
+  # ntfy runs with auth. Gated on the plaintext key name so eval works
+  # before the value exists; sops-nix fails activation on a missing key.
+  sharedSops = secretFile "nix/shared.yaml";
+  hasAlertToken =
+    builtins.pathExists sharedSops
+    && lib.hasInfix "\nntfy_alert_token:" ("\n" + builtins.readFile sharedSops);
+  alertTokenPath = "/run/secrets/ntfy_alert_token";
+
   notify = pkgs.writeShellScript "backup-notify-ntfy" ''
     set -u
     prio="$1"; title="$2"; shift 2
     ${pkgs.util-linux}/bin/logger -t backup "$title: $*"
     topic="$(cat ${config.sops.secrets.ntfy_alert_topic.path} 2>/dev/null || true)"
     [ -n "$topic" ] || exit 0
-    ${pkgs.curl}/bin/curl -fsS --max-time 15 \
+    auth=()
+    if [ -r ${alertTokenPath} ]; then
+      auth=(-H "Authorization: Bearer $(cat ${alertTokenPath})")
+    fi
+    ${pkgs.curl}/bin/curl -fsS --max-time 15 "''${auth[@]}" \
       -H "Title: $title" -H "Priority: $prio" -H "Tags: floppy_disk" \
       -d "$*" "https://ntfy.kleinbem.dev/$topic" >/dev/null || true
   '';
@@ -61,6 +74,7 @@ in
       rclone_config = { };
       restic_password = { };
       ntfy_alert_topic = { };
+      ntfy_alert_token = lib.mkIf hasAlertToken { };
     };
 
     my.backup = {

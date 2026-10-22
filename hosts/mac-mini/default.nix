@@ -90,11 +90,10 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
-  users.users.root.openssh.authorizedKeys.keys = [
-    keys.ssh.yubikey
-    keys.ssh.fido2
-    keys.ssh.fido2-backup
-  ];
+  # No root keys: PermitRootLogin is prohibit-password (security/ssh.nix),
+  # and without an authorized key that means no root login at all. Every
+  # remote task goes through martin + sudo (the per-command allowlist in
+  # security/sudo.nix, pam_rssh touch key for the rest).
 
   # Same GNOME look/feel/keybindings/extensions martin uses on nixos-nvme
   # (blur-my-shell, dash-to-dock, workspace shortcuts, etc.) —
@@ -212,10 +211,17 @@ in
     desktop.gnome.enable = true;
     desktop.sandboxedApps.enable = true;
 
-    # Pull-deploy config itself now comes from pull-deploy-node.nix (imports
-    # above) — old, comparatively slow CPU (2011 Sandy Bridge), don't let
-    # nightly auto-upgrade fall back to a multi-hour local compile if Attic
-    # ever misses, same reasoning as every other host in that tier.
+    # First comin host (fleet canary for the pull-deploy switch): follows
+    # the production branch instead of the nightly tag poll. requireCache
+    # keeps the 2011 Sandy Bridge from ever compiling a closure locally,
+    # same rule as the rest of the pull-deploy tier.
+    deploy = {
+      autoUpgrade.enable = false;
+      comin = {
+        enable = true;
+        requireCache = true;
+      };
+    };
 
     monitoring.node.enable = true;
 
@@ -321,6 +327,16 @@ in
         enable = true;
         ip = "10.85.50.2/24";
         hostDataDir = "/var/lib/monitoring";
+        # alertmanager-ntfy credentials + the secret alert topic, rendered
+        # by secrets.nix once ntfy_monitoring_password exists in
+        # nix/per-host/mac-mini.yaml. Until then alerts go to the preset's
+        # default topic "alerts" — guessable and, on the still-open ntfy
+        # server, readable by anyone.
+        ntfy.authConfigFile =
+          if config.sops.templates ? "alertmanager-ntfy.yml" then
+            config.sops.templates."alertmanager-ntfy.yml".path
+          else
+            null;
         nodeTargets = [
           myInventory.hosts.nixos-nvme.ip
           myInventory.hosts.core-gateway.ip

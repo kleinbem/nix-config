@@ -2,11 +2,20 @@
   config,
   lib,
   pkgs,
+  secretFile,
   ...
 }:
 
 let
   cfg = config.my.deploy.autoUpgrade;
+
+  # ntfy_deploy_token (nix/shared.yaml): read-only token on the deploy topic
+  # once ntfy runs with auth. Gated on the plaintext key name so eval works
+  # before the value exists; sops-nix fails activation on a missing key.
+  sharedSops = secretFile "nix/shared.yaml";
+  hasDeployToken =
+    builtins.pathExists sharedSops
+    && lib.hasInfix "\nntfy_deploy_token:" ("\n" + builtins.readFile sharedSops);
 
   # Pre-flight gate for `nixos-upgrade.service`. The Attic binary cache is only
   # reachable over the NetBird mesh (wt0 -> caddy DNAT). The fixed nightly timer
@@ -116,9 +125,19 @@ in
              it can't be reached (instead of building the closure locally),
           3. cap the run with `RuntimeMaxSec = maxRuntime` so a cache miss
              that slips past the probe can't run away into a multi-hour
-             on-device build — the run is killed and retried next cycle.
+             on-device build — the run is killed and retried next cycle,
+          4. run `nixos-rebuild` with `--max-jobs 0` (plus
+             `always-allow-substitutes`, so derivations nixpkgs marks
+             `allowSubstitutes = false` are fetched instead of built), so
+             a closure the cache does not hold fails within seconds
+             ("local builds are disabled") instead of compiling until the
+             cap kills it. CI builds
+             the exact closure these hosts resolve (build-all's
+             committed-lock step) and promote-production verifies it is
+             cached before the `production` tag moves, so a miss here is a
+             pipeline bug to fix, never something to build around.
         Leave false for hosts that can legitimately build locally
-        (e.g. the x86 workstation).
+        (e.g. orin-nano's on-device jetpack kernel).
       '';
     };
 
@@ -166,9 +185,20 @@ in
         type = lib.types.str;
         default = "/run/secrets/ntfy_deploy_topic";
         description = ''
-          File containing the secret topic name (sops-provisioned; the
-          unguessable name is the access control on the public vhost).
-          The listener is inert (ConditionPathExists) until it exists.
+          File containing the secret topic name (sops-provisioned). The
+          listener is inert (ConditionPathExists) until it exists.
+        '';
+      };
+
+      tokenFile = lib.mkOption {
+        type = lib.types.str;
+        default = "/run/secrets/ntfy_deploy_token";
+        description = ''
+          File containing an ntfy access token with read access to the
+          deploy topic, sent as a bearer token. Needed once the server
+          runs with auth-default-access = deny-all (nix-presets ntfy
+          secretsFile). If the file is absent the poll is unauthenticated,
+          which only works while the server is still open.
         '';
       };
 
@@ -192,13 +222,35 @@ in
       flags = [
         "--refresh"
         "-L"
+      ]
+      # Substitute-only: see requireCache. No pull-deploy host has remote
+      # builders configured, so this forbids every build, not just local ones.
+      #
+      # always-allow-substitutes: nixpkgs marks cheap derivations
+      # `allowSubstitutes = false` (buildEnv → system-path, etc,
+      # system-units, every writeText*), so Nix never asks the cache for
+      # them and builds them locally. With max-jobs = 0 that is a hard
+      # failure ("local builds are disabled") on every upgrade that changes
+      # the system, even though CI pushed the whole closure (first hit
+      # 2026-10-21 on core-pi/hass-pi/nasbook with #227-#229, the first
+      # upgrades that ever ran with max-jobs = 0). The setting makes Nix
+      # substitute those too.
+      ++ lib.optionals cfg.requireCache [
+        "--max-jobs"
+        "0"
+        "--option"
+        "always-allow-substitutes"
+        "true"
       ];
       inherit (cfg) dates randomizedDelaySec allowReboot;
       operation = "switch";
     };
 
+    sops.secrets.ntfy_deploy_token = lib.mkIf (cfg.ntfy.enable && hasDeployToken) { };
+
     # Cache-dependent hosts: order after the mesh, gate on cache reachability,
-    # and cap runtime so a cache miss can't trigger a multi-hour local rebuild.
+    # and cap runtime. The cap is the last line of defence; `--max-jobs 0`
+    # above is what actually stops a cache miss from turning into a build.
     systemd.services.nixos-upgrade = lib.mkIf cfg.requireCache {
       after = [
         "network-online.target"
@@ -249,7 +301,11 @@ in
       script = ''
         topic="$(cat ${cfg.ntfy.topicFile})"
         stamp=/run/nixos-upgrade-listener.last
-        curl -fsN --max-time 3600 "${cfg.ntfy.url}/$topic/json?since=30s" \
+        auth=()
+        if [ -r ${cfg.ntfy.tokenFile} ]; then
+          auth=(-H "Authorization: Bearer $(cat ${cfg.ntfy.tokenFile})")
+        fi
+        curl -fsN --max-time 3600 "''${auth[@]}" "${cfg.ntfy.url}/$topic/json?since=30s" \
         | while IFS= read -r line; do
             [ "$(printf '%s' "$line" | jq -r '.event // empty')" = "message" ] || continue
             now=$(date +%s)

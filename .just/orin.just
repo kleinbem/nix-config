@@ -41,19 +41,19 @@ ping:
 
 [group("Orin")]
 tegrastats:
-    @ssh root@orin-nano.local "tegrastats --interval 1000 | head -n 5"
+    @ssh -t martin@orin-nano.local "sudo tegrastats --interval 1000 | head -n 5"
 
 [group("Orin")]
 logs service="ollama":
-    @ssh root@orin-nano.local "journalctl -u {{service}} -n 50 --no-pager"
+    @ssh martin@orin-nano.local "journalctl -u {{service}} -n 50 --no-pager"
 
 [group("Orin")]
 shell:
-    @ssh root@orin-nano.local
+    @ssh martin@orin-nano.local
 
 # Forward a Wayland app from the Orin to your local display via SSH.
 # The app must be installed on the Orin (most aren't — install per-host as needed).
 # Example: `just orin::gui gnome-disk-utility`
 [group("Orin")]
 gui app:
-    @waypipe ssh root@orin-nano.local "{{app}}"
+    @waypipe ssh martin@orin-nano.local "{{app}}"

@@ -20,7 +20,8 @@ in
     # Edge-device modules orin needs (curated — default.nix's workstation
     # bundle would also pull in snapper/printing/security/android which
     # don't apply to this host).
-    "${self}/modules/nixos/kernel.nix" # AI-tuned sysctl, BBR, swappiness
+    "${self}/modules/nixos/kernel.nix" # BBR, memory tuning
+    "${self}/modules/nixos/security/hardening.nix" # fleet hardening baseline (nix-mineral is x86-only)
     "${self}/modules/nixos/audit.nix" # security audit rules
     "${self}/modules/nixos/users.nix" # sops-backed root password, mutableUsers=false
     "${self}/modules/nixos/ai-hardening.nix" # AI workload sandboxing
@@ -60,11 +61,19 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # Orin Nano needs to compile its own kernel/L4T locally.
-    # We do NOT set requireCache = true here, so there is no 30-minute
-    # timeout to brutally kill the build. It will take as long as it needs.
-    deploy.autoUpgrade = {
-      enable = true;
+    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
+    # after the mac-mini canary (#201): follow the production branch, signed
+    # heads only. Unlike the Pi tier this host still compiles its own
+    # kernel/L4T closure on-device (build-all does not build orin-nano), so
+    # requireCache stays off and comin's build timeout (default 30 min) is
+    # raised to 12 h, the same "as long as it needs" rule autoUpgrade had.
+    deploy = {
+      autoUpgrade.enable = false;
+      comin = {
+        enable = true;
+        requireCache = false;
+        buildTimeout = 12 * 3600;
+      };
     };
 
     attic-push = {
@@ -163,18 +172,11 @@ in
     "martin"
   ];
 
-  # colmena deploys as martin (PermitRootLogin = "no" in security.nix)
-  security.sudo.extraRules = [
-    {
-      users = [ "martin" ];
-      commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
+  # colmena deploys as martin (PermitRootLogin = "no" in security.nix).
+  # The blanket `ALL NOPASSWD` that used to live here is gone: the
+  # fleet-wide per-command allowlist (modules/nixos/security/sudo.nix)
+  # applies. Set `my.security.sudo.unattendedDeploy = true` if colmena
+  # push deploys to this host must stay prompt-free.
 
   # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
   services.snapper.configs = lib.mkForce { };
@@ -192,11 +194,9 @@ in
       keys.ssh.fido2
       keys.ssh.fido2-backup
     ];
-    root.openssh.authorizedKeys.keys = [
-      keys.ssh.yubikey
-      keys.ssh.fido2
-      keys.ssh.fido2-backup
-    ];
+    # No root keys (see hosts/mac-mini/default.nix for the reasoning); the
+    # bootstrap installer image is the only root@ login left, and only
+    # until `just deployment::orin-promote` replaces it.
   };
 
   # No desktop specialisation: orin-nano is a pure headless AI edge device.

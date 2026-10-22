@@ -1,82 +1,104 @@
 {
+  config,
   pkgs,
   lib,
   inputs,
   ...
 }:
+# The fleet's one hardening layer. nix-mineral carries the bulk of it where
+# it can run (x86_64; its boot params panic the Jetson/RPi kernels); the
+# manual baseline below covers what nix-mineral doesn't set. The Lynis
+# sysctls every host needs live in security/sysctl.nix.
+#
+# Compatibility overrides live here too, so a host never has to fight this
+# module with mkForce: nspawn needs user namespaces, perf needs a relaxed
+# paranoid level, containers need forwarding.
+let
+  mineral = config.nix-mineral.enable;
+  isX86 = pkgs.stdenv.hostPlatform.isx86_64;
+in
 {
-  # nix-mineral hardening module
   imports = [ inputs.nix-mineral.nixosModules.nix-mineral ];
 
-  # ==========================================
-  # NIX-MINERAL — Standard Hardening
-  # ==========================================
   nix-mineral = {
-    # x86_64 only: nix-mineral's kernel boot params (iommu=force, cfi=kcfi,
-    # vsyscall=none, panic=-1, …) are x86-desktop-oriented and panic the
-    # aarch64 Jetson/RPi kernel at boot (panic=-1 then instant-reboots, hiding
-    # it → boot loop). Gate to x86 so ARM SBCs boot. (filesystem hardening also
-    # disabled below to prevent nosuid root lockout.)
-    enable = pkgs.stdenv.hostPlatform.isx86_64;
-    preset = "compatibility"; # Best for desktop/workstation workloads
-
-    # Disable filesystem hardening to prevent 'nosuid' root lockout and
-    # prevent breaking /var/lib/machines where our systemd-nspawn containers run
+    enable = isX86;
+    preset = "compatibility";
+    # nosuid on / and /var/lib would lock out root and break the nspawn
+    # roots under /var/lib/machines.
     filesystems.enable = false;
-
     settings = {
-      # Custom overrides for workstation needs
-      network.ip-forwarding = true; # Required for containers/bridges
-      system.multilib = true; # Required for some development tools
+      network.ip-forwarding = true; # containers / bridges
+      system.multilib = true; # 32-bit tooling
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    # apparmor-profiles # Pre-built profiles for ClamAV, Dnsmasq, etc. (Temporarily disabled due to build failures)
-  ];
+  # The Lynis sysctls and the module blacklist are fleet-wide in
+  # security/sysctl.nix (core.nix); nix-mineral's identical values win
+  # there by priority. Only the compatibility overrides stay here.
+  boot.kernel.sysctl = {
+    "kernel.unprivileged_userns_clone" = 1; # systemd-nspawn
+    "kernel.perf_event_paranoid" = 2; # perf for unprivileged users (nix-mineral: 3)
+  };
 
   security = {
-    apparmor = {
+    # AppArmor is on only where it has been run: the x86 workstations.
+    # Untested on the Jetson L4T and RPi kernels.
+    apparmor = lib.mkIf isX86 {
       enable = true;
       killUnconfinedConfinables = false;
     };
     protectKernelImage = true;
 
-    # Increase password hashing rounds (Lynis Suggestion AUTH-9230)
     loginDefs.settings = {
+      # Lynis AUTH-9286 password ageing, AUTH-9230 hashing rounds.
+      PASS_MAX_DAYS = 180;
+      PASS_MIN_DAYS = 1;
+      PASS_WARN_AGE = 7;
       SHA_CRYPT_MIN_ROUNDS = 100000;
       SHA_CRYPT_MAX_ROUNDS = 100000;
     };
   };
 
-  systemd = {
-    # Prevent audit rule loading failures from blocking activation
-    # (the kernel audit subsystem may be locked/busy during live switch;
-    #  rules load correctly on next boot)
-    services.audit-rules-nixos.serviceConfig.SuccessExitStatus = [ 1 ];
-
-    # Relax seccomp hardening for jitterentropy to allow mlock (syscall 149)
-    services.jitterentropy.serviceConfig.SystemCallFilter = lib.mkForce [
-      "@system-service"
-      "~@chown @clock @cpu-emulation @debug @ipc @module @mount @obsolete @privileged @raw-io @reboot @swap memfd_create mincore personality"
-    ];
+  services = {
+    # Lynis SSH-7408.
+    openssh.settings.LogLevel = "VERBOSE";
+    # Lynis BANN-7126.
+    getty.greetingLine = lib.mkForce "Authorized Access Only. All activity is logged and monitored.";
   };
 
-  boot = {
-    # Security & Performance Tweaks
-    blacklistedKernelModules = [
-      "pcspkr"
-      "snd_pcsp"
+  # Lynis ACCT-9622: BSD process accounting. NixOS has no module for it.
+  environment.systemPackages = [ pkgs.acct ];
+  systemd = {
+    tmpfiles.rules = [
+      "d /var/account 0700 root root - -"
+      "f /var/account/pacct 0600 root root - -"
     ];
 
-    kernel.sysctl = {
-      # ==========================================
-      # AI-HARDENING COMPATIBILITY
-      # ==========================================
-      # Ensure unprivileged user namespaces are ENABLED (Nspawn needs them)
-      # nix-mineral or other hardening might disable them by default.
-      "kernel.unprivileged_userns_clone" = lib.mkForce 1;
-      "kernel.perf_event_paranoid" = lib.mkForce 2;
+    services = {
+      acct = {
+        description = "Process Accounting";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "local-fs.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.acct}/bin/accton /var/account/pacct";
+          ExecStop = "${pkgs.acct}/bin/accton off";
+        };
+      };
+
+      # The kernel audit subsystem can be busy during a live switch; rules
+      # load on the next boot, so don't fail activation over it.
+      audit-rules-nixos.serviceConfig.SuccessExitStatus = [ 1 ];
+
+      # nix-mineral's jitterentropy-rngd needs mlock, which the stock filter
+      # denies.
+      jitterentropy.serviceConfig.SystemCallFilter = lib.mkIf mineral (
+        lib.mkForce [
+          "@system-service"
+          "~@chown @clock @cpu-emulation @debug @ipc @module @mount @obsolete @privileged @raw-io @reboot @swap memfd_create mincore personality"
+        ]
+      );
     };
   };
 }

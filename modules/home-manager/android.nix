@@ -28,11 +28,11 @@ let
       
       echo -e "\n[Battery & Power]"
       $ADB shell dumpsys battery | awk '
-        /AC powered:/ { ac=$3 }
-        /USB powered:/ { usb=$3 }
-        /level:/ { lvl=$2 }
-        /temperature:/ { temp=$2/10 }
-        /status:/ { st=($2==5?"Full":( $2==2?"Charging":"Discharging" )) }
+        !seen_level && /level:/ { lvl=$2; seen_level=1 }
+        !seen_temp && /temperature:/ { temp=$2/10; seen_temp=1 }
+        !seen_ac && /AC powered:/ { ac=$3; seen_ac=1 }
+        !seen_usb && /USB powered:/ { usb=$3; seen_usb=1 }
+        !seen_status && /status:/ { st=($2==5?"Full":( $2==2?"Charging":"Discharging" )); seen_status=1 }
         END { printf "  Status: %s (Level: %s%%, Temp: %.1f°C, AC: %s, USB: %s)\n", st, lvl, temp, ac, usb }
       '
       
@@ -70,12 +70,14 @@ let
 
     cmd_tunnels() {
       check_device
-      echo "Ensuring reverse tunnels..."
+      echo "Ensuring ADB tunnels..."
+      $ADB forward tcp:4747 tcp:4747
       $ADB reverse tcp:1701 tcp:1701
       $ADB reverse tcp:3389 tcp:3389
-      $ADB reverse tcp:4747 tcp:4747
-      echo "Tunnels active:"
+      echo "Reverse tunnels active:"
       $ADB reverse --list | sed 's/^/  /'
+      echo "Forward tunnels active:"
+      $ADB forward --list | sed 's/^/  /'
     }
 
     cmd_shizuku() {
@@ -84,7 +86,15 @@ let
         echo "Shizuku server is already running."
       else
         echo "Starting Shizuku server..."
-        $ADB shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
+        $ADB shell '
+          APK_PATH=$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            LIB_DIR="$(dirname "$APK_PATH")/lib/arm64"
+            if [ -f "$LIB_DIR/libshizuku.so" ]; then
+              "$LIB_DIR/libshizuku.so"
+            fi
+          fi
+        '
         sleep 1
         if $ADB shell ps -ef | grep -q "shizuku_server"; then
           echo "Shizuku server successfully started."
@@ -168,10 +178,160 @@ let
         ;;
     esac
   '';
+
+  phoneBin = pkgs.writeShellScriptBin "phone" ''
+    set -euo pipefail
+
+    SERIAL="R5CX31EERDT"
+    ADB="${pkgs.android-tools}/bin/adb -s ''${SERIAL}"
+
+    check_device() {
+      if ! ${pkgs.android-tools}/bin/adb devices | grep -q "''${SERIAL}.*device"; then
+        echo "Error: Phone ''${SERIAL} is not connected or unauthorized." >&2
+        ${pkgs.android-tools}/bin/adb devices
+        exit 1
+      fi
+    }
+
+    cmd_status() {
+      check_device
+      local model
+      model=$($ADB shell getprop ro.product.model 2>/dev/null | tr -d '\r' || echo "$SERIAL")
+      echo "=== Samsung Galaxy ($model) Status ==="
+
+      echo -e "\n[Battery & Power]"
+      $ADB shell dumpsys battery | awk '
+        !seen_level && /level:/ { lvl=$2; seen_level=1 }
+        !seen_temp && /temperature:/ { temp=$2/10; seen_temp=1 }
+        !seen_ac && /AC powered:/ { ac=$3; seen_ac=1 }
+        !seen_usb && /USB powered:/ { usb=$3; seen_usb=1 }
+        !seen_status && /status:/ { st=($2==5?"Full":( $2==2?"Charging":"Discharging" )); seen_status=1 }
+        END { printf "  Status: %s (Level: %s%%, Temp: %.1f°C, AC: %s, USB: %s)\n", st, lvl, temp, ac, usb }
+      '
+
+      echo -e "\n[Shizuku Daemon]"
+      if $ADB shell ps -ef | grep -q "shizuku_server"; then
+        local pid
+        pid=$($ADB shell ps -ef | grep "shizuku_server" | awk '{print $2}' | head -n 1)
+        echo "  Running (PID: ''${pid})"
+      else
+        echo "  Stopped (Run 'phone shizuku' to start)"
+      fi
+
+      echo -e "\n[Foreground Window]"
+      local fg
+      fg=$($ADB shell "dumpsys window | grep -E 'mCurrentFocus' | tail -n 1" | sed 's/^[[:space:]]*//')
+      echo "  ''${fg}"
+    }
+
+    cmd_shizuku() {
+      check_device
+      if $ADB shell ps -ef | grep -q "shizuku_server"; then
+        echo "Shizuku server is already running."
+      else
+        echo "Starting Shizuku server..."
+        $ADB shell '
+          APK_PATH=$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            LIB_DIR="$(dirname "$APK_PATH")/lib/arm64"
+            if [ -f "$LIB_DIR/libshizuku.so" ]; then
+              "$LIB_DIR/libshizuku.so"
+            fi
+          fi
+        '
+        sleep 1
+        if $ADB shell ps -ef | grep -q "shizuku_server"; then
+          echo "Shizuku server successfully started."
+        else
+          echo "Failed to start Shizuku server." >&2
+          exit 1
+        fi
+      fi
+    }
+
+    cmd_install() {
+      check_device
+      local target="''${1:-}"
+      if [ -z "$target" ]; then
+        echo "Usage: phone install <file.apk | package_id>" >&2
+        exit 1
+      fi
+
+      if [ -f "$target" ]; then
+        echo "Installing local APK: $target"
+        $ADB install -r -d "$target"
+        echo "Installation complete!"
+      else
+        echo "Treating '$target' as package ID. Fetching via apkeep..."
+        local cache_dir="/tmp/apkeep_cache"
+        mkdir -p "$cache_dir"
+
+        if ${pkgs.apkeep}/bin/apkeep -d f-droid -a "$target" "$cache_dir" 2>/dev/null; then
+          echo "Downloaded from F-Droid."
+        elif ${pkgs.apkeep}/bin/apkeep -d apk-pure -a "$target" -o "acknowledge_dangers=true" "$cache_dir" 2>/dev/null; then
+          echo "Downloaded from APKPure."
+        else
+          echo "Failed to download $target via apkeep." >&2
+          exit 1
+        fi
+
+        local apk_file
+        apk_file=$(find "$cache_dir" -name "''${target}*.apk" | head -n 1)
+        if [ -n "$apk_file" ] && [ -f "$apk_file" ]; then
+          echo "Installing $apk_file..."
+          $ADB install -r -d "$apk_file"
+          echo "Installation complete!"
+          rm -f "$apk_file"
+        else
+          echo "Could not find downloaded APK." >&2
+          exit 1
+        fi
+      fi
+    }
+
+    cmd_scrcpy() {
+      check_device
+      echo "Launching scrcpy for Phone (''${SERIAL})..."
+      ${pkgs.scrcpy}/bin/scrcpy -s "''${SERIAL}" --max-fps 60 --video-bit-rate 16M --stay-awake "$@"
+    }
+
+    cmd_devcheck() {
+      check_device
+      echo "Granting DevCheck elevated permissions..."
+      $ADB shell pm grant flar2.devcheck android.permission.BATTERY_STATS || true
+      $ADB shell pm grant flar2.devcheck android.permission.DUMP || true
+      $ADB shell pm grant flar2.devcheck android.permission.PACKAGE_USAGE_STATS || true
+      $ADB shell cmd appops set flar2.devcheck moe.shizuku.manager.permission.API_V23 allow || true
+      echo "Launching DevCheck..."
+      $ADB shell monkey -p flar2.devcheck -c android.intent.category.LAUNCHER 1 >/dev/null
+      echo "DevCheck running."
+    }
+
+    case "''${1:-status}" in
+      status) cmd_status ;;
+      shizuku) cmd_shizuku ;;
+      install) shift; cmd_install "$@" ;;
+      scrcpy) shift; cmd_scrcpy "$@" ;;
+      devcheck) cmd_devcheck ;;
+      help|--help|-h)
+        echo "Usage: phone <command>"
+        echo "Commands:"
+        echo "  status     - Show phone battery, thermals, Shizuku, and foreground app"
+        echo "  shizuku    - Verify or start the Shizuku privilege server"
+        echo "  install    - Headless APK install from local file or package ID via apkeep"
+        echo "  scrcpy     - Launch scrcpy screen mirror"
+        echo "  devcheck   - Grant diagnostics permissions and launch DevCheck"
+        ;;
+      *)
+        echo "Unknown command: $1. Run 'phone help' for usage." >&2
+        exit 1
+        ;;
+    esac
+  '';
 in
 {
   options.modules.android = {
-    enable = lib.mkEnableOption "Android user tools (apkeep, matepad CLI, tablet management)";
+    enable = lib.mkEnableOption "Android user tools (apkeep, matepad/phone CLIs, mobile fleet management)";
   };
 
   config = lib.mkIf cfg.enable {
@@ -179,10 +339,12 @@ in
       packages = [
         pkgs.apkeep
         matepadBin
+        phoneBin
       ];
 
       shellAliases = {
         tablet-status = "matepad status";
+        phone-status = "phone status";
       };
     };
   };

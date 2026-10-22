@@ -299,11 +299,17 @@ hosts:
       - ntfy
       - ntfy.enable
       - ntfy.ip
+      - ntfy.secretsFile
       - vaultwarden
       - vaultwarden.adminTokenFile
       - vaultwarden.enable
       - vaultwarden.hostDataDir
       - vaultwarden.ip
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
@@ -388,6 +394,11 @@ hosts:
       - openclaw.hostDataDir
       - openclaw.ip
       - openclaw.memoryLimit
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
@@ -400,6 +411,7 @@ hosts:
     - openclaw
     secrets_consumed:
     - netbird_setup_key
+    - node_red_admin_hash
     hardware_profile: Raspberry Pi 5 (BCM2712, 4x Cortex-A76)
   mac-mini:
     tier: desktop
@@ -480,6 +492,7 @@ hosts:
       - monitoring.hostDataDir
       - monitoring.ip
       - monitoring.nodeTargets
+      - monitoring.ntfy.authConfigFile
       - open-webui
       - open-webui.enable
       - open-webui.hostDataDir
@@ -504,6 +517,11 @@ hosts:
       - stalwart.hostDataDir
       - stalwart.ip
       - stalwart.memoryLimit
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       desktop:
       - gnome.enable
       - sandboxedApps.enable
@@ -633,6 +651,11 @@ hosts:
       - device
       - enable
       - keyFilePath
+      deploy:
+      - autoUpgrade.enable
+      - comin
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
@@ -980,6 +1003,7 @@ hosts:
     - '[module] modules/nixos/headless.nix'
     - '[module] modules/nixos/hosts.nix'
     - '[module] modules/nixos/kernel.nix'
+    - '[module] modules/nixos/security/hardening.nix'
     - '[module] modules/nixos/audit.nix'
     - '[module] modules/nixos/users.nix'
     - '[module] modules/nixos/ai-hardening.nix'
@@ -990,7 +1014,6 @@ hosts:
     - '[user] user:martin'
     - '[other] nix-gantry:updater'
     - '[hardware] nix-hardware:orin-nano'
-    - '[preset] nix-presets:ollama'
     enabled_subsystems:
       attic-push:
       - enable
@@ -1061,8 +1084,11 @@ hosts:
       - syncthing.ip
       - syncthing.vaults
       deploy:
-      - autoUpgrade
       - autoUpgrade.enable
+      - comin
+      - comin.buildTimeout
+      - comin.enable
+      - comin.requireCache
       heartbeat:
       - enable
       herdr-remote-client:
@@ -1817,6 +1843,11 @@ modules_system:
     file: nix-config/modules/nixos/colmena-version-metadata.nix
     purpose: NixOS system module.
     declared_options: []
+  comin.nix:
+    file: nix-config/modules/nixos/comin.nix
+    purpose: NixOS system module.
+    declared_options:
+    - my.deploy.comin
   core.nix:
     file: nix-config/modules/nixos/core.nix
     purpose: Base NixOS settings, locale, nix-daemon, nixpkgs flakes, zsh, sudo.
@@ -1843,8 +1874,8 @@ modules_system:
     file: nix-config/modules/nixos/firejail.nix
     purpose: NixOS system module.
     declared_options: []
-  hardening.nix:
-    file: nix-config/modules/nixos/hardening.nix
+  forward-auth-guard.nix:
+    file: nix-config/modules/nixos/forward-auth-guard.nix
     purpose: NixOS system module.
     declared_options: []
   headless.nix:

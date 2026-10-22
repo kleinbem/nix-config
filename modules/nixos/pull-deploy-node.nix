@@ -17,10 +17,13 @@
 # importer's secrets.nix for the one-line declaration) — the ntfy
 # listener is inert until that path exists, so this is safe to import
 # even before that secret is declared.
-_: {
+# mkDefault: a host migrating to my.deploy.comin turns autoUpgrade off
+# without fighting this profile.
+{ lib, ... }:
+{
   my.deploy.autoUpgrade = {
-    enable = true;
-    requireCache = true;
-    ntfy.enable = true;
+    enable = lib.mkDefault true;
+    requireCache = lib.mkDefault true;
+    ntfy.enable = lib.mkDefault true;
   };
 }
