@@ -1611,11 +1611,11 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1792615879,
-        "narHash": "sha256-1QsNYvk9A7adGHQtwFDAJlqG37zxUxZtl3vK9gJcXJM=",
+        "lastModified": 1792637716,
+        "narHash": "sha256-5h+VNRTkumS0vyJnIepL7lExWAxKdHC1edkkE7rfaTg=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "7e1f9f897791fdac7a62aaf8f1b279b914bc2de5",
+        "rev": "14b131422278973ff69e1b7022b22a7ce721cfa0",
         "type": "github"
       },
       "original": {
