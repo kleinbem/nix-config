@@ -1,8 +1,25 @@
 name: Maintain Flake
 on:
   workflow_dispatch:
+    inputs:
+      inputs:
+        description: "Flake inputs to update, space-separated (empty: all except kleinbem-secrets)"
+        required: false
+        default: ""
+  # Sibling repos ask for a bump of their own input once their main is green
+  # (dispatch-lock-bump.yaml in each). client_payload.inputs carries the same
+  # list as the manual trigger, client_payload.sha the sibling commit.
+  repository_dispatch:
+    types: [lock-bump]
   schedule:
     - cron: '0 3 * * *'  # daily at 03:00 UTC
+
+# Dispatches arrive in bursts (several sibling merges in a row). Queue them:
+# GitHub keeps only the newest pending run, so a burst collapses into one
+# more run after the current one, and two runs never race on the lock branch.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -27,22 +44,62 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ steps.app-token.outputs.token }}
 
-      - name: Update flake inputs (excluding kleinbem-secrets)
+      - name: Start from the open lock PR, if any
+        id: lock-pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          set -euo pipefail
+          cd nix-config
+          head="$(gh pr list --head update-flake-lock --base main --state open \
+            --json headRefOid --jq '.[0].headRefOid // empty')"
+          if [ -n "$head" ]; then
+            # Extend the pending bump instead of resetting it to main: a
+            # nightly nixpkgs bump still in CI would otherwise be thrown away
+            # by a sibling's one-input request.
+            git fetch --depth 1 origin "$head"
+            git checkout "$head" -- flake.lock
+            echo "starting from the open lock PR at $head"
+          else
+            echo "no open lock PR, starting from main"
+          fi
+          cp flake.lock /tmp/flake.lock.before
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+
+      - name: Update flake inputs (requested ones, else all but kleinbem-secrets)
+        env:
+          # Manual run or sibling dispatch; validated against the flake below,
+          # so a typo or a foreign name fails here instead of in `nix`.
+          REQUESTED: ${{ github.event.inputs.inputs || github.event.client_payload.inputs }}
+        run: |
+          set -euo pipefail
           cd nix-config
           # kleinbem-secrets is user-managed (rotated deliberately, not nightly)
           # AND private — CI has no PAT for it in Nix's access-tokens, so
           # fetching it here would 404. Discover remaining inputs dynamically
           # so new inputs are picked up automatically. jq is preinstalled on
           # ubuntu-latest.
-          inputs=$(nix flake metadata --json | jq -r '
+          all=$(nix flake metadata --json | jq -r '
             .locks.nodes.root.inputs
             | keys[]
             | select(. != "kleinbem-secrets")
-          ' | tr '\n' ' ')
-          if [ -z "$inputs" ]; then
+          ')
+          if [ -z "$all" ]; then
             echo "::error::Could not discover flake inputs — refusing to run unbounded \`nix flake update\`."
             exit 1
+          fi
+          if [ -n "$REQUESTED" ]; then
+            inputs=""
+            for i in $REQUESTED; do
+              if grep -qx -- "$i" <<<"$all"; then
+                inputs="$inputs $i"
+              else
+                echo "::error::'$i' is not a flake input of nix-config (have: $(tr '\n' ' ' <<<"$all"))"
+                exit 1
+              fi
+            done
+          else
+            inputs=$(tr '\n' ' ' <<<"$all")
           fi
           echo "Updating inputs: $inputs"
           nix flake update $inputs
@@ -88,29 +145,34 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           cd nix-config
-          if git diff --quiet flake.lock; then
+          if cmp -s flake.lock /tmp/flake.lock.before; then
             echo "flake.lock unchanged — nothing to commit."
             exit 0
           fi
-          
+
           BRANCH_NAME="update-flake-lock"
           REPO="${{ github.repository }}"
-          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          BASE_SHA="${{ steps.lock-pr.outputs.head }}"
 
           # Reset (or create) the branch to point at current main, then commit
           # via GraphQL createCommitOnBranch — GitHub signs these commits
           # automatically ("Verified", committer=GitHub), satisfying the
           # required_signatures ruleset without any key material in CI.
-          if gh api "repos/$REPO/git/ref/heads/$BRANCH_NAME" >/dev/null 2>&1; then
-            gh api -X PATCH "repos/$REPO/git/refs/heads/$BRANCH_NAME" -f sha="$MAIN_SHA" -F force=true >/dev/null
+          if [ -n "$BASE_SHA" ]; then
+            echo "extending the open lock PR at $BASE_SHA"
           else
-            gh api "repos/$REPO/git/refs" -f ref="refs/heads/$BRANCH_NAME" -f sha="$MAIN_SHA" >/dev/null
+            BASE_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+            if gh api "repos/$REPO/git/ref/heads/$BRANCH_NAME" >/dev/null 2>&1; then
+              gh api -X PATCH "repos/$REPO/git/refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" -F force=true >/dev/null
+            else
+              gh api "repos/$REPO/git/refs" -f ref="refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" >/dev/null
+            fi
           fi
 
           jq -n \
             --arg repo "$REPO" \
             --arg branch "$BRANCH_NAME" \
-            --arg sha "$MAIN_SHA" \
+            --arg sha "$BASE_SHA" \
             --arg content "$(base64 -w0 flake.lock)" \
             --arg query 'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
             '{query: $query, variables: {input: {
