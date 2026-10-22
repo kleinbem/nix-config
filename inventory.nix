@@ -97,7 +97,7 @@ in
       ];
     };
     hass-pi = {
-      ip = "10.0.0.21"; # Raspberry Pi — not yet deployed
+      ip = "10.0.0.21"; # Raspberry Pi
       netbirdIp = "100.117.163.227"; # Mesh IP (stable per enrollment)
       system = "aarch64-linux";
       deployType = "ssh";
@@ -105,17 +105,12 @@ in
         "raspberry-pi"
         "home-assistant"
       ];
-      # Status: Configuration ready (hosts/hass-pi/default.nix), hardware prepared
-      # but not deployed. Deploy when home automation becomes priority.
+      # Deployed and running (hosts/hass-pi/default.nix). Home Assistant was
+      # restored from the old HAOS backup on 2026-10-20 and is reachable at
+      # https://hass.kleinbem.dev (Caddy on core-pi) / http://10.0.0.21:8123.
       # Currently hosts: home-assistant, openclaw (pnpm-deps hash issue keeps
       # it here; see hosts/hass-pi/default.nix line 17-23). Other AI services
       # moved to mac-mini 2026-08-05 (RAM and power constraints).
-      #
-      # To deploy:
-      # 1. Power on Raspberry Pi 5
-      # 2. Boot NixOS installer, follow bootstrap steps in docs/DEVICE-TIERS.md
-      # 3. Run: sudo nixos-install --flake .#hass-pi
-      # 4. Update this comment to remove "not yet deployed"
     };
     phone = {
       # NetBird names peers after the device hostname; meshGroups use this.

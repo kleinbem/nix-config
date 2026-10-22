@@ -74,6 +74,18 @@
         group = "users";
         mode = "0400";
       };
+      # HA-MCP connect URL (the "Secret URL" of the ha_mcp_tools entry in
+      # Home Assistant on hass-pi — the URL *is* the credential). Read at
+      # launch by nix-presets' modules.mcp.homeAssistant wrapper, which
+      # bridges the server into Claude Code & co. Create the integration in
+      # HA first (Settings → Devices & Services → HA-MCP Server), then
+      # `sops --set '["ha_mcp_url"] "<url>"' nix/per-host/nixos-nvme.yaml`.
+      ha_mcp_url = {
+        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
+        owner = "martin";
+        group = "users";
+        mode = "0400";
+      };
 
       buzz_garage_rpc_secret = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";

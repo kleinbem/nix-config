@@ -42,6 +42,9 @@ in
       # Several Claude tabs build at once on this workstation; agents that use
       # run_task queue their builds and tests instead.
       agentTaskQueue.enable = true;
+      # Home Assistant (hass-pi) via its in-process HA-MCP server; the
+      # connect URL comes from the ha_mcp_url sops secret on this host.
+      homeAssistant.enable = true;
     };
 
     opencode.enable = true;
