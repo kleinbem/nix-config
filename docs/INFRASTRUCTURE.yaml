@@ -26,6 +26,10 @@ repo_atlas:
     path: .github/
     url: git@github.com:kleinbem/.github.git
     role: Organization-wide GitHub Actions workflows and issue templates.
+  aur-packages:
+    path: aur-packages/
+    url: git@github.com:kleinbem/aur-packages.git
+    role: Supporting repository.
   chrome-open-in-app:
     path: chrome-open-in-app/
     url: git@github.com:kleinbem/chrome-open-in-app.git
