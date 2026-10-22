@@ -4,7 +4,7 @@ set working-directory := ".."
 
 # --- Android / Phone & Tablet Management ---
 
-PHONE_SERIAL  := "R5CW617ZWCF"
+PHONE_SERIAL  := "R5CX31EERDT"
 TABLET_SERIAL := "QBK6R20825000010"
 PHONE_IP      := "10.0.0.8"
 TABLET_IP     := "10.0.0.215"
@@ -18,6 +18,37 @@ DHIRUJAAN_PHONE_IP     := "10.0.0.238"
 [group("Phone")]
 phone *args:
     @just android::scrcpy-dispatch "{{PHONE_SERIAL}}" "{{PHONE_IP}}" "16M" {{args}}
+
+[group("Phone")]
+phone-status:
+    #!/usr/bin/env bash
+    SERIAL="{{PHONE_SERIAL}}"
+    if ! adb devices | grep -q "$SERIAL.*device"; then
+        echo "Error: Phone $SERIAL is not connected or unauthorized." >&2
+        adb devices
+        exit 1
+    fi
+    MODEL=$(adb -s "$SERIAL" shell getprop ro.product.model 2>/dev/null | tr -d '\r' || echo "$SERIAL")
+    echo "=== Samsung Galaxy ($MODEL) Status ==="
+    echo -e "\n[Battery & Power]"
+    adb -s "$SERIAL" shell dumpsys battery | awk '
+        !seen_level && /level:/ { lvl=$2; seen_level=1 }
+        !seen_temp && /temperature:/ { temp=$2/10; seen_temp=1 }
+        !seen_ac && /AC powered:/ { ac=$3; seen_ac=1 }
+        !seen_usb && /USB powered:/ { usb=$3; seen_usb=1 }
+        !seen_status && /status:/ { st=($2==5?"Full":( $2==2?"Charging":"Discharging" )); seen_status=1 }
+        END { printf "  Status: %s (Level: %s%%, Temp: %.1f°C, AC: %s, USB: %s)\n", st, lvl, temp, ac, usb }
+    '
+    echo -e "\n[Shizuku Daemon]"
+    if adb -s "$SERIAL" shell ps -ef | grep -q "shizuku_server"; then
+        pid=$(adb -s "$SERIAL" shell ps -ef | grep "shizuku_server" | awk '{print $2}' | head -n 1)
+        echo "  Running (PID: $pid)"
+    else
+        echo "  Stopped (Run 'just android::start-shizuku' to start)"
+    fi
+    echo -e "\n[Foreground Window]"
+    fg=$(adb -s "$SERIAL" shell "dumpsys window | grep -E 'mCurrentFocus' | tail -n 1" | sed 's/^[[:space:]]*//')
+    echo "  $fg"
 
 [group("Tablet")]
 tablet *args:
@@ -42,11 +73,7 @@ tablet-desk:
     adb -s "$SERIAL" shell "echo 80 > /sys/class/power_supply/Battery/charge_control_limit_max 2>/dev/null || settings put global UsercustomedMAXChargeValue 80"
     adb -s "$SERIAL" shell dumpsys deviceidle disable >/dev/null 2>&1 || true
 
-    # 3. Ensure persistent 3-key navigation bar is active
-    adb -s "$SERIAL" shell settings put secure secure_gesture_navigation 0
-    adb -s "$SERIAL" shell settings put secure navigation_mode 0
-
-    # 4. Start Shizuku if available
+    # 3. Start Shizuku if available
     just android::start-shizuku || true
 
     echo "✅ Desk companion active!"
@@ -296,37 +323,43 @@ termux-provision device="phone":
         echo "Add this key to nix-config/modules/nixos/keys.nix to authorize it."
     fi
 
-# Start Shizuku server via ADB on connected device (for silent Aurora Store updates)
+# Start Shizuku server via ADB on all connected devices (for silent Aurora Store updates)
 [group("Maintenance")]
 start-shizuku:
     #!/usr/bin/env bash
     set -euo pipefail
-    SERIAL=$(adb devices | grep -v "List" | grep "device$" | head -n 1 | cut -f1)
-    if [ -z "$SERIAL" ]; then
-        echo "❌ No ADB device found."
+    DEVS=$(adb devices | grep -v "List" | grep "device$" | cut -f1 || true)
+    if [ -z "$DEVS" ]; then
+        echo "❌ No authorized ADB devices found."
         exit 1
     fi
-    echo "⚡ Starting Shizuku on $SERIAL..."
-    adb -s "$SERIAL" shell "
-        APK_PATH=\$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
-        if [ -n \"\$APK_PATH\" ]; then
-            LIB_DIR=\"\$(dirname \"\$APK_PATH\")/lib/arm64\"
-            if [ -f \"\$LIB_DIR/libshizuku.so\" ]; then
-                \"\$LIB_DIR/libshizuku.so\"
-                echo \"✅ Shizuku started.\"
+    for SERIAL in $DEVS; do
+        MODEL=$(adb -s "$SERIAL" shell getprop ro.product.model 2>/dev/null | tr -d '\r' || echo "$SERIAL")
+        echo "⚡ Checking Shizuku on $MODEL ($SERIAL)..."
+        adb -s "$SERIAL" shell "
+            APK_PATH=\$(pm path moe.shizuku.privileged.api 2>/dev/null | cut -d: -f2 | head -n 1)
+            if [ -n \"\$APK_PATH\" ]; then
+                if ps -ef | grep -q \"shizuku_server\"; then
+                    echo \"✅ Shizuku already running on $MODEL.\"
+                else
+                    LIB_DIR=\"\$(dirname \"\$APK_PATH\")/lib/arm64\"
+                    if [ -f \"\$LIB_DIR/libshizuku.so\" ]; then
+                        \"\$LIB_DIR/libshizuku.so\"
+                        echo \"✅ Shizuku started on $MODEL.\"
+                    else
+                        echo \"⚠️ libshizuku.so not found in \$LIB_DIR on $MODEL\"
+                    fi
+                fi
             else
-                echo \"⚠️ libshizuku.so not found in \$LIB_DIR\"
+                echo \"ℹ️ Shizuku is not installed on $MODEL.\"
             fi
-        else
-            echo \"⚠️ Shizuku is not installed on \$SERIAL.\"
-        fi
-    "
-
+        "
+    done
 
 # Keeping the hub for discovery
 [group("Hub")]
 android-hub:
     #!/usr/bin/env bash
-    CHOICES="phone\ntablet\ndhirujaan\nandroid-sync\nandroid-deploy\nandroid-backup"
+    CHOICES="phone\nphone-status\ntablet\ntablet-status\ndhirujaan\nandroid-sync\nandroid-deploy\nandroid-backup\nstart-shizuku"
     echo -e "$CHOICES" | fzf --header "📱 scrcpy Hub" --height 15 --reverse --preview "just --show {}" | xargs -r just
 

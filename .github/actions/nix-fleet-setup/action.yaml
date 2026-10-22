@@ -29,7 +29,7 @@ runs:
     # Reference: carpenike/nix-config and colemickens/nixcfg.
     - name: Free disk space
       if: inputs.free-disk-space == 'true'
-      uses: endersonmenezes/free-disk-space@v3
+      uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
       with:
         remove_android: 'true'
         remove_dotnet: 'true'
@@ -50,8 +50,13 @@ runs:
       shell: bash
       run: |
         # nix-config CI uses github: refs for sibling sub-flakes (matches the
-        # existing ci.yml pattern). Each build evaluates against whatever's on
-        # the sibling's main branch — same semantics as the per-sub-flake CIs.
+        # existing ci.yml pattern). Checks, container builds and PR host
+        # builds evaluate against whatever's on the sibling's main branch —
+        # same semantics as the per-sub-flake CIs, and the early warning for
+        # cross-repo breakage. NOT used for the host toplevels built on main
+        # and for promote's cache gate: devices resolve the committed lock
+        # with zero overrides, so those steps do too (build-all.yaml,
+        # "committed lock" step).
         echo "NIX_OVERRIDES=\
           --override-input kleinbem-secrets /tmp/dummy-secrets \
           --override-input nix-devshells github:kleinbem/nix-devshells \
@@ -67,7 +72,7 @@ runs:
           --override-input nix-templates/nix-devshells github:kleinbem/nix-devshells" >> "$GITHUB_ENV"
 
     - name: Install Nix (Determinate)
-      uses: DeterminateSystems/determinate-nix-action@v3
+      uses: DeterminateSystems/determinate-nix-action@96c5ee93a9dddf2830d31e1da6ec719077336c28 # v3.23.3
       with:
         extra-conf: |
           sandbox = false
@@ -94,11 +99,26 @@ runs:
           # (netbird install) crashes with "Init already exists" and leaves the
           # package half-configured.
           sudo rm -f /etc/systemd/system/netbird.service
-          curl -fsSL https://pkgs.netbird.io/install.sh | sh || true
+          # Pinned release tarball with a checksum from the GitHub release,
+          # instead of `curl pkgs.netbird.io/install.sh | sh` run as root:
+          # this job holds the Attic push token and the NetBird setup key.
+          # Bump the version and both checksums together (release page:
+          # netbird_<ver>_checksums.txt).
+          NETBIRD_VERSION=0.81.3
+          case "$(uname -m)" in
+            x86_64)  arch=amd64; sha=cbdea310068e35449f034544d5137fefee8f6d948fffd020883ffc8b3bab63b1 ;;
+            aarch64) arch=arm64; sha=980eef938177108bdfa7d802566b6309123592a58631349a78f11cd97c76c22d ;;
+            *) echo "::error::unsupported runner arch $(uname -m)"; exit 1 ;;
+          esac
+          tarball="netbird_${NETBIRD_VERSION}_linux_${arch}.tar.gz"
+          curl -fsSL -o "/tmp/$tarball" "https://github.com/netbirdio/netbird/releases/download/v${NETBIRD_VERSION}/$tarball"
+          echo "$sha  /tmp/$tarball" | sha256sum -c -
+          sudo tar -xzf "/tmp/$tarball" -C /usr/local/bin netbird
+          sudo netbird service install
           sudo systemctl daemon-reload
         fi
         if ! command -v netbird &> /dev/null; then
-          echo "::error::NetBird install failed — binary not in PATH after install.sh"
+          echo "::error::NetBird install failed — binary not in PATH after the pinned tarball install"
           exit 1
         fi
         # No `|| true` on `netbird up` — if NetBird can't come up, the attic push
@@ -194,7 +214,7 @@ runs:
       # skips it. The workflow decides whether to push. (Fork PRs have no
       # secrets → step skips → falls back to building.)
       if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
-      uses: ryanccn/attic-action@v0
+      uses: ryanccn/attic-action@dc99f5eb1d5c0495aa26f7b56337b30011fa153e # v0.5.2
       with:
         endpoint: https://cache.kleinbem.dev/
         cache: system

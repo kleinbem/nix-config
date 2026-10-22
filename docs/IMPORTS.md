@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 91
+**Distinct imports:** 92
 
 ---
 
@@ -58,7 +58,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `orin-nano`
 
-- **Modules:** `modules/nixos/ai-hardening.nix`, `modules/nixos/ananicy.nix`, `modules/nixos/audit.nix`, `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/initrd-fan.nix`, `modules/nixos/kernel.nix`, `modules/nixos/persistence.nix`, `modules/nixos/scripts.nix`, `modules/nixos/users.nix`
+- **Modules:** `modules/nixos/ai-hardening.nix`, `modules/nixos/ananicy.nix`, `modules/nixos/audit.nix`, `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/initrd-fan.nix`, `modules/nixos/kernel.nix`, `modules/nixos/persistence.nix`, `modules/nixos/scripts.nix`, `modules/nixos/security/hardening.nix`, `modules/nixos/users.nix`
 - **Presets:** `nix-presets:attic-push`, `nix-presets:frigate`, `nix-presets:herdr-remote-client`, `nix-presets:llama-cpp`, `nix-presets:monitoring-node`, `nix-presets:ollama`, `nix-presets:syncthing`
 - **Hardware:** `nix-hardware:orin-nano`
 - **Users:** `user:martin`
@@ -114,6 +114,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/rpi5-disko.nix` ← core-pi, hass-pi
 - `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
 - `modules/nixos/scripts.nix` ← orin-nano
+- `modules/nixos/security/hardening.nix` ← orin-nano
 - `modules/nixos/services/cloudflare-tunnel.nix` ← core-pi
 - `modules/nixos/services/vault-anythingllm-sync.nix` ← nixos-nvme
 - `modules/nixos/users.nix` ← orin-nano

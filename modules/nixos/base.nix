@@ -42,6 +42,9 @@
     # Pull-based fleet auto-upgrade option (my.deploy.autoUpgrade).
     # Option only — default disabled. Hosts opt in per-host.
     ./auto-upgrade.nix
+    # Its successor: comin polls the production branch (my.deploy.comin).
+    # Option only — hosts opt in, mutually exclusive with autoUpgrade.
+    ./comin.nix
 
     # Core services / system-wide concerns
     ./networking.nix
@@ -50,6 +53,7 @@
     ./pki.nix
     ./virtualisation.nix
     ./zero-trust.nix
+    ./forward-auth-guard.nix # auth = true inventory nodes reachable only via Caddy (nftables hosts)
     ./services/timesync.nix
     ./services/mesh-llm.nix # my.services.meshLlm — a MeshLLM node in the fleet mesh; per-host opt-in
     ./machine-id.nix # my.machineId — stable machine-id on the tmpfs root (kernel cmdline pin)

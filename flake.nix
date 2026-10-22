@@ -21,6 +21,14 @@
     # pins its own compatible version for its build.
     colmena.url = "github:nix-community/colmena";
 
+    # Pull-based host deploy agent (modules/nixos/comin.nix). Go program,
+    # builds fine against our nixpkgs, so follow it to avoid a second tree.
+    comin = {
+      url = "github:nlewo/comin";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -171,8 +179,6 @@
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";
-
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
 
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid/release-24.05";

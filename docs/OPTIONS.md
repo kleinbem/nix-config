@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 68  
+**Declarations indexed:** 69  
 **Consumer files scanned:** 30
 
 ---
@@ -16,7 +16,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.android`
 
 - **Declared:** `nix-config/modules/nixos/android.nix:12`
-- **Sub-options:** `enable`, `loopbackCam`, `weylus`
+- **Sub-options:** `autoShizuku`, `enable`, `loopbackCam`, `weylus`
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.anythingllmVaultSync`
@@ -210,7 +210,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.llama-cpp`
 
-- **Declared:** `nix-presets/containers/llama-cpp.nix:23`
+- **Declared:** `nix-presets/containers/llama-cpp.nix:24`
 - **Sub-options:** `contextSize`, `enable`, `enableCuda`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
 - **Consumed by:** `host:orin-nano`
 
@@ -222,8 +222,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.monitoring`
 
-- **Declared:** `nix-presets/containers/monitoring.nix:18`
-- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
+- **Declared:** `nix-presets/containers/monitoring.nix:20`
+- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.authConfigFile`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
 - **Default-enabled** (no hosts import the declaring file)
 - **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 
@@ -248,7 +248,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.ntfy`
 
 - **Declared:** `nix-presets/containers/ntfy.nix:13`
-- **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`
+- **Sub-options:** `baseUrl`, `enable`, `ip`, `memoryLimit`, `secretsFile`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.ollama`
@@ -335,9 +335,16 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.autoUpgrade`
 
-- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:41`
-- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
+- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:50`
+- **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+
+### `my.deploy.comin`
+
+- **Declared:** `nix-config/modules/nixos/comin.nix:36`
+- **Sub-options:** `branch`, `buildTimeout`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
+- **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Explicit overrides:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
 ## `my.desktop`
 

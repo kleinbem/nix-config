@@ -59,7 +59,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout promotion-candidate SHA
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Check the exact commit build-all built, not whatever main is now.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -102,7 +102,7 @@ jobs:
       # the same GitHub App the `promote` job below already uses.
       - name: Mint GitHub App installation token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -140,63 +140,51 @@ jobs:
           exit $fail
 
       - name: Assert no deployed host would build
+        env:
+          # Same App token as the eval gate: the device closure includes the
+          # private kleinbem-secrets input.
+          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
         run: |
           set -euo pipefail
-          # The hosts that pull `production` via my.deploy.autoUpgrade and must
-          # never build on-device. Mirrors build-all's hardcoded-native toplevel
-          # targets (hass-pi/core-pi on aarch64, mac-mini on x86_64 — all three
-          # set my.deploy.autoUpgrade.requireCache = true).
-          # Excluded (deliberately, same as build-all): nixos-nvme (IS the cache
-          # host — builds locally, never pulls), orin-nano + routers (build
+          # The hosts that pull `production` via my.deploy.autoUpgrade with
+          # requireCache = true: since 2026-10-20 they run `nixos-rebuild
+          # --max-jobs 0`, so anything missing from the cache fails their
+          # upgrade outright. Mirrors build-all's committed-lock step
+          # (hass-pi/core-pi on aarch64, mac-mini/nasbook on x86_64).
+          # Excluded (deliberately, same as build-all): nixos-nvme (best-effort
+          # build, Martin deploys it by hand), orin-nano + routers (build
           # on-device by design). Edit this list as hosts opt into pull-deploy.
-          HOSTS=(hass-pi core-pi mac-mini)
+          #
+          # Resolved WITHOUT $NIX_OVERRIDES: committed lock, real secrets —
+          # the exact closure the device evaluates. Checking the floated
+          # closure instead (as this step did until 2026-10-20) let a lagging
+          # lock through every time; the device then compiled until
+          # RuntimeMaxSec killed it.
+          HOSTS=(hass-pi core-pi mac-mini nasbook)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"
             target=".#nixosConfigurations.$h.config.system.build.toplevel"
-            # Resolve to the literal store path before dry-running it.
-            # `nix build --dry-run <flake-attr>` and `nix build --dry-run
-            # <literal store path>` are NOT equivalent for substitutability
-            # checking — confirmed live 2026-09-30: the exact same,
-            # genuinely-cached output (valid signed narinfo AND fetchable
-            # .nar on cache.kleinbem.dev, verified by hand) reported "will be
-            # built" via the flake-attr form and "will be fetched" via the
-            # literal path. Resolving first avoids the flake-attr path
-            # entirely, matching how a real device actually fetches (by
-            # store path, never by re-evaluating a flake attribute).
-            if ! path="$(nix eval --raw "$target.outPath" $NIX_OVERRIDES 2>&1)"; then
-              echo "$path"
-              echo "::error::$h: failed to resolve toplevel path — cannot verify cache, refusing to promote."
+            # Run exactly what a device runs: `--max-jobs 0` plus
+            # `always-allow-substitutes` (nixpkgs marks system-path, etc,
+            # system-units and every writeText* `allowSubstitutes = false`;
+            # without the option Nix reports "will be built" for cached
+            # paths, which is what fooled the 2026-09-30 flake-attr check,
+            # and the devices failed the same way on 2026-10-21). Anything
+            # the runner's substituters (Attic + upstreams) cannot provide
+            # shows up as "will be built"; a path only in the local store
+            # of the runner cannot happen here (fresh runner, nothing built).
+            if ! out="$(nix build --dry-run --max-jobs 0 \
+                  --option always-allow-substitutes true "$target" 2>&1)"; then
+              echo "$out"
+              echo "::error::$h: dry-run failed — cannot verify cache, refusing to promote."
               fail=1
               echo "::endgroup::"
               continue
             fi
-            # `nix build --dry-run <literal store path>` crashes the Nix
-            # daemon outright on this (aarch64) runner, consistently and
-            # reproducibly (confirmed live 2026-09-30: 3/3 attempts, every
-            # host, identical Crashpad/Sentry noise —
-            # elf_dynamic_array_reader tag errors, "upload_file_minidump
-            # exceeded the size limit" — never a clean Nix error). A bare
-            # store path apparently exercises the build-scheduler/sandbox
-            # setup path (note the /sys/devices/.../cpufreq probes in the
-            # crash, typical of build resource planning) even under
-            # --dry-run, which a literal path was never meant to reach.
-            #
-            # `nix path-info -r` queries the same substituter/closure
-            # information (it's what --dry-run itself queries under the
-            # hood) without ever entering that scheduler path — confirmed
-            # to give an identical, correct pass/fail signal for this exact
-            # closure by hand, with no crash. It exits non-zero even on
-            # success (the path isn't actually realized locally, so
-            # path-info's own "is this path valid" check fails afterward)
-            # and phrases a hard miss as "don't know how to build" instead
-            # of "will be built" (no flake attribute means Nix has no build
-            # recipe to offer as a fallback) — so the exit code is ignored
-            # and both phrasings count as a miss.
-            out="$(nix path-info -r "$path" $NIX_OVERRIDES 2>&1 || true)"
-            echo "$out"
-            if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
-              echo "::error::$h closure is NOT fully cached — a device would compile on-device. Blocking promotion."
+            echo "$out" | grep -vE '^(evaluation warning|warning):' || true
+            if echo "$out" | grep -qE 'will be built|do.?n.?t know how to build'; then
+              echo "::error::$h closure is NOT fully cached — the device's --max-jobs 0 upgrade would fail. Blocking promotion."
               fail=1
             else
               echo "✅ $h: fully cached (fetch-only)."
@@ -220,6 +208,7 @@ jobs:
           set -euo pipefail
           SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
           echo '{}' > /tmp/systems.json
+          EMPTY=$(mktemp -d)
           for entry in "x86_64-linux:container-factory" "aarch64-linux:container-factory-aarch64"; do
             sys="${entry%%:*}"; factory="${entry##*:}"
             echo "::group::manifest $sys ($factory)"
@@ -227,26 +216,20 @@ jobs:
               ".#nixosConfigurations.$factory.config.containers" \
               --apply 'cs: builtins.mapAttrs (n: c: c.path) cs' \
               $NIX_OVERRIDES > "/tmp/paths-$sys.json"
-            # Device-faithful filter: same dry-run gate as hosts, per container.
-            # Checks the FULL closure (root + deps) against the substituters a
-            # device trusts; repeated evals share the flake eval cache.
-            #
-            # Uses `nix path-info -r` on the already-resolved literal $path,
-            # NOT `nix build --dry-run` on the flake attribute — see the
-            # matching, longer comment on the host dry-run step above for
-            # why: the flake-attr form silently misreports genuinely-cached
-            # closures as needing a build (the original empty-manifest bug),
-            # and `nix build --dry-run` on a literal path crashes the Nix
-            # daemon outright on this runner. `path-info -r` gives the same
-            # correct signal as neither of those, safely. Exit code is
-            # ignored (path-info always exits non-zero here — the path
-            # isn't actually realized locally); a miss is either phrasing,
-            # "will be built" or "don't know how to build" (no flake
-            # attribute means no build recipe to fall back to).
+            # Device-faithful filter, per container, against exactly the
+            # substituters a device trusts; repeated evals share the flake eval
+            # cache. Ask for the whole closure from a store that has nothing:
+            # "will be fetched" means a device can pull it all, "don't know how
+            # to build" is a miss (a literal path has no build recipe to fall
+            # back to). The chroot store never enters the daemon, which crashed
+            # on `nix build --dry-run <literal path>` here (2026-09-30). Until
+            # 2026-10-21 this was `nix path-info -r`, which only reads the local
+            # store, printed "path ... is not valid" and matched neither phrase,
+            # so every container passed.
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
-              out="$(nix path-info -r "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
+              out="$(nix-store --store "local?root=$EMPTY" -r --dry-run "$path" --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
               if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
                 echo "$out"
@@ -264,7 +247,7 @@ jobs:
 
       - name: Upload manifest artifact
         if: steps.manifest.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: container-manifest
           path: /tmp/manifest.json
@@ -283,7 +266,7 @@ jobs:
     steps:
       - name: Mint GitHub App installation token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -320,13 +303,29 @@ jobs:
             -f sha="$SHA" \
             -F force=true
           echo "✅ production → $SHA"
+          # comin hosts (my.deploy.comin) follow a production BRANCH: comin
+          # tracks branches, not tags, and only ever moves to a descendant of
+          # what it last deployed. Advance it alongside the tag; the tag goes
+          # once every host runs comin.
+          if gh api "repos/${{ github.repository }}/git/ref/heads/production" >/dev/null 2>&1; then
+            gh api -X PATCH \
+              "repos/${{ github.repository }}/git/refs/heads/production" \
+              -f sha="$SHA" \
+              -F force=true
+          else
+            gh api -X POST \
+              "repos/${{ github.repository }}/git/refs" \
+              -f ref="refs/heads/production" \
+              -f sha="$SHA"
+          fi
+          echo "✅ production branch → $SHA"
           {
             echo "## 🚀 Promoted to production"
             echo ""
             echo "- **SHA**: \`$SHA\`"
             echo "- **Trigger**: ${{ github.event_name }}"
             echo ""
-            echo "Hosts running \`my.deploy.autoUpgrade\` will pick this up on their next cycle (default 04:00 ±30min)."
+            echo "Hosts running \`my.deploy.comin\` switch within a minute; \`my.deploy.autoUpgrade\` hosts on their next cycle (default 04:00 ±30min)."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Advisory push signal: hosts running my.deploy.autoUpgrade.ntfy long-poll
@@ -340,6 +339,9 @@ jobs:
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_DEPLOY_TOPIC }}
+          # Bearer token for the authenticated ntfy server; empty while the
+          # server is still open (nix/infra github-secrets.tf NTFY_CI_TOKEN).
+          NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -347,6 +349,7 @@ jobs:
             exit 0
           fi
           curl -fsS --max-time 15 \
+            ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
             -H "Title: production promoted" \
             -H "Tags: rocket" \
             -d "production → ${{ steps.target.outputs.sha }}" \
@@ -361,7 +364,7 @@ jobs:
       - name: Download manifest artifact
         id: dl-manifest
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: container-manifest
           path: /tmp

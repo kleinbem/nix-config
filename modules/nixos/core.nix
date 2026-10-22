@@ -33,6 +33,9 @@ in
     # also pulls the full ./security bundle, which re-imports this same
     # file; NixOS module dedup by path makes that a no-op, not a conflict.
     ./security/sudo.nix
+    # Lynis sysctl baseline + module blacklist for every host; the
+    # hardening tier (security/hardening.nix) layers nix-mineral on top.
+    ./security/sysctl.nix
   ];
 
   # ==========================================

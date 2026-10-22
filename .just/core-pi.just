@@ -10,14 +10,14 @@ ping:
 
 [group("core-pi")]
 shell:
-    @ssh root@core-pi.local
+    @ssh martin@core-pi.local
 
 [group("core-pi")]
 logs service="ollama":
-    @ssh root@core-pi.local "journalctl -u {{service}} -n 50 --no-pager"
+    @ssh martin@core-pi.local "journalctl -u {{service}} -n 50 --no-pager"
 
 # Forward a Wayland app from core-pi to your local display via SSH.
 # The app must be installed on core-pi. Example: `just core-pi::gui gnome-disk-utility`
 [group("core-pi")]
 gui app:
-    @waypipe ssh root@core-pi.local "{{app}}"
+    @waypipe ssh martin@core-pi.local "{{app}}"

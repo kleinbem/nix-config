@@ -7,6 +7,21 @@
 }:
 let
   mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
+
+  # ntfy server auth (nix/per-host/core-pi.yaml): ntfy_auth_users,
+  # ntfy_auth_access, ntfy_auth_tokens in ntfy's declarative formats (see
+  # nix-presets containers/ntfy.nix secretsFile). All three gated on the
+  # plaintext key names so eval works before the values exist; once they
+  # do, the rendered env file flips the server to deny-all.
+  hostSops = secretFile "nix/per-host/core-pi.yaml";
+  hasKey =
+    k: builtins.pathExists hostSops && lib.hasInfix "\n${k}:" ("\n" + builtins.readFile hostSops);
+  hasNtfyAuth = lib.all hasKey [
+    "ntfy_auth_users"
+    "ntfy_auth_access"
+    "ntfy_auth_tokens"
+  ];
+  ntfyAuthSecret = lib.mkIf hasNtfyAuth { sopsFile = hostSops; };
 in
 {
   sops = {
@@ -107,6 +122,11 @@ in
         # until the key materialises at activation).
         ntfy_deploy_topic = { };
 
+        # ntfy server: declarative users / ACLs / tokens (see hasNtfyAuth).
+        ntfy_auth_users = ntfyAuthSecret;
+        ntfy_auth_access = ntfyAuthSecret;
+        ntfy_auth_tokens = ntfyAuthSecret;
+
         # NetBird — consumed by modules/nixos/networking.nix → netbird-autojoin
         # oneshot (`netbird up --setup-key` when the daemon reports NeedsLogin).
         # Safety net for FRESH enrollments only (reinstall / wiped
@@ -128,6 +148,16 @@ in
       };
 
     templates = {
+      # Bind-mounted into the ntfy container as /run/secrets/ntfy.env and
+      # loaded as its EnvironmentFile (my.containers.ntfy.secretsFile).
+      "ntfy.env" = lib.mkIf hasNtfyAuth {
+        mode = "0444";
+        content = ''
+          NTFY_AUTH_USERS=${config.sops.placeholder.ntfy_auth_users}
+          NTFY_AUTH_ACCESS=${config.sops.placeholder.ntfy_auth_access}
+          NTFY_AUTH_TOKENS=${config.sops.placeholder.ntfy_auth_tokens}
+        '';
+      };
       "attic.env" = {
         mode = "0444";
         content = ''
