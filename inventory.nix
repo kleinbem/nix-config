@@ -56,9 +56,21 @@ in
     # 2026-07-18 — never deployed; every planned tenant lives on the fleet.
     # ap-upstairs keeps the lxc-host capability if a network-layer need
     # ever materializes. .3/.4/.7 are free.)
+    # `board` selects the Ansible board group (openwrt-config group_vars/
+    # board_<board>.yml: interface names, Wi-Fi modes, port map) and the
+    # openwrt-builder profile family. Known boards: bpi-r4, orbi-rbr50,
+    # orbi-rbs50 (the Netgear Orbi v1 units, APs only, once the R4s route).
+    # Orbi topology tags: `mesh-gate` = the one unit wired to a BPI-R4 (the
+    # RBR50), `mesh-node` = free-standing satellites on the 802.11s backhaul
+    # (the three RBS50). Planned entries, add when flashed:
+    #   ap-<location> = { ip = "10.0.0.3"; type = "openwrt"; board = "orbi-rbr50";
+    #                     tags = [ "physical" "ap" "mesh-gate" ]; };
+    #   ap-<location> = { ip = "10.0.0.4"; type = "openwrt"; board = "orbi-rbs50";
+    #                     tags = [ "physical" "ap" "mesh-node" ]; };  # ×3 (.4 .6 .7)
     core-gateway = {
       ip = "10.0.0.1"; # Physical BPI-R4 (Main Gateway - Downstairs) — infra VLAN gateway
       type = "openwrt";
+      board = "bpi-r4";
       tags = [
         "physical"
         "gateway"
@@ -71,6 +83,7 @@ in
     ap-upstairs = {
       ip = "10.0.0.2"; # Physical BPI-R4 (wired-trunk AP — Upstairs)
       type = "openwrt";
+      board = "bpi-r4";
       tags = [
         "physical"
         "ap"

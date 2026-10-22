@@ -322,6 +322,15 @@ def scan_host_disko(nix_config: Path) -> dict[str, dict[str, Any]]:
     return storage_info
 
 
+# inventory.nix `board` → human-readable hardware line. Keep in step with
+# openwrt-config's group_vars/board_<board>.yml and openwrt-builder's profiles.
+OPENWRT_BOARD_PROFILES = {
+    "bpi-r4": "Banana Pi BPI-R4 (MediaTek MT7988A Filogic 880, Quad-core A73, Wi-Fi 7)",
+    "orbi-rbr50": "Netgear Orbi RBR50 v1 (Qualcomm IPQ4019 + QCA9984, Wi-Fi 5 tri-radio, 4 GB eMMC)",
+    "orbi-rbs50": "Netgear Orbi RBS50 v1 (Qualcomm IPQ4019 + QCA9984, Wi-Fi 5 tri-radio, 4 GB eMMC)",
+}
+
+
 def build_host_matrix(
     inventory: dict[str, Any],
     nix_config: Path,
@@ -412,9 +421,10 @@ def build_host_matrix(
             host_entry["hardware_profile"] = (
                 "x86_64 Laptop/NAS with dedicated Btrfs /data storage pool"
             )
-        elif h_name in ("core-gateway", "ap-upstairs"):
-            host_entry["hardware_profile"] = (
-                "Banana Pi BPI-R4 (MediaTek MT7988A Filogic 880, Quad-core A73, Wi-Fi 7)"
+        elif h_data.get("type") == "openwrt":
+            host_entry["hardware_profile"] = OPENWRT_BOARD_PROFILES.get(
+                h_data.get("board", ""),
+                f"OpenWrt device (board: {h_data.get('board', 'unset')})",
             )
 
         matrix[h_name] = host_entry
