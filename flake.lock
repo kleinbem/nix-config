@@ -1256,11 +1256,11 @@
     "kleinbem-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1792604635,
-        "narHash": "sha256-QcjmPsAcT6Sx4XYoO5yHNuXLRmni88syk4wrhFjUtNk=",
+        "lastModified": 1792626785,
+        "narHash": "sha256-ttHQRbBguGSHWEiJ2ZbWaTIUdAF1Nt0wjoK5pz04xr8=",
         "owner": "kleinbem",
         "repo": "skills",
-        "rev": "9832fe56543e2901ecde94c64365dc7c11169147",
+        "rev": "b49bbf4aa20f85a24a1815cefc52315ecba395f1",
         "type": "github"
       },
       "original": {
@@ -1611,11 +1611,11 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1792568676,
-        "narHash": "sha256-iCVsopmBzRpFhO81Mtrj6Qr3SPhFXVQkfMsO5nHOStM=",
+        "lastModified": 1792615879,
+        "narHash": "sha256-1QsNYvk9A7adGHQtwFDAJlqG37zxUxZtl3vK9gJcXJM=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "1d471dfc726c0cb21e68351df6bba34c57a11631",
+        "rev": "7e1f9f897791fdac7a62aaf8f1b279b914bc2de5",
         "type": "github"
       },
       "original": {
@@ -2165,11 +2165,11 @@
     "nixpkgs-mesh": {
       "flake": false,
       "locked": {
-        "lastModified": 1792554128,
-        "narHash": "sha256-JOSCKzz5eLSVT3M0CGA116f8TCg9xfrlmXyazythBno=",
+        "lastModified": 1792595476,
+        "narHash": "sha256-w9TIQ+7O68FbIro8MJpDVHIzek7RQbuE2ogArJSXBwg=",
         "owner": "kleinbem",
         "repo": "nixpkgs",
-        "rev": "5566f9db398baff42724c031f85c26316d6d84f1",
+        "rev": "63b332c93a3dbeece13b4756705ac0c708d40b09",
         "type": "github"
       },
       "original": {

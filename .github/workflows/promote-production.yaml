@@ -208,6 +208,7 @@ jobs:
           set -euo pipefail
           SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
           echo '{}' > /tmp/systems.json
+          EMPTY=$(mktemp -d)
           for entry in "x86_64-linux:container-factory" "aarch64-linux:container-factory-aarch64"; do
             sys="${entry%%:*}"; factory="${entry##*:}"
             echo "::group::manifest $sys ($factory)"
@@ -215,26 +216,20 @@ jobs:
               ".#nixosConfigurations.$factory.config.containers" \
               --apply 'cs: builtins.mapAttrs (n: c: c.path) cs' \
               $NIX_OVERRIDES > "/tmp/paths-$sys.json"
-            # Device-faithful filter: same dry-run gate as hosts, per container.
-            # Checks the FULL closure (root + deps) against the substituters a
-            # device trusts; repeated evals share the flake eval cache.
-            #
-            # Uses `nix path-info -r` on the already-resolved literal $path,
-            # NOT `nix build --dry-run` on the flake attribute — see the
-            # matching, longer comment on the host dry-run step above for
-            # why: the flake-attr form silently misreports genuinely-cached
-            # closures as needing a build (the original empty-manifest bug),
-            # and `nix build --dry-run` on a literal path crashes the Nix
-            # daemon outright on this runner. `path-info -r` gives the same
-            # correct signal as neither of those, safely. Exit code is
-            # ignored (path-info always exits non-zero here — the path
-            # isn't actually realized locally); a miss is either phrasing,
-            # "will be built" or "don't know how to build" (no flake
-            # attribute means no build recipe to fall back to).
+            # Device-faithful filter, per container, against exactly the
+            # substituters a device trusts; repeated evals share the flake eval
+            # cache. Ask for the whole closure from a store that has nothing:
+            # "will be fetched" means a device can pull it all, "don't know how
+            # to build" is a miss (a literal path has no build recipe to fall
+            # back to). The chroot store never enters the daemon, which crashed
+            # on `nix build --dry-run <literal path>` here (2026-09-30). Until
+            # 2026-10-21 this was `nix path-info -r`, which only reads the local
+            # store, printed "path ... is not valid" and matched neither phrase,
+            # so every container passed.
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
-              out="$(nix path-info -r "$path" $NIX_OVERRIDES --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
+              out="$(nix-store --store "local?root=$EMPTY" -r --dry-run "$path" --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
               if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
                 echo "$out"
