@@ -27,7 +27,7 @@
 
 - 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
 - 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:52]_
-- 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:16]_
+- 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:20]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_

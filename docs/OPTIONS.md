@@ -114,8 +114,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.caddy`
 
-- **Declared:** `nix-presets/containers/caddy/default.nix:16`
-- **Sub-options:** `enable`, `globalMaintenance`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `proxyTargets`, `staticSites`
+- **Declared:** `nix-presets/containers/caddy/default.nix:20`
+- **Sub-options:** `enable`, `globalMaintenance`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `proxyTargets`, `secretsFile`, `staticSites`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.caido`
