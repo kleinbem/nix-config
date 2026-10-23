@@ -278,6 +278,10 @@ in
         globalMaintenance = myInventory.globalMaintenance or false;
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
+        # CLOUDFLARE_API_TOKEN for publicCert vhosts (secrets.nix).
+        secretsFile = lib.mkIf (lib.any (n: n.publicCert or false) (
+          lib.attrValues myInventory.network.nodes
+        )) config.sops.templates."caddy.env".path;
         # kleinbem.dev — static Astro build (kleinbem/kleinbem-site), packaged
         # in nix-packages. hostPath is a Nix store path: every switch that
         # picks up a newer kleinbem-site build re-points the bind-mount at

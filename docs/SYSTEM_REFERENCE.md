@@ -27,7 +27,7 @@
 
 - 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
 - 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:52]_
-- 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:16]_
+- 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:20]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
@@ -64,7 +64,7 @@
 ### nixos-nvme
 
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
-- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:60]_
+- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` → `buzz.kleinbem.dev` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:60]_
 - 🛡️ **Caido Security** (`caido`) `10.85.46.133:8080` → `caido.kleinbem.dev` — Headless web security proxy & auditing daemon. _[src: nix-presets/containers/caido.nix:16]_
 - 💻 **Code Server** (`code-server`) `10.85.46.22:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
 - 🗄️ **Dev Database** (`dev-db`) `10.85.46.132:5432` — Shared PostgreSQL 17 & Redis instance for devshells. _[src: nix-presets/containers/dev-db.nix:16]_

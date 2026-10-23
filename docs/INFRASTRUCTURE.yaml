@@ -276,6 +276,7 @@ hosts:
       - caddy.ip
       - caddy.memoryLimit
       - caddy.proxyTargets
+      - caddy.secretsFile
       - crowdsec
       - crowdsec.enable
       - crowdsec.hostDataDir
@@ -1280,8 +1281,8 @@ services:
     host: nixos-nvme
     ip: 10.85.46.131
     port: 3000
-    external_port: null
-    domain: null
+    external_port: 443
+    domain: buzz.kleinbem.dev
     public: false
     auth: Default
     mtls: false

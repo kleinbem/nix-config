@@ -473,6 +473,18 @@ in
       buzz = {
         ip = "10.85.46.131"; # nixos-nvme — Pis (hass-pi/core-pi) too tight on RAM for now
         port = 3000;
+        # Mesh-only TLS front (2026-10-23): Caddy on core-pi serves
+        # wss://buzz.kleinbem.dev with a Let's Encrypt certificate from the
+        # Cloudflare DNS-01 challenge (publicCert; token minted in
+        # nix/infra/r2-tokens/acme-dns.tf). Buzz 1.0 joins communities only
+        # over TLS and trusts only the public CA list, so `tls internal`
+        # isn't enough. The name resolves over NetBird only
+        # (nix/infra/netbird/dns.tf); no tunnel ingress (not `public`).
+        # /pair* goes to the pairing relay (buzz-pair-relay accepts any path).
+        domain = "buzz.kleinbem.dev";
+        externalPort = 443;
+        publicCert = true;
+        extraRoutes."/pair*" = 3001;
         meta = {
           name = "Buzz";
           category = "AI Engineering";
