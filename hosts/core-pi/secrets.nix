@@ -3,6 +3,7 @@
   config,
   lib,
   secretFile,
+  myInventory,
   ...
 }:
 let
@@ -22,8 +23,24 @@ let
     "ntfy_auth_tokens"
   ];
   ntfyAuthSecret = lib.mkIf hasNtfyAuth { sopsFile = hostSops; };
+
+  # Caddy's Cloudflare DNS-01 token for inventory nodes with
+  # `publicCert = true` (minted + synced by nix/infra/r2-tokens); asserted
+  # below so a missing token fails the eval, not Caddy.
+  acmeDns = lib.any (n: n.publicCert or false) (lib.attrValues myInventory.network.nodes);
 in
 {
+  # Without the token Caddy can't get the certificate, and an unset
+  # {env.CLOUDFLARE_API_TOKEN} may keep it from loading the config at all,
+  # taking every vhost down. Fail the eval instead: run `just apply` in
+  # nix/infra/r2-tokens and bump kleinbem-secrets first.
+  assertions = [
+    {
+      assertion = acmeDns -> hasKey "caddy_acme_cloudflare_token";
+      message = "inventory has a node with publicCert = true, but kleinbem-secrets/nix/per-host/core-pi.yaml has no caddy_acme_cloudflare_token (mint it: nix/infra/r2-tokens `just apply`).";
+    }
+  ];
+
   sops = {
     # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
     # fleet-wide in modules/nixos/base.nix.
@@ -127,6 +144,9 @@ in
         ntfy_auth_access = ntfyAuthSecret;
         ntfy_auth_tokens = ntfyAuthSecret;
 
+        # Caddy DNS-01 (see acmeDns).
+        caddy_acme_cloudflare_token = lib.mkIf acmeDns { sopsFile = hostSops; };
+
         # NetBird — consumed by modules/nixos/networking.nix → netbird-autojoin
         # oneshot (`netbird up --setup-key` when the daemon reports NeedsLogin).
         # Safety net for FRESH enrollments only (reinstall / wiped
@@ -156,6 +176,14 @@ in
           NTFY_AUTH_USERS=${config.sops.placeholder.ntfy_auth_users}
           NTFY_AUTH_ACCESS=${config.sops.placeholder.ntfy_auth_access}
           NTFY_AUTH_TOKENS=${config.sops.placeholder.ntfy_auth_tokens}
+        '';
+      };
+      # Bind-mounted into the caddy container as /run/secrets/caddy.env
+      # (my.containers.caddy.secretsFile).
+      "caddy.env" = lib.mkIf acmeDns {
+        mode = "0444";
+        content = ''
+          CLOUDFLARE_API_TOKEN=${config.sops.placeholder.caddy_acme_cloudflare_token}
         '';
       };
       "attic.env" = {
