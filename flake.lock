@@ -1042,16 +1042,17 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1792741524,
-        "narHash": "sha256-hjS5Ue+q5E52MhjMm4ks0SyY9JHnUtDsewboHlbvKVw=",
+        "lastModified": 1792650380,
+        "narHash": "sha256-4l8C4z7K4VQDq2ExP6v9NUdCpSFagB1hbt4gh/Y6YSw=",
         "owner": "NousResearch",
         "repo": "hermes-agent",
-        "rev": "df722c88648ace75510abe6e6cfceb6dcc77da69",
+        "rev": "81a55437f3f31a9f12a30c53b6c5d49d420898aa",
         "type": "github"
       },
       "original": {
         "owner": "NousResearch",
         "repo": "hermes-agent",
+        "rev": "81a55437f3f31a9f12a30c53b6c5d49d420898aa",
         "type": "github"
       }
     },
@@ -1647,11 +1648,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1792742139,
-        "narHash": "sha256-lrAD2cH0iQvNBhvkHwEBNs1Y/JH6hY1WSf+x1lxASyA=",
+        "lastModified": 1792746203,
+        "narHash": "sha256-yw5+OHU+PsZKA30oD43DLeMxmhB1u6TCQcGoYEE310s=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "6a5197dc603a883714b9cea1ec03b5565ef9d112",
+        "rev": "2866184798f595421f934d61c13c57e1f24d86de",
         "type": "github"
       },
       "original": {
@@ -3164,11 +3165,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792151315,
-        "narHash": "sha256-PMtgvHuGijoIAtPtrBm7kJOI6fxzX4LYPAIK+QVGY+Y=",
+        "lastModified": 1785277507,
+        "narHash": "sha256-9Tq3UDX2hD/aveW/HvkBlAmEwJTOlY5HQXJM+L5BGmE=",
         "owner": "pyproject-nix",
         "repo": "uv2nix",
-        "rev": "7aba73a3d85454f1118f8cf9de97979b4d26bcac",
+        "rev": "5a836d395cbf5fc22670eb98dd4aa4fc4d406977",
         "type": "github"
       },
       "original": {
