@@ -24,6 +24,9 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write  # re-queue this workflow when the lock PR moved
     steps:
       - name: Mint GitHub App installation token
         id: app-token
@@ -143,6 +146,8 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # Only for re-queueing this workflow (see below).
+          DISPATCH_TOKEN: ${{ github.token }}
         run: |
           cd nix-config
           if cmp -s flake.lock /tmp/flake.lock.before; then
@@ -158,6 +163,26 @@ jobs:
           # via GraphQL createCommitOnBranch — GitHub signs these commits
           # automatically ("Verified", committer=GitHub), satisfying the
           # required_signatures ruleset without any key material in CI.
+          if [ -n "$BASE_SHA" ]; then
+            # Validation takes minutes, and the lock PR can merge (deleting its
+            # branch), close or move meanwhile. If it landed as-is, main now
+            # carries the lock this run started from, so commit on top of main.
+            # Anything else: re-queue a full update, which starts afresh.
+            open_head="$(gh pr list --head "$BRANCH_NAME" --base main --state open \
+              --json headRefOid --jq '.[0].headRefOid // empty')"
+            if [ "$open_head" != "$BASE_SHA" ]; then
+              main_sha=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+              git fetch --depth 1 origin "$main_sha"
+              if git show "$main_sha:flake.lock" | cmp -s - /tmp/flake.lock.before; then
+                echo "the lock PR at $BASE_SHA landed during validation, committing on main"
+                BASE_SHA=""
+              else
+                echo "::warning::the lock PR moved away from $BASE_SHA during validation, re-queueing a full update"
+                GH_TOKEN="$DISPATCH_TOKEN" gh workflow run maintain.yml --ref main
+                exit 0
+              fi
+            fi
+          fi
           if [ -n "$BASE_SHA" ]; then
             echo "extending the open lock PR at $BASE_SHA"
           else
@@ -182,10 +207,27 @@ jobs:
                 fileChanges: {additions: [{path: "flake.lock", contents: $content}]}
             }}}' | gh api graphql --input -
 
-          gh pr create \
-            --title "chore: update flake.lock" \
-            --body "Automated lockfile update. Check re-validates the new inputs on this PR; auto-merge is enabled and lands this once it's green." \
-            --head "$BRANCH_NAME" \
-            --base main || true
+          # Resetting the branch makes it identical to main for an instant, and
+          # GitHub sometimes closes the open PR for it right then (zero-diff
+          # detection) before the new commit lands. Reopen it instead of leaving
+          # the bump stranded on the branch with every error swallowed.
+          PR_JSON=$(gh pr list --head "$BRANCH_NAME" --state all --limit 1 --json number,state --jq '.[0] // empty')
+          PR_NUMBER=$(jq -r '.number // empty' <<<"$PR_JSON")
+          PR_STATE=$(jq -r '.state // empty' <<<"$PR_JSON")
+          if [ "$PR_STATE" = "CLOSED" ]; then
+            echo "PR #$PR_NUMBER was closed by the branch reset — reopening it."
+            gh pr reopen "$PR_NUMBER"
+          elif [ "$PR_STATE" != "OPEN" ]; then
+            gh pr create \
+              --title "chore: update flake.lock" \
+              --body "Automated lockfile update. Check re-validates the new inputs on this PR; auto-merge is enabled and lands this once it's green." \
+              --head "$BRANCH_NAME" \
+              --base main
+          fi
 
           gh pr merge "$BRANCH_NAME" --auto --squash || true
+
+          # Fail the run if the bump is not on its way: an open PR with auto-merge
+          # armed, or already merged.
+          gh pr view "$BRANCH_NAME" --json state,autoMergeRequest \
+            --jq 'if .state == "MERGED" or (.state == "OPEN" and .autoMergeRequest != null) then "lock bump PR: \(.state), auto-merge armed" else error("no open PR with auto-merge for the lock bump (state: \(.state))") end'
