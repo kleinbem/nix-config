@@ -1,6 +1,9 @@
 name: 'Nix fleet setup'
-description: 'Shared CI preamble for the nix-config flake: installs Nix, sets sub-flake overrides to github: refs, and (optionally) brings up NetBird + Attic for builds that need to push to the binary cache.'
+description: 'nix-config CI preamble: dummy secrets and sub-flake overrides, then the shared kleinbem/actions nix-setup (Determinate Nix, optional NetBird + Attic).'
 
+# The generic part (free disk, Nix, auto-gc, NetBird, Attic) lives in
+# kleinbem/actions/nix-setup, shared with the other nix repos. Only the two
+# steps that are about this flake stay here.
 inputs:
   netbird-setup-key:
     description: 'NetBird setup key. With attic-token, the job joins the mesh to reach the Attic cache.'
@@ -22,26 +25,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # Reclaim disk for the Nix store by deleting preinstalled toolchains.
-    # endersonmenezes/free-disk-space@v3 is the actively-maintained successor
-    # to the LVM-juggling easimon/maximize-build-space — same headroom, no
-    # mount surgery (which silently lost log output on big closures).
-    # Reference: carpenike/nix-config and colemickens/nixcfg.
-    - name: Free disk space
-      if: inputs.free-disk-space == 'true'
-      uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
-      with:
-        remove_android: 'true'
-        remove_dotnet: 'true'
-        remove_haskell: 'true'
-        remove_tool_cache: 'true'
-        remove_swap: 'true'
-        remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
-        remove_packages_one_command: 'true'
-        remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle /usr/lib/jvm /home/runner/.rust /usr/local/.ghcup"
-        rm_cmd: "rmz"
-        rmz_version: "3.1.1"
-
     - name: Set up dummy secrets
       shell: bash
       run: ./.github/scripts/setup-dummy-secrets.sh
@@ -71,164 +54,15 @@ runs:
           --override-input nix-templates github:kleinbem/nix-templates \
           --override-input nix-templates/nix-devshells github:kleinbem/nix-devshells" >> "$GITHUB_ENV"
 
-    - name: Install Nix (Determinate)
-      uses: DeterminateSystems/determinate-nix-action@96c5ee93a9dddf2830d31e1da6ec719077336c28 # v3.23.3
+    - name: Nix setup
+      uses: kleinbem/actions/nix-setup@d640cb482c1083235491da5ce469468a0019fc64 # v1.0.0
       with:
+        netbird-setup-key: ${{ inputs.netbird-setup-key }}
+        attic-token: ${{ inputs.attic-token }}
+        configure-auto-gc: ${{ inputs.configure-auto-gc }}
+        free-disk-space: ${{ inputs.free-disk-space }}
         extra-conf: |
           sandbox = false
-          trusted-users = root runner
-
-    - name: Configure Nix Auto-GC
-      if: inputs.configure-auto-gc == 'true'
-      shell: bash
-      run: |
-        echo "min-free = 1073741824" | sudo tee -a /etc/nix/nix.conf
-        echo "max-free = 2147483648" | sudo tee -a /etc/nix/nix.conf
-        sudo systemctl restart nix-daemon
-
-    - name: Setup NetBird VPN
-      # The cache is mesh-only (#137): every job that uses Attic, pushing or
-      # only reading, reaches it over NetBird. Fork PRs have neither secret.
-      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
-      shell: bash
-      run: |
-        set -euo pipefail
-        if ! command -v netbird &> /dev/null; then
-          # Hosted runner images sometimes ship the systemd unit but not the
-          # binary. If we don't clean it up, the deb package's postinst script
-          # (netbird install) crashes with "Init already exists" and leaves the
-          # package half-configured.
-          sudo rm -f /etc/systemd/system/netbird.service
-          # Pinned release tarball with a checksum from the GitHub release,
-          # instead of `curl pkgs.netbird.io/install.sh | sh` run as root:
-          # this job holds the Attic push token and the NetBird setup key.
-          # Bump the version and both checksums together (release page:
-          # netbird_<ver>_checksums.txt).
-          NETBIRD_VERSION=0.81.3
-          case "$(uname -m)" in
-            x86_64)  arch=amd64; sha=cbdea310068e35449f034544d5137fefee8f6d948fffd020883ffc8b3bab63b1 ;;
-            aarch64) arch=arm64; sha=980eef938177108bdfa7d802566b6309123592a58631349a78f11cd97c76c22d ;;
-            *) echo "::error::unsupported runner arch $(uname -m)"; exit 1 ;;
-          esac
-          tarball="netbird_${NETBIRD_VERSION}_linux_${arch}.tar.gz"
-          curl -fsSL -o "/tmp/$tarball" "https://github.com/netbirdio/netbird/releases/download/v${NETBIRD_VERSION}/$tarball"
-          echo "$sha  /tmp/$tarball" | sha256sum -c -
-          sudo tar -xzf "/tmp/$tarball" -C /usr/local/bin netbird
-          sudo netbird service install
-          sudo systemctl daemon-reload
-        fi
-        if ! command -v netbird &> /dev/null; then
-          echo "::error::NetBird install failed — binary not in PATH after the pinned tarball install"
-          exit 1
-        fi
-        # No `|| true` on `netbird up` — if NetBird can't come up, the attic push
-        # will eventually 413 on a >100 MiB NAR via Cloudflare anyway. Fail loud.
-        sudo systemctl start netbird
-        sudo netbird up --setup-key "${{ inputs.netbird-setup-key }}"
-
-    - name: Route Attic over NetBird (fail-closed)
-      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
-      shell: bash
-      run: |
-        set -euo pipefail
-        # Resolution: prefer the NetBird DNS zone (infra/netbird/dns.tf — one
-        # tofu-managed pointer instead of an IP baked into this file; the
-        # runner's systemd-resolved learns NetBird's resolver from `netbird
-        # up`). A mesh IP (100.117.0.0/16) proves the zone answered. Anything
-        # else (public DNS returns the Cloudflare tunnel edge, whose 100 MiB
-        # NAR cap breaks pushes) falls back to a static /etc/hosts pin — warn
-        # so we notice the DNS path regressing, but don't fail the build.
-        # The zone reaches a freshly-joined peer via the network-map sync, which
-        # can lag `netbird up` by several seconds — retry before falling back
-        # (first observed run: fallback fired 8s after join with the public IP).
-        resolved=""
-        for i in {1..6}; do
-          dns_answer="$(getent ahostsv4 cache.kleinbem.dev | awk '{print $1; exit}' || true)"
-          if [[ "$dns_answer" == 100.117.* ]]; then
-            resolved="$dns_answer"
-            echo "cache.kleinbem.dev resolves via NetBird DNS: $resolved (attempt $i)"
-            break
-          fi
-          sleep 5
-        done
-        if [ -z "$resolved" ]; then
-          resolved="100.117.146.201"
-          echo "::warning::cache.kleinbem.dev did not resolve to a mesh IP after 30s (last answer: '${dns_answer:-nothing}') — pinning $resolved in /etc/hosts. NetBird DNS zone may be broken or not reaching runner peers."
-          # Diagnostics for the retirement decision — what DID the runner's
-          # resolver think, and did NetBird register its DNS at all?
-          resolvectl status 2>/dev/null | grep -iA2 "netbird\|wt0" | head -10 || true
-          resolvectl query cache.kleinbem.dev 2>&1 | head -3 || true
-          echo "$resolved cache.kleinbem.dev" | sudo tee -a /etc/hosts
-        fi
-        # Verify the route to the Attic IP actually goes through NetBird's
-        # `wt0` interface. Without this check, a silently-failed `netbird up`
-        # would let DNS fall back to Cloudflare and the attic push would 413
-        # on big NARs. Cheaper to fail here, before the build.
-        route="$(ip route get "$resolved")"
-        echo "$route"
-        if ! echo "$route" | grep -q 'dev wt0'; then
-          echo "::error::NetBird route to cache.kleinbem.dev is not via wt0 — bailing before the build."
-          sudo netbird status || true
-          exit 1
-        fi
-        
-        echo "Waiting for NetBird peer connectivity to cache.kleinbem.dev..."
-        # TCP/443, NOT ping: since the mesh default All->All policy was
-        # deleted (zero-trust, 2026-07-17), ci-runners may reach cache on
-        # TCP/443 ONLY — ICMP is dropped by policy, so a ping probe fails
-        # even when the path we actually need is fine. Probe what the
-        # policy permits and the build will use.
-        connected=false
-        for i in {1..15}; do
-          if timeout 2 bash -c "exec 3<>/dev/tcp/$resolved/443" 2>/dev/null; then
-            echo "Connectivity established (TCP 443)."
-            connected=true
-            break
-          fi
-          sleep 2
-        done
-
-        if [ "$connected" = "false" ]; then
-          echo "::error::Could not reach cache.kleinbem.dev:443 via NetBird after 30 seconds (note: ICMP is policy-blocked; this probe is TCP)."
-          sudo netbird status || true
-          exit 1
-        fi
-
-    - name: Trust internal Caddy CA
-      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
-      shell: bash
-      run: |
-        sudo cp pki/caddy-root.crt /usr/local/share/ca-certificates/caddy-root.crt
-        sudo update-ca-certificates
-        echo "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt" >> "$GITHUB_ENV"
-        echo "NIX_SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt" >> "$GITHUB_ENV"
-
-    - name: Setup Attic Cache
-      # Run whenever a token is available — NOT only when pushing. PR builds
-      # still need Attic as a READ substituter: the custom
-      # linux-rpi kernel/modules are absent from cache.nixos.org, so without
-      # Attic configured, nix-fast-build --skip-cached treats them as uncached
-      # and recompiles the modules from source (~2h45m) on every PR. Reads go
-      # over NetBird like pushes (the cache has no public route since #137); a
-      # PR that doesn't change a host closure finds the toplevel cached and
-      # skips it. The workflow decides whether to push. (Fork PRs have no
-      # secrets → step skips → falls back to building.)
-      if: inputs.attic-token != '' && inputs.netbird-setup-key != ''
-      uses: ryanccn/attic-action@dc99f5eb1d5c0495aa26f7b56337b30011fa153e # v0.5.2
-      with:
-        endpoint: https://cache.kleinbem.dev/
-        cache: system
-        token: ${{ inputs.attic-token }}
-        # Setup-ONLY: configure Attic as a substituter + auth, but do NOT run
-        # the action's default post-job push. That push uploads the whole store
-        # diff — including every path Nix *substituted* from cache.nixos.org to
-        # assemble the closure — re-mirroring upstream into our private cache for
-        # no benefit (devices already get those from cache.nixos.org) and bloating
-        # it over time. The real push is done by `nix-fast-build --attic-cache
-        # system --skip-cached` in build-all.yaml, which pushes ONLY the paths it
-        # actually built (the non-upstream ones: custom kernels, custom packages,
-        # host-specific config). Net: Attic holds exactly what cache.nixos.org
-        # can't, and the two together cover every closure. The promote-production
-        # "verify-cache" gate proves that union is complete before any host is
-        # told to upgrade, so leaning Attic out here can't cause a device to build.
-        skip-push: 'true'
+        # nix-config's own copy stays authoritative for this repo; the
+        # action ships the same root for repos that have none.
+        ca-cert: pki/caddy-root.crt
