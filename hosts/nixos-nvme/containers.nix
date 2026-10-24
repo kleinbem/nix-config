@@ -253,10 +253,12 @@
         hostDataDir = "/var/lib/images/buzz";
         secretsFile = config.sops.templates."buzz.env".path;
         typesenseApiKeyFile = config.sops.secrets.buzz_typesense_api_key.path;
-        # Reachable over NetBird mesh only for now — no public domain/Caddy
-        # vhost set up yet. Switch to wss://buzz.kleinbem.dev once that's wired.
-        relayUrl = "ws://${myInventory.network.nodes.buzz.ip}:3000";
-        pairingRelayUrl = "ws://${myInventory.network.nodes.buzz.ip}:3001";
+        # Through Caddy on core-pi (mesh only, Let's Encrypt via DNS-01, see
+        # the buzz node in inventory.nix): Buzz 1.0 joins only over TLS.
+        # The relay binds a community to one host, so the community row was
+        # renamed from 10.85.46.131:3000 to buzz.kleinbem.dev at the switch.
+        relayUrl = "wss://${myInventory.network.nodes.buzz.domain}";
+        pairingRelayUrl = "wss://${myInventory.network.nodes.buzz.domain}/pair";
         # Members-only relay: required for mesh-llm compute sharing, which
         # takes its roster from the relay's NIP-43 membership snapshot.
         membership = {

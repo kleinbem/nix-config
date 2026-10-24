@@ -119,7 +119,7 @@ in
       # DEFAULT_BROWSER above already use and is proven to reach new
       # terminals without a relogin — same fix, right place this time.
       # Harmless on hosts without buzz-desktop installed.
-      BUZZ_RELAY_URL = "ws://${myInventory.network.nodes.buzz.ip}:3000";
+      BUZZ_RELAY_URL = "wss://${myInventory.network.nodes.buzz.domain}";
     };
 
     packages = [
