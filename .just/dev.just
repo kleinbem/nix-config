@@ -140,8 +140,15 @@ apply *args="":
         exit 0
     fi
 
-    # 1. Align with CI's last green build (fetch + rebase every sub-repo)
-    if [ -f ../nix/justfile ]; then just -f ../nix/justfile jj::pull-all; elif [ -f ../justfile ]; then just -f ../justfile jj::pull-all; fi
+    # 1. Align with CI's last green build (fetch + rebase every sub-repo).
+    # Step 2's re-pins from the last apply would rebase into conflict markers
+    # once CI bumped main's lock; drop them first, step 2 redoes them. Best
+    # effort: a nix checkout without the recipe yet must still get pulled.
+    if [ -f ../nix/justfile ]; then CONDUCTOR=../nix/justfile; elif [ -f ../justfile ]; then CONDUCTOR=../justfile; else CONDUCTOR=""; fi
+    if [ -n "$CONDUCTOR" ]; then
+        just -f "$CONDUCTOR" maintenance::drop-local-pins || echo "⚠️  Could not drop old lock re-pins; pulling anyway."
+        just -f "$CONDUCTOR" jj::pull-all
+    fi
 
     # 2. Sync sub-flake lockfiles topologically
     if [ -f ../nix/justfile ]; then just -f ../nix/justfile maintenance::update-local; elif [ -f ../justfile ]; then just -f ../justfile maintenance::update-local; fi
