@@ -187,6 +187,15 @@ jobs:
             echo "extending the open lock PR at $BASE_SHA"
           else
             BASE_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+            # This run updated the lock it checked out. If a PR changed
+            # flake.lock on main since then, committing ours would revert it
+            # (#285 undid #284's kleinbem-secrets bump): start afresh instead.
+            git fetch --depth 1 origin "$BASE_SHA"
+            if ! git show "$BASE_SHA:flake.lock" | cmp -s - /tmp/flake.lock.before; then
+              echo "::warning::flake.lock changed on main during validation, re-queueing a full update"
+              GH_TOKEN="$DISPATCH_TOKEN" gh workflow run maintain.yml --ref main
+              exit 0
+            fi
             if gh api "repos/$REPO/git/ref/heads/$BRANCH_NAME" >/dev/null 2>&1; then
               gh api -X PATCH "repos/$REPO/git/refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" -F force=true >/dev/null
             else
