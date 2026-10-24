@@ -70,7 +70,7 @@ apply *args="":
         cat <<'HELP'
     Usage: just dev::apply [HOST] [FLAGS]
 
-    Align sub-flakes with origin/main, sync lockfiles, evaluate the host
+    Align sub-flakes with origin/main, evaluate the host
     closure, surface any paths not yet in Attic, and switch the system.
     If HOST is provided, applies to that remote device using nixos-rebuild.
 
@@ -140,20 +140,16 @@ apply *args="":
         exit 0
     fi
 
-    # 1. Align with CI's last green build (fetch + rebase every sub-repo).
-    # Step 2's re-pins from the last apply would rebase into conflict markers
-    # once CI bumped main's lock; drop them first, step 2 redoes them. Best
-    # effort: a nix checkout without the recipe yet must still get pulled.
-    if [ -f ../nix/justfile ]; then CONDUCTOR=../nix/justfile; elif [ -f ../justfile ]; then CONDUCTOR=../justfile; else CONDUCTOR=""; fi
-    if [ -n "$CONDUCTOR" ]; then
-        just -f "$CONDUCTOR" maintenance::drop-local-pins || echo "⚠️  Could not drop old lock re-pins; pulling anyway."
-        just -f "$CONDUCTOR" jj::pull-all
-    fi
+    # 1. Align with CI's last green build (fetch + rebase every sub-repo)
+    if [ -f ../nix/justfile ]; then just -f ../nix/justfile jj::pull-all; elif [ -f ../justfile ]; then just -f ../justfile jj::pull-all; fi
 
-    # 2. Sync sub-flake lockfiles topologically
-    if [ -f ../nix/justfile ]; then just -f ../nix/justfile maintenance::update-local; elif [ -f ../justfile ]; then just -f ../justfile maintenance::update-local; fi
+    # No lockfile re-pin here: every build below passes OVERRIDES (local
+    # checkouts), and CI bumps the sibling pins on main (dispatch-lock-bump).
+    # The re-pins this step used to leave uncommitted rebased into conflict
+    # markers on the next pull (2026-10-23/24). By hand if ever needed:
+    # `just maintenance::update-local` in nix/.
 
-    # 3. Eval check + cache coverage (skipped with --fast)
+    # 2. Eval check + cache coverage (skipped with --fast)
     if [ "$FAST" -eq 0 ]; then
         if [ "$TARGET_HOST" = "$(hostname)" ]; then
             just dev::check
@@ -182,7 +178,7 @@ apply *args="":
         fi
     fi
 
-    # 4. Deploy!
+    # 3. Deploy!
     if [ "$TARGET_HOST" = "$(hostname)" ]; then
         nh_mode="$MODE"
         [ "$MODE" = "boot" ] && nh_mode="switch-boot" # just nixos:: uses switch-boot mapping
