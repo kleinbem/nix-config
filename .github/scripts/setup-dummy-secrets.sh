@@ -30,6 +30,10 @@ echo "{}" >"$out/nix/shared.yaml"
 for host in nixos-nvme core-pi orin-nano mac-mini; do
   echo "{}" >"$out/nix/per-host/${host}.yaml"
 done
+# core-pi asserts that the Caddy DNS-01 token exists whenever an inventory
+# node has publicCert = true (hosts/core-pi/secrets.nix reads the key name
+# from this file), so the dummy has to carry the key too.
+echo "caddy_acme_cloudflare_token: dummy" >"$out/nix/per-host/core-pi.yaml"
 
 for host in nixos-nvme core-pi hass-pi orin-nano; do
   echo "ci-dummy-jwe-placeholder" >"$out/initrd/cryptroot_${host}.jwe"
