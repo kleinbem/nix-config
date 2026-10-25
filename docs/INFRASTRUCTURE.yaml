@@ -966,6 +966,7 @@ hosts:
       - container-updater.enable
       - container-updater.manifestUrl
       - meshLlm
+      - meshLlm.autoStart
       - meshLlm.enable
       - meshLlm.models
       - printing.enable
