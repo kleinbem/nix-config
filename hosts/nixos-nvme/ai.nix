@@ -12,8 +12,11 @@
   # that orin-nano creates once the join token is in sops (see the module);
   # until then it serves standalone. goose reaches it at 127.0.0.1:9337
   # (users/martin/home.nix).
+  # Started by hand (`sudo systemctl start mesh-llm`): idle, the model's ~25 GB
+  # went to swap and left no room for builds (2026-10-25).
   my.services.meshLlm = {
     enable = true;
+    autoStart = false;
     models = [ "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M" ];
   };
 

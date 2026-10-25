@@ -68,6 +68,16 @@ in
       '';
     };
 
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Start the node at boot. Off, it starts only with
+        `systemctl start mesh-llm`: on a workstation, a big model's memory
+        otherwise sits in swap all day, next to the desktop and its builds.
+      '';
+    };
+
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -95,6 +105,8 @@ in
       };
       environmentFile = lib.mkIf (cfg.joinTokenSecret != null) config.sops.templates."mesh-llm.env".path;
     };
+
+    systemd.services.mesh-llm.wantedBy = lib.mkIf (!cfg.autoStart) (lib.mkForce [ ]);
 
     # The fleet's hosts run a tmpfs root (persistence.nix), and /var is a
     # few GB of RAM: the node's state directory holds its identity (which
