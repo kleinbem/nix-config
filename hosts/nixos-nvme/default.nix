@@ -114,6 +114,13 @@
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
     services.tang.enable = true;
+    # Backups — nix-presets' backup-engine, fleet wiring in
+    # modules/nixos/backup.nix. tang, buzz, caido and dev-db register their
+    # own items. /home and the per-app state dirs still go through the
+    # legacy backup container (containers.nix) until they move here.
+    # Secrets: backup_r2_rclone_config (nix/per-host/nixos-nvme.yaml),
+    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
+    backup.enable = true;
     # Preserves this host's exact prior data-disk.nix hardcoded values now
     # that the module is parameterized via options (nasbook needed its own
     # device + keyfile-based unlock instead of FIDO2).
