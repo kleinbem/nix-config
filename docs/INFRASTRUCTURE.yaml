@@ -739,6 +739,8 @@ hosts:
       - enable
       audio:
       - jabra.preferred
+      backup:
+      - enable
       boot:
       - clevis-initrd
       - clevis-initrd.enable
