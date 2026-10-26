@@ -96,9 +96,10 @@
       [KDE]
       LookAndFeelPackage=org.kde.breezedark.desktop
       widgetStyle=Breeze
+      ${lib.optionalString (config.gtk.iconTheme != null) ''
 
-      [Icons]
-      Theme=${config.gtk.iconTheme.name}
+        [Icons]
+        Theme=${config.gtk.iconTheme.name}''}
     '';
 
     dconf.settings = {
