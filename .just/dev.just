@@ -212,7 +212,9 @@ apply *args="":
         export NIX_SSHOPTS="${NIX_SSHOPTS:-} -A"
         try_deploy() {
             : >"$errfile"
-            nixos-rebuild "$MODE" --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --elevate=sudo --ask-elevate-password --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag 2> >(tee "$errfile" >&2)
+            # --no-reexec: prevents cross-architecture deployments (e.g. x86_64 -> aarch64)
+            # from re-executing into the target architecture's nixos-rebuild under QEMU user emulation.
+            nixos-rebuild "$MODE" --no-reexec --target-host "$TARGET_HOST" --build-host "$TARGET_HOST" --elevate=sudo --ask-elevate-password --flake .#"$TARGET_HOST" {{OVERRIDES}} $debug_flag 2> >(tee "$errfile" >&2)
         }
 
         if try_deploy; then
