@@ -83,6 +83,13 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
+    # Backups — nix-presets' backup-engine, fleet wiring in
+    # modules/nixos/backup.nix. tang, paperless-db, qbittorrent (secure)
+    # and paperless-documents (bulk) register their own items.
+    # Secrets: backup_r2_rclone_config (nix/per-host/nasbook.yaml),
+    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
+    backup.enable = true;
+
     # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
     # after the mac-mini canary (#201): follow the production branch, signed
     # heads only. autoUpgrade off (pull-deploy-node.nix sets it with
