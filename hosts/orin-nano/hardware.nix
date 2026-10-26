@@ -9,7 +9,13 @@ let
 in
 {
   # ─── Storage & Memory ───────────────────────────────────────
-  zramSwap.enable = true;
+  # Cap ZRAM to 25% of RAM (~1.8 GB) so compressed pages don't starve physical
+  # memory when Frigate + LLM are resident; let 16 GB NVMe swap take large build spikes.
+  zramSwap = {
+    enable = true;
+    memoryPercent = 25;
+    algorithm = "zstd";
+  };
 
   # ─── Jetson-specific hardware ───────────────────────────────
   hardware = {
