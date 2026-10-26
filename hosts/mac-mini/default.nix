@@ -251,6 +251,13 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
+    # Backups — nix-presets' backup-engine, fleet wiring in
+    # modules/nixos/backup.nix. tang, open-webui and stalwart register
+    # their own secure items. Secrets: backup_r2_rclone_config
+    # (nix/per-host/mac-mini.yaml), rclone_config/restic_password/
+    # ntfy_alert_topic (nix/shared.yaml).
+    backup.enable = true;
+
     # Tang auto-unlock at boot — mandatory here, not optional: this host has
     # no physical keyboard/screen, ever, so a plain LUKS passphrase prompt
     # would hang forever with nobody able to answer it.
