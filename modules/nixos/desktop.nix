@@ -46,7 +46,14 @@ in
       # the desktop host (never blanket host-level — see modules/flake/hosts.nix).
       # bitwarden-desktop pins electron_39; when it bumps, eval trips here and
       # forces a conscious re-ack rather than silently carrying an old Electron.
-      nixpkgs.config.allowInsecurePredicate = pkg: builtins.elem (lib.getName pkg) [ "electron" ];
+      # firefox-esr-140-bin-unwrapped: zotero 10.0.4 runtime (revived via NixOS/nixpkgs#572466).
+      # Upstream marked ESR 140 insecure after its 2026-10-13 EOL; drop when Zotero 11 lands with ESR 153.
+      nixpkgs.config.allowInsecurePredicate =
+        pkg:
+        builtins.elem (lib.getName pkg) [
+          "electron"
+          "firefox-esr-140-bin-unwrapped"
+        ];
 
       services = {
         displayManager.gdm = {
