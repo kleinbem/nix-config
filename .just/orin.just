@@ -33,7 +33,42 @@ ai-chat:
     # Connects to the local llama-cpp endpoint
     curl -s http://localhost:8080/v1/models | jq
 
+# Run a manual test build of mesh-llm on-device with memory-safe concurrency (2 cores),
+# temporarily suspending background mesh-llm to free unified VRAM if running.
+[group("Orin")]
+test-mesh path=".":
+    @echo "🔨 Testing mesh-llm on-device (cores=2)..."
+    @bash -c ' \
+      stopped=0; \
+      if systemctl is-active --quiet mesh-llm; then \
+        echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."; \
+        sudo systemctl stop mesh-llm && stopped=1; \
+      fi; \
+      trap "[ \$$stopped -eq 1 ] && sudo systemctl start mesh-llm" EXIT; \
+      cargo test --manifest-path {{path}}/Cargo.toml -j 2 \
+    '
+
+# Run a manual Nix package build on-device with memory-safe concurrency (2 cores),
+# temporarily freeing unified RAM.
+[group("Orin")]
+build-mesh flake="github:kleinbem/nixpkgs#mesh-llm":
+    @echo "🏗️ Building {{flake}} on-device (cores=2)..."
+    @bash -c ' \
+      stopped=0; \
+      if systemctl is-active --quiet mesh-llm; then \
+        echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."; \
+        sudo systemctl stop mesh-llm && stopped=1; \
+      fi; \
+      trap "[ \$$stopped -eq 1 ] && sudo systemctl start mesh-llm" EXIT; \
+      nix build -L --keep-going --max-jobs 1 --cores 2 --no-link {{flake}} \
+    '
+
 # ─── Remote recipes (run from the dev workstation via SSH) ────────
+
+[group("Orin")]
+build-remote drv:
+    @echo "🏗️ Triggering build on orin-nano (cores=2)..."
+    @ssh -t martin@orin-nano.local "nix build -L --max-jobs 1 --cores 2 --no-link '{{drv}}'"
 
 [group("Orin")]
 ping:

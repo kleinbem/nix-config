@@ -167,10 +167,48 @@ in
     inputs.jetpack-nixos.legacyPackages.${pkgs.stdenv.hostPlatform.system}.l4t-tools # Essential: provides tegrastats and L4T utilities
   ];
 
-  nix.settings.trusted-users = [
-    "root"
-    "martin"
+  nix.settings = {
+    trusted-users = [
+      "root"
+      "martin"
+    ];
+    # Bounded build parallelism for 8GB Unified Memory:
+    # 2 cores avoids thrashing LPDDR5 bandwidth and saturating swap when
+    # compiling heavy Rust crates (e.g. mesh-llm), leaving room for Frigate + LLM.
+    max-jobs = lib.mkDefault 1;
+    cores = lib.mkDefault 2;
+  };
+
+  # Persist /var/cache so large caches (Trivy vuln database, fwupd) do not sit
+  # on the 4G tmpfs root, permanently consuming RAM and swap.
+  environment.persistence."/nix/persist".directories = [
+    "/var/cache"
   ];
+
+  services = {
+    # Headless edge AI node: prefer killing runaway build jobs (rustc, cargo)
+    # over daily business (frigate, mesh-llm, sshd). Lower swap trigger to 5%
+    # to allow NVMe swap headroom before earlyoom engages.
+    earlyoom.extraArgs = lib.mkForce [
+      "-m"
+      "10"
+      "-s"
+      "5"
+      "--prefer"
+      "^(rustc|cargo.*|nix-daemon)$"
+      "--ignore"
+      "^(frigate|mesh-llm|ollama|container@.*|sshd|systemd)$"
+    ];
+
+    # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
+    snapper.configs = lib.mkForce { };
+
+    # ClamAV is irrelevant on a headless edge node with no user-facing file ingestion
+    clamav = {
+      daemon.enable = lib.mkForce false;
+      updater.enable = lib.mkForce false;
+    };
+  };
 
   # colmena deploys as martin (PermitRootLogin = "no" in security.nix).
   # The blanket `ALL NOPASSWD` that used to live here is gone: the
@@ -178,15 +216,7 @@ in
   # applies. Set `my.security.sudo.unattendedDeploy = true` if colmena
   # push deploys to this host must stay prompt-free.
 
-  # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
-  services.snapper.configs = lib.mkForce { };
   systemd.services.snapper-init-persist.enable = lib.mkForce false;
-
-  # ClamAV is irrelevant on a headless edge node with no user-facing file ingestion
-  services.clamav = {
-    daemon.enable = lib.mkForce false;
-    updater.enable = lib.mkForce false;
-  };
 
   users.users = {
     martin.openssh.authorizedKeys.keys = [
