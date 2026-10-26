@@ -126,6 +126,11 @@ in
     };
 
     services.tang.enable = true;
+    # Backups: nix-presets' backup-engine, fleet wiring in
+    # modules/nixos/backup.nix. home-assistant and tang register their own
+    # items. Secrets: backup_r2_rclone_config (nix/per-host/hass-pi.yaml),
+    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
+    backup.enable = true;
 
     # ─── Containers ──────────────────────────────────────────────
     containers = {
