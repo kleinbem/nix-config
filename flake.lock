@@ -1648,11 +1648,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1793003908,
-        "narHash": "sha256-0iOotbClfoOg4/1N6rPFc5u10OoGbBMlDyV1p6A82eo=",
+        "lastModified": 1793021989,
+        "narHash": "sha256-a8LfrHjOEApCAlXOD48n5J1qIQ0gexKgkNPdXKMRsok=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "6d3c7b3cafee9f7572a8fa20f081f9d2c65d44e8",
+        "rev": "4081622a3553a9c7ae5a03a37ffb0136f3755e21",
         "type": "github"
       },
       "original": {
