@@ -62,7 +62,7 @@ in
       build-dir = "/mnt/data/nix-build";
       # Parallel CUDA builds don't fit into 8 GB (core.nix allows 3 jobs).
       max-jobs = lib.mkForce 1;
-      cores = lib.mkForce 4;
+      cores = lib.mkDefault 2;
     };
     systemd.tmpfiles.rules = [ "d /mnt/data/nix-build 0755 root root -" ];
   };
