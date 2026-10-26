@@ -175,9 +175,20 @@ in
     # Bounded build parallelism for 8GB Unified Memory:
     # 2 cores avoids thrashing LPDDR5 bandwidth and saturating swap when
     # compiling heavy Rust crates (e.g. mesh-llm), leaving room for Frigate + LLM.
-    max-jobs = lib.mkDefault 1;
-    cores = lib.mkDefault 2;
+    max-jobs = lib.mkForce 1;
+    cores = lib.mkForce 2;
   };
+
+  # Extra NVMe swapfile on /nix (ext4 on vg_orin-nix, 80 GB free) to give heavy
+  # Rust builds (e.g. mesh-llm with thin LTO) enough headroom to finish without
+  # running out of swap or tripping earlyoom.
+  swapDevices = [
+    {
+      device = "/nix/persist/swapfile";
+      size = 32 * 1024;
+      priority = -10;
+    }
+  ];
 
   # Persist /var/cache so large caches (Trivy vuln database, fwupd) do not sit
   # on the 4G tmpfs root, permanently consuming RAM and swap.
@@ -186,16 +197,15 @@ in
   ];
 
   services = {
-    # Headless edge AI node: prefer killing runaway build jobs (rustc, cargo)
-    # over daily business (frigate, mesh-llm, sshd). Lower swap trigger to 5%
-    # to allow NVMe swap headroom before earlyoom engages.
+    # Headless edge AI node: protect real-time camera streams, containers, and SSH
+    # from OOM kills. Trigger only under genuine swap exhaustion (2% free) and low RAM (10% avail).
+    # Do NOT prefer killing rustc/cargo/nix-daemon: long canary builds (mesh-llm) need to finish
+    # without earlyoom terminating the compiler mid-flight.
     earlyoom.extraArgs = lib.mkForce [
       "-m"
       "10"
       "-s"
-      "5"
-      "--prefer"
-      "^(rustc|cargo.*|nix-daemon)$"
+      "2"
       "--ignore"
       "^(frigate|mesh-llm|ollama|container@.*|sshd|systemd)$"
     ];
