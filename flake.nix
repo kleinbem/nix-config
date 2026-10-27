@@ -5,6 +5,13 @@
     # --- Core ---
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
+    # Packages the fleet holds back from nixos-unstable while they're broken
+    # there (modules/nixos/base.nix applies the overlay).
+    nix-holds = {
+      url = "github:kleinbem/nix-holds";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs-stable.follows = "nixpkgs-stable";
+    };
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -83,6 +90,7 @@
         nix-devshells.follows = "nix-devshells";
         nix-packages.follows = "nix-packages";
         nix-gantry.follows = "nix-gantry";
+        nix-holds.follows = "nix-holds";
       };
     };
     nix-gantry = {

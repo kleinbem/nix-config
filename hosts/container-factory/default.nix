@@ -333,17 +333,10 @@ in
     # which container the module actually emits).
   ];
 
+  # The same held packages as the hosts (modules/nixos/base.nix).
   nixpkgs.overlays = [
     inputs.nix-packages.overlays.default
-    (_final: prev: {
-      inherit
-        (import inputs.nixpkgs-stable {
-          inherit (prev.stdenv.hostPlatform) system;
-          config.allowUnfree = true;
-        })
-        qdrant
-        ;
-    })
+    (inputs.nix-holds.lib.mkOverlay { extraOverlays = [ inputs.nix-packages.overlays.default ]; })
   ];
 
   # Minimal host scaffolding to satisfy NixOS assertions during evaluation.

@@ -1,7 +1,6 @@
 {
   pkgs,
   config,
-  lib,
   ...
 }:
 {
@@ -54,7 +53,5 @@
     };
   };
 
-  boot.initrd.systemd.storePaths = lib.mkIf config.boot.initrd.systemd.enable [
-    pkgs.pcsclite.lib
-  ];
+  boot.initrd.systemd.storePaths = [ pkgs.pcsclite.lib ];
 }

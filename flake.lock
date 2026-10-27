@@ -1356,6 +1356,7 @@
         "ghostty": "ghostty_2",
         "git-hooks": "git-hooks_4",
         "mk-shell-bin": "mk-shell-bin",
+        "nix-holds": "nix-holds",
         "nix2container": "nix2container",
         "nixos-generators": "nixos-generators",
         "nixpkgs": [
@@ -1367,11 +1368,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1792950204,
-        "narHash": "sha256-Vrd1S9kaYUIg1axevX2bVEQE/vOPeVzohcVTPppnY6s=",
+        "lastModified": 1793144000,
+        "narHash": "sha256-1HipJbm0E57jCgjxVciQlKruN2EI9fxkazW3fsqwjMA=",
         "owner": "kleinbem",
         "repo": "nix-devshells",
-        "rev": "f760c865a22b5b916845b6602033c270a27f83e3",
+        "rev": "c2e9f41d18d5d65c15f23424d59a9be7bf388a47",
         "type": "github"
       },
       "original": {
@@ -1512,6 +1513,54 @@
         "type": "github"
       }
     },
+    "nix-holds": {
+      "inputs": {
+        "nixpkgs": [
+          "nix-devshells",
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": [
+          "nix-devshells",
+          "nixpkgs-stable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793142553,
+        "narHash": "sha256-Yy7DePqvVDBZvecf9LSrUnwEU0RdO0W6hNRnDKIise4=",
+        "owner": "kleinbem",
+        "repo": "nix-holds",
+        "rev": "3c2fa9f749f5d974babdae6ffa1ba9a67f0cf06b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "repo": "nix-holds",
+        "type": "github"
+      }
+    },
+    "nix-holds_2": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": [
+          "nixpkgs-stable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793155073,
+        "narHash": "sha256-V6FMmbHK4FWBOZQjneLB3EHsMC4psSRxp6ACPHvTDCs=",
+        "owner": "kleinbem",
+        "repo": "nix-holds",
+        "rev": "4cdf748d2747b8541fab420498b58bfd85e35bf8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "repo": "nix-holds",
+        "type": "github"
+      }
+    },
     "nix-index-database": {
       "inputs": {
         "nixpkgs": [
@@ -1541,11 +1590,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792339378,
-        "narHash": "sha256-2GSp02yOdG9BSvb0c9SW1nsMnUpjR1/WBKskGz0D+8g=",
+        "lastModified": 1793044626,
+        "narHash": "sha256-8K6AEON1I0okvNV2yFoe4bHFz5Xln2r0ZHM3tVB2RY0=",
         "owner": "cynicsketch",
         "repo": "nix-mineral",
-        "rev": "bcd361bb18fccc4297d668aa5e0d5e4ebd4918ce",
+        "rev": "c27e2205f5a6c835e2eb787c8acbc946570423bb",
         "type": "github"
       },
       "original": {
@@ -1635,6 +1684,9 @@
         "nix-gantry": [
           "nix-gantry"
         ],
+        "nix-holds": [
+          "nix-holds"
+        ],
         "nix-packages": [
           "nix-packages"
         ],
@@ -1647,11 +1699,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1793112250,
-        "narHash": "sha256-w3HsgVmNqgE5HQEqQYjGrIebYMy9aQxDhUTUU1zjc9c=",
+        "lastModified": 1793155283,
+        "narHash": "sha256-HRdn22XijKDtsUN6t9gmbXzV/lwJgo0hT67g07/Rh6U=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "90e4e35c66dd64642ae8dbbc0296a5f55aa5df07",
+        "rev": "96af946beab5d9884f25959184023400384f364b",
         "type": "github"
       },
       "original": {
@@ -2244,11 +2296,11 @@
     },
     "nixpkgs_12": {
       "locked": {
-        "lastModified": 1792502884,
-        "narHash": "sha256-IoNisKcGbUjdd45qCqywGMCYmZ5EnkxezvLII0FWwNA=",
+        "lastModified": 1792773339,
+        "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "02c087f3fe673c9e317f206a627cb6b910336dbe",
+        "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
         "type": "github"
       },
       "original": {
@@ -2667,6 +2719,7 @@
         "nix-flatpak": "nix-flatpak",
         "nix-gantry": "nix-gantry",
         "nix-hardware": "nix-hardware",
+        "nix-holds": "nix-holds_2",
         "nix-index-database": "nix-index-database",
         "nix-mineral": "nix-mineral",
         "nix-on-droid": "nix-on-droid",

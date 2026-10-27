@@ -90,13 +90,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = config.boot.initrd.systemd.enable;
-        message = "my.boot.initrd-fan requires boot.initrd.systemd.enable = true (systemd stage-1 initrd).";
-      }
-    ];
-
     # Make the fan modules available in the initrd (normal priority; see the
     # kernelModules note above for hosts that mkOverride this list).
     boot.initrd.availableKernelModules = cfg.kernelModules;

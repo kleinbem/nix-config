@@ -104,7 +104,6 @@ in
       secrets."/etc/clevis/${cfg.luksDevice}.jwe" = cfg.secretFile;
 
       systemd = {
-        enable = true;
         network = {
           enable = true;
           wait-online.ignoredInterfaces = [
