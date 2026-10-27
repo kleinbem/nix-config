@@ -1608,15 +1608,14 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "nixpkgs-mesh": "nixpkgs-mesh",
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1793001085,
-        "narHash": "sha256-g61KZi6z/EXi0quSOxPC04deE4Wb1tQD/XIwN2V8egU=",
+        "lastModified": 1793129935,
+        "narHash": "sha256-lyjN6P70UKZbGP+4A0JeVvmHITz7HTm0BeHsPG9jcoM=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "3fe63448839c66b8d54cd061fd3a30690a79287f",
+        "rev": "d0fb7735b8be2f06b4b566d78c7a99c235ff38af",
         "type": "github"
       },
       "original": {
@@ -2159,23 +2158,6 @@
       "original": {
         "owner": "NixOS",
         "ref": "master",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-mesh": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792830099,
-        "narHash": "sha256-ZDXSa4ocLOVDQMG800FBKXSFvaHfy/RpIRYZEMwY4tA=",
-        "owner": "kleinbem",
-        "repo": "nixpkgs",
-        "rev": "6c68a12adbb8c969a9693c5cdc8fb2ccd6343c90",
-        "type": "github"
-      },
-      "original": {
-        "owner": "kleinbem",
-        "ref": "mesh-llm-next",
         "repo": "nixpkgs",
         "type": "github"
       }
