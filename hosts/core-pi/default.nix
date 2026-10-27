@@ -258,7 +258,10 @@ in
       ];
     };
 
-    services.tang.enable = true;
+    services = {
+      tang.enable = true;
+      cloudflareTunnel.enable = true;
+    };
 
     # Backups — nix-presets' backup-engine, fleet wiring in
     # modules/nixos/backup.nix. Nothing to list here: vaultwarden,

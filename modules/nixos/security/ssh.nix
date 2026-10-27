@@ -35,7 +35,7 @@ in
     # Wrap lxqt-openssh-askpass to strip the trailing newline character
     # This prevents the "incorrect passphrase" error when entering FIDO2 PINs via the GUI!
     askPassword = "${pkgs.writeShellScript "ssh-askpass-clean" ''
-      ${pkgs.lxqt.lxqt-openssh-askpass}/bin/lxqt-openssh-askpass "$@" | tr -d '\n'
+      ${lib.getExe pkgs.lxqt.lxqt-openssh-askpass} "$@" | tr -d '\n'
     ''}";
   };
 
@@ -51,7 +51,7 @@ in
     environment.SSH_AUTH_SOCK = "%t/ssh-agent";
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.openssh}/bin/ssh-add %h/.ssh/id_ed25519_sk";
+      ExecStart = "${lib.getExe' pkgs.openssh "ssh-add"} %h/.ssh/id_ed25519_sk";
     };
   };
 

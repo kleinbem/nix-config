@@ -227,6 +227,7 @@
           "/var/lib/images/qdrant"
           "/var/lib/images/monitoring"
           "/var/lib/images/langfuse"
+          "/var/lib/images/langgraph"
           "/var/lib/images/buzz"
         ] (d: d);
       };
@@ -316,6 +317,7 @@
     "d /var/lib/images/netdata/cache 0755 root root - -"
     "d /var/lib/images/netdata/lib 0755 root root - -"
     "d /var/lib/images/langfuse 0755 root root - -"
+    "d /var/lib/images/langgraph 0755 root root - -"
     # langfuse/db dropped: postgres needs uid/gid 71, now set via
     # dataDirOwner/dataDirGroup in langfuse.nix's langfuse-db container —
     # this line duplicated the factory's 1000:100 default, which postgres

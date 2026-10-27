@@ -30,6 +30,7 @@
     "${self}/modules/nixos/data-disk.nix"
     inputs.disko.nixosModules.disko
     ./ai.nix
+    "${self}/modules/nixos/containers/langgraph.nix"
     inputs.nix-gantry.nixosModules.updater
 
     ./hardware-boot.nix
@@ -113,7 +114,11 @@
   my = {
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
-    services.tang.enable = true;
+    services = {
+      snapper.enable = true;
+      tang.enable = true;
+      threeDPrinting.enable = true; # Bambu Lab A1 mini: slicers + LAN discovery
+    };
     # Backups — nix-presets' backup-engine, fleet wiring in
     # modules/nixos/backup.nix. tang, buzz, caido and dev-db register their
     # own items. /home and the per-app state dirs still go through the
@@ -137,7 +142,6 @@
       # than fall back to compiling the whole closure from source.
       requireCache = true;
     };
-    services.threeDPrinting.enable = true; # Bambu Lab A1 mini: slicers + LAN discovery
     desktop = {
       gnome.enable = true;
       claude.enable = true;

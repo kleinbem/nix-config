@@ -538,14 +538,16 @@ in
     # interface, never the LAN-facing one.
     adguardhome = {
       enable = true;
-      port = 3000;
       openFirewall = true;
       # AdGuard's default bind is 0.0.0.0:53, which collides with resolved's
       # stub (127.0.0.53/.54), NetBird's DNS and podman's aardvark — it never
       # started on this host ("bind: address already in use"). Serve DNS on
       # the LAN address only; port 53 is opened on that interface below
       # (openFirewall covers just the web UI).
-      settings.dns.bind_hosts = [ myInventory.hosts.mac-mini.ip ];
+      settings = {
+        http.address = "0.0.0.0:3000";
+        dns.bind_hosts = [ myInventory.hosts.mac-mini.ip ];
+      };
     };
 
     # Whatever session GDM starts after a successful login (see the NOT
@@ -625,17 +627,17 @@ in
           mkdir -p "$state"
 
           if [ ! -f "$state/password" ]; then
-            ${pkgs.openssl}/bin/openssl rand -base64 18 > "$state/password"
-            echo "Generated a new GNOME Remote Desktop (system/login-screen RDP) password for martin — save it now: $(cat "$state/password")"
+            ${lib.getExe pkgs.openssl} rand -base64 18 > "$state/password"
+            echo "Generated a new GNOME Remote Desktop (system/login-screen RDP) password for martin in $state/password"
           fi
 
           if [ ! -f "$state/tls.crt" ] || [ ! -f "$state/tls.key" ]; then
-            ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 -days 3650 -nodes \
+            ${lib.getExe pkgs.openssl} req -x509 -newkey rsa:4096 -days 3650 -nodes \
               -subj "/CN=mac-mini" \
               -keyout "$state/tls.key" -out "$state/tls.crt" 2>/dev/null
           fi
 
-          grdctl="${pkgs.gnome-remote-desktop}/bin/grdctl"
+          grdctl="${lib.getExe pkgs.gnome-remote-desktop}"
           "$grdctl" --system rdp set-tls-cert "$state/tls.crt"
           "$grdctl" --system rdp set-tls-key "$state/tls.key"
           "$grdctl" --system rdp set-credentials martin "$(cat "$state/password")"

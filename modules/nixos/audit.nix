@@ -3,6 +3,7 @@
   config,
   lib,
   myInventory,
+  secretFile ? null,
   ...
 }:
 
@@ -10,8 +11,18 @@ let
   lokiHost = myInventory.network.nodes.loki.ip;
 
   # nix-security-audit is now defined globally in scripts.nix as an overlay
+  sharedSops = if secretFile != null then secretFile "nix/shared.yaml" else null;
+  hasAlertToken =
+    sharedSops != null
+    && builtins.pathExists sharedSops
+    && lib.hasInfix "\nntfy_alert_token:" ("\n" + builtins.readFile sharedSops);
+  alertTokenPath = "/run/secrets/ntfy_alert_token";
 in
 {
+  sops.secrets = {
+    ntfy_alert_topic = { };
+    ntfy_alert_token = lib.mkIf hasAlertToken { };
+  };
   # ==========================================
   # KERNEL AUDIT SUBSYSTEM
   # ==========================================
@@ -115,20 +126,31 @@ in
         script = ''
           # Input format: "Title|Message|ReportPath"
           IFS='|' read -r TITLE MESSAGE REPORT <<< "$1"
-          TOPIC="nixos-alerts-martin-${config.networking.hostName}"
 
           echo "📢 Sending Alert: $TITLE - $MESSAGE"
 
           # 1. Desktop Notification
-          USER_ID=$(id -u ${config.my.username})
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_ID/bus"
+          USER_ID=$(id -u ${config.my.username} 2>/dev/null || true)
+          if [ -n "$USER_ID" ]; then
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_ID/bus"
 
-          ${pkgs.sudo}/bin/sudo -u ${config.my.username} DISPLAY=:0 \
-            DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS \
-            ${pkgs.libnotify}/bin/notify-send -u critical "$TITLE" "$MESSAGE" || true
+            /run/wrappers/bin/sudo -u ${config.my.username} DISPLAY=:0 \
+              DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS \
+              ${lib.getExe' pkgs.libnotify "notify-send"} -u critical "$TITLE" "$MESSAGE" || true
+          fi
 
-          # 2. Remote Notification (ntfy.sh)
-          ${pkgs.curl}/bin/curl -d "$MESSAGE. Report: $REPORT" "ntfy.sh/$TOPIC" || true
+          # 2. Remote Notification (ntfy)
+          TOPIC="$(cat ${config.sops.secrets.ntfy_alert_topic.path} 2>/dev/null || true)"
+          if [ -n "$TOPIC" ]; then
+            AUTH=()
+            if [ -r ${alertTokenPath} ]; then
+              AUTH=(-H "Authorization: Bearer $(cat ${alertTokenPath})")
+            fi
+            ${lib.getExe pkgs.curl} -fsS --max-time 15 "''${AUTH[@]}" \
+              -H "Title: $TITLE" -H "Priority: high" -H "Tags: warning" \
+              -d "$MESSAGE. Report: $REPORT" \
+              "https://ntfy.kleinbem.dev/$TOPIC" >/dev/null || true
+          fi
         '';
       };
 
@@ -147,7 +169,7 @@ in
           # nix-security-audit needs some privileges for lynis/trivy
         };
         script = ''
-          ${pkgs.nix-security-audit}/bin/nix-security-audit all
+          ${lib.getExe pkgs.nix-security-audit} all
         '';
       };
 
@@ -164,7 +186,7 @@ in
           NoNewPrivileges = true;
         };
         script = ''
-          ${pkgs.nix-security-audit}/bin/nix-security-audit containers
+          ${lib.getExe pkgs.nix-security-audit} containers
         '';
       };
 
@@ -192,8 +214,8 @@ in
 
           TITLE="Daily-Heartbeat"
           MSG="$STATUS-Checked-Host-and-Containers"
-          ESCAPED=$(${config.systemd.package}/bin/systemd-escape "$TITLE|$MSG|HEARTBEAT")
-          ${config.systemd.package}/bin/systemctl start "security-notify@$ESCAPED.service"
+          ESCAPED=$(${lib.getExe' config.systemd.package "systemd-escape"} "$TITLE|$MSG|HEARTBEAT")
+          ${lib.getExe' config.systemd.package "systemctl"} start "security-notify@$ESCAPED.service"
         '';
       };
 
@@ -209,7 +231,7 @@ in
         description = "Lynis Security Audit";
         serviceConfig.Type = "oneshot";
         script = ''
-          ${pkgs.lynis}/bin/lynis audit system --no-colors --quiet > /var/log/security-audit/lynis-report.txt 2>&1
+          ${lib.getExe pkgs.lynis} audit system --no-colors --quiet > /var/log/security-audit/lynis-report.txt 2>&1
         '';
       };
     };

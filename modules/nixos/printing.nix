@@ -6,9 +6,7 @@
 }:
 
 let
-  # Relative path to driver wrapper in the parent folder
-  # Relative path to driver wrapper in the hardware folder
-  # Relative path to driver wrapper in the hardware folder
+  # Ricoh printer driver package from nix-packages overlay
   ricohDriver = pkgs.ricoh-driver;
   cfg = config.my.services.printing;
 in

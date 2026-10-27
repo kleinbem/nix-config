@@ -84,10 +84,18 @@
 
   # Impermanence mkdir -p creates parent directories (like /var/lib/private) with 0755.
   # This breaks systemd DynamicUser services (like tangd) which require 0700.
-  systemd.tmpfiles.rules = [
-    "d /var/lib/private 0700 root root - -"
-    "d /nix/persist/var/lib/private 0700 root root - -"
-  ];
+  systemd.tmpfiles.settings."10-impermanence-private" = {
+    "/var/lib/private".d = {
+      mode = "0700";
+      user = "root";
+      group = "root";
+    };
+    "/nix/persist/var/lib/private".d = {
+      mode = "0700";
+      user = "root";
+      group = "root";
+    };
+  };
 
   # Under impermanence, /etc/ssh/ssh_host_ed25519_key is bind-mounted via a
   # transient systemd unit (persist-nix-persist-etc-ssh-ssh_host_ed25519_key.service).

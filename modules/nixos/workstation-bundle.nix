@@ -70,5 +70,6 @@
 
     # Services
     ./services/tang.nix
+    ./services/langfuse.nix
   ];
 }

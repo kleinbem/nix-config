@@ -41,7 +41,7 @@ in
 
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${pkgs.raspberrypi-eeprom}/bin/rpi-eeprom-update ${lib.optionalString cfg.autoApply "-a"}";
+        ExecStart = "${lib.getExe' pkgs.raspberrypi-eeprom "rpi-eeprom-update"} ${lib.optionalString cfg.autoApply "-a"}";
         RemainAfterExit = true;
       };
     };

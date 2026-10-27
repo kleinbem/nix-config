@@ -49,8 +49,8 @@ let
     });
 
   deploy = [
-    "${pkgs.nh}/bin/nh os switch"
-    "${pkgs.nh}/bin/nh os boot"
+    "${lib.getExe pkgs.nh} os switch"
+    "${lib.getExe pkgs.nh} os boot"
     "/nix/store/*-nixos-system-*/bin/switch-to-configuration switch"
     "/nix/store/*-nixos-system-*/bin/switch-to-configuration boot"
     "/nix/store/*-nixos-system-*/bin/switch-to-configuration test"

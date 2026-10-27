@@ -64,6 +64,12 @@ in
       max-jobs = lib.mkForce 1;
       cores = lib.mkDefault 2;
     };
-    systemd.tmpfiles.rules = [ "d /mnt/data/nix-build 0755 root root -" ];
+    systemd.tmpfiles.settings."10-mesh-llm-gpu-build-dir" = {
+      "/mnt/data/nix-build".d = {
+        mode = "0755";
+        user = "root";
+        group = "root";
+      };
+    };
   };
 }

@@ -209,15 +209,6 @@ in
       "--ignore"
       "^(frigate|mesh-llm|ollama|container@.*|sshd|systemd)$"
     ];
-
-    # Disable snapper — /nix is ext4 on this host, btrfs subvolumes cannot be created
-    snapper.configs = lib.mkForce { };
-
-    # ClamAV is irrelevant on a headless edge node with no user-facing file ingestion
-    clamav = {
-      daemon.enable = lib.mkForce false;
-      updater.enable = lib.mkForce false;
-    };
   };
 
   # colmena deploys as martin (PermitRootLogin = "no" in security.nix).
@@ -225,8 +216,6 @@ in
   # fleet-wide per-command allowlist (modules/nixos/security/sudo.nix)
   # applies. Set `my.security.sudo.unattendedDeploy = true` if colmena
   # push deploys to this host must stay prompt-free.
-
-  systemd.services.snapper-init-persist.enable = lib.mkForce false;
 
   users.users = {
     martin.openssh.authorizedKeys.keys = [

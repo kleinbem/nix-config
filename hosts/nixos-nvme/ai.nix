@@ -132,10 +132,17 @@
       enable = false;
       ip = "${myInventory.network.nodes.langfuse.ip}/24";
       hostDataDir = "/var/lib/images/langfuse";
-      autoStart = true;
+      autoStart = false; # Manual start for testing
       # Both only exist while enable = true (gated in secrets.nix).
       secretsFile = config.sops.templates."langfuse.env".path;
       dbPasswordFile = config.sops.secrets.langfuse_db_password.path;
+    };
+
+    langgraph = {
+      enable = false;
+      ip = "${myInventory.network.nodes.langgraph.ip}/24";
+      hostDataDir = "/var/lib/images/langgraph";
+      autoStart = false; # Manual start for testing
     };
 
     agent-team = {
