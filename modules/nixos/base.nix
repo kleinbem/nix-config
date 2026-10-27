@@ -133,57 +133,6 @@
         doInstallCheck = false;
       });
 
-      # zotero 10.0.2 fails to build at nixpkgs b4fd65b ("AboutTranslations
-      # … not found in modules/ActorManagerParent.sys.mjs -- aborting"; via
-      # firejail-wrapped-binaries it broke the workstation toplevels and with
-      # them every promote). Same 10.0.2, from the pinned last-good rev —
-      # see the nixpkgs-zotero input in flake.nix for when to delete this.
-      inherit
-        (import inputs.nixpkgs-zotero {
-          inherit (prev.stdenv.hostPlatform) system;
-          config.allowUnfree = true;
-        })
-        zotero
-        ;
-
-      # herdr 0.9.1 fails to link on Linux with nixpkgs b4fd65b's toolchain
-      # (ld.bfd: ".eh_frame_hdr refers to overlapping FDEs") — the bundled
-      # libghostty-vt bakes in its own compiler_rt/ubsan_rt. Broke every
-      # herdr host's toplevel (mac-mini first), blocking all promotes
-      # 2026-10-01. Backport of upstream NixOS/nixpkgs#568618 (merged
-      # 2026-09-30, not yet in nixos-unstable). Self-retiring: skipped as
-      # soon as the pinned herdr already carries that postPatch — delete
-      # this block once it does.
-      herdr =
-        if lib.hasInfix "bundle_compiler_rt" (prev.herdr.postPatch or "") then
-          prev.herdr
-        else
-          prev.herdr.overrideAttrs (old: {
-            postPatch =
-              (old.postPatch or "")
-              + lib.optionalString prev.stdenv.hostPlatform.isLinux ''
-                substituteInPlace vendor/libghostty-vt/src/build/GhosttyLibVt.zig \
-                  --replace-fail 'lib.bundle_compiler_rt = true;' 'lib.bundle_compiler_rt = false;' \
-                  --replace-fail 'lib.bundle_ubsan_rt = true;' 'lib.bundle_ubsan_rt = false;'
-              '';
-          });
-
-      # usbguard 1.1.4 fails to compile against newer abseil-cpp/protobuf
-      # under -std=c++17 ("error: 'upper_bound' has not been declared in
-      # 'using absl::btree_map...'"). Backport of upstream NixOS/nixpkgs#568672
-      # (commit 804af16, merged 2026-09-30, not yet in pinned nixos-unstable).
-      # Self-retiring: skipped as soon as the pinned usbguard already carries -std=c++20.
-      usbguard =
-        if lib.hasInfix "-std=c++20" (prev.usbguard.postPatch or "") then
-          prev.usbguard
-        else
-          prev.usbguard.overrideAttrs (old: {
-            postPatch = (old.postPatch or "") + ''
-              substituteInPlace configure.ac \
-                --replace-fail "-std=c++17" "-std=c++20"
-            '';
-          });
-
       # nodejs 26.10.0 fails to compile on aarch64-linux under GCC 16: V8's
       # NEON-only path in deps/v8/src/base/memcopy.h uses CHAR_BIT without
       # including <climits> (NixOS/nixpkgs#568974, no fix PR yet). Breaks
