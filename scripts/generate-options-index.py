@@ -92,7 +92,11 @@ def main() -> int:
                 for e in extract_imports_in_file(cur):
                     if e.kind == "module":
                         # e.label looks like "modules/nixos/foo.nix" relative to nix-config
-                        candidate = NIX_CONFIG / e.label if (NIX_CONFIG / e.label).exists() else REPO / "nix-config" / e.label
+                        candidate = (
+                            NIX_CONFIG / e.label
+                            if (NIX_CONFIG / e.label).exists()
+                            else REPO / "nix-config" / e.label
+                        )
                         if candidate.exists():
                             module_to_hosts[candidate].add(host_dir.name)
                             queue.append(candidate)
