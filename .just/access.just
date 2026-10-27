@@ -157,7 +157,7 @@ unlock-audit host:
     else
       echo "   Tang JWE opens the disk: NO"
     fi
-    own=\$(nix shell nixpkgs#jose -c sh -c 'for k in /var/lib/tang/*.jwk /var/lib/private/tang/*.jwk; do [ -f "\$k" ] && jose jwk use -i "\$k" -r -u verify -o /dev/null 2>/dev/null && jose jwk thp -i "\$k"; done' 2>/dev/null | head -n 1)
+    own=\$(nix shell nixpkgs#jose -c sh -c 'for k in /var/lib/tang/*.jwk /var/lib/private/tang/*.jwk; do [ -f "\$k" ] && jose jwk use -i "\$k" -r -u verify -o /dev/null 2>/dev/null && jose jwk thp -i "\$k"; echo; done' 2>/dev/null | grep -m1 .)
     if [ "\$own" = "$thp" ]; then echo "   Tang key matches inventory: yes"; else echo "   Tang key matches inventory: NO (\${own:-none found})"; fi
     SCRIPT
     )
