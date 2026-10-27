@@ -85,11 +85,33 @@ in
     };
 
     # Backups — nix-presets' backup-engine, fleet wiring in
-    # modules/nixos/backup.nix. tang, paperless-db, qbittorrent (secure)
-    # and paperless-documents (bulk) register their own items.
+    # modules/nixos/backup.nix. tang, paperless-db, and qbittorrent register
+    # their own items. nasbook registers syncthing (identity/keys), agent-team,
+    # and paperless intake inbox plus exclude rules for search index/logs.
     # Secrets: backup_r2_rclone_config (nix/per-host/nasbook.yaml),
     # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
-    backup.enable = true;
+    backup = {
+      enable = true;
+      items = {
+        syncthing = {
+          tier = "secure";
+          paths = [ "/var/lib/images/syncthing" ];
+          exclude = [ "/var/lib/images/syncthing/syncthing.lock" ];
+        };
+        agent-team = {
+          tier = "secure";
+          paths = [ "/var/lib/images/agent-team" ];
+        };
+        paperless-documents = {
+          paths = [ "/mnt/data/Archive/Inbox" ];
+          exclude = [
+            "/mnt/data/Archive/Paperless/index"
+            "/mnt/data/Archive/Paperless/log"
+            "/mnt/data/Archive/Paperless/celerybeat-schedule.db*"
+          ];
+        };
+      };
+    };
 
     # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
     # after the mac-mini canary (#201): follow the production branch, signed
@@ -188,20 +210,6 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.syncthing.ip}/24";
         hostDataDir = "/var/lib/images/syncthing";
-      };
-
-      backup = {
-        enable = true;
-        ip = "${myInventory.network.nodes.backup.ip}/24";
-        passwordFile = config.sops.secrets.restic_password.path;
-        systemPasswordFile = config.sops.secrets.restic_system_password.path;
-        rcloneConfigFile = config.sops.secrets.rclone_config.path;
-        targets = {
-          "/mnt/data" = "/mnt/data";
-        };
-        systemTargets = {
-          "/var/lib/images" = "/var/lib/images";
-        };
       };
 
       qbittorrent = {

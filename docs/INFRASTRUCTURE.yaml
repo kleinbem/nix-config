@@ -611,6 +611,17 @@ hosts:
     enabled_subsystems:
       backup:
       - enable
+      - items
+      - items.agent-team
+      - items.agent-team.paths
+      - items.agent-team.tier
+      - items.paperless-documents
+      - items.paperless-documents.exclude
+      - items.paperless-documents.paths
+      - items.syncthing
+      - items.syncthing.exclude
+      - items.syncthing.paths
+      - items.syncthing.tier
       boot:
       - clevis-initrd
       - clevis-initrd.enable
@@ -628,14 +639,6 @@ hosts:
       - agent-team
       - agent-team.enable
       - agent-team.ip
-      - backup
-      - backup.enable
-      - backup.ip
-      - backup.passwordFile
-      - backup.rcloneConfigFile
-      - backup.systemPasswordFile
-      - backup.systemTargets
-      - backup.targets
       - loki
       - loki.enable
       - loki.hostDataDir
@@ -698,7 +701,6 @@ hosts:
       - podman.enable
     containers_hosted:
     - agent-team
-    - backup
     - loki
     - miniflux
     - paperless
@@ -708,9 +710,6 @@ hosts:
     secrets_consumed:
     - attic_pull_token
     - paperless_password
-    - rclone_config
-    - restic_password
-    - restic_system_password
     hardware_profile: x86_64 Laptop/NAS with dedicated Btrfs /data storage pool
   nixos-nvme:
     tier: workstation
@@ -1294,7 +1293,7 @@ services:
   backup:
     name: Restic Backup
     category: Infrastructure
-    host: nasbook
+    host: nixos-nvme
     ip: 10.85.47.128
     port: null
     external_port: null

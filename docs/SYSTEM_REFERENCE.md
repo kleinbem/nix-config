@@ -54,7 +54,6 @@
 ### nasbook
 
 - 👥 **AI Agent Team** (`agent-team`) `10.85.47.118:8000` — Enterprise Role-Based Agent Team (CrewAI). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-team.nix:15]_
-- 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
 - 📰 **Miniflux** (`miniflux`) `10.85.47.135:8080` → `news.kleinbem.dev` — Minimalist and opinionated feed reader. _[src: nix-presets/containers/miniflux.nix:23]_
 - 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:14]_
