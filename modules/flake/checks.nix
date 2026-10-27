@@ -92,6 +92,57 @@
                 touch "$out"
               '';
 
+          # The packages from our open nixpkgs PRs (nix-packages'
+          # nixpkgs-prs.json) that this system's hosts install, each built
+          # from its host's own pkgs: exactly the derivation the host fetches.
+          # build-all builds every check on every PR, the daily lock PRs
+          # included, so a pin or a nixpkgs update that breaks one stops in
+          # its PR, and the builds are in Attic before promote lets a host
+          # install them. "Install" means environment.systemPackages or the
+          # package of one of the PRs' own services (services.<module name>).
+          # orin-nano is left out: CI never builds its jetpack closure.
+          nixpkgs-prs =
+            let
+              registry = lib.importJSON "${inputs.nix-packages}/nixpkgs-prs.json";
+              entries = lib.attrValues registry;
+              prAttrs = lib.concatMap (entry: entry.attrs) entries;
+              prServices = lib.concatMap (entry: lib.attrNames (entry.modules or { })) entries;
+
+              installed =
+                host:
+                let
+                  inherit (host) config pkgs;
+                  outPaths =
+                    map (p: p.outPath or "") config.environment.systemPackages
+                    ++ lib.concatMap (
+                      name: lib.optional (config.services.${name}.enable or false) config.services.${name}.package.outPath
+                    ) prServices;
+                in
+                # tryEval: a package no host installs may not even evaluate
+                # with the fleet's nixpkgs; the hosts that install one fail
+                # their own eval in that case.
+                lib.filter (
+                  attr:
+                  let
+                    outPath = builtins.tryEval (pkgs.${attr}.outPath or "");
+                  in
+                  outPath.success && lib.elem outPath.value outPaths
+                ) prAttrs;
+
+              builtHosts = lib.filterAttrs (name: _: name != "orin-nano") systemHosts;
+            in
+            inputs.nixpkgs.legacyPackages.${system}.linkFarm "nixpkgs-prs" (
+              lib.concatLists (
+                lib.mapAttrsToList (
+                  hostName: host:
+                  map (attr: {
+                    name = "${hostName}-${attr}";
+                    path = host.pkgs.${attr};
+                  }) (installed host)
+                ) builtHosts
+              )
+            );
+
           code-server-test = import ../../tests/code-server.nix {
             pkgs = inputs.nixpkgs.legacyPackages.${system};
             inherit inputs;
