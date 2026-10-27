@@ -95,15 +95,28 @@ in
       };
 
       clamav-daemon.serviceConfig = {
+        RuntimeDirectoryPreserve = "yes";
         Nice = 19;
         IOSchedulingClass = "idle";
       };
 
-      clamav-clamonacc.serviceConfig = {
-        Nice = 19;
-        IOSchedulingClass = "idle";
+      clamav-clamonacc = {
+        after = [ "clamav-daemon.service" ];
+        wants = [ "clamav-daemon.service" ];
+        serviceConfig = {
+          ExecStart = [
+            ""
+            "${pkgs.clamav}/bin/clamonacc -F --fdpass --wait"
+          ];
+          Nice = 19;
+          IOSchedulingClass = "idle";
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
       };
     };
+
+    sockets.clamav-daemon.partOf = [ "clamav-daemon.service" ];
 
     timers.clamav-smart-scan = {
       wantedBy = [ "timers.target" ];
