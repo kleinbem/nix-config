@@ -110,15 +110,15 @@ in
       # mkForce: the neovim wrapper module also sets EDITOR (nvim); nano wins
       # so sops/git/etc. open a friendlier editor.
       EDITOR = lib.mkForce "nano";
-      # buzz-desktop (nixos-nvme systemPackages) needs this to connect to
-      # the self-hosted relay. First attempt used NixOS-level
+      # The buzz CLI, buzz-acp and buzz-agent (nixos-nvme systemPackages)
+      # connect to the self-hosted relay through this. First attempt used NixOS-level
       # environment.variables (hosts/nixos-nvme/default.nix) — wrong
       # mechanism: that only applies via /etc/set-environment at login
       # time, confirmed live 2026-08-10 to stay empty in a fresh terminal
       # even after a full switch. home.sessionVariables is what BROWSER/
       # DEFAULT_BROWSER above already use and is proven to reach new
       # terminals without a relogin — same fix, right place this time.
-      # Harmless on hosts without buzz-desktop installed.
+      # Harmless on hosts without those tools installed.
       BUZZ_RELAY_URL = "wss://${myInventory.network.nodes.buzz.domain}";
     };
 
