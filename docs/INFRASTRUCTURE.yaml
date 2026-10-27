@@ -687,6 +687,7 @@ hosts:
       - externalInterface
       services:
       - tang.enable
+      - timesync.persistentClock.enable
       virtualisation:
       - enable
       - libvirtd.enable
