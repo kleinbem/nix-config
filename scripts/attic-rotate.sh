@@ -59,6 +59,7 @@ echo "🔑 New signing key generated; writing it and the new tokens to sops (Yub
 printf '%s' "$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64" | put nix/per-host/core-pi.yaml attic_server_token_rs256
 mint --sub fleet-pull --pull system | put nix/shared.yaml attic_pull_token
 mint --sub orin-nano --pull system --push system | put nix/per-host/orin-nano.yaml attic_push_token
+mint --sub nixos-nvme --pull system --push system | put nix/per-host/nixos-nvme.yaml attic_push_token
 mint --sub github-ci --pull system --push system | put infra/terraform.yaml attic_ci_push_token
 mint --sub github-ci-pull --pull system | put infra/terraform.yaml attic_ci_pull_token
 mint --sub admin --pull '*' --push '*' --delete '*' --create-cache '*' --configure-cache '*' \
@@ -72,5 +73,5 @@ cat <<'NEXT'
    2. Deploy core-pi, then the other hosts (new pull token).
    3. nix: tools/tf-apply.sh  (ATTIC_PUSH_TOKEN and ATTIC_PULL_TOKEN for CI)
    4. just nixos::attic cache configure system --private
-   5. rm ~/.config/attic/config.toml   (old admin tokens, now dead)
+   5. rm ~/.config/attic/config.toml   (push-cache reads its token from sops now)
 NEXT

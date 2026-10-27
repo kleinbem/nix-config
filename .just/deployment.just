@@ -180,6 +180,24 @@ push-cache +args:
     # explicitly (|| echo / continue / exit).
     set -uo pipefail
 
+    # Push token from sops (nixos-nvme.yaml: attic_push_token) in a tmpfs
+    # config that lives only for this run, so no token sits in
+    # ~/.config/attic. Decrypted on the first push, so a run with nothing to
+    # push never asks for the YubiKey.
+    ATTIC_CFG=""
+    ATTIC_BIN=""
+    trap '[ -n "$ATTIC_CFG" ] && rm -rf "$ATTIC_CFG"' EXIT
+    attic_ready() {
+        [ -n "$ATTIC_CFG" ] && return 0
+        local token
+        token=$(sops -d --extract '["attic_push_token"]' ../kleinbem-secrets/nix/per-host/nixos-nvme.yaml) || return 1
+        ATTIC_BIN=$(nix build nixpkgs#attic-client --no-link --print-out-paths)/bin/attic || return 1
+        ATTIC_CFG=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}") || return 1
+        mkdir -p "$ATTIC_CFG/attic"
+        (umask 077; printf 'default-server = "kleinbem"\n[servers.kleinbem]\nendpoint = "https://cache.kleinbem.dev/"\ntoken = "%s"\n' \
+            "$token" >"$ATTIC_CFG/attic/config.toml")
+    }
+
     # Attic is a SPARSE OVERLAY on the public caches (see the design note in
     # nix-presets/containers/attic.nix): it must hold ONLY paths no public cache
     # has. attic's own upstream filter covers cache.nixos.org ALONE, so cachix
@@ -220,9 +238,14 @@ push-cache +args:
             echo "   Find the reference with: nix why-depends $root <path>" >&2
             return 1
         fi
+        if ! attic_ready; then
+            echo "⚠️ Warning: no Attic push token (sops nixos-nvme.yaml: attic_push_token), skipped $label"
+            return 0
+        fi
         echo "  ☁️ $label: pushing $(printf '%s\n' "$to_push" | wc -l) non-upstream path(s) to Attic..."
+        # XDG_CONFIG_HOME only for attic itself; nix keeps the user's nix.conf.
         printf '%s\n' "$to_push" | \
-            nix run nixpkgs#attic-client -- push --no-closure --stdin system -j 2 \
+            XDG_CONFIG_HOME="$ATTIC_CFG" "$ATTIC_BIN" push --no-closure --stdin system -j 2 \
             || echo "⚠️ Warning: Failed to push $label to Attic"
     }
 
