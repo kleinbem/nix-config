@@ -351,10 +351,11 @@ in
         '';
       };
     };
-    tmpfiles.rules = [
-      "d /nix/persist/tmp/nix-builds 1777 root root 7d"
-    ];
   };
+
+  systemd.tmpfiles.rules = [
+    "d /nix/persist/tmp/nix-builds 1777 root root 7d"
+  ];
 
   # ─── Storage & Memory ───────────────────────────────────────
   # Swap is now natively handled by disko via a dedicated randomly-encrypted swap partition.
