@@ -60,13 +60,6 @@ fi
 # 2. Check Services
 # We check valid services. If they are not running, systemctl returns non-zero.
 
-echo -n "Checking vLLM Service... "
-if systemctl is-active --quiet podman-vllm.service; then
-  echo "✅ Active"
-else
-  echo "⚠️  INACTIVE"
-fi
-
 echo -n "Checking LiteLLM Service... "
 if systemctl is-active --quiet podman-litellm.service; then
   echo "✅ Active"

@@ -30,8 +30,6 @@ ai-team-logs:
 ai-init-safe:
     @echo "🌡️ Starting AI stack in Safe Mode..."
     @systemctl start ollama.service
-    @sleep 5
-    @systemctl start vllm.service
     @echo "✅ AI Stack Ready."
 
 [group("Development")]

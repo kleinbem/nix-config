@@ -211,7 +211,7 @@
           "/var/lib/caddy" = "/var/lib/caddy";
         }
         # Named per-app state dirs, NOT /var/lib/images wholesale: that also
-        # holds model weights (ollama, vllm, lmstudio, comfyui), 14G of loki
+        # holds model weights (ollama, lmstudio, comfyui), 14G of loki
         # logs, the attic cache, podman image layers and syncthing (synced
         # elsewhere) — all regenerable, none worth shipping to Drive. The
         # preset's `exclude` list can't express this per host (its

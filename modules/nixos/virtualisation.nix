@@ -179,15 +179,14 @@ in
             "network-pre.target"
           ];
           before = [
-            "podman-vllm.service"
             "podman-litellm.service"
-            "podman-comfyui.service"
-            "podman-langflow.service"
             "podman-langfuse.service"
             "podman-langfuse-db.service"
             "container@n8n.service"
             "container@code-server.service"
             "container@open-webui.service"
+            "container@comfyui.service"
+            "container@langflow.service"
             "container@dashboard.service"
             "container@qdrant.service"
           ];
