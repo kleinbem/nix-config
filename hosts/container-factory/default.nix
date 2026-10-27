@@ -255,6 +255,10 @@ let
       hostDataDir = dataDir "qbittorrent";
       downloadsDir = "/var/lib/factory/downloads";
     };
+    miniflux = {
+      ip = "${myInventory.network.nodes.miniflux.ip}/24"; # nasbook
+      hostDataDir = dataDir "miniflux";
+    };
     # Hybrid containers (comfyui, langflow) run Podman inside nspawn containers
     # with runtime image pulling and produce no static factory closure to cache.
   };
@@ -320,6 +324,7 @@ in
     inputs.nix-presets.nixosModules.dev-db
     inputs.nix-presets.nixosModules.caido
     inputs.nix-presets.nixosModules.qbittorrent
+    inputs.nix-presets.nixosModules.miniflux
     # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
     # option slot as dashboard-homepage above, so it cannot be imported
     # alongside it in one host. To cache the homer skin instead, swap the

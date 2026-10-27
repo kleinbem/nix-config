@@ -640,6 +640,10 @@ hosts:
       - loki.enable
       - loki.hostDataDir
       - loki.ip
+      - miniflux
+      - miniflux.enable
+      - miniflux.hostDataDir
+      - miniflux.ip
       - monitoring
       - monitoring.enable
       - monitoring.hostDataDir
@@ -696,6 +700,7 @@ hosts:
     - agent-team
     - backup
     - loki
+    - miniflux
     - paperless
     - qbittorrent
     - qdrant
@@ -1609,6 +1614,20 @@ services:
     upstream_preset: nix-presets/containers/loki.nix
     persistence_path: /var/lib/machines/loki
     description: Centralized Log Aggregator.
+  miniflux:
+    name: Miniflux
+    category: Media
+    host: nasbook
+    ip: 10.85.47.135
+    port: 8080
+    external_port: 443
+    domain: news.kleinbem.dev
+    public: true
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: nix-presets/containers/miniflux.nix
+    persistence_path: /var/lib/machines/miniflux
+    description: Minimalist and opinionated feed reader.
   monitoring:
     name: Monitoring
     category: Infrastructure
