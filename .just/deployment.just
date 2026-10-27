@@ -114,11 +114,15 @@ deploy host:
     # transient `nix run` failure in here must NOT flip a green deploy to a
     # red one. Each step is guarded so its exit code can't abort the recipe
     # under `set -e`.
-    if just deployment::push-cache {{host}}; then
+    push_cache_args="{{host}}"
+    if [[ "{{host}}" != "$(hostname)" ]]; then
+        push_cache_args="--remote {{host}}"
+    fi
+    if just deployment::push-cache $push_cache_args; then
         :
     else
         echo "⚠️  Warning: Attic cache push failed (rc $?) — deploy itself SUCCEEDED."
-        echo "    Re-run later with: just deployment::push-cache {{host}}"
+        echo "    Re-run later with: just deployment::push-cache $push_cache_args"
     fi
 
     # Post-flight sync: nudge the boot files fully into place.
@@ -134,7 +138,7 @@ deploy host:
 deploy-orin:
     @echo "🟢 Deploying to Orin Nano..."
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on orin-nano
-    just deployment::push-cache orin-nano
+    just deployment::push-cache --remote orin-nano
 
 [group("Provisioning")]
 [confirm("💿 Re-install full orin-nano config onto the bootstrapped Orin? Builds natively on the device (no cross-compilation). This reformats the SSD.")]
@@ -162,7 +166,7 @@ orin-promote-nokexec host="root@orin-nano-bootstrap.local":
 deploy-edge:
     @echo "📡 Deploying to AI Edge (Orin + Raspberry Pi)..."
     env SSH_AUTH_SOCK="" colmena -f ./flake.nix apply --impure --on orin-nano,core-pi,hass-pi
-    just deployment::push-cache orin-nano core-pi hass-pi
+    just deployment::push-cache --remote orin-nano core-pi hass-pi
 
 
 [group("Fleet")]
@@ -249,15 +253,27 @@ push-cache +args:
             done
         else
             echo "☁️ Pushing $h to Attic cache..."
-            OUT_PATH=$(nix eval .#nixosConfigurations.$h.config.system.build.toplevel --impure --raw 2>/dev/null || true)
+            target_is_remote=$IS_REMOTE
+            if [ "$target_is_remote" -eq 0 ] && [ -z "${GITHUB_ACTIONS:-}" ] && [ "$h" != "$(hostname)" ]; then
+                target_is_remote=1
+            fi
+
+            OUT_PATH=""
+            if [ "$target_is_remote" -eq 1 ]; then
+                # On remote deploy, get the actual active toplevel from the target host
+                OUT_PATH=$(ssh -o BatchMode=yes -o ConnectTimeout=5 "$h" "readlink -f /run/current-system" 2>/dev/null || true)
+            fi
+            if [ -z "$OUT_PATH" ]; then
+                OUT_PATH=$(nix eval .#nixosConfigurations.$h.config.system.build.toplevel --impure --raw 2>/dev/null || true)
+            fi
             if [ -z "$OUT_PATH" ]; then
                 echo "⚠️ Warning: Could not evaluate closure path for $h"
                 continue
             fi
             
-            if [ "$IS_REMOTE" -eq 1 ]; then
+            if [ "$target_is_remote" -eq 1 ]; then
                 echo "  Fetching closure from remote $h (nix copy)..."
-                nix copy --from "ssh://$h" "$OUT_PATH" || echo "⚠️ Warning: Failed to fetch closure from $h"
+                nix copy --no-check-sigs --from "ssh://$h" "$OUT_PATH" || echo "⚠️ Warning: Failed to fetch closure from $h"
             else
                 # Ensure it is realized locally if not remote
                 nix build .#nixosConfigurations.$h.config.system.build.toplevel --impure --no-link >/dev/null 2>&1 || true
