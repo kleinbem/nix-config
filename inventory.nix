@@ -50,12 +50,10 @@ in
       ];
     };
     # `board` picks the Ansible group (openwrt-config group_vars/board_*.yml)
-    # and openwrt-builder profile. Orbi tags: `mesh-gate` = the RBR50 wired to
-    # a BPI-R4, `mesh-node` = RBS50 satellites. Planned, add when flashed:
-    #   ap-<location> = { ip = "10.0.0.3"; type = "openwrt"; board = "orbi-rbr50";
-    #                     tags = [ "physical" "ap" "mesh-gate" ]; };
-    #   ap-<location> = { ip = "10.0.0.4"; type = "openwrt"; board = "orbi-rbs50";
-    #                     tags = [ "physical" "ap" "mesh-node" ]; };  # ×3 (.4 .6 .7)
+    # and openwrt-builder profile. Orbi tags: `mesh-gate` = RBR50 wired to
+    # a BPI-R4, `mesh-node` = RBS50 satellites. Planned (add when flashed):
+    #   ap-livingroom (10.0.0.3, orbi-rbr50, mesh-gate)
+    #   ap-kitchen (.4), ap-guestroom (.6): orbi-rbs50, mesh-node
     core-gateway = {
       ip = "10.0.0.1"; # Physical BPI-R4 (Main Gateway - Downstairs) — infra VLAN gateway
       type = "openwrt";
@@ -66,9 +64,8 @@ in
         "core"
       ];
     };
-    # Router fleet naming: role + location (ap-<location>); the single
-    # gateway is core-gateway. Future extenders: ap-garden, ap-barn, …
-    # (.6 in the .1–.9 network-layer range stays free for the next unit).
+    # Router fleet naming: role + location (ap-<location>); single gateway is core-gateway.
+    # Future extenders: ap-garden, ap-barn, … (.8–.9 stay free).
     ap-upstairs = {
       ip = "10.0.0.2"; # Physical BPI-R4 (wired-trunk AP — Upstairs)
       type = "openwrt";
@@ -76,6 +73,16 @@ in
       tags = [
         "physical"
         "ap"
+      ];
+    };
+    ap-attic = {
+      ip = "10.0.0.7"; # Netgear Orbi RBS50 v1 (802.11s mesh node — Attic)
+      type = "openwrt";
+      board = "orbi-rbs50";
+      tags = [
+        "physical"
+        "ap"
+        "mesh-node"
       ];
     };
     orin-nano = {
