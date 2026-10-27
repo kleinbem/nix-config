@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 69  
+**Declarations indexed:** 71  
 **Consumer files scanned:** 30
 
 ---
@@ -132,7 +132,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.comfyui`
 
-- **Declared:** `nix-presets/containers/comfyui.nix:12`
+- **Declared:** `nix-presets/containers/comfyui.nix:13`
 - **Sub-options:** `autoStart`, `enable`, `enableAudio`, `enableGPU`, `enableVideo`, `hostDataDir`, `ip`, `memoryLimit`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -192,7 +192,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.langflow`
 
-- **Declared:** `nix-presets/containers/langflow.nix:12`
+- **Declared:** `nix-presets/containers/langflow.nix:13`
 - **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -200,6 +200,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/langfuse.nix:17`
 - **Sub-options:** `autoStart`, `dbPasswordFile`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `secretsFile`
+- **Consumed by:** `host:nixos-nvme`
+
+### `my.containers.langgraph`
+
+- **Declared:** `nix-config/modules/nixos/containers/langgraph.nix:26`
+- **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.litellm`
@@ -317,12 +323,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `adminTokenFile`, `domain`, `enable`, `hostDataDir`, `invitationsAllowed`, `ip`, `memoryLimit`, `port`, `signupsAllowed`, `smtp`
 - **Consumed by:** `host:core-pi`
 
-### `my.containers.vllm`
-
-- **Declared:** `nix-presets/containers/vllm.nix:12`
-- **Sub-options:** `autoStart`, `device`, `enable`, `enableAudio`, `enableGPU`, `enforceEager`, `extraArgs`, `gpuMemoryUtilization`, `hostDataDir`, `image`, `ip`, `maxModelLen`, `memoryLimit`, `memorySwapMax`, `model`, `openvinoDevice`, `openvinoKvCacheSpace`, `quantization`, `secretsFile`
-- **Consumed by:** _(no opt-ins detected)_
-
 ## `my.dataDisk`
 
 ### `my.dataDisk`
@@ -422,6 +422,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ## `my.services`
 
+### `my.services.cloudflareTunnel`
+
+- **Declared:** `nix-config/modules/nixos/services/cloudflare-tunnel.nix:27`
+- **Sub-options:** `enable`
+- **Consumed by:** `host:core-pi`
+
 ### `my.services.meshLlm`
 
 - **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:30`
@@ -430,7 +436,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.services.printing`
 
-- **Declared:** `nix-config/modules/nixos/printing.nix:16`
+- **Declared:** `nix-config/modules/nixos/printing.nix:14`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -439,6 +445,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/services/rpi-eeprom.nix:13`
 - **Sub-options:** `autoApply`, `enable`, `schedule`
 - **Consumed by:** _(no opt-ins detected)_
+
+### `my.services.snapper`
+
+- **Declared:** `nix-config/modules/nixos/snapper.nix:12`
+- **Sub-options:** `enable`
+- **Consumed by:** `host:nixos-nvme`
 
 ### `my.services.tang`
 

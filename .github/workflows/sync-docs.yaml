@@ -97,7 +97,12 @@ jobs:
           # createCommitOnBranch: GitHub signs the commit (required_signatures).
           # expectedHeadOid makes it fail instead of clobbering a newer push.
           additions=$(for f in "${files[@]}"; do
-            git diff --quiet -- "$f" || jq -n --arg p "$f" --arg c "$(base64 -w0 "$f")" '{path: $p, contents: $c}'
+            if ! git diff --quiet -- "$f"; then
+              b64_file=$(mktemp)
+              base64 -w0 "$f" > "$b64_file"
+              jq -n --arg p "$f" --rawfile c "$b64_file" '{path: $p, contents: $c}'
+              rm -f "$b64_file"
+            fi
           done | jq -s .)
           jq -n --arg repo "$REPO" --arg branch "$BRANCH" --arg sha "$HEAD" --argjson add "$additions" \
             --arg query 'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \

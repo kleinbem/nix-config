@@ -255,9 +255,8 @@ let
       hostDataDir = dataDir "qbittorrent";
       downloadsDir = "/var/lib/factory/downloads";
     };
-    # OCI/podman containers (comfyui, vllm, langflow) are deliberately absent:
-    # they run via virtualisation.oci-containers, pull upstream images at
-    # runtime, and produce no `config.containers.<name>` closure to cache.
+    # Hybrid containers (comfyui, langflow) run Podman inside nspawn containers
+    # with runtime image pulling and produce no static factory closure to cache.
   };
 
   # Catalogue entries are keyed by my.containers.<option> name, but hosts
@@ -294,7 +293,6 @@ in
     inputs.nix-presets.nixosModules.comfyui
     inputs.nix-presets.nixosModules.langfuse
     inputs.nix-presets.nixosModules.langflow
-    inputs.nix-presets.nixosModules.vllm
     inputs.nix-presets.nixosModules.monitoring
     inputs.nix-presets.nixosModules.litellm
     inputs.nix-presets.nixosModules.loki

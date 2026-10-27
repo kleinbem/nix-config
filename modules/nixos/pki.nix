@@ -25,13 +25,13 @@ let
     ''
       if [ ! -f "${pkiDir}/certs/${name}.crt" ]; then
         echo "  Generating certificate for: ${name} (${ip})"
-        ${pkgs.openssl}/bin/openssl req -new -nodes \
+        ${lib.getExe pkgs.openssl} req -new -nodes \
           -keyout "${pkiDir}/certs/${name}.key" \
           -out "/tmp/pki-${name}.csr" \
           -subj "/CN=${name}/O=kleinbem" \
           -addext "subjectAltName=DNS:${name},DNS:${name}.local,IP:${ip}"
 
-        ${pkgs.openssl}/bin/openssl x509 -req \
+        ${lib.getExe pkgs.openssl} x509 -req \
           -in "/tmp/pki-${name}.csr" \
           -CA "${pkiDir}/ca.crt" \
           -CAkey "${pkiDir}/ca.key" \
@@ -51,10 +51,18 @@ let
 in
 {
   # Ensure PKI directory structure exists
-  systemd.tmpfiles.rules = [
-    "d ${pkiDir} 0755 root root - -"
-    "d ${pkiDir}/certs 0755 root root - -"
-  ];
+  systemd.tmpfiles.settings."10-internal-pki" = {
+    "${pkiDir}".d = {
+      mode = "0755";
+      user = "root";
+      group = "root";
+    };
+    "${pkiDir}/certs".d = {
+      mode = "0755";
+      user = "root";
+      group = "root";
+    };
+  };
 
   # One-shot service: generate CA + certs on first boot (idempotent)
   systemd.services.internal-pki = {
@@ -66,6 +74,11 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      ReadWritePaths = [ pkiDir ];
+      NoNewPrivileges = true;
     };
 
     path = [ pkgs.openssl ];

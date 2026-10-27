@@ -430,6 +430,17 @@ in
           description = "LLM telemetry and tracing. [AIRLOCK: Restricted Egress]";
         };
       };
+      langgraph = {
+        ip = "10.85.46.111";
+        port = 8123;
+        externalPort = 8123;
+        meta = {
+          name = "LangGraph";
+          category = "AI Engineering";
+          icon = "🕸️";
+          description = "Multi-agent graph runtime and API server. [AIRLOCK: Restricted Egress]";
+        };
+      };
       ollama-orin = {
         ip = "10.85.46.104";
         port = 11434;

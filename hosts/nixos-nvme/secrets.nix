@@ -157,9 +157,6 @@
       github_app_private_key = {
         owner = "martin";
       };
-      vllm_huggingface_token = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
       langfuse_public_key = {
         mode = "0444";
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
@@ -262,12 +259,6 @@
         content = ''
           LANGFUSE_PUBLIC_KEY=${config.sops.placeholder.langfuse_public_key}
           LANGFUSE_SECRET_KEY=${config.sops.placeholder.langfuse_secret_key}
-        '';
-      };
-      "vllm.env" = {
-        mode = "0444";
-        content = ''
-          HUGGING_FACE_HUB_TOKEN=${config.sops.placeholder.vllm_huggingface_token}
         '';
       };
       "buzz.env" = {

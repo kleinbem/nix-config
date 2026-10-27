@@ -79,13 +79,14 @@
 ### Declared but not currently enabled on any host
 
 - `alertmanager` — Alertmanager
-- `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:12]_
+- `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:13]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `ente-web` — Ente Auth Web
 - `garage` — Garage S3
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
-- `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:12]_
+- `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:13]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:17]_
+- `langgraph` — LangGraph
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
 - `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:24]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:15]_
@@ -95,6 +96,5 @@
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
 - `syncthing-orin` — Syncthing (Orin)
-- `vllm` _[src: nix-presets/containers/vllm.nix:12]_
 
 ## 🤖 AI Capabilities (MCP Tools)

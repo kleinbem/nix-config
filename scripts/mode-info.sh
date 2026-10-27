@@ -43,7 +43,7 @@ get_profile_tags() {
   n8n | code-server | authelia | github-runner)
     tags="${GREEN}WORK${NC}, ${MAGENTA}AI${NC}"
     ;;
-  ollama | open-webui | comfyui | langflow | langfuse | litellm | agent-team | agent-zero | qdrant | playground | openclaw | vllm* | netdata | loki | monitoring)
+  ollama | open-webui | comfyui | langflow | langfuse | litellm | agent-team | agent-zero | qdrant | playground | openclaw | netdata | loki | monitoring)
     tags="${MAGENTA}AI${NC}"
     ;;
   android*)

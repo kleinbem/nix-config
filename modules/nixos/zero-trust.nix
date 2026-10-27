@@ -67,6 +67,12 @@ let
     }
     {
       src = inv.nodes.caddy.ip;
+      dst = inv.nodes.langgraph.ip;
+      dport = 8123;
+      comment = "Caddy -> LangGraph";
+    }
+    {
+      src = inv.nodes.caddy.ip;
       dst = inv.nodes.litellm.ip;
       dport = 443;
       comment = "Caddy -> LiteLLM (mTLS)";

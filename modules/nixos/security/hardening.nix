@@ -69,10 +69,18 @@ in
   # Lynis ACCT-9622: BSD process accounting. NixOS has no module for it.
   environment.systemPackages = [ pkgs.acct ];
   systemd = {
-    tmpfiles.rules = [
-      "d /var/account 0700 root root - -"
-      "f /var/account/pacct 0600 root root - -"
-    ];
+    tmpfiles.settings."10-process-accounting" = {
+      "/var/account".d = {
+        mode = "0700";
+        user = "root";
+        group = "root";
+      };
+      "/var/account/pacct".f = {
+        mode = "0600";
+        user = "root";
+        group = "root";
+      };
+    };
 
     services = {
       acct = {
@@ -82,8 +90,8 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          ExecStart = "${pkgs.acct}/bin/accton /var/account/pacct";
-          ExecStop = "${pkgs.acct}/bin/accton off";
+          ExecStart = "${lib.getExe' pkgs.acct "accton"} /var/account/pacct";
+          ExecStop = "${lib.getExe' pkgs.acct "accton"} off";
         };
       };
 

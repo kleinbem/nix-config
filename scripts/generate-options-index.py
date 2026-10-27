@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _nix_options import (
     CONSUMER_DIRS,
     MODULE_DIRS,
+    NIX_CONFIG,
     REPO,
     Declaration,
     consumer_label,
@@ -28,9 +29,9 @@ from _nix_options import (
     relpath,
 )
 
-HOSTS_DIR = REPO / "nix-config/hosts"
+HOSTS_DIR = NIX_CONFIG / "hosts"
 
-OUTPUT = REPO / "nix-config/docs/OPTIONS.md"
+OUTPUT = NIX_CONFIG / "docs/OPTIONS.md"
 
 
 def main() -> int:
@@ -91,7 +92,11 @@ def main() -> int:
                 for e in extract_imports_in_file(cur):
                     if e.kind == "module":
                         # e.label looks like "modules/nixos/foo.nix" relative to nix-config
-                        candidate = REPO / "nix-config" / e.label
+                        candidate = (
+                            NIX_CONFIG / e.label
+                            if (NIX_CONFIG / e.label).exists()
+                            else REPO / "nix-config" / e.label
+                        )
                         if candidate.exists():
                             module_to_hosts[candidate].add(host_dir.name)
                             queue.append(candidate)

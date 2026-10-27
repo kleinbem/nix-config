@@ -16,23 +16,32 @@ in
     enable = lib.mkEnableOption "a declarative LUKS+btrfs data disk";
     device = lib.mkOption {
       type = lib.types.str;
+      example = "/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_S7DNNJ0W123456";
       description = "Stable by-id path to the physical disk.";
     };
     cryptName = lib.mkOption {
       type = lib.types.str;
       default = "cryptdata";
+      example = "cryptdata";
+      description = "Mapped LUKS device name under /dev/mapper/.";
     };
     label = lib.mkOption {
       type = lib.types.str;
       default = "data";
+      example = "data";
+      description = "Filesystem label for the formatted btrfs volume.";
     };
     mountpoint = lib.mkOption {
       type = lib.types.str;
       default = "/mnt/data";
+      example = "/mnt/data";
+      description = "Target filesystem directory mountpoint.";
     };
     crypttabExtraOpts = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ "fido2-device=auto" ];
+      example = [ "fido2-device=auto" ];
+      description = "Additional options passed to crypttab/initrd for LUKS unlock.";
     };
     # A host with no FIDO2 unlock path (nasbook) should point this at a
     # path embedded into initrd via boot.initrd.secrets instead — same
@@ -43,6 +52,8 @@ in
     keyFilePath = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
+      example = "/etc/secrets/initrd/data-disk.key";
+      description = "Path to an initrd-embedded keyfile for non-interactive LUKS unlock.";
     };
   };
 

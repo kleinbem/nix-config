@@ -549,7 +549,6 @@ def build_home_manager_catalog(nix_config: Path) -> dict[str, Any]:
         "ai-agents.nix": "Local AI agent CLI tools (Claude Code, Antigravity, Aider, OpenClaw).",
         "dev.nix": "Developer tools, Git, compilers, direnv, shells.",
         "syncthing.nix": "User-level Syncthing tray / synchronization daemon.",
-        "anyrun.nix": "Wayland application launcher.",
         "security.nix": "GPG / SSH agent configuration.",
     }
 

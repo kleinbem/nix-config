@@ -5,41 +5,45 @@
   ...
 }:
 
-with lib;
-
 let
   cfg = config.services.langfuse;
 in
 {
   options.services.langfuse = {
-    enable = mkEnableOption "Langfuse server";
+    enable = lib.mkEnableOption "Langfuse server";
 
-    package = mkOption {
-      type = types.package;
-      default = pkgs.langfuse; # Will be provided by overlay
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.langfuse;
       description = "The Langfuse package to use.";
     };
 
-    user = mkOption {
-      type = types.str;
+    user = lib.mkOption {
+      type = lib.types.str;
       default = "langfuse";
       description = "User account under which Langfuse runs.";
     };
 
-    group = mkOption {
-      type = types.str;
+    group = lib.mkOption {
+      type = lib.types.str;
       default = "langfuse";
       description = "Group account under which Langfuse runs.";
     };
 
-    port = mkOption {
-      type = types.port;
+    port = lib.mkOption {
+      type = lib.types.port;
       default = 3000;
       description = "Port to listen on.";
     };
 
-    environmentFile = mkOption {
-      type = types.nullOr types.path;
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to start the Langfuse systemd services automatically at boot.";
+    };
+
+    environmentFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
       default = null;
       description = ''
         File containing environment variables for Langfuse.
@@ -48,16 +52,16 @@ in
     };
 
     clickhouse = {
-      enable = mkEnableOption "Clickhouse support for Langfuse";
-      address = mkOption {
-        type = types.str;
+      enable = lib.mkEnableOption "Clickhouse support for Langfuse";
+      address = lib.mkOption {
+        type = lib.types.str;
         default = "127.0.0.1";
         description = "Clickhouse server address.";
       };
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     users.users."${cfg.user}" = {
       isSystemUser = true;
       inherit (cfg) group;
@@ -73,7 +77,7 @@ in
         "network.target"
         "postgresql.service"
       ];
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = lib.mkIf cfg.autoStart [ "multi-user.target" ];
 
       environment = {
         PORT = toString cfg.port;
@@ -85,7 +89,7 @@ in
         User = cfg.user;
         Group = cfg.group;
         EnvironmentFile = cfg.environmentFile;
-        ExecStart = "${cfg.package}/bin/langfuse-web";
+        ExecStart = lib.getExe' cfg.package "langfuse-web";
         Restart = "always";
         StateDirectory = "langfuse";
         WorkingDirectory = "/var/lib/langfuse";
@@ -104,7 +108,7 @@ in
         "postgresql.service"
         "langfuse.service"
       ];
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = lib.mkIf cfg.autoStart [ "multi-user.target" ];
 
       environment = {
         NODE_ENV = "production";
@@ -114,7 +118,7 @@ in
         User = cfg.user;
         Group = cfg.group;
         EnvironmentFile = cfg.environmentFile;
-        ExecStart = "${cfg.package}/bin/langfuse-worker";
+        ExecStart = lib.getExe' cfg.package "langfuse-worker";
         Restart = "always";
         WorkingDirectory = "/var/lib/langfuse";
 
@@ -126,7 +130,7 @@ in
     };
 
     # Optional Clickhouse local instance if enabled (common for small setups)
-    services.clickhouse = mkIf cfg.clickhouse.enable {
+    services.clickhouse = lib.mkIf cfg.clickhouse.enable {
       enable = true;
     };
   };

@@ -61,12 +61,12 @@ in
           script = ''
             # Wait a moment for the daemon to fully settle
             sleep 2
-            STATUS=$(${pkgs.netbird}/bin/netbird status 2>&1 || true)
+            STATUS=$(${lib.getExe pkgs.netbird} status 2>&1 || true)
             if echo "$STATUS" | grep -iq "NeedsLogin"; then
               echo "NetBird needs login. Attempting to join with setup key..."
               KEY_PATH="${config.sops.secrets.netbird_setup_key.path}"
               if [ -f "$KEY_PATH" ]; then
-                if ! ${pkgs.netbird}/bin/netbird up --setup-key "$(cat "$KEY_PATH")"${sshServerFlag}; then
+                if ! ${lib.getExe pkgs.netbird} up --setup-key "$(cat "$KEY_PATH")"${sshServerFlag}; then
                   echo "Warning: Failed to authenticate NetBird daemon. You may need to manually log in."
                 fi
               else

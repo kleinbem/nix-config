@@ -329,6 +329,7 @@ hosts:
       - enable
       - serverIp
       services:
+      - cloudflareTunnel.enable
       - tang.enable
     containers_hosted:
     - attic
@@ -867,6 +868,11 @@ hosts:
       - langfuse.hostDataDir
       - langfuse.ip
       - langfuse.secretsFile
+      - langgraph
+      - langgraph.autoStart
+      - langgraph.enable
+      - langgraph.hostDataDir
+      - langgraph.ip
       - litellm
       - litellm.autoStart
       - litellm.backends
@@ -978,6 +984,7 @@ hosts:
       - meshLlm.enable
       - meshLlm.models
       - printing.enable
+      - snapper.enable
       - tang.enable
       - threeDPrinting.enable
       virtualisation:
@@ -1559,6 +1566,20 @@ services:
     upstream_preset: nix-presets/containers/langfuse.nix
     persistence_path: /var/lib/machines/langfuse
     description: 'LLM telemetry and tracing. [AIRLOCK: Restricted Egress]'
+  langgraph:
+    name: LangGraph
+    category: AI Engineering
+    host: nixos-nvme
+    ip: 10.85.46.111
+    port: 8123
+    external_port: 8123
+    domain: null
+    public: false
+    auth: Default
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/langgraph
+    description: 'Multi-agent graph runtime and API server. [AIRLOCK: Restricted Egress]'
   litellm:
     name: LiteLLM Gateway
     category: AI
@@ -1984,7 +2005,8 @@ modules_system:
   snapper.nix:
     file: nix-config/modules/nixos/snapper.nix
     purpose: NixOS system module.
-    declared_options: []
+    declared_options:
+    - my.services.snapper
   threed-printing.nix:
     file: nix-config/modules/nixos/threed-printing.nix
     purpose: NixOS system module.
@@ -2019,9 +2041,6 @@ modules_user:
     android.nix:
       file: nix-config/modules/home-manager/android.nix
       purpose: Home-Manager user module.
-    anyrun.nix:
-      file: nix-config/modules/home-manager/anyrun.nix
-      purpose: Wayland application launcher.
     default.nix:
       file: nix-config/modules/home-manager/default.nix
       purpose: Home-Manager user module.

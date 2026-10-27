@@ -21,13 +21,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _nix_options import (
+    NIX_CONFIG,
     REPO,
     extract_imports_in_file,
     relpath,
 )
 
-HOSTS_DIR = REPO / "nix-config/hosts"
-OUTPUT = REPO / "nix-config/docs/IMPORTS.md"
+HOSTS_DIR = NIX_CONFIG / "hosts"
+OUTPUT = NIX_CONFIG / "docs/IMPORTS.md"
 
 # Order in which to render kind buckets per host. Stable for grep.
 KIND_ORDER = ["module", "preset", "hardware", "user", "other", "local"]

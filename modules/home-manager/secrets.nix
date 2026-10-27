@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   inputs,
   config,
   secretFile,
@@ -19,11 +20,11 @@
     package =
       pkgs.runCommand "sops-with-plugins"
         {
-          nativeBuildInputs = [ pkgs.makeWrapper ];
+          nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
         }
         ''
           mkdir -p $out/bin
-          makeWrapper ${pkgs.sops}/bin/sops $out/bin/sops \
+          makeWrapper ${lib.getExe pkgs.sops} $out/bin/sops \
             --prefix PATH : "${pkgs.age-plugin-yubikey}/bin:${pkgs.age-plugin-tpm}/bin"
           makeWrapper ${
             inputs.sops-nix.packages.${pkgs.stdenv.hostPlatform.system}.sops-install-secrets
