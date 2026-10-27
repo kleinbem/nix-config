@@ -55,18 +55,18 @@ in
     # (LXC "brain" containers router-1/.3, router-2/.4, net-brain/.7 removed
     # 2026-07-18 — never deployed; every planned tenant lives on the fleet.
     # ap-upstairs keeps the lxc-host capability if a network-layer need
-    # ever materializes. .3/.4/.7 are free.)
+    # ever materializes. .3/.4/.6/.7 now go to the Orbi APs below.)
     # `board` selects the Ansible board group (openwrt-config group_vars/
     # board_<board>.yml: interface names, Wi-Fi modes, port map) and the
     # openwrt-builder profile family. Known boards: bpi-r4, orbi-rbr50,
     # orbi-rbs50 (the Netgear Orbi v1 units, APs only, once the R4s route).
     # Orbi topology tags: `mesh-gate` = the one unit wired to a BPI-R4 (the
     # RBR50), `mesh-node` = free-standing satellites on the 802.11s backhaul
-    # (the three RBS50). Planned entries, add when flashed:
-    #   ap-<location> = { ip = "10.0.0.3"; type = "openwrt"; board = "orbi-rbr50";
+    # (the three RBS50). Names + host keys exist already (kleinbem-secrets
+    # openwrt/per-device, openwrt-config known_hosts); add each when flashed:
+    #   ap-livingroom = { ip = "10.0.0.3"; type = "openwrt"; board = "orbi-rbr50";
     #                     tags = [ "physical" "ap" "mesh-gate" ]; };
-    #   ap-<location> = { ip = "10.0.0.4"; type = "openwrt"; board = "orbi-rbs50";
-    #                     tags = [ "physical" "ap" "mesh-node" ]; };  # ×3 (.4 .6 .7)
+    #   ap-kitchen (.4), ap-guestroom (.6): board = "orbi-rbs50", tag "mesh-node"
     core-gateway = {
       ip = "10.0.0.1"; # Physical BPI-R4 (Main Gateway - Downstairs) — infra VLAN gateway
       type = "openwrt";
@@ -79,7 +79,7 @@ in
     };
     # Router fleet naming: role + location (ap-<location>); the single
     # gateway is core-gateway. Future extenders: ap-garden, ap-barn, …
-    # (.6 in the .1–.9 network-layer range stays free for the next unit).
+    # (.8–.9 in the .1–.9 network-layer range stay free for the next unit).
     ap-upstairs = {
       ip = "10.0.0.2"; # Physical BPI-R4 (wired-trunk AP — Upstairs)
       type = "openwrt";
@@ -87,6 +87,16 @@ in
       tags = [
         "physical"
         "ap"
+      ];
+    };
+    ap-attic = {
+      ip = "10.0.0.7"; # Netgear Orbi RBS50 v1 (802.11s mesh node — Attic)
+      type = "openwrt";
+      board = "orbi-rbs50";
+      tags = [
+        "physical"
+        "ap"
+        "mesh-node"
       ];
     };
     orin-nano = {
