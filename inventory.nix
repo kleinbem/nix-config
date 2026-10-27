@@ -890,6 +890,20 @@ in
           description = "Headless torrent downloader with WebUI.";
         };
       };
+      miniflux = {
+        ip = "10.85.47.135"; # nasbook subnet
+        port = 8080;
+        externalPort = 443;
+        domain = "news.kleinbem.dev";
+        public = true;
+        auth = false; # Miniflux provides its own user authentication & API keys
+        meta = {
+          name = "Miniflux";
+          category = "Media";
+          icon = "📰";
+          description = "Minimalist and opinionated feed reader.";
+        };
+      };
     };
   };
 }

@@ -148,6 +148,7 @@ in
         papers # Modern Document/PDF Viewer (Successor to Evince)
         kdePackages.okular # PDF annotation/form-filling (native Wayland, KDE)
         mission-center # Advanced System Monitoring (Pro Task Manager)
+        newsflash # Modern feed reader (GTK4 / Libadwaita)
         fragments # Elegant BitTorrent client
         snapshot # Camera
         baobab # Disk Usage

@@ -302,52 +302,54 @@ in
   # Redirect nix builds to the persistent SSD to avoid filling the 2GB tmpfs root.
   # Kernel compilation requires ~15GB of temporary space.
   systemd = {
-    services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
+    services = {
+      nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
 
-    # Prevent the initrd /run/bootpart mount from keeping /dev/nvme0n1p1 mounted read-only,
-    # which causes the kernel to force /boot to also be mounted read-only.
-    services.cleanup-bootpart = {
-      description = "Unmount leftover initrd boot partition before mounting /boot";
-      wantedBy = [ "local-fs.target" ];
-      before = [
-        "boot.mount"
-        "local-fs.target"
-      ];
-      unitConfig.DefaultDependencies = false;
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "cleanup-bootpart" ''
-          if ${pkgs.util-linux}/bin/findmnt -M /run/bootpart >/dev/null 2>&1; then
-            echo "Unmounting leftover initrd mount at /run/bootpart..."
-            ${pkgs.util-linux}/bin/umount /run/bootpart || true
+      # Prevent the initrd /run/bootpart mount from keeping /dev/nvme0n1p1 mounted read-only,
+      # which causes the kernel to force /boot to also be mounted read-only.
+      cleanup-bootpart = {
+        description = "Unmount leftover initrd boot partition before mounting /boot";
+        wantedBy = [ "local-fs.target" ];
+        before = [
+          "boot.mount"
+          "local-fs.target"
+        ];
+        unitConfig.DefaultDependencies = false;
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "cleanup-bootpart" ''
+            if ${pkgs.util-linux}/bin/findmnt -M /run/bootpart >/dev/null 2>&1; then
+              echo "Unmounting leftover initrd mount at /run/bootpart..."
+              ${pkgs.util-linux}/bin/umount /run/bootpart || true
+            fi
+            if [ -d /boot ] && ${pkgs.util-linux}/bin/findmnt -O ro /boot >/dev/null 2>&1; then
+              echo "Remounting /boot as read-write..."
+              ${pkgs.util-linux}/bin/mount -o remount,rw /boot || true
+            fi
+          '';
+        };
+      };
+
+      # Stage the host-local initrd SSH key on the root-only boot partition,
+      # where initrd-ssh-hostkey picks it up on the next boot.
+      stage-initrd-ssh-hostkey = {
+        description = "Stage the initrd SSH host key on the boot partition";
+        wantedBy = [ "multi-user.target" ];
+        unitConfig.RequiresMountsFor = [
+          "/boot"
+          config.my.hostSecrets.dir
+        ];
+        serviceConfig.Type = "oneshot";
+        script = ''
+          src=${config.my.hostSecrets.initrdSshKey}
+          if [ ! -f "$src" ]; then
+            echo "$src is missing; generate it with: just access::host-keygen ${hostName}" >&2
+            exit 1
           fi
-          if [ -d /boot ] && ${pkgs.util-linux}/bin/findmnt -O ro /boot >/dev/null 2>&1; then
-            echo "Remounting /boot as read-write..."
-            ${pkgs.util-linux}/bin/mount -o remount,rw /boot || true
-          fi
+          install -D -m 0600 "$src" /boot/initrd-secrets/ssh_host_ed25519_key
         '';
       };
-    };
-
-    # Stage the host-local initrd SSH key on the root-only boot partition,
-    # where initrd-ssh-hostkey picks it up on the next boot.
-    services.stage-initrd-ssh-hostkey = {
-      description = "Stage the initrd SSH host key on the boot partition";
-      wantedBy = [ "multi-user.target" ];
-      unitConfig.RequiresMountsFor = [
-        "/boot"
-        config.my.hostSecrets.dir
-      ];
-      serviceConfig.Type = "oneshot";
-      script = ''
-        src=${config.my.hostSecrets.initrdSshKey}
-        if [ ! -f "$src" ]; then
-          echo "$src is missing; generate it with: just access::host-keygen ${hostName}" >&2
-          exit 1
-        fi
-        install -D -m 0600 "$src" /boot/initrd-secrets/ssh_host_ed25519_key
-      '';
     };
     tmpfiles.rules = [
       "d /nix/persist/tmp/nix-builds 1777 root root 7d"

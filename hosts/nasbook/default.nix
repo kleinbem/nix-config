@@ -43,6 +43,7 @@ in
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.herdr-remote-client
     inputs.nix-presets.nixosModules.qbittorrent
+    inputs.nix-presets.nixosModules.miniflux
 
     # Needs SOPS to unlock the secrets below
     ./secrets.nix
@@ -209,6 +210,12 @@ in
         hostDataDir = "/var/lib/images/qbittorrent";
         downloadsDir = "/mnt/data/Downloads";
       };
+
+      miniflux = {
+        enable = true;
+        ip = "${myInventory.network.nodes.miniflux.ip}/24";
+        hostDataDir = "/var/lib/images/miniflux";
+      };
     };
     monitoring.node.enable = true;
   };
@@ -221,6 +228,7 @@ in
       "d /var/lib/images/monitoring 0755 root root - -"
       "d /var/lib/images/qdrant 0755 root root - -"
       "d /var/lib/images/syncthing 0755 root root - -"
+      "d /var/lib/images/miniflux 0755 root root - -"
       "d /mnt/data/Archive 0755 martin users - -"
       "d /mnt/data/Archive/Inbox 0755 martin users - -"
       "d /mnt/data/Archive/Paperless 0755 root root - -"
