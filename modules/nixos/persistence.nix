@@ -40,7 +40,8 @@
       "/var/account" # Process accounting logs (Lynis/Security Audit)
       "/var/lib/systemd/backlight" # Screen brightness
       "/var/lib/systemd/rfkill" # Airplane mode state
-      "/var/lib/systemd/timesync" # NTP drift for faster syncing
+      "/var/lib/systemd/timesync" # NTP drift for faster syncing (timesyncd legacy)
+      "/var/lib/chrony" # Chrony drift and RTC calibration data
       "/var/lib/udisks2" # Storage daemon state
       "/var/lib/upower" # Power management history
       "/var/lib/logrotate" # Log rotation state
