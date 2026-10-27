@@ -544,9 +544,9 @@ orin-update-usb device="/dev/sdb":
 
 
 [group("Provisioning")]
-[doc("(Re)bind a host's Tang-wrapped LUKS passphrase (kleinbem-secrets/initrd/cryptroot_<host>.jwe) to every other host's Tang server from inventory.nix. Re-wraps the current JWE content when it still decrypts; otherwise prompts for the LUKS passphrase.")]
-generate-jwe host:
-    @bash scripts/generate-jwe.sh {{host}}
+[doc("(Re)bind a host's Tang-wrapped LUKS passphrase (kleinbem-secrets/initrd/cryptroot_<host>.jwe) to every other host's Tang server from inventory.nix. Re-wraps the current JWE content when it still decrypts; otherwise, or with --new-passphrase, prompts for the LUKS passphrase.")]
+generate-jwe host *flags:
+    @bash scripts/generate-jwe.sh {{host}} {{flags}}
 
 [group("Provisioning")]
 [doc("Check every host's Tang JWE is bound to exactly the servers inventory.nix asks for (reads headers only).")]
