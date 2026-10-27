@@ -15,7 +15,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `container-factory`
 
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`, `nix-presets:vllm`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:frigate`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:monitoring`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`
 - **Local:** `../../modules/nixos/options.nix`
 
 ### `core-pi`
@@ -49,7 +49,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/vault-anythingllm-sync.nix`, `modules/nixos/workstation.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/containers/langgraph.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/vault-anythingllm-sync.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
@@ -100,6 +100,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/audit.nix` ← orin-nano
 - `modules/nixos/base.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/clevis-initrd.nix` ← mac-mini, nasbook, orin-nano
+- `modules/nixos/containers/langgraph.nix` ← nixos-nvme
 - `modules/nixos/data-disk.nix` ← nasbook, nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/desktop.nix` ← mac-mini
@@ -170,6 +171,5 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:stalwart` ← container-factory, mac-mini
 - `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
 - `nix-presets:vaultwarden` ← container-factory, core-pi
-- `nix-presets:vllm` ← container-factory
 - `user:dhirujaan` ← nixos-nvme
 - `user:martin` ← mac-mini, nixos-nvme, orin-nano

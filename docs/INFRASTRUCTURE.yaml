@@ -21,111 +21,7 @@ invariants:
   vcs_and_multi_agent: Jujutsu (jj) is the primary VCS, colocated with git. When multiple agents work concurrently, each MUST
     claim a dedicated workspace via `just jj::ws-new <repo> [name]` to prevent working copy conflicts. When no YubiKey is
     plugged in, use plain git to avoid signed commit failures.
-repo_atlas:
-  .github:
-    path: .github/
-    url: git@github.com:kleinbem/.github.git
-    role: Organization-wide GitHub Actions workflows and issue templates.
-  actions:
-    path: actions/
-    url: git@github.com:kleinbem/actions.git
-    role: Supporting repository.
-  android-config:
-    path: android-config/
-    url: git@github.com:kleinbem/android-config.git
-    role: Supporting repository.
-  aur-packages:
-    path: aur-packages/
-    url: git@github.com:kleinbem/aur-packages.git
-    role: Supporting repository.
-  chrome-open-in-app:
-    path: chrome-open-in-app/
-    url: git@github.com:kleinbem/chrome-open-in-app.git
-    role: Supporting repository.
-  github-config:
-    path: github-config/
-    url: git@github.com:kleinbem/github-config.git
-    role: OpenTofu-managed GitHub organization settings, repositories, and rulesets.
-  jj-toolbox:
-    path: jj-toolbox/
-    url: git@github.com:kleinbem/jj-toolbox.git
-    role: Standalone Jujutsu helper scripts (jj-save, jj-push, jj-pull, jj-sign-unsigned).
-  kleinbem:
-    path: kleinbem/
-    url: git@github.com:kleinbem/kleinbem.git
-    role: Fleet hub & orchestrator. Owns repos.nix, shared .just modules, and jj-fleet dashboard.
-  kleinbem-auth:
-    path: kleinbem-auth/
-    url: git@github.com:kleinbem/kleinbem-auth.git
-    role: Visitor login and authentication service.
-  kleinbem-secrets:
-    path: kleinbem-secrets/
-    url: git@github.com:kleinbem/kleinbem-secrets.git
-    role: Central sops+age encrypted secrets repository with per-path scoped access.
-  kleinbem-site:
-    path: kleinbem-site/
-    url: git@github.com:kleinbem/kleinbem-site.git
-    role: kleinbem.dev personal portfolio website.
-  mesh-llm-ci:
-    path: mesh-llm-ci/
-    url: git@github.com:kleinbem/mesh-llm-ci.git
-    role: Supporting repository.
-  mesh-llm-gpu:
-    path: mesh-llm-gpu/
-    url: git@github.com:kleinbem/mesh-llm-gpu.git
-    role: Supporting repository.
-  nix:
-    path: nix/
-    url: git@github.com:kleinbem/nix.git
-    role: Conductor for NixOS side. Houses live OpenTofu/Terraform IaC roots (Cloudflare, NetBird, Garage S3, Authentik).
-  nix-config:
-    path: nix-config/
-    url: git@github.com:kleinbem/nix-config.git
-    role: Primary NixOS consumer flake. Owns hosts, users, system & HM modules, inventory, PKI, and docs.
-  nix-devshells:
-    path: nix-devshells/
-    url: git@github.com:kleinbem/nix-devshells.git
-    role: 'Developer shells provided via direnv: workspace (just, jj, gh, sops, age), openwrt, etc.'
-  nix-gantry:
-    path: nix-gantry/
-    url: git@github.com:kleinbem/nix-gantry.git
-    role: Continuous deployment engine and automatic updater.
-  nix-hardware:
-    path: nix-hardware/
-    url: git@github.com:kleinbem/nix-hardware.git
-    role: 'Custom hardware flakes: nixos-nvme (Intel Core), orin-nano (Jetson Tegra/CUDA), rpi5, lxc-guest.'
-  nix-packages:
-    path: nix-packages/
-    url: git@github.com:kleinbem/nix-packages.git
-    role: 'Custom packages and overlays: antigravity, buzz-desktop, langfuse, oh-my-pi, ricoh-driver.'
-  nix-presets:
-    path: nix-presets/
-    url: git@github.com:kleinbem/nix-presets.git
-    role: 'Shared service and desktop bundles: 30+ container definitions, backup-engine, desktop, terminal, herdr.'
-  nix-templates:
-    path: nix-templates/
-    url: git@github.com:kleinbem/nix-templates.git
-    role: Flake templates for new services, modules, and projects.
-  nix-toolbox:
-    path: nix-toolbox/
-    url: git@github.com:kleinbem/nix-toolbox.git
-    role: Generic Nix flake dev tools (nix-check-versions, nix-audit-deps, bash-test-lib).
-  openwrt:
-    path: openwrt/
-    url: git@github.com:kleinbem/openwrt.git
-    role: Conductor for router side.
-  openwrt-builder:
-    path: openwrt-builder/
-    url: git@github.com:kleinbem/openwrt-builder.git
-    role: Firmware image generator for BPI-R4 routers.
-  openwrt-config:
-    path: openwrt-config/
-    url: git@github.com:kleinbem/openwrt-config.git
-    role: Runtime router configuration via Ansible (inventory.ini is generated from inventory.nix).
-  skills:
-    path: skills/
-    url: git@github.com:kleinbem/skills.git
-    role: Supporting repository.
+repo_atlas: {}
 network_topology:
   primary_domain: kleinbem.dev
   global_maintenance: false
@@ -329,6 +225,7 @@ hosts:
       - enable
       - serverIp
       services:
+      - cloudflareTunnel.enable
       - tang.enable
     containers_hosted:
     - attic
@@ -867,6 +764,11 @@ hosts:
       - langfuse.hostDataDir
       - langfuse.ip
       - langfuse.secretsFile
+      - langgraph
+      - langgraph.autoStart
+      - langgraph.enable
+      - langgraph.hostDataDir
+      - langgraph.ip
       - litellm
       - litellm.autoStart
       - litellm.backends
@@ -978,6 +880,7 @@ hosts:
       - meshLlm.enable
       - meshLlm.models
       - printing.enable
+      - snapper.enable
       - tang.enable
       - threeDPrinting.enable
       virtualisation:
@@ -1205,7 +1108,7 @@ services:
     public: false
     auth: Default
     mtls: true
-    upstream_preset: nix-presets/containers/agent-team.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/agent-team
     description: 'Enterprise Role-Based Agent Team (CrewAI). [AIRLOCK: Restricted Egress]'
   agent-zero:
@@ -1219,7 +1122,7 @@ services:
     public: false
     auth: Default
     mtls: true
-    upstream_preset: nix-presets/containers/agent-zero.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/agent-zero
     description: 'Autonomous AI agent framework. [AIRLOCK: Restricted Egress]'
   alertmanager:
@@ -1247,7 +1150,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/anythingllm.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/anythingllm
     description: All-in-one AI workspace and document orchestrator.
   attic:
@@ -1261,7 +1164,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/attic.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/attic
     description: Nix binary cache server.
   authentik:
@@ -1275,7 +1178,7 @@ services:
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/authentik.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/authentik
     description: Shared identity provider (SSO, social login, persona OIDC).
   backup:
@@ -1289,7 +1192,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/backup.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/backup
     description: Daily system backup container.
   buzz:
@@ -1303,7 +1206,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/buzz.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/buzz
     description: 'Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted
       Egress]'
@@ -1318,7 +1221,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/caddy/default.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/caddy
     description: Reverse Proxy & SSL Termination.
   caido:
@@ -1332,7 +1235,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/caido.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/caido
     description: Headless web security proxy & auditing daemon.
   code-server:
@@ -1346,7 +1249,7 @@ services:
     public: false
     auth: Cloudflare Access / SSO
     mtls: false
-    upstream_preset: nix-presets/containers/code-server.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/code-server
     description: VS Code IDE in a hardened core container.
   comfyui:
@@ -1360,7 +1263,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/comfyui.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/comfyui
     description: 'Advanced Visual Generation. [AIRLOCK: Restricted Egress]'
   crowdsec:
@@ -1374,7 +1277,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/crowdsec.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/crowdsec
     description: Intrusion detection & IP reputation engine.
   cups:
@@ -1388,7 +1291,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/cups.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/cups
     description: Print server management (Containerized).
   dashboard:
@@ -1416,7 +1319,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/dev-db.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/dev-db
     description: Shared PostgreSQL 17 & Redis instance for devshells.
   ente:
@@ -1430,7 +1333,7 @@ services:
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/ente.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/ente
     description: E2E Encrypted 2FA Backend API.
   ente-web:
@@ -1458,7 +1361,7 @@ services:
     public: false
     auth: Cloudflare Access / SSO
     mtls: false
-    upstream_preset: nix-presets/containers/frigate.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/frigate
     description: NVR with AI object detection (NVIDIA TensorRT).
   garage:
@@ -1486,7 +1389,7 @@ services:
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/gatus.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/gatus
     description: Fleet uptime / status page.
   github-runner:
@@ -1500,7 +1403,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/github-runner.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/github-runner
     description: Isolated CI/CD Runner.
   hermes:
@@ -1514,7 +1417,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/hermes.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/hermes
     description: 'Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress]'
   home-assistant:
@@ -1528,7 +1431,7 @@ services:
     public: false
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/home-assistant.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/home-assistant
     description: Smart Home Automation.
   langflow:
@@ -1542,7 +1445,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/langflow.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/langflow
     description: 'Visual AI Agent Designer. [AIRLOCK: Restricted Egress]'
   langfuse:
@@ -1556,9 +1459,23 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/langfuse.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/langfuse
     description: 'LLM telemetry and tracing. [AIRLOCK: Restricted Egress]'
+  langgraph:
+    name: LangGraph
+    category: AI Engineering
+    host: nixos-nvme
+    ip: 10.85.46.111
+    port: 8123
+    external_port: 8123
+    domain: null
+    public: false
+    auth: Default
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/langgraph
+    description: 'Multi-agent graph runtime and API server. [AIRLOCK: Restricted Egress]'
   litellm:
     name: LiteLLM Gateway
     category: AI
@@ -1570,7 +1487,7 @@ services:
     public: false
     auth: Default
     mtls: true
-    upstream_preset: nix-presets/containers/litellm.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/litellm
     description: 'Unified AI API Gateway & Proxy. [AIRLOCK: Restricted Egress]'
   loki:
@@ -1584,7 +1501,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/loki.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/loki
     description: Centralized Log Aggregator.
   monitoring:
@@ -1598,7 +1515,7 @@ services:
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/monitoring.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/monitoring
     description: VictoriaMetrics + Grafana Stack.
   n8n:
@@ -1612,7 +1529,7 @@ services:
     public: true
     auth: Cloudflare Access / SSO
     mtls: true
-    upstream_preset: nix-presets/containers/n8n.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/n8n
     description: Workflow automation engine.
   netdata:
@@ -1626,7 +1543,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/netdata.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/netdata
     description: Real-time per-second telemetry.
   ntfy:
@@ -1640,7 +1557,7 @@ services:
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/ntfy.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/ntfy
     description: Pub/sub notifications — fleet deploy signal from CI.
   ollama:
@@ -1654,7 +1571,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/ollama.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/ollama
     description: Native Ollama Inference Engine.
   ollama-orin:
@@ -1682,7 +1599,7 @@ services:
     public: true
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/open-webui.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/open-webui
     description: AI Chat interface via Ollama.
   openclaw:
@@ -1696,7 +1613,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/openclaw.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/openclaw
     description: Dedicated agent framework.
   paperless:
@@ -1710,7 +1627,7 @@ services:
     public: false
     auth: Cloudflare Access / SSO
     mtls: false
-    upstream_preset: nix-presets/containers/paperless.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/paperless
     description: Document management system with OCR.
   playground:
@@ -1724,7 +1641,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/playground.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/playground
     description: Dev sandbox (Shell/SSH Access Only).
   qbittorrent:
@@ -1738,7 +1655,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/qbittorrent.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/qbittorrent
     description: Headless torrent downloader with WebUI.
   qdrant:
@@ -1752,7 +1669,7 @@ services:
     public: false
     auth: Default
     mtls: true
-    upstream_preset: nix-presets/containers/qdrant.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/qdrant
     description: Vector database for AI context.
   stalwart:
@@ -1766,7 +1683,7 @@ services:
     public: false
     auth: Default
     mtls: false
-    upstream_preset: nix-presets/containers/stalwart.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/stalwart
     description: Persona-fleet mail server (SMTP/IMAP/JMAP).
   syncthing:
@@ -1780,7 +1697,7 @@ services:
     public: false
     auth: Cloudflare Access / SSO
     mtls: false
-    upstream_preset: nix-presets/containers/syncthing.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/syncthing
     description: File synchronization for the Fleet (Nasbook).
   syncthing-orin:
@@ -1808,7 +1725,7 @@ services:
     public: true
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: nix-presets/containers/vaultwarden.nix
+    upstream_preset: null
     persistence_path: /var/lib/machines/vaultwarden
     description: Self-hosted password manager (people + personas).
 modules_system:
@@ -1984,7 +1901,8 @@ modules_system:
   snapper.nix:
     file: nix-config/modules/nixos/snapper.nix
     purpose: NixOS system module.
-    declared_options: []
+    declared_options:
+    - my.services.snapper
   threed-printing.nix:
     file: nix-config/modules/nixos/threed-printing.nix
     purpose: NixOS system module.
@@ -2019,9 +1937,6 @@ modules_user:
     android.nix:
       file: nix-config/modules/home-manager/android.nix
       purpose: Home-Manager user module.
-    anyrun.nix:
-      file: nix-config/modules/home-manager/anyrun.nix
-      purpose: Wayland application launcher.
     default.nix:
       file: nix-config/modules/home-manager/default.nix
       purpose: Home-Manager user module.

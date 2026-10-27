@@ -16,21 +16,27 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# This module lives at <meta>/nix-config/scripts/_nix_options.py.
-# parent.parent.parent walks scripts/ → nix-config/ → meta root, which is the
-# directory tree the path constants below assume (REPO / "nix-config/...",
-# REPO / "nix-presets", etc.).
-REPO = Path(__file__).resolve().parent.parent.parent
+# Resolve the nix-config repository root and the fleet meta root
+_script_dir = Path(__file__).resolve().parent
+_nix_config_root = _script_dir.parent
+
+if _nix_config_root.parent.name.endswith(".ws"):
+    META_ROOT = _nix_config_root.parent.parent
+else:
+    META_ROOT = _nix_config_root.parent
+
+REPO = META_ROOT
+NIX_CONFIG = _nix_config_root
 
 MODULE_DIRS = [
-    REPO / "nix-config/modules/nixos",
-    REPO / "nix-config/modules/home-manager",
+    NIX_CONFIG / "modules/nixos",
+    NIX_CONFIG / "modules/home-manager",
     REPO / "nix-presets",
 ]
 
 CONSUMER_DIRS = [
-    REPO / "nix-config/hosts",
-    REPO / "nix-config/users",
+    NIX_CONFIG / "hosts",
+    NIX_CONFIG / "users",
     REPO / "nix-presets",
 ]
 
@@ -468,9 +474,19 @@ def iter_nix_files(root: Path):
         yield p
 
 
+def _normalize_rel(path: Path) -> Path:
+    try:
+        return path.relative_to(REPO)
+    except ValueError:
+        try:
+            return Path("nix-config") / path.relative_to(NIX_CONFIG)
+        except ValueError:
+            return path
+
+
 def consumer_label(path: Path) -> str:
     """Human label for a consumer file."""
-    rel = path.relative_to(REPO)
+    rel = _normalize_rel(path)
     parts = rel.parts
     if parts[:2] == ("nix-config", "hosts") and len(parts) >= 3:
         return f"host:{parts[2]}"
@@ -482,4 +498,4 @@ def consumer_label(path: Path) -> str:
 
 
 def relpath(p: Path) -> str:
-    return p.relative_to(REPO).as_posix()
+    return _normalize_rel(p).as_posix()
