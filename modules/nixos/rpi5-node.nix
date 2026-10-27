@@ -182,6 +182,8 @@ in
             where = "/run/bootpart";
             type = "vfat";
             options = "ro,umask=0077";
+            before = [ "initrd-switch-root.target" ];
+            conflicts = [ "initrd-switch-root.target" ];
             unitConfig.DefaultDependencies = false;
           }
         ];
@@ -301,6 +303,33 @@ in
   # Kernel compilation requires ~15GB of temporary space.
   systemd = {
     services.nix-daemon.environment.TMPDIR = "/nix/persist/tmp/nix-builds";
+
+    # Prevent the initrd /run/bootpart mount from keeping /dev/nvme0n1p1 mounted read-only,
+    # which causes the kernel to force /boot to also be mounted read-only.
+    services.cleanup-bootpart = {
+      description = "Unmount leftover initrd boot partition before mounting /boot";
+      wantedBy = [ "local-fs.target" ];
+      before = [
+        "boot.mount"
+        "local-fs.target"
+      ];
+      unitConfig.DefaultDependencies = false;
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = pkgs.writeShellScript "cleanup-bootpart" ''
+          if ${pkgs.util-linux}/bin/findmnt -M /run/bootpart >/dev/null 2>&1; then
+            echo "Unmounting leftover initrd mount at /run/bootpart..."
+            ${pkgs.util-linux}/bin/umount /run/bootpart || true
+          fi
+          if [ -d /boot ] && ${pkgs.util-linux}/bin/findmnt -O ro /boot >/dev/null 2>&1; then
+            echo "Remounting /boot as read-write..."
+            ${pkgs.util-linux}/bin/mount -o remount,rw /boot || true
+          fi
+        '';
+      };
+    };
+
     # Stage the host-local initrd SSH key on the root-only boot partition,
     # where initrd-ssh-hostkey picks it up on the next boot.
     services.stage-initrd-ssh-hostkey = {
