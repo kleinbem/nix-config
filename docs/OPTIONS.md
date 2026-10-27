@@ -104,7 +104,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/backup.nix:12`
 - **Sub-options:** `enable`, `ip`, `memoryLimit`, `passwordFile`, `rcloneConfigFile`, `systemPasswordFile`, `systemTargets`, `targets`
-- **Consumed by:** `host:nasbook`, `host:nixos-nvme`
+- **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.buzz`
 
