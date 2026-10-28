@@ -9,9 +9,22 @@
   config,
   pkgs,
   lib,
+  inputs,
   secretFile,
+  myInventory,
   ...
 }:
+let
+  # Authentik OIDC client secret for the garage-ui container, written to
+  # nix/per-container/garage-ui.yaml by `tf-apply` (oidc_apps in
+  # nix/infra/authentik.tf). Gated on the key existing: a declared but missing
+  # key freezes every secret on the host.
+  garageUiOidc = (import ../../lib/secrets.nix { inherit lib inputs; }).mkOidcSecret {
+    inherit config;
+    container = "garage-ui";
+  };
+  garageUiIp = myInventory.network.nodes.garage-ui.ip;
+in
 {
   # --- Secrets ------------------------------------------------------------
   # garage_rpc_secret/garage_admin_token live in kleinbem-secrets'
@@ -22,11 +35,16 @@
   # only and this override was missed. Explicit sopsFile here instead of
   # falling through to the default.
   sops = {
-    secrets.garage_rpc_secret = {
-      sopsFile = secretFile "infra/terraform.yaml";
-    };
-    secrets.garage_admin_token = {
-      sopsFile = secretFile "infra/terraform.yaml";
+    secrets = {
+      garage_rpc_secret = {
+        sopsFile = secretFile "infra/terraform.yaml";
+      };
+      garage_admin_token = {
+        sopsFile = secretFile "infra/terraform.yaml";
+      };
+    }
+    // lib.optionalAttrs garageUiOidc.hasSecret {
+      ${garageUiOidc.secretKey}.sopsFile = garageUiOidc.sopsFile;
     };
 
     # Rendered env file injected into the service (keeps secrets OUT of the
@@ -35,7 +53,22 @@
       GARAGE_RPC_SECRET=${config.sops.placeholder.garage_rpc_secret}
       GARAGE_ADMIN_TOKEN=${config.sops.placeholder.garage_admin_token}
     '';
+
+    # Bind-mounted into the garage-ui container (containers.nix). The admin
+    # token doubles as the UI's break-glass login.
+    templates."garage-ui.env".content = ''
+      GARAGE_UI_GARAGE_ADMIN_TOKEN=${config.sops.placeholder.garage_admin_token}
+    ''
+    + lib.optionalString garageUiOidc.hasSecret ''
+      GARAGE_UI_AUTH_OIDC_CLIENT_SECRET=${config.sops.placeholder.${garageUiOidc.secretKey}}
+    '';
   };
+
+  # The garage-ui container reaches the S3 and admin APIs on the bridge
+  # address. Only that container: cbr0 otherwise only gets DNS.
+  networking.firewall.extraInputRules = ''
+    iifname "${config.my.network.bridge}" ip saddr ${garageUiIp} tcp dport { 3900, 3903 } accept
+  '';
 
   # --- Storage dirs on /mnt/data, owned by a static garage user ---------------
   # (Static user instead of the module's default DynamicUser, so a fixed
@@ -113,13 +146,13 @@
         root_domain = ".s3.kleinbem.dev"; # vhost-style bucket addressing
       };
 
-      admin.api_bind_addr = "127.0.0.1:3903"; # token via GARAGE_ADMIN_TOKEN env
+      # All interfaces, like the S3 API, so the garage-ui container can reach
+      # it on the bridge IP; the firewall rule above admits only that
+      # container, and every call needs the admin token. (Binding the bridge
+      # IP itself would race cbr0 coming up at boot.)
+      admin.api_bind_addr = "[::]:3903";
     };
   };
-
-  # Optional community web UI for the gap left by Garage's not-yet-shipped admin
-  # GUI. Uncomment to expose it (also front via Caddy; it talks to the admin API).
-  # environment.systemPackages = [ pkgs.garage-webui ];
 }
 # --- ONE-TIME INIT after first `just apply` (imperative; run on the host) -----
 # The `garage` CLI wrapper auto-sources the env file (RPC secret + admin token).

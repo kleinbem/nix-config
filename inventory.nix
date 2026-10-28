@@ -879,6 +879,22 @@ in
           description = "Headless web security proxy & auditing daemon.";
         };
       };
+      garage-ui = {
+        ip = "10.85.46.134"; # nixos-nvme bridge, next to host-native Garage
+        port = 8080;
+        externalPort = 443;
+        domain = "garage.kleinbem.dev";
+        # Mesh-only (no public tunnel). auth = false: the UI logs users in
+        # itself via Authentik OIDC (oidc_apps in nix/infra/authentik.tf),
+        # same as Grafana, instead of Caddy's forward_auth gate.
+        auth = false;
+        meta = {
+          name = "Garage UI";
+          category = "Infrastructure";
+          icon = "🪣";
+          description = "Web dashboard for Garage S3: buckets, objects, keys, layout.";
+        };
+      };
       qbittorrent = {
         ip = "10.85.47.134"; # nasbook subnet
         port = 8080;

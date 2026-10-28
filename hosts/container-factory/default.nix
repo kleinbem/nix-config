@@ -253,6 +253,13 @@ let
       ip = "${myInventory.network.nodes.caido.ip}/24"; # nixos-nvme
       hostDataDir = dataDir "caido";
     };
+    garage-ui = {
+      ip = "${myInventory.network.nodes.garage-ui.ip}/24"; # nixos-nvme
+      hostDataDir = dataDir "garage-ui";
+      secretsFile = "/run/secrets/factory-dummy";
+      # Baked into the closure: the OIDC login block only exists when set here.
+      oidc.enable = true;
+    };
     qbittorrent = {
       ip = "${myInventory.network.nodes.qbittorrent.ip}/24"; # nasbook
       hostDataDir = dataDir "qbittorrent";
@@ -326,6 +333,7 @@ in
     inputs.nix-presets.nixosModules.gatus
     inputs.nix-presets.nixosModules.dev-db
     inputs.nix-presets.nixosModules.caido
+    inputs.nix-presets.nixosModules.garage-ui
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
     # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
