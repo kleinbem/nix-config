@@ -31,8 +31,8 @@ command -v jq >/dev/null || err "jq not found"
 command -v nix >/dev/null || err "nix not found"
 
 # ── 1. What we ship: vaultwarden.version at the pinned nixpkgs rev ────────────
-NIXPKGS_REV=$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock)
-[[ -n $NIXPKGS_REV && $NIXPKGS_REV != "null" ]] || err "no .nodes.nixpkgs.locked.rev in flake.lock"
+NIXPKGS_REV=$(jq -r '.nodes[.nodes.root.inputs.nixpkgs].locked.rev' flake.lock)
+[[ -n $NIXPKGS_REV && $NIXPKGS_REV != "null" ]] || err "no root nixpkgs rev in flake.lock"
 log "pinned nixpkgs: $NIXPKGS_REV"
 
 CURRENT=$(nix eval --raw "github:NixOS/nixpkgs/${NIXPKGS_REV}#vaultwarden.version" 2>/dev/null) ||
