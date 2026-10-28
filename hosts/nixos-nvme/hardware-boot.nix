@@ -58,6 +58,11 @@ in
     kernelParams = [
       "usb-storage.quirks=152d:0581:u"
     ];
+    # The ACPI Time and Alarm Device registers before rtc_cmos and takes
+    # rtc0 (/dev/rtc). chrony can't sample it (0 RTC samples) and hwclock
+    # can't use it, so the CMOS clock was never trimmed and sat at 2021,
+    # making every boot start 5.5 years behind. Without it rtc_cmos is rtc0.
+    blacklistedKernelModules = [ "acpi_tad" ];
     initrd = {
       availableKernelModules = [
         "nvme"
