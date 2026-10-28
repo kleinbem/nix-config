@@ -107,6 +107,7 @@ jobs:
           nix flake update $inputs
 
       - name: Validate flake (eval-only — blocks a bad lock from landing)
+        id: validate
         # Not `nix flake check --no-build`: devenv's task runner (inside the
         # devShell re-exported from nix-devshells) is fetched via IFD, and
         # --no-build refuses to realize that drv ("path …-source.drv is not
@@ -118,10 +119,16 @@ jobs:
           # substitute the shared dummy stub (see .github/scripts/).
           ./nix-config/.github/scripts/setup-dummy-secrets.sh
           cd nix-config
+          # On a failure, evaluate once more with --show-trace into the log the
+          # report step below reads (the derivation chain down to the error).
           eval_drv() {
             echo "eval $1"
-            nix eval "$1" \
-              --override-input kleinbem-secrets /tmp/dummy-secrets > /dev/null
+            if ! nix eval "$1" --override-input kleinbem-secrets /tmp/dummy-secrets > /dev/null; then
+              echo "FAILED $1" > "$RUNNER_TEMP/eval.log"
+              nix eval "$1" --show-trace --override-input kleinbem-secrets /tmp/dummy-secrets \
+                >> "$RUNNER_TEMP/eval.log" 2>&1 || true
+              return 1
+            fi
           }
           attr_names() {
             nix eval "$1" --apply builtins.attrNames --json \
@@ -140,6 +147,34 @@ jobs:
           for shell in $(attr_names ".#devShells.x86_64-linux"); do
             eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
           done
+
+      # One issue for a nightly update that fails validation: opened or
+      # commented with the error (and, for a package marked broken, the
+      # derivation chain and a ready kleinbem/nix-holds entry), closed when an
+      # update validates again. A broken package used to hold the whole
+      # fleet's nixpkgs back for a week before anyone looked.
+      - name: Report validation result
+        if: always() && github.ref == 'refs/heads/main' && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          OUTCOME: ${{ steps.validate.outcome }}
+          ISSUE_TITLE: "Lock update fails validation"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          issue="$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number --jq '.[0].number // empty')"
+          if [[ $OUTCOME == success ]]; then
+            [[ -z $issue ]] || gh issue close "$issue" --comment "Validates again: $RUN_URL"
+            exit 0
+          fi
+          body="$(./nix-config/.github/scripts/lock-failure-report.sh "$RUNNER_TEMP/eval.log" /tmp/flake.lock.before)
+
+          Run: $RUN_URL"
+          if [[ -n $issue ]]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
 
       - name: Create Pull Request
         if: github.ref == 'refs/heads/main'
