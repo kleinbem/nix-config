@@ -86,10 +86,7 @@ in
         };
       };
       secrets."/etc/ssh/ssh_host_ed25519_key_nixos-nvme" = lib.mkForce config.my.hostSecrets.initrdSshKey;
-      systemd = {
-        enable = true;
-        tpm2.enable = true;
-      };
+      systemd.tpm2.enable = true;
       services.lvm.enable = true;
       services.udev.rules = ''
         # Prevent early-boot hangs (emergency shell) caused by empty USB storage readers

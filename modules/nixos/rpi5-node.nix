@@ -172,7 +172,6 @@ in
       supportedFilesystems.vfat = true;
 
       systemd = {
-        enable = true;
         # Disable TPM2 to prevent 'tpm-crb' module loading errors in initrd
         tpm2.enable = lib.mkForce false;
 

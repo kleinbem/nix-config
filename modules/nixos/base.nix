@@ -84,6 +84,8 @@
   # can do `pkgs.stable.X` from headless and workstation modules alike.
   nixpkgs.overlays = [
     inputs.nix-packages.overlays.default
+    # Packages held back from nixos-unstable while broken there; ours too.
+    (inputs.nix-holds.lib.mkOverlay { extraOverlays = [ inputs.nix-packages.overlays.default ]; })
     (_final: prev: {
       stable = import inputs.nixpkgs-stable {
         inherit (prev.stdenv.hostPlatform) system;
@@ -91,21 +93,10 @@
       };
 
       # -----------------------------------------------------------------------
-      # Fleet Resilience Pattern: Circuit Breaker Fallbacks
-      # Instead of disabling services or applications when an upstream regression
-      # breaks nixos-unstable, route them through pre-built cached binaries from
-      # nixpkgs-stable or a micro-pinned commit.
+      # Fixes for nixos-unstable regressions that need a change to the package.
+      # A package that only needs another nixpkgs (stable, or the last commit
+      # where it worked) goes to kleinbem/nix-holds instead.
       # -----------------------------------------------------------------------
-
-      # qdrant: upstream nixos-unstable rustc/LLVM stdarch drift (rust-lang/rust#111137).
-      # Transparent circuit-breaker fallback to nixpkgs-stable until unstable bumps past the fix.
-      inherit
-        (import inputs.nixpkgs-stable {
-          inherit (prev.stdenv.hostPlatform) system;
-          config.allowUnfree = true;
-        })
-        qdrant
-        ;
 
       # reuse: nixos-unstable's python builder now hands attrs over as
       # structured attrs, but sphinxHook still expands `$sphinxBuilders` as a

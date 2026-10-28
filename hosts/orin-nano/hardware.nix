@@ -91,9 +91,6 @@ in
         };
       };
       secrets."/etc/ssh/ssh_host_ed25519_key_orin-nano" = lib.mkForce config.my.hostSecrets.initrdSshKey;
-      systemd = {
-        enable = true;
-      };
       includeDefaultModules = false;
       # lib.mkOverride 0 beats jetpack-nixos's own lib.mkForce so lists don't
       # concatenate and x86-only modules (tpm-tis) are never included.
