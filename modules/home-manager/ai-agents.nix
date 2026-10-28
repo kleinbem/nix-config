@@ -51,14 +51,15 @@ let
   # (claude desktop, gemini, antigravity …), as goose stdio extensions, so
   # goose gets the same tools. Keyed by server name; goose.settings wins on
   # conflicts, e.g. to disable one. `cmd` may be a bare program (atlas): goose
-  # resolves it from PATH like the other clients do.
+  # resolves it from PATH like the other clients do. They start disabled (CLIs
+  # first); one switched on in goose stays on, see gooseSettings below.
   mcpServers = lib.optionalAttrs (lib.attrByPath [ "modules" "mcp" "enable" ] false config) (
     lib.attrByPath [ "modules" "mcp" "servers" ] { } config
   );
   gooseMcpExtensions = lib.mapAttrs (name: server: {
     type = "stdio";
     inherit name;
-    enabled = true;
+    enabled = false;
     cmd = server.command;
     inherit (server) args;
     envs = server.env;
@@ -319,7 +320,15 @@ in
         fi
         if [ -s "$settingsPath" ] && ${pkgs.yq-go}/bin/yq -e 'type == "!!map"' "$settingsPath" >/dev/null 2>&1; then
           tmp=$(mktemp)
-          ${pkgs.yq-go}/bin/yq eval-all '. as $item ireduce ({}; . * $item)' "$settingsPath" "$declared" > "$tmp"
+          # Declared keys win, except an extension's `enabled`: goose's own
+          # toggle is kept.
+          ${pkgs.yq-go}/bin/yq eval-all '
+            select(fi == 0) as $old
+            | select(fi == 1) as $new
+            | ($old * $new)
+            | with(select(.extensions != null);
+                .extensions |= with_entries(.key as $k | .value.enabled = ($old.extensions[$k].enabled // .value.enabled)))
+          ' "$settingsPath" "$declared" > "$tmp"
           run install -m644 "$tmp" "$settingsPath"
           rm -f "$tmp"
         else
