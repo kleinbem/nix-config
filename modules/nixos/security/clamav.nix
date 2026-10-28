@@ -83,14 +83,21 @@ in
         serviceConfig = {
           Type = "oneshot";
           User = "root";
+          PrivateTmp = true;
         };
+        # Files go in through --file-list, not xargs: thousands of paths on the
+        # command line end up in _CMDLINE on every journal line (~130 KB each).
+        # --infected keeps the per-file "OK" lines out of the journal.
         script = ''
           echo "🛡️ Starting ClamAV Smart Scan..."
+          list=$(mktemp)
           ${pkgs.findutils}/bin/find ${home} \
             -mtime -1 -type f \
             -not -path "*/.cache/*" -not -path "*/.git/*" -not -path "*/node_modules/*" \
-            -print0 \
-          | ${pkgs.findutils}/bin/xargs -0 -r ${pkgs.clamav}/bin/clamdscan -c ${scanConfig} --multiscan --fdpass || true
+            > "$list" || true # files vanishing mid-walk must not abort the scan
+          if [ -s "$list" ]; then
+            ${pkgs.clamav}/bin/clamdscan -c ${scanConfig} --multiscan --fdpass --infected --file-list="$list" || true
+          fi
         '';
       };
 

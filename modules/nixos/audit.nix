@@ -29,7 +29,11 @@ in
   security.auditd.enable = true;
   security.audit = {
     enable = true;
-    # Multi-container workstation: Increase backlog to prevent dropped events
+    # Safety net for the next noisy rule: normal volume is a few records/s, so
+    # cap it well above that. Excess records are dropped with a printk notice
+    # instead of flooding journald, auditd and fluent-bit (2026-07-22 and
+    # 2026-10-28 freezes).
+    rateLimit = 1000;
     rules = [
 
       # --- Critical Identity & Access ---
@@ -86,7 +90,17 @@ in
       "-a always,exit -F arch=b64 -S init_module -S delete_module -k kmod_change"
 
       # 5. Process Injection / Ptrace (Process Hollowing)
-      "-a always,exit -F arch=b64 -S ptrace -k code_injection"
+      # Only the requests that attach to a process or write into it. The blanket
+      # `-S ptrace` logged every PTRACE_SYSCALL/GET_SYSCALL_INFO a tracer issues,
+      # several per traced syscall: one `strace -f` produced up to 11k records/s
+      # and froze nixos-nvme on 2026-10-28.
+      "-a always,exit -F arch=b64 -S ptrace -F a0=16 -k code_injection" # PTRACE_ATTACH
+      "-a always,exit -F arch=b64 -S ptrace -F a0=16902 -k code_injection" # PTRACE_SEIZE
+      "-a always,exit -F arch=b64 -S ptrace -F a0=4 -k code_injection" # PTRACE_POKETEXT
+      "-a always,exit -F arch=b64 -S ptrace -F a0=5 -k code_injection" # PTRACE_POKEDATA
+      "-a always,exit -F arch=b64 -S ptrace -F a0=6 -k code_injection" # PTRACE_POKEUSER
+      "-a always,exit -F arch=b64 -S ptrace -F a0=13 -k code_injection" # PTRACE_SETREGS
+      "-a always,exit -F arch=b64 -S ptrace -F a0=16901 -k code_injection" # PTRACE_SETREGSET
 
       # --- Sensitive File Access (Immutable Identity & Config) ---
       "-w /var/lib/sops -p r -k sops_read"
@@ -379,7 +393,9 @@ in
             retry_limit = "5";
             labels = "job=systemd-journal, host=${config.networking.hostName}";
             line_format = "json";
-            remove_keys = "SYSLOG_IDENTIFIER,_HOSTNAME";
+            # CMDLINE repeats the full argv on every line; one xargs-fed clamdscan
+            # made each line ~130 KB and got the whole host rate-limited (429).
+            remove_keys = "SYSLOG_IDENTIFIER,_HOSTNAME,CMDLINE";
             # Dynamic labels for systemd units in newer Loki plugin
             label_keys = "$SYSTEMD_UNIT";
           }
