@@ -350,5 +350,4 @@ in
 
   system.stateVersion = "25.11"; # Or whatever the current state version is
   my.services.tang.enable = true;
-  my.services.timesync.persistentClock.enable = true;
 }

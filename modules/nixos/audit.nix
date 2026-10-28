@@ -252,6 +252,7 @@ in
         timerConfig = {
           OnCalendar = "daily";
           Persistent = true;
+          RandomizedDelaySec = "1h";
         };
       };
       container-scan = {
@@ -260,6 +261,7 @@ in
         timerConfig = {
           OnCalendar = "daily";
           Persistent = true;
+          RandomizedDelaySec = "1h";
         };
       };
       lynis-audit = {
@@ -268,6 +270,7 @@ in
         timerConfig = {
           OnCalendar = "weekly";
           Persistent = true;
+          RandomizedDelaySec = "1h";
         };
       };
     };
