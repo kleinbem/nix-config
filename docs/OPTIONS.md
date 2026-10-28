@@ -91,7 +91,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.attic`
 
 - **Declared:** `nix-presets/containers/attic.nix:14`
-- **Sub-options:** `autoReap.enable`, `autoReap.schedule`, `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`
+- **Sub-options:** `autoReap.enable`, `autoReap.schedule`, `autoStart`, `enable`, `hostDataDir`, `ip`, `secretsFile`, `upstreamCacheKeyNames`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.authentik`
