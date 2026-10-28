@@ -88,12 +88,7 @@ in
         "https://cache.nixos-cuda.org"
         "https://cache.kleinbem.dev/system"
       ];
-      trusted-public-keys = [
-        "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
-        keys.cachix.nix-community
-        keys.cachix.devenv
-        keys.cachix.anduril
-        keys.binaryCache.nixos-cuda
+      trusted-public-keys = keys.upstreamCaches ++ [
         "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU="
         keys.binaryCache.kleinbem-fleet-build
       ];
