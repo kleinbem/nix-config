@@ -26,6 +26,7 @@ let
   # each one, or it never queries NetBird for them at all.
   meshOnlyFqdns = [
     "cache.kleinbem.dev"
+    "attic.kleinbem.dev"
     "code.kleinbem.dev"
     "frigate.kleinbem.dev"
     "syncthing.kleinbem.dev"

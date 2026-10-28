@@ -59,8 +59,11 @@ in
     # --store https://cache.kleinbem.dev) authenticate with the same token,
     # instead of a hand-made plaintext copy in ~/.config/nix/netrc.
     sops.templates."attic-netrc" = {
+      # Both names during the rename to attic.kleinbem.dev.
       content = ''
         machine cache.kleinbem.dev
+        password ${config.sops.placeholder.attic_pull_token}
+        machine attic.kleinbem.dev
         password ${config.sops.placeholder.attic_pull_token}
       '';
       group = "wheel";
@@ -70,7 +73,10 @@ in
     nix.settings.netrc-file = config.sops.templates."attic-netrc".path;
 
     networking.hosts = lib.mkIf config.my.atticPull.manageHostsEntry {
-      ${config.my.atticPull.cacheHostIp} = [ "cache.kleinbem.dev" ];
+      ${config.my.atticPull.cacheHostIp} = [
+        "cache.kleinbem.dev"
+        "attic.kleinbem.dev"
+      ];
     };
   };
 }

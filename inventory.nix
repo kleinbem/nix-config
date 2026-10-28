@@ -269,6 +269,10 @@ in
         port = 8080;
         externalPort = 443;
         domain = "cache.kleinbem.dev";
+        # Being renamed to attic.kleinbem.dev, which frees cache.kleinbem.dev
+        # for the public binary cache (R2). Both names work until every
+        # host and CI job uses the new one.
+        extraDomains = [ "attic.kleinbem.dev" ];
         # Mesh-only: every consumer (hosts, CI runners) reaches it over
         # NetBird, and the tunnel path 413s on large NARs anyway. Off the
         # public tunnel since 2026-10-17, after it served the secrets repo
