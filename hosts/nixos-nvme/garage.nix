@@ -24,6 +24,14 @@ let
     container = "garage-ui";
   };
   garageUiIp = myInventory.network.nodes.garage-ui.ip;
+
+  # garage-ui's read-only admin token (`just containers::garage-ui-token`),
+  # same file and same gating. Without it the UI gets no token at all and
+  # can't start: it never falls back to the full admin token.
+  garageUiTokenKey = "garage_ui_admin_token";
+  hasGarageUiToken =
+    builtins.pathExists garageUiOidc.sopsFile
+    && lib.hasInfix "\n${garageUiTokenKey}:" ("\n" + builtins.readFile garageUiOidc.sopsFile);
 in
 {
   # --- Secrets ------------------------------------------------------------
@@ -45,6 +53,9 @@ in
     }
     // lib.optionalAttrs garageUiOidc.hasSecret {
       ${garageUiOidc.secretKey}.sopsFile = garageUiOidc.sopsFile;
+    }
+    // lib.optionalAttrs hasGarageUiToken {
+      ${garageUiTokenKey}.sopsFile = garageUiOidc.sopsFile;
     };
 
     # Rendered env file injected into the service (keeps secrets OUT of the
@@ -54,14 +65,14 @@ in
       GARAGE_ADMIN_TOKEN=${config.sops.placeholder.garage_admin_token}
     '';
 
-    # Bind-mounted into the garage-ui container (containers.nix). The admin
-    # token doubles as the UI's break-glass login.
-    templates."garage-ui.env".content = ''
-      GARAGE_UI_GARAGE_ADMIN_TOKEN=${config.sops.placeholder.garage_admin_token}
-    ''
-    + lib.optionalString garageUiOidc.hasSecret ''
-      GARAGE_UI_AUTH_OIDC_CLIENT_SECRET=${config.sops.placeholder.${garageUiOidc.secretKey}}
-    '';
+    # Bind-mounted into the garage-ui container (containers.nix).
+    templates."garage-ui.env".content =
+      lib.optionalString hasGarageUiToken ''
+        GARAGE_UI_GARAGE_ADMIN_TOKEN=${config.sops.placeholder.${garageUiTokenKey}}
+      ''
+      + lib.optionalString garageUiOidc.hasSecret ''
+        GARAGE_UI_AUTH_OIDC_CLIENT_SECRET=${config.sops.placeholder.${garageUiOidc.secretKey}}
+      '';
   };
 
   # The garage-ui container reaches the S3 and admin APIs on the bridge
