@@ -355,7 +355,7 @@ jobs:
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake "$HOST.system.build.toplevel" || rc=1
           [ "$rc" -eq 0 ] && exit 0
-          .github/scripts/report-failed-drvs.sh orin-nano "$MARK"
+          .github/scripts/report-failed-drvs.sh orin-nano "$MARK" system
           exit 1
 
       # Container factory eval is BLOCKING (and runs on PRs, unlike the build
@@ -465,7 +465,7 @@ jobs:
             echo "::endgroup::"
           done
           [ "${#failed[@]}" -eq 0 ] && exit 0
-          .github/scripts/report-failed-drvs.sh "$FACTORY (${failed[*]})" "$MARK"
+          .github/scripts/report-failed-drvs.sh "$FACTORY (${failed[*]})" "$MARK" system
           exit 1
 
       # The builds above are continue-on-error so a from-source break (a
@@ -482,6 +482,8 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
           NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
+          FACTORY_CAUSE: ${{ steps.factory-build.outputs.cause }}
+          ORIN_CAUSE: ${{ steps.orin-build.outputs.cause }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -489,14 +491,14 @@ jobs:
             exit 0
           fi
           failed=""
-          [ "${{ steps.factory-build.outcome }}" = "failure" ] && failed="container-factory"
-          [ "${{ steps.orin-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }orin-nano"
+          [ "${{ steps.factory-build.outcome }}" = "failure" ] && failed="container-factory (${FACTORY_CAUSE:-see the run})"
+          [ "${{ steps.orin-build.outcome }}" = "failure" ] && failed="${failed:+$failed, }orin-nano (${ORIN_CAUSE:-see the run})"
           curl -fsS --max-time 15 \
             ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
             -H "Title: best-effort toplevel build failed (${{ matrix.system }})" \
             -H "Tags: warning" \
             -H "Priority: default" \
-            -d "Run stayed green but these toplevels failed to build from source on ${{ matrix.system }}: $failed. Cache is not being warmed for them — hosts will compile locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d "Run stayed green but these toplevels failed to build from source on ${{ matrix.system }}: $failed. What did build was pushed to Attic; the rest compiles locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       - name: Report Best-Effort Failures to GitHub Summary
@@ -504,7 +506,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "## ⚠️ Best-Effort Builds Failed" >> $GITHUB_STEP_SUMMARY
-          echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. These packages were **not pushed to the cache** and your hosts will build them locally:" >> $GITHUB_STEP_SUMMARY
+          echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. What did build was pushed to the cache; the failed derivations and everything above them will be built locally:" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
           [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

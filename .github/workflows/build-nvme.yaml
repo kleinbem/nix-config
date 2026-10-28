@@ -114,7 +114,7 @@ jobs:
           MARK=$(mktemp) # failure report scopes to logs written after this
           nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
             --flake "$ATTR" && exit 0
-          .github/scripts/report-failed-drvs.sh nixos-nvme "$MARK"
+          .github/scripts/report-failed-drvs.sh nixos-nvme "$MARK" system
           exit 1
 
       # Same alerting as the matrix job's best-effort steps: a red build here
@@ -124,6 +124,7 @@ jobs:
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+          CAUSE: ${{ steps.nvme-build.outputs.cause }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -134,7 +135,7 @@ jobs:
             -H "Title: best-effort toplevel build failed (x86_64-linux)" \
             -H "Tags: warning" \
             -H "Priority: default" \
-            -d "Run stayed green but the nixos-nvme toplevel failed to build from source. Cache is not being warmed for it — the workstation will compile locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d "nixos-nvme toplevel failed: ${CAUSE:-see the run}. What did build was pushed to Attic; the rest compiles locally until fixed. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       - name: Update commit status
