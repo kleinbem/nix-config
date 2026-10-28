@@ -19,6 +19,22 @@ in
   hardware.i2c.enable = true;
   environment.systemPackages = [ pkgs.ddcutil ];
 
+  # Set both external monitors to 100% brightness on graphical session startup
+  systemd.user.services.set-monitor-brightness = {
+    description = "Set external monitors to 100% brightness via DDC/CI";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.writeShellScript "set-max-brightness" ''
+        for d in 1 2; do
+          ${pkgs.ddcutil}/bin/ddcutil --display "$d" setvcp 10 100 2>/dev/null || true
+        done
+      ''}";
+    };
+  };
+
   # User session display, font scaling, and color configuration
   home-manager.users.${config.my.username} =
     { lib, ... }:
@@ -35,8 +51,10 @@ in
           text-scaling-factor = 1.25;
         };
 
-        # Neutral warmth for Night Light (5500K) instead of aggressive default 4700K yellow
+        # Night Light disabled by default; tuned to neutral 5500K if ever turned on
         "org/gnome/settings-daemon/plugins/color" = {
+          night-light-enabled = false;
+          night-light-schedule-automatic = false;
           night-light-temperature = lib.hm.gvariant.mkUint32 5500;
         };
       };

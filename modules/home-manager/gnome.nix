@@ -155,8 +155,8 @@
       };
 
       "org/gnome/settings-daemon/plugins/color" = {
-        night-light-enabled = true;
-        night-light-schedule-automatic = true;
+        night-light-enabled = false;
+        night-light-schedule-automatic = false;
       };
 
       "org/gnome/desktop/peripherals/touchpad" = {
@@ -229,6 +229,7 @@
           "notification-icons@jiggak.io"
           "notification-banner-re-reloaded@chrhuang"
           "notification-timeout@chlumskyvaclav.gmail.com"
+          "display-brightness-ddcutil@themightydeity.github.com"
         ];
         # Explicit empty list: GNOME writes disabled UUIDs here whenever an
         # extension errors out (or a user disables one via the Extensions app),
@@ -330,6 +331,12 @@
 
       "org/gnome/shell/extensions/space-bar/appearance" = {
         workspace-margin = 4;
+      };
+
+      "org/gnome/shell/extensions/caffeine" = {
+        user-enabled = true;
+        restore-state = true;
+        show-indicator = "always";
       };
 
       # pano was removed from nixpkgs (upstream unmaintained, 2026-07); fall back

@@ -138,6 +138,7 @@ in
         gnomeExtensions.top-panel-notification-icons-w-count # Individual app icons with unread badges in top panel
         gnomeExtensions.notification-banner-re-reloaded # Anchor notification banners to top-right corner
         gnomeExtensions.notification-timeout # Configurable auto-dismiss timeout for notification banners
+        gnomeExtensions.brightness-control-using-ddcutil # Per-monitor brightness slider in Quick Settings via DDC/CI
 
         # Modern GNOME Apps & Utilities (Premium Suite)
         ptyxis # Container-aware terminal
@@ -242,7 +243,18 @@ in
         dbus.enable = true;
       };
 
-      hardware.graphics.enable = true;
+      hardware = {
+        graphics.enable = true;
+        bluetooth = {
+          enable = true;
+          powerOnBoot = true;
+          settings = {
+            General = {
+              AutoEnable = "true";
+            };
+          };
+        };
+      };
 
       xdg.portal = {
         enable = true;
