@@ -68,6 +68,7 @@
 - 🛡️ **Caido Security** (`caido`) `10.85.46.133:8080` → `caido.kleinbem.dev` — Headless web security proxy & auditing daemon. _[src: nix-presets/containers/caido.nix:16]_
 - 💻 **Code Server** (`code-server`) `10.85.46.22:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
 - 🗄️ **Dev Database** (`dev-db`) `10.85.46.132:5432` — Shared PostgreSQL 17 & Redis instance for devshells. _[src: nix-presets/containers/dev-db.nix:16]_
+- 🪣 **Garage UI** (`garage-ui`) `10.85.46.134:8080` → `garage.kleinbem.dev` — Web dashboard for Garage S3: buckets, objects, keys, layout. _[src: nix-presets/containers/garage-ui.nix:109]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 
@@ -83,7 +84,6 @@
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `ente-web` — Ente Auth Web
 - `garage` — Garage S3
-- `garage-ui` _[src: nix-presets/containers/garage-ui.nix:70]_
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:13]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:17]_

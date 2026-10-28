@@ -54,10 +54,6 @@ repo_atlas:
     path: kleinbem/
     url: git@github.com:kleinbem/kleinbem.git
     role: Fleet hub & orchestrator. Owns repos.nix, shared .just modules, and jj-fleet dashboard.
-  kleinbem-auth:
-    path: kleinbem-auth/
-    url: git@github.com:kleinbem/kleinbem-auth.git
-    role: Visitor login and authentication service.
   kleinbem-secrets:
     path: kleinbem-secrets/
     url: git@github.com:kleinbem/kleinbem-secrets.git
@@ -860,6 +856,12 @@ hosts:
       - dev-db.enable
       - dev-db.hostDataDir
       - dev-db.ip
+      - garage-ui
+      - garage-ui.enable
+      - garage-ui.hostDataDir
+      - garage-ui.ip
+      - garage-ui.oidc.enable
+      - garage-ui.secretsFile
       - github-runner
       - github-runner.enable
       - github-runner.hostDataDir
@@ -1008,16 +1010,20 @@ hosts:
     - caido
     - code-server
     - dev-db
+    - garage-ui
     - monitoring
     - netdata
+    - oidc
     - syncthing
     - tls
     secrets_consumed:
     - buzz_typesense_api_key
+    - garage_rpc_secret
     - github_runner_pat
     - langfuse_db_password
     - netbird_setup_key
     - paperless_password
+    - sopsFile
     hardware_profile: Intel Core Desktop (Zotac) + renderD128 QuickSync + FIDO2/YubiKey
   orin-nano:
     tier: edge
@@ -1496,6 +1502,20 @@ services:
     upstream_preset: null
     persistence_path: /var/lib/machines/garage
     description: Self-hosted S3 object storage (backups, cache, tofu-state).
+  garage-ui:
+    name: Garage UI
+    category: Infrastructure
+    host: nixos-nvme
+    ip: 10.85.46.134
+    port: 8080
+    external_port: 443
+    domain: garage.kleinbem.dev
+    public: false
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: nix-presets/containers/garage-ui.nix
+    persistence_path: /var/lib/machines/garage-ui
+    description: 'Web dashboard for Garage S3: buckets, objects, keys, layout.'
   gatus:
     name: Status
     category: Infrastructure

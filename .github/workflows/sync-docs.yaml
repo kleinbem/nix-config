@@ -96,21 +96,24 @@ jobs:
 
           # createCommitOnBranch: GitHub signs the commit (required_signatures).
           # expectedHeadOid makes it fail instead of clobbering a newer push.
-          additions=$(for f in "${files[@]}"; do
+          # The additions go through a file: as one argument they pass the
+          # kernel's 128 KiB per-argument limit once INFRASTRUCTURE.yaml grows.
+          additions_file=$(mktemp)
+          for f in "${files[@]}"; do
             if ! git diff --quiet -- "$f"; then
               b64_file=$(mktemp)
               base64 -w0 "$f" > "$b64_file"
               jq -n --arg p "$f" --rawfile c "$b64_file" '{path: $p, contents: $c}'
               rm -f "$b64_file"
             fi
-          done | jq -s .)
-          jq -n --arg repo "$REPO" --arg branch "$BRANCH" --arg sha "$HEAD" --argjson add "$additions" \
+          done | jq -s . > "$additions_file"
+          jq -n --arg repo "$REPO" --arg branch "$BRANCH" --arg sha "$HEAD" --slurpfile add "$additions_file" \
             --arg query 'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
             '{query: $query, variables: {input: {
                 branch: {repositoryNameWithOwner: $repo, branchName: $branch},
                 message: {headline: "docs: sync generated reference docs (auto)"},
                 expectedHeadOid: $sha,
-                fileChanges: {additions: $add}
+                fileChanges: {additions: $add[0]}
             }}}' | gh api graphql --input - >/dev/null
 
           if [ "$EVENT" != pull_request ]; then
