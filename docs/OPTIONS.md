@@ -414,7 +414,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.monitoring.node`
 
-- **Declared:** `nix-presets/nixosModules/monitoring-node.nix:6`
+- **Declared:** `nix-presets/nixosModules/monitoring-node.nix:43`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
