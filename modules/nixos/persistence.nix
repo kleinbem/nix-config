@@ -52,6 +52,7 @@
       "/var/lib/syncthing" # Syncthing device identity and config
       "/var/lib/private/tang" # Tang NBDE keys (DynamicUser → /var/lib/private)
       "/var/lib/systemd/pstore" # Kernel panic/oops dumps archived from EFI pstore — useless if lost on reboot
+      "/var/lib/systemd/timers" # Persistent= timer stamps; without them catch-up after downtime never works
     ];
     files = [
       # RSA host key persistence dropped 2026-09-22 — every host's initrd

@@ -268,4 +268,8 @@ in
       '';
     };
   };
+
+  # Both scrubs (/home and /nix) start at the same moment, and after a
+  # week powered off they catch up right at boot. Spread them out.
+  systemd.timers."btrfs-scrub@".timerConfig.RandomizedDelaySec = "1h";
 }

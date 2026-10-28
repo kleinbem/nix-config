@@ -475,7 +475,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/services/timesync.nix:34`
 - **Sub-options:** `enable`, `persistentClock.enable`, `persistentClock.path`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
-- **Explicit overrides:** `host:nasbook`
 
 ## `my.virtualisation`
 

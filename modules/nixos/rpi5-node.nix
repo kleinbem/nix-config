@@ -267,7 +267,6 @@ in
     services = {
       tang.enable = true;
       rpi-eeprom.enable = true;
-      timesync.persistentClock.enable = true;
     };
 
     virtualisation = {
