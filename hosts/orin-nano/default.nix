@@ -85,6 +85,12 @@ in
       enable = true;
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
+
+    # Backups — nix-presets' backup-engine, fleet wiring in
+    # modules/nixos/backup.nix. tang registers its own secure item.
+    # Secrets: backup_r2_rclone_config (nix/per-host/orin-nano.yaml),
+    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
+    backup.enable = true;
   };
 
   nixpkgs = {
