@@ -56,6 +56,18 @@ jobs:
           head="$(gh pr list --head update-flake-lock --base main --state open \
             --json headRefOid --jq '.[0].headRefOid // empty')"
           if [ -n "$head" ]; then
+            # A PR that changed flake.lock on main since the lock PR branched
+            # off leaves it conflicting, and every commit on top of it would
+            # too: start from main then, as without an open PR.
+            base="$(gh api "repos/${{ github.repository }}/compare/main...$head" --jq .merge_base_commit.sha)"
+            git fetch --depth 1 origin "$base"
+            # The working tree is still main's.
+            if ! git show "$base:flake.lock" | cmp -s - flake.lock; then
+              echo "flake.lock changed on main since the lock PR at $head branched off, starting from main"
+              head=""
+            fi
+          fi
+          if [ -n "$head" ]; then
             # Extend the pending bump instead of resetting it to main: a
             # nightly nixpkgs bump still in CI would otherwise be thrown away
             # by a sibling's one-input request.
