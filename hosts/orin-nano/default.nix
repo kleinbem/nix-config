@@ -140,10 +140,56 @@ in
                   }
                 );
               };
+          # nixpkgs 3fe146e660 (2026-10-21) dropped its pre-5.19 kernel
+          # support, so buildLinux now always applies
+          # randstruct-provide-seed-5.19.patch, which edits
+          # scripts/gen-randstruct-seed.sh. The L4T 5.15 kernel doesn't have
+          # that file (its seed script is scripts/gcc-plugins/gen-random-seed.sh),
+          # so patchPhase fails for the kernel, its config and cpupower. Add
+          # the file with its unpatched 5.19 content so the patch applies.
+          # Nothing in 5.15 runs it, and the L4T config doesn't enable
+          # GCC_PLUGIN_RANDSTRUCT. Self-retiring: skipped when the source
+          # already has the file, and from 5.19 on.
+          withRandstructSeedScript =
+            jp:
+            if !(jp ? overrideScope && jp ? kernel) then
+              jp
+            else
+              jp.overrideScope (
+                _: sprev: {
+                  kernel = sprev.kernel.override (o: {
+                    buildLinux =
+                      args:
+                      o.buildLinux (
+                        args
+                        // lib.optionalAttrs (lib.versionOlder args.version "5.19") {
+                          src = final.applyPatches {
+                            name = "linux-${args.version}-source";
+                            inherit (args) src;
+                            postPatch = ''
+                              if [ ! -e scripts/gen-randstruct-seed.sh ]; then
+                                cat > scripts/gen-randstruct-seed.sh <<'EOF'
+                              #!/bin/sh
+                              # SPDX-License-Identifier: GPL-2.0
+
+                              SEED=$(od -A n -t x8 -N 32 /dev/urandom | tr -d ' \n')
+                              echo "$SEED" > "$1"
+                              HASH=$(echo -n "$SEED" | sha256sum | cut -d" " -f1)
+                              echo "#define RANDSTRUCT_HASHED_SEED \"$HASH\"" > "$2"
+                              EOF
+                                chmod +x scripts/gen-randstruct-seed.sh
+                              fi
+                            '';
+                          };
+                        }
+                      );
+                  });
+                }
+              );
         in
         jetpackOverrides
         // {
-          nvidia-jetpack = withoutOotDepmod prev.nvidia-jetpack;
+          nvidia-jetpack = withoutOotDepmod (withRandstructSeedScript prev.nvidia-jetpack);
         }
         // lib.optionalAttrs (config.hardware.nvidia-jetpack.majorVersion == "6") {
           cudaPackages = final.cudaPackages_12_6;
