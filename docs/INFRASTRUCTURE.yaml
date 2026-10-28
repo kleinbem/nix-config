@@ -177,6 +177,25 @@ network_topology:
     - http://10.0.0.5:7654
     - http://10.0.0.15:7654
 hosts:
+  ap-attic:
+    tier: physical
+    system: openwrt
+    deploy_type: ansible
+    tags:
+    - physical
+    - ap
+    - mesh-node
+    ips:
+      physical: 10.0.0.7
+      container_bridge: null
+      netbird: null
+    mesh_group: null
+    storage_and_boot: {}
+    imports: []
+    enabled_subsystems: {}
+    containers_hosted: []
+    secrets_consumed: []
+    hardware_profile: Netgear Orbi RBS50 v1 (Qualcomm IPQ4019 + QCA9984, Wi-Fi 5 tri-radio, 4 GB eMMC)
   ap-upstairs:
     tier: physical
     system: openwrt
