@@ -49,6 +49,9 @@ let
       ip = "${myInventory.network.nodes.attic.ip}/24"; # core-pi
       hostDataDir = dataDir "attic";
       secretsFile = "/run/secrets/factory-dummy";
+      # Baked into the closure (the container applies it to the cache on
+      # start), so it is set here, not on core-pi.
+      inherit (import ../../modules/nixos/keys.nix) upstreamCacheKeyNames;
     };
     code-server = {
       ip = ip 22;

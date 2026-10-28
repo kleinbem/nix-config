@@ -1,4 +1,4 @@
-{
+rec {
   # Cachix Public Keys
   cachix = {
     nix-community = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=";
@@ -111,4 +111,18 @@
       key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH8AzB6jowZtkTZoz3Zq58PTb38XdXLW/6qi2rxFHxQy";
     };
   };
+
+  # Public caches the fleet substitutes from. core.nix trusts them, and
+  # Attic skips paths signed by any of them (the atticd upstream filter on
+  # core-pi and push-cache's local filter), so it holds only what no
+  # public cache has. Add a new public cache here, not in core.nix.
+  upstreamCaches = [
+    "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
+    cachix.nix-community
+    cachix.devenv
+    cachix.anduril
+    binaryCache.nixos-cuda
+  ];
+  # Just the key names, which is what Attic's filter matches on.
+  upstreamCacheKeyNames = map (k: builtins.head (builtins.split ":" k)) upstreamCaches;
 }
