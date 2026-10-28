@@ -83,6 +83,7 @@
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `ente-web` — Ente Auth Web
 - `garage` — Garage S3
+- `garage-ui` _[src: nix-presets/containers/garage-ui.nix:70]_
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:13]_
 - `langfuse` — Langfuse _[src: nix-presets/containers/langfuse.nix:17]_

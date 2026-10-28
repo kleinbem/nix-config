@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 72  
+**Declarations indexed:** 73  
 **Consumer files scanned:** 31
 
 ---
@@ -171,6 +171,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/frigate.nix:32`
 - **Sub-options:** `detector`, `enable`, `enableGPU`, `enableHailo`, `environmentFile`, `hostDataDir`, `innerConfig`, `ip`, `jetson`, `jetsonDevices`, `mediaDir`, `memoryLimit`
 - **Consumed by:** `host:orin-nano`
+
+### `my.containers.garage-ui`
+
+- **Declared:** `nix-presets/containers/garage-ui.nix:70`
+- **Sub-options:** `adminPort`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `port`, `region`, `rootUrl`, `s3Port`, `secretsFile`
+- **Consumed by:** _(no opt-ins detected)_
 
 ### `my.containers.gatus`
 
