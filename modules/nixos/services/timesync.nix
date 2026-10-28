@@ -85,16 +85,12 @@ in
       # -1 removes the update-count limit entirely: any sync at any time
       # that finds a >1s drift steps instead of slews.
       #
-      # rtcsync instead of NixOS's default rtcfile + rtcautotrim: the trimming
-      # never collected a single RTC sample on nixos-nvme, so its RTC sat at
-      # 2021 for good. Every boot then started 5.5 years in the past and the
-      # clock step made every calendar timer fire at once. rtcsync has the
-      # kernel write the synced time to the RTC every 11 minutes;
-      # persistentClock below covers hosts with no working RTC.
-      enableRTCTrimming = false;
+      # Note: NixOS automatically enables rtcfile and rtcautotrim (see
+      # services.chrony.enableRTCTrimming), which conflicts with `rtcsync`.
+      # chrony trims the RTC through /dev/rtc; persistentClock below covers
+      # hosts where that is missing or dead.
       extraConfig = ''
         makestep 1.0 -1
-        rtcsync
       '';
     };
 
