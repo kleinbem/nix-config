@@ -38,6 +38,7 @@
     ./containers.nix
     ./garage.nix
     "${self}/modules/nixos/services/vault-anythingllm-sync.nix"
+    ./monitors.nix
   ];
 
   # security/ssh.nix (workstation tier) requires publickey+MFA but this host
