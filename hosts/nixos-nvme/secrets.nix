@@ -87,6 +87,17 @@
         mode = "0400";
       };
 
+      # Attic push token for `just deployment::push-cache` (the push after a
+      # switch). Decrypted by the host key at activation, so the push needs no
+      # YubiKey; the recipe falls back to decrypting it with Martin's key
+      # where this file is absent.
+      attic_push_token = {
+        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
+        owner = "martin";
+        group = "users";
+        mode = "0400";
+      };
+
       buzz_garage_rpc_secret = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -hex 32`
