@@ -180,17 +180,22 @@ push-cache +args:
     # explicitly (|| echo / continue / exit).
     set -uo pipefail
 
-    # Push token from sops (nixos-nvme.yaml: attic_push_token) in a tmpfs
-    # config that lives only for this run, so no token sits in
-    # ~/.config/attic. Decrypted on the first push, so a run with nothing to
-    # push never asks for the YubiKey.
+    # Push token (nixos-nvme.yaml: attic_push_token) in a tmpfs config that
+    # lives only for this run, so no token sits in ~/.config/attic. On
+    # nixos-nvme the host decrypts it at activation (/run/secrets, no
+    # YubiKey); elsewhere it is decrypted with Martin's key on the first push,
+    # so a run with nothing to push never asks for the YubiKey.
     ATTIC_CFG=""
     ATTIC_BIN=""
     trap '[ -n "$ATTIC_CFG" ] && rm -rf "$ATTIC_CFG"' EXIT
     attic_ready() {
         [ -n "$ATTIC_CFG" ] && return 0
         local token
-        token=$(sops -d --extract '["attic_push_token"]' ../kleinbem-secrets/nix/per-host/nixos-nvme.yaml) || return 1
+        if [ -r /run/secrets/attic_push_token ]; then
+            token=$(cat /run/secrets/attic_push_token) || return 1
+        else
+            token=$(sops -d --extract '["attic_push_token"]' ../kleinbem-secrets/nix/per-host/nixos-nvme.yaml) || return 1
+        fi
         ATTIC_BIN=$(nix build nixpkgs#attic-client --no-link --print-out-paths)/bin/attic || return 1
         ATTIC_CFG=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}") || return 1
         mkdir -p "$ATTIC_CFG/attic"
