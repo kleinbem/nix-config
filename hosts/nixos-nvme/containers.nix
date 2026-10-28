@@ -288,6 +288,16 @@
         ip = "${myInventory.network.nodes.caido.ip}/24";
         hostDataDir = "/var/lib/images/caido";
       };
+
+      # Web UI for the host-native Garage (garage.nix, which also opens the
+      # S3/admin ports to this container and renders garage-ui.env).
+      garage-ui = {
+        enable = true;
+        ip = "${myInventory.network.nodes.garage-ui.ip}/24";
+        hostDataDir = "/var/lib/images/garage-ui";
+        secretsFile = config.sops.templates."garage-ui.env".path;
+        oidc.enable = true;
+      };
     };
 
   };
