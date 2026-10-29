@@ -94,7 +94,7 @@
       };
     };
     nix-gantry = {
-      url = "github:kleinbem/nix-gantry";
+      url = "github:kleinbem-dev/nix-gantry";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-packages = {
