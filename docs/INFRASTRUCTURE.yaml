@@ -42,6 +42,10 @@ repo_atlas:
     path: chrome-open-in-app/
     url: git@github.com:kleinbem/chrome-open-in-app.git
     role: Supporting repository.
+  coderabbit:
+    path: coderabbit/
+    url: git@github.com:kleinbem/coderabbit.git
+    role: Supporting repository.
   github-config:
     path: github-config/
     url: git@github.com:kleinbem/github-config.git
