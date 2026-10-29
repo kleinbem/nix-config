@@ -144,7 +144,6 @@ def get_repo_atlas(repos: dict[str, str]) -> dict[str, Any]:
         "github-config": "OpenTofu-managed GitHub organization settings, repositories, and rulesets.",
         "kleinbem-secrets": "Central sops+age encrypted secrets repository with per-path scoped access.",
         "kleinbem-site": "kleinbem.dev personal portfolio website.",
-        "kleinbem-auth": "Visitor login and authentication service.",
         "jj-toolbox": "Standalone Jujutsu helper scripts (jj-save, jj-push, jj-pull, jj-sign-unsigned).",
         "nix-toolbox": "Generic Nix flake dev tools (nix-check-versions, nix-audit-deps, bash-test-lib).",
         ".github": "Organization-wide GitHub Actions workflows and issue templates.",
