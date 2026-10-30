@@ -1,5 +1,9 @@
 # Waveshare ESP32-P4-WIFI6 8" HMI — 800x1280 10-point touch, dual mic,
-# speaker. One file per physical unit: copy, change `name`.
+# speaker, OV5647 MIPI-CSI camera (not wired up yet: ESPHome has no MIPI-CSI
+# component until esphome/esphome#19480 lands). One file per physical unit:
+# copy, change `name`. Pins from Waveshare's waveshareteam/ESP32-P4-WIFI6-Touch-LCD-X
+# examples (displays_config.h, 09_Audio_Playback, 10_Mic_Record,
+# 09_video_lcd_display).
 substitutions:
   name: hmi-8in-1
   friendly_name: HMI 8in 1
@@ -16,27 +20,29 @@ esp32:
   # ESPHome defaults the P4 to 400MHz, which it flags experimental
   # (esphome/esphome#13425); 360MHz is the safe clock.
   cpu_frequency: 360MHz
+  flash_size: 32MB
   framework:
     type: esp-idf
-  flash_size: 16MB
+    # ESPHome requires this for OTA on 32MB flash.
+    advanced:
+      enable_idf_experimental_features: true
 
 psram:
   mode: hex
   speed: 200MHz
 
-# Wi-Fi 6 via the on-board ESP32-C6 (SDIO). Pins = Espressif P4 reference
-# design; verify against the Waveshare wiki.
+
+# Wi-Fi 6 via the on-board ESP32-C6 (SDIO).
 esp32_hosted:
   variant: ESP32C6
-  slot: 1
   active_high: true
-  reset_pin: GPIO54 # verify
-  cmd_pin: GPIO19 # verify
-  clk_pin: GPIO18 # verify
-  d0_pin: GPIO14 # verify
-  d1_pin: GPIO15 # verify
-  d2_pin: GPIO16 # verify
-  d3_pin: GPIO17 # verify
+  reset_pin: GPIO54
+  cmd_pin: GPIO19
+  clk_pin: GPIO18
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
 
 wifi:
   ssid: !secret wifi_ssid
@@ -54,14 +60,15 @@ logger:
   level: INFO
 captive_portal:
 
+# Touch and both audio codecs share this bus (the camera's SCCB too).
 i2c:
   - id: bus_a
-    sda: GPIO7 # verify
-    scl: GPIO8 # verify
+    sda: GPIO7
+    scl: GPIO8
     frequency: 400kHz
 
-# The P4's MIPI-DSI PHY is powered from internal LDO channel 3 at 2.5V
-# (Espressif reference design; same on the Waveshare boards).
+# The P4's MIPI PHYs (DSI, and CSI for the camera) are powered from
+# internal LDO channel 3 at 2.5V.
 esp_ldo:
   - id: ldo_mipi_phy
     channel: 3
@@ -71,6 +78,7 @@ display:
   - platform: mipi_dsi
     id: lcd
     model: WAVESHARE-8-DSI-TOUCH-A
+    reset_pin: GPIO27
     update_interval: never
     auto_clear_enabled: false
 
@@ -83,7 +91,8 @@ touchscreen:
 output:
   - platform: ledc
     id: backlight_pwm
-    pin: GPIO23 # verify
+    pin: GPIO26
+    frequency: 5000Hz
 light:
   - platform: monochromatic
     id: backlight
@@ -91,8 +100,78 @@ light:
     output: backlight_pwm
     restore_mode: ALWAYS_ON
 
-# Voice (dual mic + speaker, ES8311/ES7210 over I2S): fill in once the
-# audio pins are confirmed, same block as the Smart 86 Box.
+
+# Audio: ES8311 DAC (speaker, amp on GPIO53) + ES7210 ADC (dual mic), one
+# I2S bus.
+i2s_audio:
+  - id: i2s_bus
+    i2s_mclk_pin: GPIO13
+    i2s_bclk_pin: GPIO12
+    i2s_lrclk_pin: GPIO10
+
+audio_dac:
+  - platform: es8311
+    id: codec_dac
+    i2c_id: bus_a
+    address: 0x18
+
+audio_adc:
+  - platform: es7210
+    id: codec_adc
+    i2c_id: bus_a
+
+switch:
+  - platform: gpio
+    id: speaker_amp
+    name: Speaker Amp
+    pin: GPIO53
+    restore_mode: ALWAYS_ON
+
+microphone:
+  - platform: i2s_audio
+    id: mic
+    i2s_audio_id: i2s_bus
+    i2s_din_pin: GPIO11
+    adc_type: external
+    sample_rate: 16000
+    bits_per_sample: 16bit
+
+speaker:
+  - platform: i2s_audio
+    id: spk
+    i2s_audio_id: i2s_bus
+    i2s_dout_pin: GPIO9
+    dac_type: external
+    audio_dac: codec_dac
+    sample_rate: 16000
+    bits_per_sample: 16bit
+
+micro_wake_word:
+  microphone: mic
+  models:
+    - model: okay_nabu
+  on_wake_word_detected:
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+
+voice_assistant:
+  microphone: mic
+  speaker: spk
+  use_wake_word: false
+  on_end:
+    - micro_wake_word.start:
+  # A failed pipeline start raises on_error but not on_end; without this the
+  # wake word stays off until Home Assistant reconnects.
+  on_error:
+    - delay: 1s
+    - if:
+        condition: api.connected
+        then:
+          - micro_wake_word.start:
+  on_client_connected:
+    - micro_wake_word.start:
+  on_client_disconnected:
+    - micro_wake_word.stop:
 
 lvgl:
   displays: [lcd]
