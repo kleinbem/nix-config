@@ -1241,11 +1241,11 @@
     "kleinbem-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1793134059,
-        "narHash": "sha256-8wVWzw/gnkJrM23nnMWVn1+icrVxcew3Cot7I/5f8XI=",
+        "lastModified": 1793333658,
+        "narHash": "sha256-M73GMKWDURCQYgwbh5rHzvmfMXAKAYms2aHCVYz71bk=",
         "owner": "kleinbem",
         "repo": "kleinbem-secrets",
-        "rev": "bb7d8068eb49da52e5ae0c75b584f4d67b56a175",
+        "rev": "a09e13aaee0f4cc90773781207e32e8a9d18d5a9",
         "type": "github"
       },
       "original": {
