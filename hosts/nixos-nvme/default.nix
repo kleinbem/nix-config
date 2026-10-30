@@ -96,6 +96,7 @@
       buzz-dev-mcp # Model Context Protocol (MCP) server for Buzz developers and AI coding agents
       buzz-agent # Minimal, unbreakable ACP-compliant autonomous AI agent for Buzz workspace
       buzz-app # Buzz 1.0 desktop app (NixOS/nixpkgs#577918 via nix-packages' nixpkgs-prs pin)
+      berd # Berd desktop app for Goose agents (NixOS/nixpkgs#580616 via nix-packages' nixpkgs-prs pin)
 
       # RDP clients for mac-mini's GNOME Remote Desktop (reached via
       # `ssh -L 3389:localhost:3389 mac-mini`, see hosts/mac-mini/default.nix).
