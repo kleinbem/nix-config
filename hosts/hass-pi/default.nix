@@ -26,6 +26,7 @@ in
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
+    ./esphome-secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
     # openclaw stays here (not moved with the rest of the AI stack to
     # mac-mini 2026-08-05): its pnpm-deps fixed-output derivation hash
@@ -187,7 +188,9 @@ in
       # so we must persist the private path — bind-mounting onto the symlink
       # fails with "mount path not canonical" (see matter-server).
       "/var/lib/node-red"
-      "/var/lib/private/esphome"
+      # Static `esphome` user (not DynamicUser), so the state is the plain
+      # path; /var/lib/private/esphome was the old DynamicUser location.
+      "/var/lib/esphome"
       "/var/lib/private/matterjs-server"
       "/var/lib/wyoming"
     ];
@@ -316,11 +319,11 @@ in
       # for the Waveshare ESP32-P4 panels, linked read-only into the
       # dashboard's state dir so it compiles/OTAs them while this repo
       # stays the source of truth. Done from the unit itself (runs as the
-      # DynamicUser inside its own StateDirectory) rather than tmpfiles:
+      # esphome user inside its own StateDirectory) rather than tmpfiles:
       # systemd-tmpfiles refuses to write into a directory owned by
-      # another user ("unsafe path transition"), which is what
-      # /var/lib/private/esphome is, so the tmpfiles variant silently
-      # created nothing. Secrets stay in the dashboard's own secrets.yaml.
+      # another user ("unsafe path transition"), so the tmpfiles variant
+      # silently created nothing. secrets.yaml comes from sops
+      # (./esphome-secrets.nix).
       preStart = lib.concatMapStrings (f: "ln -sfn ${./esphome}/${f} /var/lib/esphome/${f}
 ") (
         builtins.filter (f: lib.hasSuffix ".yaml" f) (builtins.attrNames (builtins.readDir ./esphome))
