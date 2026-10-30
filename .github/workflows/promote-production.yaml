@@ -12,7 +12,7 @@ name: "Promote → production"
 # known-good revision until the next green run.
 
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] both jobs require event == push from this repo
     workflows: ["Build & Cache All (Fast)"]
     branches: [main]
     types:
@@ -54,9 +54,13 @@ jobs:
     # historical default now that hosts span both arches (mac-mini added
     # 2026-08-02); revisit only if a real quirk shows up.
     runs-on: ubuntu-24.04-arm
+    # `branches: [main]` matches the head branch name, which a fork PR can
+    # also call main: only promote runs from pushes to this repo.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     steps:
       - name: Checkout promotion-candidate SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -204,9 +208,10 @@ jobs:
       - name: Generate container manifest
         id: manifest
         continue-on-error: true
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
-          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
           echo '{}' > /tmp/systems.json
           EMPTY=$(mktemp -d)
           for entry in "x86_64-linux:container-factory" "aarch64-linux:container-factory-aarch64"; do
@@ -260,9 +265,13 @@ jobs:
     needs: verify-cache
     # workflow_run fires regardless of conclusion; gate to success only.
     # workflow_dispatch always runs.
+    # `branches: [main]` matches the head branch name, which a fork PR can
+    # also call main: only promote runs from pushes to this repo.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     steps:
       - name: Mint GitHub App installation token
         id: app-token
@@ -275,13 +284,15 @@ jobs:
         id: target
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if [ -n "${{ inputs.sha }}" ]; then
-            SHA="${{ inputs.sha }}"
+          if [ -n "$INPUT_SHA" ]; then
+            SHA="$INPUT_SHA"
             echo "Using dispatch-input SHA: $SHA"
-          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-            SHA="${{ github.event.workflow_run.head_sha }}"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            SHA="$RUN_SHA"
             echo "Using build-all head SHA: $SHA"
           else
             SHA=$(gh api repos/${{ github.repository }}/git/refs/heads/main --jq '.object.sha')

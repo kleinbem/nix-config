@@ -24,7 +24,7 @@ invariants:
 repo_atlas:
   .github:
     path: .github/
-    url: git@github.com:kleinbem/.github.git
+    url: git@github.com:kleinbem-dev/.github.git
     role: Organization-wide GitHub Actions workflows and issue templates.
   actions:
     path: actions/
@@ -45,6 +45,10 @@ repo_atlas:
   coderabbit:
     path: coderabbit/
     url: git@github.com:kleinbem/coderabbit.git
+    role: Supporting repository.
+  coderabbit-dev:
+    path: coderabbit-dev/
+    url: git@github.com:kleinbem-dev/coderabbit.git
     role: Supporting repository.
   github-config:
     path: github-config/
@@ -92,7 +96,7 @@ repo_atlas:
     role: 'Developer shells provided via direnv: workspace (just, jj, gh, sops, age), openwrt, etc.'
   nix-gantry:
     path: nix-gantry/
-    url: git@github.com:kleinbem/nix-gantry.git
+    url: git@github.com:kleinbem-dev/nix-gantry.git
     role: Continuous deployment engine and automatic updater.
   nix-hardware:
     path: nix-hardware/
