@@ -119,6 +119,9 @@ audio_adc:
   - platform: es7210
     id: codec_adc
     i2c_id: bus_a
+    # Waveshare's own mic example runs the mics at 37.5 dB; ESPHome's 24 dB
+    # default left speech at about -56 dB RMS, too quiet for the wake word.
+    mic_gain: 37.5db
 
 switch:
   - platform: gpio
@@ -133,6 +136,9 @@ microphone:
     i2s_audio_id: i2s_bus
     i2s_din_pin: GPIO11
     adc_type: external
+    # The ES7210's mic data is on the left slot (Waveshare reads ALL_LEFT);
+    # ESPHome's default right slot is silent.
+    channel: left
     sample_rate: 16000
     bits_per_sample: 16bit
 
@@ -182,3 +188,17 @@ lvgl:
         - label:
             align: CENTER
             text: ${friendly_name}
+
+# Mic level, for checking placement and gain from Home Assistant.
+sensor:
+  - platform: sound_level
+    microphone:
+      microphone: mic
+    passive: true
+    measurement_duration: 1s
+    peak:
+      name: Mic peak
+      entity_category: diagnostic
+    rms:
+      name: Mic RMS
+      entity_category: diagnostic
