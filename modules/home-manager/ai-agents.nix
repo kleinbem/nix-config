@@ -285,6 +285,14 @@ in
       );
     };
 
+    # Claude Code keeps a scratch folder per session under /tmp/claude-<uid>
+    # and never removes it when the session ends. /tmp is RAM on the fleet,
+    # so a day of busy sessions filled the 8G tmpfs on nixos-nvme
+    # (2026-10-30). Age out anything untouched for 3 days.
+    systemd.user.tmpfiles.rules = lib.mkIf (builtins.elem "claude" wantedAgents) [
+      "e /tmp/claude-%U - - - 3d"
+    ];
+
     # Same reason as herdr's config.toml (nix-presets/herdr.nix): a store
     # symlink would make Claude Code's own writes fail, so merge instead.
     home.activation.claudeSettings = lib.mkIf (cfg.claude.settings != { }) (
