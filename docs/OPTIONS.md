@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 73  
-**Consumer files scanned:** 31
+**Declarations indexed:** 74  
+**Consumer files scanned:** 33
 
 ---
 
@@ -57,7 +57,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:297`
 - **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
-- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/caido.nix`, `preset:nix-presets/containers/dev-db.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/home-assistant.nix`, `preset:nix-presets/containers/miniflux.nix`, `preset:nix-presets/containers/n8n.nix`, `preset:nix-presets/containers/open-webui.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/qbittorrent.nix`, `preset:nix-presets/containers/stalwart.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
+- **Consumed by:** `host:container-factory`, `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/caido.nix`, `preset:nix-presets/containers/dev-db.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/forgejo.nix`, `preset:nix-presets/containers/home-assistant.nix`, `preset:nix-presets/containers/miniflux.nix`, `preset:nix-presets/containers/n8n.nix`, `preset:nix-presets/containers/open-webui.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/qbittorrent.nix`, `preset:nix-presets/containers/stalwart.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
 
 ## `my.boot`
 
@@ -165,6 +165,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/ente.nix:24`
 - **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`
 - **Consumed by:** `host:core-pi`
+
+### `my.containers.forgejo`
+
+- **Declared:** `nix-presets/containers/forgejo.nix:27`
+- **Sub-options:** `actions.enable`, `admin.email`, `admin.name`, `admin.passwordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `port`, `ssh.enable`, `ssh.port`
+- **Default-enabled** (no hosts import the declaring file)
+- **Explicit overrides:** `preset:nix-presets/checks/forgejo.nix`
 
 ### `my.containers.frigate`
 
