@@ -19,6 +19,14 @@
   ...
 }:
 
+let
+  hostSops = secretFile "nix/per-host/nixos-nvme.yaml";
+  # Gated on the key so eval works before it exists (sops-nix fails
+  # activation on a missing key).
+  hasHassCliToken =
+    builtins.pathExists hostSops
+    && lib.hasInfix "\nhass_cli_token:" ("\n" + builtins.readFile hostSops);
+in
 {
   # ==========================================
   # SOPS — Secrets Management
@@ -41,6 +49,13 @@
     # (only this host + masters can decrypt); everything else falls through to
     # defaultSopsFile (nix/shared.yaml, every NixOS host can decrypt).
     secrets = {
+      # Long-lived token of HA's `cli` user, read by the hass-cli wrapper in
+      # nix-devshells #workspace (never exported into shell environments).
+      hass_cli_token = lib.mkIf hasHassCliToken {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
       netbird_setup_key = { };
       # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so
       # the daemon can substitute from the private cache instead of 401-ing and

@@ -1028,9 +1028,11 @@ hosts:
     - buzz_typesense_api_key
     - garage_rpc_secret
     - github_runner_pat
+    - hass_cli_token
     - langfuse_db_password
-    - netbird_setup_key
+    - mode
     - ntfy_agents_topic
+    - owner
     - paperless_password
     - sopsFile
     hardware_profile: Intel Core Desktop (Zotac) + renderD128 QuickSync + FIDO2/YubiKey
