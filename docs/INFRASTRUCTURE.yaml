@@ -391,6 +391,7 @@ hosts:
     - '[other] nix-gantry:updater'
     - '[module] modules/nixos/rpi5-disko.nix'
     - '[local] ./secrets.nix'
+    - '[local] ./esphome-secrets.nix'
     - '[preset] nix-presets:home-assistant'
     - '[preset] nix-presets:openclaw'
     - '[preset] nix-presets:herdr-remote-client'
@@ -438,8 +439,11 @@ hosts:
     - home-assistant
     - openclaw
     secrets_consumed:
+    - key
     - netbird_setup_key
     - node_red_admin_hash
+    - sopsFile
+    - wifi_ssid
     hardware_profile: Raspberry Pi 5 (BCM2712, 4x Cortex-A76)
   mac-mini:
     tier: desktop

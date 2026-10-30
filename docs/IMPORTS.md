@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 96
+**Distinct imports:** 97
 
 ---
 
@@ -30,7 +30,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - **Modules:** `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`
 - **Presets:** `nix-presets:herdr-remote-client`, `nix-presets:home-assistant`, `nix-presets:openclaw`
 - **Other inputs:** `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
-- **Local:** `./secrets.nix`
+- **Local:** `./esphome-secrets.nix`, `./secrets.nix`
 
 ### `mac-mini`
 
@@ -86,6 +86,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./containers.nix` ← nixos-nvme
 - `./data-disk.nix` ← nasbook
 - `./disko.nix` ← mac-mini, nasbook, orin-nano, orin-nano-bootstrap
+- `./esphome-secrets.nix` ← hass-pi
 - `./garage.nix` ← nixos-nvme
 - `./hardware-boot.nix` ← nixos-nvme
 - `./hardware.nix` ← orin-nano
