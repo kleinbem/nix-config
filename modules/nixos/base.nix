@@ -95,7 +95,7 @@
       # -----------------------------------------------------------------------
       # Fixes for nixos-unstable regressions that need a change to the package.
       # A package that only needs another nixpkgs (stable, or the last commit
-      # where it worked) goes to kleinbem/nix-holds instead.
+      # where it worked) goes to kleinbem/nix-holds-fleet instead.
       # -----------------------------------------------------------------------
 
       # reuse: nixos-unstable's python builder now hands attrs over as
