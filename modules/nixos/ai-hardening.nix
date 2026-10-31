@@ -34,6 +34,7 @@ let
     "paperless.kleinbem.dev"
     "hass.kleinbem.dev"
     "buzz.kleinbem.dev"
+    "garage.kleinbem.dev"
     "s3.kleinbem.dev"
     "torrents.kleinbem.dev"
   ];
