@@ -4,7 +4,7 @@
 # Prints a Markdown report of why the nightly lock update failed validation:
 # the failing check and the first error lines. When a package is refused as
 # broken, it adds the derivation chain from the failing host down to that
-# package and a ready kleinbem/nix-holds entry pinned to the nixpkgs commit the
+# package and a ready kleinbem/nix-holds-fleet entry pinned to the nixpkgs commit the
 # fleet runs now (the lock before the update), so holding the leaf the fleet
 # really uses is one short PR.
 set -euo pipefail
@@ -31,7 +31,7 @@ echo '```'
 grep -oE "while evaluating (derivation '[^']+'|the option \`[^']+')" "$log" | sed 's/^while evaluating //' | head -20
 echo '```'
 echo
-echo "Hold the package the fleet uses (the lowest top-level package in the chain, not \`$broken\` itself) in kleinbem/nix-holds \`held-packages.json\`:"
+echo "Hold the package the fleet uses (the lowest top-level package in the chain, not \`$broken\` itself) in kleinbem/nix-holds-fleet \`held-packages.json\`:"
 echo
 echo '```json'
 jq -n --arg rev "$rev" --arg narHash "$narHash" --arg broken "$broken" --arg since "$(date -u +%F)" '{
