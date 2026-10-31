@@ -292,7 +292,13 @@ in
       enable = true;
       settings = {
         reflector.enable-reflector = true;
-        server.allow-interfaces = [ "end0" ]; # Forward from physical LAN
+        # The reflector forwards between the interfaces avahi runs on, so it
+        # needs the container bridge too, or HA (Cast, zeroconf discovery)
+        # never sees the LAN's announcements.
+        server.allow-interfaces = [
+          "end0"
+          "cbr0"
+        ];
       };
     };
   };
