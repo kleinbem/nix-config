@@ -62,10 +62,11 @@ runs:
         configure-auto-gc: ${{ inputs.configure-auto-gc }}
         free-disk-space: ${{ inputs.free-disk-space }}
         extra-conf: |
-          sandbox = false
+          sandbox = relaxed
           auto-allocate-uids = true
           extra-system-features = uid-range
           experimental-features = nix-command flakes auto-allocate-uids cgroups
+          extra-sandbox-paths = /dev/net?
         # nix-config's own copy stays authoritative for this repo; the
         # action ships the same root for repos that have none.
         ca-cert: pki/caddy-root.crt
