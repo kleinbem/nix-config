@@ -48,6 +48,10 @@
       "Bash(statix check *)",
       "Bash(deadnix *)",
       "Bash(fido2-token -L)"
+    ],
+    "deny": [
+      "Bash(gh pr merge --admin*)",
+      "Bash(gh pr merge *--admin*)"
     ]
   },
   "autoMode": {
@@ -75,7 +79,7 @@
       "Bash(just push-all:*)",
       "Bash(just ship-all:*)",
       "Bash(tofu apply:*)",
-      "gh pr merge --admin or any other branch-protection bypass"
+      "Any other branch-protection bypass: ruleset or protection edits through gh api, bypass flags on merges or pushes"
     ],
     "environment": [
       "$defaults",
