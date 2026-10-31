@@ -10,9 +10,18 @@
 #               a reboot boots the default generation, which already
 #               needed authentication to install, so it can't escalate —
 #               the worst a hostile process can do is take the host down.
-#   deploy    — everything that mutates the system: system/container
-#               profile switches, starting/stopping units, root shells in
-#               containers, systemd-run. These authenticate like any other
+#   operate   — unit and container lifecycle, regex-bounded. NOPASSWD so
+#               agents can restart what they break and roll out merged
+#               main (`systemctl start nixos-upgrade.service` pulls the
+#               signed main build — the agent-safe deploy path). Bounded
+#               because `systemctl start *` is root: template instances
+#               take arbitrary input (podman-kube@<any yaml>, capsule@,
+#               systemd-factory-reset@), so unit names exclude `@`, `.`
+#               and leading `-`, and a few units are denied outright.
+#               Worst case is a stopped service, not escalation.
+#   deploy    — everything root-equivalent: system/container profile
+#               switches to an arbitrary store path or flake, root shells
+#               in containers, systemd-run. These authenticate like any other
 #               sudo call (password on the workstation, pam_rssh touch key
 #               or password on headless hosts — see headless.nix).
 #
@@ -27,7 +36,8 @@
 # sudoers semantics: when several entries match, the LAST match wins. The
 # deploy rule therefore comes first and the read-only rule second, so the
 # narrow read-only `machinectl shell * <cmd>` patterns override the broad
-# `machinectl shell *` deploy entry.
+# `machinectl shell *` deploy entry. The operateDenied negations come
+# last of all, so they beat every allow rule including `%wheel ALL`.
 #
 # `my.security.sudo.unattendedDeploy = true` keeps the deploy tier
 # passwordless on a host that still needs push deploys without a human
@@ -72,14 +82,6 @@ let
     "${sw}/ln -sfn /nix/var/nix/profiles/containers/* /var/lib/machines/*/current"
     "${sw}/mkdir -p /var/lib/machines/*"
     "${sw}/machinectl shell *"
-    "${sw}/machinectl start *"
-    "${sw}/machinectl stop *"
-    "${sw}/machinectl restart *"
-    "${sw}/systemctl start *"
-    "${sw}/systemctl stop *"
-    "${sw}/systemctl restart *"
-    "${sw}/systemctl reload *"
-    "${sw}/systemctl daemon-reload"
     # Runs a one-off command inside a container's namespace via a
     # transient unit, with real stdin/stdout piping (unlike
     # `machinectl shell`'s PTY) — needed by persona-scaffold.sh to
@@ -98,6 +100,24 @@ let
     "${sw}/systemctl reboot --firmware-setup"
     "${sw}/shutdown -r now"
     "${sw}/shutdown -h now"
+  ];
+
+  # sudoers regex: the path stays literal, the argument string is matched
+  # as `^…$` (POSIX ERE). `:`, `,`, `=` and `\` would need sudoers
+  # escaping, so the patterns avoid them.
+  unit = "[A-Za-z0-9][A-Za-z0-9_-]*([.]service|[.]timer|[.]socket)?";
+  machine = "[A-Za-z0-9][A-Za-z0-9_-]*";
+  operate = [
+    "${sw}/systemctl ^(start|stop|restart|try-restart|reload|reload-or-restart|reset-failed) ${unit}( ${unit})*$"
+    "${sw}/systemctl daemon-reload"
+    "${sw}/systemctl reset-failed"
+    "${sw}/machinectl ^(start|stop|restart|reboot|poweroff|terminate) ${machine}$"
+  ];
+
+  # Matches anywhere in an operate command: a root console on tty9, or
+  # single-user mode on a host nobody is sitting at.
+  operateDenied = [
+    "${sw}/systemctl ^.*(debug-shell|emergency|rescue).*$"
   ];
 
   readOnly = [
@@ -132,6 +152,11 @@ let
     "${sw}/systemd-analyze blame"
     "${sw}/systemd-analyze critical-chain"
     "${sw}/systemd-analyze critical-chain *"
+    "${sw}/dmesg"
+    "${sw}/ss -tulpn"
+    "${sw}/smartctl ^-[aHix]+ /dev/[a-z0-9]+$"
+    # Without -d it only deletes unreachable paths; every generation stays.
+    "${sw}/nix-collect-garbage \"\""
   ];
 in
 {
@@ -140,10 +165,10 @@ in
     default = false;
     description = ''
       Keep the deploy tier of the sudo allowlist (system/container
-      switches, unit start/stop, container shells) passwordless on this
+      switches, container shells, systemd-run) passwordless on this
       host. Only for hosts that still receive unattended push deploys;
-      everything else authenticates. The read-only and power tiers are
-      always passwordless.
+      everything else authenticates. The read-only, power and operate
+      tiers are always passwordless.
     '';
   };
 
@@ -154,7 +179,12 @@ in
     }
     {
       users = [ user ];
-      commands = mkCommands [ "NOPASSWD" ] (power ++ readOnly);
+      commands = mkCommands [ "NOPASSWD" ] (power ++ operate ++ readOnly);
+    }
+    # Last, so the denial wins over both the rule above and %wheel ALL.
+    {
+      users = [ user ];
+      commands = mkCommands [ ] (map (c: "!${c}") operateDenied);
     }
   ];
 }
