@@ -1,0 +1,64 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(gh api -X DELETE repos/kleinbem/*/git/refs/heads/*)",
+      "Bash(gh api -X PATCH repos/block/buzz/issues/comments/*)",
+      "Bash(gh api -X PATCH repos/NixOS/nixpkgs/issues/comments/*)",
+      "Bash(jj log *)",
+      "Bash(jj status *)",
+      "Bash(jj st *)",
+      "Bash(jj diff *)",
+      "Bash(nix flake show *)",
+      "Bash(nix flake metadata *)",
+      "Bash(nix flake check *)",
+      "Bash(nix log *)",
+      "Bash(nix path-info *)",
+      "Bash(nix show-derivation *)",
+      "Bash(nix-store --query *)",
+      "Bash(just --list)",
+      "Bash(just --list *)",
+      "Bash(just check)",
+      "Bash(journalctl *)",
+      "Bash(systemctl status *)",
+      "Bash(netbird status)",
+      "Bash(gh search *)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Read-only inspection anywhere in the workspace: jj status/log/diff/show/bookmark list, just status-all/diff-all/clean/remote-status/remote-prs/remote-ci/ws-list, nix eval/flake show/flake metadata, nix-instantiate, journalctl, systemctl status",
+      "Read-only gh queries on any repository: pr/issue/run/release/repo view, list, checks and diff, gh api GET requests, gh search",
+      "Local builds, tests and linters: nix build, nix flake check, nix-fast-build, just check/test, nixfmt, statix, deadnix, pre-commit run",
+      "jj work inside an agent workspace (<repo>.ws/<name>/): describe, new, commit, squash, rebase, bookmark create/set, workspace add/update-stale, and just jj::ws-new/ws-gc",
+      "Pushing non-main bookmarks (jj git push, just jj::push) to kleinbem/* and kleinbem-dev/* repositories",
+      "Opening, editing and commenting on pull requests in kleinbem/* and kleinbem-dev/*, and enabling auto-merge on them with gh pr merge --auto --squash right after creating them",
+      "Replying to and resolving CodeRabbit review threads on pull requests in kleinbem/* and kleinbem-dev/*",
+      "Merging pull requests in kleinbem/* repositories with gh pr merge, when Martin explicitly asked for that merge in the conversation",
+      "Re-running, cancelling and dispatching GitHub Actions workflows (gh run rerun/cancel, gh workflow run) in kleinbem/* and kleinbem-dev/*",
+      "Creating, editing and uploading assets to GitHub releases and tags (gh release create/edit/upload, jj/git tag push) in kleinbem/* and kleinbem-dev/* repositories",
+      "Deleting branches of merged pull requests in kleinbem/* and kleinbem-dev/* repositories"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(just push-all:*)",
+      "Bash(just ship-all:*)",
+      "Bash(tofu apply:*)"
+    ],
+    "environment": [
+      "$defaults",
+      "**Organization**: kleinbem, a personal NixOS + OpenWrt fleet. GitHub user kleinbem owns every repo; all repos are private unless a per-repo check says otherwise.",
+      "**Project layout**: ~/Develop/github.com/kleinbem/ is a flat directory of ~16 independent sibling git+jj repos; it is not itself a repo. Treat the whole directory, every sibling repo in it and its remote at github.com/kleinbem/<repo> as the trusted project.",
+      "**Agent workspaces**: <repo>.ws/<name>/ directories are jj workspaces of <repo> (created by just jj::ws-new). They share the repo's commit graph and remote; editing, committing and pushing there is normal in-project work.",
+      "**VCS**: jj (Jujutsu) first, colocated with git; just recipes fan jj commands out across repos. Commits are signed with a YubiKey FIDO2 key; the no-touch key signs unattended.",
+      "**Secrets management**: sops + age with per-path recipients in the kleinbem-secrets repo; markers SOPS_AGE_KEY, SOPS_AGE_KEY_FILE, SOPS_AGE_RECIPIENTS. Never treat a plaintext file in a *-secrets repo as safe without checking.",
+      "**Sensitive data locations**: kleinbem-secrets/, nix-config/hosts/*/secrets.nix, nix/infra/**/terraform.tfstate and github-config/.terraform/terraform.tfstate (may hold plaintext secrets), .envrc files.",
+      "**Cloud and network**: Cloudflare (nix/infra/cloudflare-*.tf), self-hosted Garage S3 (nix/infra/garage/), NetBird overlay (nix/infra/netbird/). Internal ranges 10.0.0.0/24 (LAN), 10.85.x.x (containers and mesh). Trusted domains kleinbem.dev and its subdomains.",
+      "**Deploy paths**: GitHub Actions builds and tags production in nix-config; hosts pull via comin or the auto-upgrade timer; colmena push and just dev::apply are the manual paths. github-config applies Terraform via GitHub Actions; nix/infra roots are applied locally with tofu.",
+      "**Protected targets**: the six fleet hosts (nixos-nvme, orin-nano, core-pi, hass-pi, nasbook, mac-mini), the router, anything named prod/production, and the IaC scopes Cloudflare DNS/Access, NetBird policies/routes/setup-keys, Garage keys/buckets, github-secrets.tf.",
+      "**Org CLIs**: jj, just, nix, nixos-rebuild, nix-instantiate, nixfmt, deadnix, statix, tofu, colmena, comin, garage, sops, age, machinectl, gh, direnv.",
+      "**Routine commands**: just status-all / diff-all / remote-status / remote-prs / remote-ci, jj log / diff / status, nix eval of host toplevels, gh pr and gh run queries, run from anywhere in the workspace."
+    ]
+  }
+}
