@@ -4,7 +4,25 @@
     "allow": [
       "Bash(gh api -X DELETE repos/kleinbem/*/git/refs/heads/*)",
       "Bash(gh api -X PATCH repos/block/buzz/issues/comments/*)",
-      "Bash(gh api -X PATCH repos/NixOS/nixpkgs/issues/comments/*)"
+      "Bash(gh api -X PATCH repos/NixOS/nixpkgs/issues/comments/*)",
+      "Bash(jj log *)",
+      "Bash(jj status *)",
+      "Bash(jj st *)",
+      "Bash(jj diff *)",
+      "Bash(nix flake show *)",
+      "Bash(nix flake metadata *)",
+      "Bash(nix flake check *)",
+      "Bash(nix log *)",
+      "Bash(nix path-info *)",
+      "Bash(nix show-derivation *)",
+      "Bash(nix-store --query *)",
+      "Bash(just --list)",
+      "Bash(just --list *)",
+      "Bash(just check)",
+      "Bash(journalctl *)",
+      "Bash(systemctl status *)",
+      "Bash(netbird status)",
+      "Bash(gh search *)"
     ]
   },
   "theme": "dark",
@@ -13,12 +31,17 @@
   "autoMode": {
     "allow": [
       "$defaults",
-      "Bash(jj status:*)",
-      "Bash(jj diff:*)",
-      "Bash(just status-all:*)",
-      "Bash(just diff-all:*)",
-      "Bash(nix-instantiate:*)",
-      "Merging pull requests in kleinbem/* repositories with gh pr merge, when Martin explicitly asked for that merge in the conversation"
+      "Read-only inspection anywhere in the workspace: jj status/log/diff/show/bookmark list, just status-all/diff-all/clean/remote-status/remote-prs/remote-ci/ws-list, nix eval/flake show/flake metadata, nix-instantiate, journalctl, systemctl status",
+      "Read-only gh queries on any repository: pr/issue/run/release/repo view, list, checks and diff, gh api GET requests, gh search",
+      "Local builds, tests and linters: nix build, nix flake check, nix-fast-build, just check/test, nixfmt, statix, deadnix, pre-commit run",
+      "jj work inside an agent workspace (<repo>.ws/<name>/): describe, new, commit, squash, rebase, bookmark create/set, workspace add/update-stale, and just jj::ws-new/ws-gc",
+      "Pushing non-main bookmarks (jj git push, just jj::push) to kleinbem/* and kleinbem-dev/* repositories",
+      "Opening, editing and commenting on pull requests in kleinbem/* and kleinbem-dev/*, and enabling auto-merge on them with gh pr merge --auto --squash right after creating them",
+      "Replying to and resolving CodeRabbit review threads on pull requests in kleinbem/* and kleinbem-dev/*",
+      "Merging pull requests in kleinbem/* repositories with gh pr merge, when Martin explicitly asked for that merge in the conversation",
+      "Re-running, cancelling and dispatching GitHub Actions workflows (gh run rerun/cancel, gh workflow run) in kleinbem/* and kleinbem-dev/*",
+      "Creating, editing and uploading assets to GitHub releases and tags (gh release create/edit/upload, jj/git tag push) in kleinbem/* and kleinbem-dev/* repositories",
+      "Deleting branches of merged pull requests in kleinbem/* and kleinbem-dev/* repositories"
     ],
     "soft_deny": [
       "$defaults",
