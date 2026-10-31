@@ -185,6 +185,18 @@ let
       # value). Real bind mount is supplied by the deploying host.
       adminPasswordFile = "/run/secrets/factory-dummy";
     };
+    forgejo = {
+      ip = "${myInventory.network.nodes.forgejo.ip}/24"; # mac-mini, real address like stalwart
+      hostDataDir = dataDir "forgejo";
+      # Must match mac-mini: the admin and OIDC settings change the
+      # bootstrap unit, so they change the closure. Paths are bind mounts
+      # supplied by the deploying host.
+      admin.passwordFile = "/run/secrets/factory-dummy";
+      oidc = {
+        enable = true;
+        clientSecretFile = "/run/secrets/factory-dummy";
+      };
+    };
     # authelia removed 2026-09-22 — decommissioned, replaced by Authentik.
     # github-runner: opt-in debug runner, built embedded on nixos-nvme
     # (excludeFromUpdater) so it's not a factory target.
@@ -302,6 +314,7 @@ in
     inputs.nix-presets.nixosModules.qdrant
     inputs.nix-presets.nixosModules.ntfy
     inputs.nix-presets.nixosModules.stalwart
+    inputs.nix-presets.nixosModules.forgejo
     inputs.nix-presets.nixosModules.playground
     inputs.nix-presets.nixosModules.caddy
     inputs.nix-presets.nixosModules.comfyui
