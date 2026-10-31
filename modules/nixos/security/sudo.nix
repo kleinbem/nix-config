@@ -6,6 +6,10 @@
 #   readOnly  — queries that cannot change anything (nft list, journalctl,
 #               systemctl status/list/show, machinectl show/status/list,
 #               a few read-only commands *inside* containers). NOPASSWD.
+#   power     — reboot / power off, exact argument lists only. NOPASSWD:
+#               a reboot boots the default generation, which already
+#               needed authentication to install, so it can't escalate —
+#               the worst a hostile process can do is take the host down.
 #   deploy    — everything that mutates the system: system/container
 #               profile switches, starting/stopping units, root shells in
 #               containers, systemd-run. These authenticate like any other
@@ -84,6 +88,18 @@ let
     "${sw}/systemd-run --machine=* --pipe --quiet --wait *"
   ];
 
+  # `""` means "no arguments" in sudoers; a bare command would accept any.
+  # reboot/poweroff are systemctl under another argv[0], hence exact args.
+  power = [
+    "${sw}/reboot \"\""
+    "${sw}/poweroff \"\""
+    "${sw}/systemctl reboot"
+    "${sw}/systemctl poweroff"
+    "${sw}/systemctl reboot --firmware-setup"
+    "${sw}/shutdown -r now"
+    "${sw}/shutdown -h now"
+  ];
+
   readOnly = [
     "${sw}/nft list table *"
     "${sw}/nft list ruleset"
@@ -126,8 +142,8 @@ in
       Keep the deploy tier of the sudo allowlist (system/container
       switches, unit start/stop, container shells) passwordless on this
       host. Only for hosts that still receive unattended push deploys;
-      everything else authenticates. The read-only tier is always
-      passwordless.
+      everything else authenticates. The read-only and power tiers are
+      always passwordless.
     '';
   };
 
@@ -138,7 +154,7 @@ in
     }
     {
       users = [ user ];
-      commands = mkCommands [ "NOPASSWD" ] readOnly;
+      commands = mkCommands [ "NOPASSWD" ] (power ++ readOnly);
     }
   ];
 }
