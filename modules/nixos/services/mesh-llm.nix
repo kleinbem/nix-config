@@ -108,6 +108,14 @@ in
 
     systemd.services.mesh-llm.wantedBy = lib.mkIf (!cfg.autoStart) (lib.mkForce [ ]);
 
+    # MeshLLM learns the GPU's CUDA architecture from nvidia-smi; without it on
+    # the service's PATH it rejects the CUDA runtime and serves on the CPU (the
+    # Orin did, with GPU load 0, until 2026-10-31). On a Jetson, nvidia-smi
+    # comes from l4t-nvml.
+    systemd.services.mesh-llm.path = lib.optional (
+      options.hardware ? nvidia-jetpack && config.hardware.nvidia-jetpack.enable
+    ) pkgs.nvidia-jetpack.l4t-nvml;
+
     # The fleet's hosts run a tmpfs root (persistence.nix), and /var is a
     # few GB of RAM: the node's state directory holds its identity (which
     # join tokens stay valid), its config and the model cache, so it lives

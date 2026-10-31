@@ -39,13 +39,16 @@ in
       replace = true;
       # A fresh registration and work directory for every job.
       ephemeral = true;
-      # Besides the module's bash, coreutils, git and nix: the canary script's tools.
+      # Besides the module's bash, coreutils, git and nix: the canary script's
+      # tools, and nvidia-smi (l4t-nvml), from which MeshLLM learns the GPU's
+      # CUDA architecture; without it the CUDA runtime is rejected.
       extraPackages = with pkgs; [
         curl
         gawk
         gnugrep
         gnused
         jq
+        nvidia-jetpack.l4t-nvml
         python3
       ];
       serviceOverrides = {
