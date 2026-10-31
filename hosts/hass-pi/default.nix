@@ -74,11 +74,13 @@ in
       allowedTCPPorts = [ 8123 ]; # direct LAN access to HA — see forwardPorts note below
       interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
       # Only the container bridge may reach the host-side Matter server
-      # websocket and the OTBR REST API; Home Assistant talks to both at
-      # ${hostAddress} from inside its container.
+      # websocket, the OTBR REST API and the Wyoming voice servers; Home
+      # Assistant talks to them at ${hostAddress} from inside its container.
       interfaces."cbr0".allowedTCPPorts = [
         5580 # matterjs-server
         8081 # openthread-border-router REST
+        10200 # wyoming-piper
+        10300 # wyoming-faster-whisper
       ];
     };
   };
