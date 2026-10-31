@@ -13,7 +13,7 @@ in
 pkgs.testers.runNixOSTest {
   name = "mobile-to-gateway-mesh-test";
 
-  nodes = {
+  containers = {
     # The Caddy Gateway (Target)
     gateway =
       { ... }:

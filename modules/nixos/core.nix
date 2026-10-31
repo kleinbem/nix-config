@@ -78,7 +78,11 @@ in
       experimental-features = [
         "nix-command"
         "flakes"
+        "auto-allocate-uids"
+        "cgroups"
       ];
+      auto-allocate-uids = true;
+      extra-system-features = [ "uid-range" ];
       auto-optimise-store = true;
       substituters = [
         "https://cache.nixos.org"
