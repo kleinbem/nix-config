@@ -145,6 +145,9 @@
       # than fall back to compiling the whole closure from source.
       requireCache = true;
     };
+    # Claude Code's permission and auto-mode policy, as read-only managed
+    # settings (modules/nixos/claude-code.nix).
+    claudeCode.enable = true;
     desktop = {
       gnome.enable = true;
       claude.enable = true;

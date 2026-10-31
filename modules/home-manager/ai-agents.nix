@@ -164,10 +164,12 @@ in
       type = lib.types.attrsOf lib.types.anything;
       default = { };
       example = {
-        permissions.defaultMode = "auto";
+        theme = "dark";
       };
       description = ''
-        Keys to enforce in ~/.claude/settings.json. Claude Code writes to that
+        Preferences to enforce in ~/.claude/settings.json. Permission and
+        auto-mode rules belong in the NixOS managed settings instead
+        (my.claudeCode), which nothing overwrites. Claude Code writes to that
         file itself, so it stays a real file: on every activation these keys
         are deep-merged over it (lists are replaced, not appended) and every
         key not declared here is left alone.
