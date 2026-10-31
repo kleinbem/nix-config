@@ -1356,7 +1356,7 @@
         "ghostty": "ghostty_2",
         "git-hooks": "git-hooks_4",
         "mk-shell-bin": "mk-shell-bin",
-        "nix-holds": "nix-holds",
+        "nix-holds-fleet": "nix-holds-fleet",
         "nix2container": "nix2container",
         "nixos-generators": "nixos-generators",
         "nixpkgs": [
@@ -1368,11 +1368,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1793433898,
-        "narHash": "sha256-bAqj4xJzSdsS4WdB6fPh7fkzpeeAQj0AwtmY0l/NIm8=",
+        "lastModified": 1793448564,
+        "narHash": "sha256-aBCs682L7HqRl99MxGreYFctLbNpe5n2YaR8rs6mozw=",
         "owner": "kleinbem",
         "repo": "nix-devshells",
-        "rev": "2f3604a2c27c20fab7d9b61f270cdf8f7223c163",
+        "rev": "28ed9d9258328a6bae1b7c354dc87444b7487903",
         "type": "github"
       },
       "original": {
@@ -1515,7 +1515,34 @@
     },
     "nix-holds": {
       "inputs": {
-        "nix-holds": "nix-holds_2",
+        "nixpkgs": [
+          "nix-devshells",
+          "nix-holds-fleet",
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": [
+          "nix-devshells",
+          "nix-holds-fleet",
+          "nixpkgs-stable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793422466,
+        "narHash": "sha256-mWzbKmZY/goOIM3GcbL5ZhyHYDED+ivofhhdwQnoVNM=",
+        "owner": "kleinbem-dev",
+        "repo": "nix-holds",
+        "rev": "d5807a0081bcec1e6e43ebf1c5b7f67647402314",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem-dev",
+        "repo": "nix-holds",
+        "type": "github"
+      }
+    },
+    "nix-holds-fleet": {
+      "inputs": {
+        "nix-holds": "nix-holds",
         "nix-packages": "nix-packages",
         "nixpkgs": [
           "nix-devshells",
@@ -1542,34 +1569,7 @@
     },
     "nix-holds_2": {
       "inputs": {
-        "nixpkgs": [
-          "nix-devshells",
-          "nix-holds",
-          "nixpkgs"
-        ],
-        "nixpkgs-stable": [
-          "nix-devshells",
-          "nix-holds",
-          "nixpkgs-stable"
-        ]
-      },
-      "locked": {
-        "lastModified": 1793422466,
-        "narHash": "sha256-mWzbKmZY/goOIM3GcbL5ZhyHYDED+ivofhhdwQnoVNM=",
-        "owner": "kleinbem-dev",
-        "repo": "nix-holds",
-        "rev": "d5807a0081bcec1e6e43ebf1c5b7f67647402314",
-        "type": "github"
-      },
-      "original": {
-        "owner": "kleinbem-dev",
-        "repo": "nix-holds",
-        "type": "github"
-      }
-    },
-    "nix-holds_3": {
-      "inputs": {
-        "nix-holds": "nix-holds_4",
+        "nix-holds": "nix-holds_3",
         "nix-packages": [
           "nix-packages"
         ],
@@ -1594,7 +1594,7 @@
         "type": "github"
       }
     },
-    "nix-holds_4": {
+    "nix-holds_3": {
       "inputs": {
         "nixpkgs": [
           "nix-holds",
@@ -2793,7 +2793,7 @@
         "nix-flatpak": "nix-flatpak",
         "nix-gantry": "nix-gantry",
         "nix-hardware": "nix-hardware",
-        "nix-holds": "nix-holds_3",
+        "nix-holds": "nix-holds_2",
         "nix-index-database": "nix-index-database",
         "nix-mineral": "nix-mineral",
         "nix-on-droid": "nix-on-droid",
