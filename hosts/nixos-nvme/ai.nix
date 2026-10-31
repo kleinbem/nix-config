@@ -14,10 +14,6 @@
   # (users/martin/home.nix).
   # Started by hand (`sudo systemctl start mesh-llm`): idle, the model's ~25 GB
   # went to swap and left no room for builds (2026-10-25).
-  # Claude Code's permission and auto-mode policy, as read-only managed
-  # settings (modules/nixos/claude-code.nix).
-  my.claudeCode.enable = true;
-
   my.services.meshLlm = {
     enable = true;
     autoStart = false;

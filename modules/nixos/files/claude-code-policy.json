@@ -2,7 +2,6 @@
   "permissions": {
     "defaultMode": "auto",
     "allow": [
-      "Bash(gh api -X DELETE repos/kleinbem/*/git/refs/heads/*)",
       "Bash(gh api -X PATCH repos/block/buzz/issues/comments/*)",
       "Bash(gh api -X PATCH repos/NixOS/nixpkgs/issues/comments/*)",
       "Bash(jj log *)",
