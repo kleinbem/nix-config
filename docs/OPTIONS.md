@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 74  
+**Declarations indexed:** 75  
 **Consumer files scanned:** 33
 
 ---
@@ -66,6 +66,14 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/initrd-fan.nix:61`
 - **Sub-options:** `enable`, `kernelModules`, `pwm`
 - **Consumed by:** `host:orin-nano`
+
+## `my.claudeCode`
+
+### `my.claudeCode`
+
+- **Declared:** `nix-config/modules/nixos/claude-code.nix:19`
+- **Sub-options:** `enable`, `settings`
+- **Consumed by:** `host:nixos-nvme`
 
 ## `my.containers`
 

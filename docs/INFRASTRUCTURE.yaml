@@ -778,6 +778,8 @@ hosts:
       - clevis-initrd.fallbackMessage
       - clevis-initrd.luksDevice
       - clevis-initrd.secretFile
+      claudeCode:
+      - enable
       containers:
       - agent-team
       - agent-team.agents
@@ -1945,6 +1947,11 @@ modules_system:
     file: nix-config/modules/nixos/base.nix
     purpose: Foundational system layer, experimental-features, default sops settings.
     declared_options: []
+  claude-code.nix:
+    file: nix-config/modules/nixos/claude-code.nix
+    purpose: NixOS system module.
+    declared_options:
+    - my.claudeCode
   clevis-initrd.nix:
     file: nix-config/modules/nixos/clevis-initrd.nix
     purpose: Clevis NBDE network-bound disk encryption unlock during initrd stage via Tang servers.
