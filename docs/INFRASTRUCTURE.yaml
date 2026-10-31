@@ -104,7 +104,7 @@ repo_atlas:
     role: 'Custom hardware flakes: nixos-nvme (Intel Core), orin-nano (Jetson Tegra/CUDA), rpi5, lxc-guest.'
   nix-holds:
     path: nix-holds/
-    url: git@github.com:kleinbem/nix-holds.git
+    url: git@github.com:kleinbem-dev/nix-holds.git
     role: Supporting repository.
   nix-holds-fleet:
     path: nix-holds-fleet/
