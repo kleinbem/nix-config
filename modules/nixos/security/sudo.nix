@@ -156,8 +156,6 @@ let
     "${sw}/dmesg \"\""
     "${sw}/ss -tulpn"
     "${sw}/smartctl ^-[aHix]+ /dev/[a-z0-9]+$"
-    # Without -d it only deletes unreachable paths; every generation stays.
-    "${sw}/nix-collect-garbage \"\""
   ];
 in
 {
