@@ -15,29 +15,15 @@ let
   # of a static /etc/hosts pin.
   hostNetbirdIp = (inv.hosts.${config.networking.hostName} or { }).netbirdIp or null;
   cacheViaNetbirdDns = cfg.strictEgress && hostNetbirdIp != null;
-  # Every FQDN NetBird answers authoritatively over the mesh (see
-  # nix/infra/netbird/dns.tf's `mesh_only_fqdns` local — keep these two
-  # lists in sync by hand, same as this file already did for cache alone).
-  # Public DNS answers these with the Cloudflare tunnel's IPs (wrong or,
-  # for the mesh-only ones, plain unreachable off-mesh), so this dnsmasq
-  # — which has no-resolv=true and otherwise only talks to public
-  # upstreams — needs an explicit per-domain forward to the local NetBird
-  # agent's own embedded DNS server (bound to this host's own mesh IP) for
-  # each one, or it never queries NetBird for them at all.
-  meshOnlyFqdns = [
-    "cache.kleinbem.dev"
-    "attic.kleinbem.dev"
-    "code.kleinbem.dev"
-    "frigate.kleinbem.dev"
-    "syncthing.kleinbem.dev"
-    "alertmanager.kleinbem.dev"
-    "paperless.kleinbem.dev"
-    "hass.kleinbem.dev"
-    "buzz.kleinbem.dev"
-    "garage.kleinbem.dev"
-    "s3.kleinbem.dev"
-    "torrents.kleinbem.dev"
-  ];
+  # Every FQDN NetBird answers authoritatively over the mesh: the inventory's
+  # `meshOnly` nodes, the same list nix/infra/netbird/dns.tf creates zones
+  # for (via iac/data.nix). Public DNS answers these with the Cloudflare
+  # tunnel's IPs (wrong or, for the mesh-only ones, plain unreachable
+  # off-mesh), so this dnsmasq — which has no-resolv=true and otherwise only
+  # talks to public upstreams — needs an explicit per-domain forward to the
+  # local NetBird agent's own embedded DNS server (bound to this host's own
+  # mesh IP) for each one, or it never queries NetBird for them at all.
+  meshOnlyFqdns = (import ../../iac/data.nix { inherit lib; }).inventoryJson.mesh_only_fqdns;
 in
 {
   options.my.security.ai-hardening = {

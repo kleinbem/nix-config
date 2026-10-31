@@ -222,6 +222,9 @@ in
     # Cloudflare Tunnel ingress (→ Caddy). Omit for mesh-only services —
     # `externalPort`/`auth` don't encode public vs mesh-only (code, frigate,
     # paperless, s3, … all have both yet stay on NetBird only).
+    # `meshOnly = true` resolves `domain` + `extraDomains` to the Caddy peer
+    # over NetBird DNS: iac/data.nix exports them to nix/infra/netbird/dns.tf,
+    # and ai-hardening's dnsmasq forwards them to the NetBird agent.
     nodes = {
       # Infrastructure
       caddy = {
@@ -269,6 +272,7 @@ in
         port = 8080;
         externalPort = 443;
         domain = "cache.kleinbem.dev";
+        meshOnly = true;
         # Being renamed to attic.kleinbem.dev, which frees cache.kleinbem.dev
         # for the public binary cache (R2). Both names work until every
         # host and CI job uses the new one.
@@ -308,6 +312,7 @@ in
         port = 3900;
         externalPort = 443;
         domain = "s3.kleinbem.dev";
+        meshOnly = true;
         # No SSO/mTLS: S3 clients authenticate with their own SigV4 access keys
         # (like the cache — must NOT be Authelia-gated, that breaks SDK clients).
         # NOTE: large objects (backups) should route over NetBird to bypass
@@ -368,6 +373,7 @@ in
         port = 4444;
         externalPort = 443;
         domain = "code.kleinbem.dev";
+        meshOnly = true;
         auth = true; # Mesh-only now — Cloudflare Access was its only gate; Authentik forward-auth replaces it (was Authelia until 2026-09-22)
         meta = {
           name = "Code Server";
@@ -497,6 +503,7 @@ in
         # (nix/infra/netbird/dns.tf); no tunnel ingress (not `public`).
         # /pair* goes to the pairing relay (buzz-pair-relay accepts any path).
         domain = "buzz.kleinbem.dev";
+        meshOnly = true;
         externalPort = 443;
         publicCert = true;
         extraRoutes."/pair*" = 3001;
@@ -563,6 +570,7 @@ in
         # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
         # code-server/frigate, not on the public Cloudflare tunnel.
         domain = "alertmanager.kleinbem.dev";
+        meshOnly = true;
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Alertmanager";
@@ -611,6 +619,7 @@ in
         port = 8123;
         externalPort = 443;
         domain = "hass.kleinbem.dev";
+        meshOnly = true;
         auth = false; # Home Assistant handles internal auth; forward-auth breaks mobile app
         meta = {
           name = "Home Assistant";
@@ -664,6 +673,7 @@ in
         # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
         # code-server/frigate, not on the public Cloudflare tunnel.
         domain = "syncthing.kleinbem.dev";
+        meshOnly = true;
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Syncthing (Nasbook)";
@@ -707,6 +717,7 @@ in
         port = 80;
         externalPort = 443;
         domain = "frigate.kleinbem.dev";
+        meshOnly = true;
         auth = true; # Authentik forward-auth in front (was Authelia until 2026-09-22); mesh-only (NVR — never on the public tunnel)
         meta = {
           name = "Frigate NVR";
@@ -733,6 +744,7 @@ in
         # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
         # code-server/frigate, not on the public Cloudflare tunnel.
         domain = "paperless.kleinbem.dev";
+        meshOnly = true;
         auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
         meta = {
           name = "Paperless-ngx";
@@ -888,6 +900,7 @@ in
         port = 8080;
         externalPort = 443;
         domain = "garage.kleinbem.dev";
+        meshOnly = true;
         # Mesh-only (no public tunnel). auth = false: the UI logs users in
         # itself via Authentik OIDC (oidc_apps in nix/infra/authentik.tf),
         # same as Grafana, instead of Caddy's forward_auth gate.
@@ -903,6 +916,7 @@ in
         ip = "10.85.47.134"; # nasbook subnet
         port = 8080;
         domain = "torrents.kleinbem.dev";
+        meshOnly = true;
         meta = {
           name = "qBittorrent";
           category = "Apps";
