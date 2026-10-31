@@ -21,7 +21,37 @@
       "Bash(journalctl *)",
       "Bash(systemctl status *)",
       "Bash(netbird status)",
-      "Bash(gh search *)"
+      "Bash(gh search *)",
+      "Bash(jj show *)",
+      "Bash(jj bookmark list *)",
+      "Bash(jj op log *)",
+      "Bash(jj-ahead *)",
+      "Bash(jj-check-signatures *)",
+      "Bash(just clean *)",
+      "Bash(just status-all *)",
+      "Bash(just diff-all *)",
+      "Bash(just remote-status *)",
+      "Bash(just remote-prs *)",
+      "Bash(just remote-ci *)",
+      "Bash(just jj::ws-list *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh run view *)",
+      "Bash(gh run list *)",
+      "Bash(gh issue view *)",
+      "Bash(gh issue list *)",
+      "Bash(gh release view *)",
+      "Bash(gh release list *)",
+      "Bash(nixfmt *)",
+      "Bash(statix check *)",
+      "Bash(deadnix *)",
+      "Bash(fido2-token -L)"
+    ],
+    "deny": [
+      "Bash(gh pr merge --admin*)",
+      "Bash(gh pr merge *--admin*)"
     ]
   },
   "autoMode": {
@@ -30,20 +60,26 @@
       "Read-only inspection anywhere in the workspace: jj status/log/diff/show/bookmark list, just status-all/diff-all/clean/remote-status/remote-prs/remote-ci/ws-list, nix eval/flake show/flake metadata, nix-instantiate, journalctl, systemctl status",
       "Read-only gh queries on any repository: pr/issue/run/release/repo view, list, checks and diff, gh api GET requests, gh search",
       "Local builds, tests and linters: nix build, nix flake check, nix-fast-build, just check/test, nixfmt, statix, deadnix, pre-commit run",
-      "jj work inside an agent workspace (<repo>.ws/<name>/): describe, new, commit, squash, rebase, bookmark create/set, workspace add/update-stale, and just jj::ws-new/ws-gc",
+      "jj work inside an agent workspace (<repo>.ws/<name>/): describe, new, commit, squash, rebase, restore, bookmark create/set, workspace add/update-stale, jj-toolbox (jj-save, jj-push, jj-ws-new), and just jj::ws-new/ws-gc",
       "Pushing non-main bookmarks (jj git push, just jj::push) to kleinbem/* and kleinbem-dev/* repositories",
       "Opening, editing and commenting on pull requests in kleinbem/* and kleinbem-dev/*, and enabling auto-merge on them with gh pr merge --auto --squash right after creating them",
       "Replying to and resolving CodeRabbit review threads on pull requests in kleinbem/* and kleinbem-dev/*",
-      "Merging pull requests in kleinbem/* repositories with gh pr merge, when Martin explicitly asked for that merge in the conversation",
+      "Merging pull requests in kleinbem/* and kleinbem-dev/* repositories with gh pr merge (never --admin), when Martin explicitly asked for that merge in the conversation",
       "Re-running, cancelling and dispatching GitHub Actions workflows (gh run rerun/cancel, gh workflow run) in kleinbem/* and kleinbem-dev/*",
       "Creating, editing and uploading assets to GitHub releases and tags (gh release create/edit/upload, jj/git tag push) in kleinbem/* and kleinbem-dev/* repositories",
-      "Deleting branches of merged pull requests in kleinbem/* and kleinbem-dev/* repositories"
+      "Deleting branches of merged pull requests in kleinbem/* and kleinbem-dev/* repositories",
+      "Editing any file inside an agent workspace (<repo>.ws/<name>/) or a nixpkgs worktree (NixOS/nixpkgs.wt-*), including security modules, sudo rules, CI workflows, .tf files and secrets.nix wiring: every change reaches main only through a PR with CI and CodeRabbit. Decrypting, printing or writing secret values is not covered",
+      "Force-pushing with --force-with-lease to Martin's own PR branches on his forks (kleinbem/nixpkgs and other kleinbem/* forks of upstream repos) after a rebase, and deleting his own non-default branches on those forks",
+      "Removing agent git worktrees and jj workspaces (nixpkgs.wt-*, <repo>.ws/<name>/) whose work is pushed or merged",
+      "Stopping processes, background tasks and GitHub Actions runs that this session started",
+      "Read-only ssh to fleet hosts for inspection (hostname, uptime, free, df, ls, cat of non-secret files, systemctl status, journalctl, nix path-info)"
     ],
     "soft_deny": [
       "$defaults",
       "Bash(just push-all:*)",
       "Bash(just ship-all:*)",
-      "Bash(tofu apply:*)"
+      "Bash(tofu apply:*)",
+      "Any other branch-protection bypass: ruleset or protection edits through gh api, bypass flags on merges or pushes"
     ],
     "environment": [
       "$defaults",
