@@ -106,6 +106,10 @@ repo_atlas:
     path: nix-holds/
     url: git@github.com:kleinbem/nix-holds.git
     role: Supporting repository.
+  nix-holds-fleet:
+    path: nix-holds-fleet/
+    url: git@github.com:kleinbem/nix-holds-fleet.git
+    role: Supporting repository.
   nix-packages:
     path: nix-packages/
     url: git@github.com:kleinbem/nix-packages.git
