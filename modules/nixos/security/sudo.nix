@@ -120,6 +120,8 @@ let
     "${sw}/systemctl ^.*(debug-shell|emergency|rescue).*$"
   ];
 
+  journalArg = "(-u [A-Za-z0-9@._-]+|-f|-b|-b -?[0-9]+|-e|-x|-xe|-k|-n [0-9]+|-p [0-7a-z]+|-o (short|short-iso|cat|json)|--no-pager)";
+
   readOnly = [
     "${sw}/nft list table *"
     "${sw}/nft list ruleset"
@@ -132,12 +134,9 @@ let
     "${sw}/machinectl shell * ${sw}/cat /etc/resolv.conf"
     "${sw}/machinectl shell * ${sw}/systemctl status *"
     "${sw}/apparmor_status"
-    "${sw}/journalctl -u * -f"
-    "${sw}/journalctl -u *"
-    "${sw}/journalctl -f"
-    "${sw}/journalctl -f *"
-    "${sw}/journalctl -b"
-    "${sw}/journalctl -xe"
+    # Viewing flags only: a `*` here would also pass --vacuum-*, --rotate
+    # or --flush, which delete or move logs as root.
+    "${sw}/journalctl ^${journalArg}( ${journalArg})*$"
     "${sw}/systemctl list-units"
     "${sw}/systemctl list-units *"
     "${sw}/systemctl list-timers"
@@ -152,7 +151,9 @@ let
     "${sw}/systemd-analyze blame"
     "${sw}/systemd-analyze critical-chain"
     "${sw}/systemd-analyze critical-chain *"
-    "${sw}/dmesg"
+    # Bare `dmesg` would accept any arguments, including -C (clear the
+    # ring buffer) and -n (console log level).
+    "${sw}/dmesg \"\""
     "${sw}/ss -tulpn"
     "${sw}/smartctl ^-[aHix]+ /dev/[a-z0-9]+$"
     # Without -d it only deletes unreachable paths; every generation stays.
