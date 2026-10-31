@@ -9,15 +9,22 @@ let
     {
       system ? myInventory.hosts.${name}.system,
       modules,
+      extraArgs ? { },
       extraSpecialArgs ? { },
     }:
     inputs.nixpkgs.lib.nixosSystem {
       specialArgs = {
-        inherit inputs self myInventory;
-        secretFile = import ../../lib/secret-file.nix { inherit inputs; };
+        inherit inputs self;
       }
       // extraSpecialArgs;
       modules = [
+        {
+          _module.args = {
+            inherit myInventory;
+            secretFile = import ../../lib/secret-file.nix { inherit inputs; };
+          }
+          // extraArgs;
+        }
         inputs.nix-flatpak.nixosModules.nix-flatpak
         {
           nixpkgs = {
@@ -106,7 +113,7 @@ in
       container-factory = mkHost "nixos-nvme" {
         system = "x86_64-linux";
         modules = [ ../../hosts/container-factory/default.nix ];
-        extraSpecialArgs.deployedContainers = deployedContainers "x86_64-linux" preWarm.x86_64-linux;
+        extraArgs.deployedContainers = deployedContainers "x86_64-linux" preWarm.x86_64-linux;
       };
       # aarch64 twin: same catalogue minus x86-only heavies (see arm.nix), so
       # edge hosts (core-pi, hass-pi) run standalone containers from the same
@@ -114,7 +121,7 @@ in
       container-factory-aarch64 = mkHost "nixos-nvme" {
         system = "aarch64-linux";
         modules = [ ../../hosts/container-factory/arm.nix ];
-        extraSpecialArgs.deployedContainers = deployedContainers "aarch64-linux" preWarm.aarch64-linux;
+        extraArgs.deployedContainers = deployedContainers "aarch64-linux" preWarm.aarch64-linux;
       };
     };
 

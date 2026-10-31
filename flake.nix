@@ -9,9 +9,11 @@
     # there (modules/nixos/base.nix applies the overlay).
     nix-holds = {
       url = "github:kleinbem/nix-holds-fleet";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.nixpkgs-stable.follows = "nixpkgs-stable";
-      inputs.nix-packages.follows = "nix-packages";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        nixpkgs-stable.follows = "nixpkgs-stable";
+        nix-packages.follows = "nix-packages";
+      };
     };
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
 
