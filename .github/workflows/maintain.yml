@@ -162,7 +162,7 @@ jobs:
 
       # One issue for a nightly update that fails validation: opened or
       # commented with the error (and, for a package marked broken, the
-      # derivation chain and a ready kleinbem/nix-holds entry), closed when an
+      # derivation chain and a ready kleinbem/nix-holds-fleet entry), closed when an
       # update validates again. A broken package used to hold the whole
       # fleet's nixpkgs back for a week before anyone looked.
       - name: Report validation result

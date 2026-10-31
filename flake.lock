@@ -1567,9 +1567,9 @@
         "type": "github"
       }
     },
-    "nix-holds_2": {
+    "nix-holds-fleet_2": {
       "inputs": {
-        "nix-holds": "nix-holds_3",
+        "nix-holds": "nix-holds_2",
         "nix-packages": [
           "nix-packages"
         ],
@@ -1594,14 +1594,14 @@
         "type": "github"
       }
     },
-    "nix-holds_3": {
+    "nix-holds_2": {
       "inputs": {
         "nixpkgs": [
-          "nix-holds",
+          "nix-holds-fleet",
           "nixpkgs"
         ],
         "nixpkgs-stable": [
-          "nix-holds",
+          "nix-holds-fleet",
           "nixpkgs-stable"
         ]
       },
@@ -1758,8 +1758,8 @@
         "nix-gantry": [
           "nix-gantry"
         ],
-        "nix-holds": [
-          "nix-holds"
+        "nix-holds-fleet": [
+          "nix-holds-fleet"
         ],
         "nix-packages": [
           "nix-packages"
@@ -1773,11 +1773,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1793417127,
-        "narHash": "sha256-iNE9tUbxcA4km1YpZj9pRlrt3nGMvz5PaP44nm23jo8=",
+        "lastModified": 1793452848,
+        "narHash": "sha256-H3sB/0YrWKE48tB9H5ciXMwdGAKDUIkZe+AhBTCJxyU=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "d0dae46413e57bf6eec57eefa98062427f4db944",
+        "rev": "6a7dc193146cdc8e1ec8fc7416b23b55df65a676",
         "type": "github"
       },
       "original": {
@@ -2793,7 +2793,7 @@
         "nix-flatpak": "nix-flatpak",
         "nix-gantry": "nix-gantry",
         "nix-hardware": "nix-hardware",
-        "nix-holds": "nix-holds_2",
+        "nix-holds-fleet": "nix-holds-fleet_2",
         "nix-index-database": "nix-index-database",
         "nix-mineral": "nix-mineral",
         "nix-on-droid": "nix-on-droid",

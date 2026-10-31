@@ -86,7 +86,7 @@
   nixpkgs.overlays = [
     inputs.nix-packages.overlays.default
     # Packages held back from nixos-unstable while broken there; ours too.
-    (inputs.nix-holds.lib.mkOverlay { extraOverlays = [ inputs.nix-packages.overlays.default ]; })
+    (inputs.nix-holds-fleet.lib.mkOverlay { extraOverlays = [ inputs.nix-packages.overlays.default ]; })
     (_final: prev: {
       stable = import inputs.nixpkgs-stable {
         inherit (prev.stdenv.hostPlatform) system;

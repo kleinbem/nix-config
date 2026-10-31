@@ -7,7 +7,7 @@
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
     # Packages the fleet holds back from nixos-unstable while they're broken
     # there (modules/nixos/base.nix applies the overlay).
-    nix-holds = {
+    nix-holds-fleet = {
       url = "github:kleinbem/nix-holds-fleet";
       inputs = {
         nixpkgs.follows = "nixpkgs";
@@ -93,7 +93,7 @@
         nix-devshells.follows = "nix-devshells";
         nix-packages.follows = "nix-packages";
         nix-gantry.follows = "nix-gantry";
-        nix-holds.follows = "nix-holds";
+        nix-holds-fleet.follows = "nix-holds-fleet";
       };
     };
     nix-gantry = {
