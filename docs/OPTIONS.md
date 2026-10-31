@@ -179,7 +179,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-presets/containers/forgejo.nix:27`
 - **Sub-options:** `actions.enable`, `admin.email`, `admin.name`, `admin.passwordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `port`, `ssh.enable`, `ssh.port`
 - **Default-enabled** (no hosts import the declaring file)
-- **Explicit overrides:** `preset:nix-presets/checks/forgejo.nix`
+- **Explicit overrides:** `host:mac-mini`, `preset:nix-presets/checks/forgejo.nix`
 
 ### `my.containers.frigate`
 
