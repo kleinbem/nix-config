@@ -13,7 +13,7 @@ in
 pkgs.testers.runNixOSTest {
   name = "mobile-to-gateway-mesh-test";
 
-  nodes = {
+  containers = {
     # The Caddy Gateway (Target)
     gateway =
       { ... }:
@@ -42,8 +42,8 @@ pkgs.testers.runNixOSTest {
         system.stateVersion = "25.11";
       };
 
-    # The "Mock Phone" (Source)
-    mock_phone =
+    # The "Mock Phone" (Source) - renamed from mock_phone as systemd-nspawn disallows underscores
+    phone =
       { ... }:
       {
         _module.args = { inherit myInventory; };
@@ -72,16 +72,16 @@ pkgs.testers.runNixOSTest {
 
     # Wait for services
     gateway.wait_for_unit("caddy.service")
-    mock_phone.wait_for_unit("network.target")
+    phone.wait_for_unit("network.target")
 
     # 1. Verify basic mesh connectivity
-    mock_phone.succeed("ping -c 1 10.10.10.1")
+    phone.succeed("ping -c 1 10.10.10.1")
 
     # 2. Verify that the "Phone" can access the internal Vault via Caddy
-    mock_phone.log("📱 Mobile Client attempting to access Internal Vault...")
-    response = mock_phone.succeed("curl -f http://vault.internal")
+    phone.log("📱 Mobile Client attempting to access Internal Vault...")
+    response = phone.succeed("curl -f http://vault.internal")
 
     assert "Access Granted to Mobile Client" in response
-    mock_phone.log("✅ Success: Mobile Mesh-to-Gateway link verified!")
+    phone.log("✅ Success: Mobile Mesh-to-Gateway link verified!")
   '';
 }
