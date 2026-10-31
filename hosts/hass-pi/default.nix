@@ -279,7 +279,8 @@ in
       faster-whisper.servers."whisper" = {
         enable = true;
         uri = "tcp://0.0.0.0:10300";
-        model = "tiny-int8";
+        # tiny is the least accurate model; base is still fast enough on the Pi 5.
+        model = "base-int8";
         language = "en";
       };
     };
