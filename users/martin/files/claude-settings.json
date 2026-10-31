@@ -9,7 +9,6 @@
       "Bash(jj status *)",
       "Bash(jj st *)",
       "Bash(jj diff *)",
-      "Bash(nix eval *)",
       "Bash(nix flake show *)",
       "Bash(nix flake metadata *)",
       "Bash(nix flake check *)",
