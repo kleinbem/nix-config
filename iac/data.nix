@@ -49,6 +49,15 @@ let
   # name, which can differ from the inventory name (e.g. phone).
   meshPeers = lib.mapAttrs (_: map (h: inventory.hosts.${h}.netbirdName or h)) meshGroups;
 
+  # Names NetBird DNS answers with the Caddy peer: every `meshOnly` node's
+  # domain + extraDomains. Read by netbird/dns.tf and, through this file,
+  # by modules/nixos/ai-hardening.nix's dnsmasq forwards.
+  meshOnlyFqdns = lib.sort lib.lessThan (
+    lib.concatMap (n: [ n.domain ] ++ n.extraDomains or [ ]) (
+      lib.filter (n: n.meshOnly or false) (lib.attrValues inventory.network.nodes)
+    )
+  );
+
   inventoryJson = {
     # Minimal host projection — only what the netbird root needs.
     hosts = lib.mapAttrs (_: h: {
@@ -69,6 +78,8 @@ let
         );
         lib.head meshPeers.cache;
     };
+
+    mesh_only_fqdns = meshOnlyFqdns;
   };
 
   referentialIntegrity = lib.assertMsg (unknownRefs == [ ]) (
