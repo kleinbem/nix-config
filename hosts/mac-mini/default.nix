@@ -77,6 +77,7 @@ in
     inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.persona-runtime
     inputs.nix-presets.nixosModules.stalwart
+    inputs.nix-presets.nixosModules.forgejo
     inputs.nix-presets.nixosModules.herdr-remote-client
     # Discord/Element/Signal in nixpak sandboxes — successor to the
     # firejail.nix wrappers imported above, app by app.
@@ -502,6 +503,24 @@ in
         domain = "kleinbem.dev";
         memoryLimit = "1G";
         adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
+      };
+
+      # Git forge (nix-presets containers/forgejo.nix). Off until
+      # kleinbem-secrets/nix/per-container/forgejo.yaml holds
+      # forgejo_admin_password and forgejo_oauth_client_secret (the
+      # Authentik client from nix/infra authentik.tf's oidc_apps), see
+      # secrets.nix. State lives under the preset's default
+      # /var/lib/images/forgejo, which modules/nixos/persistence.nix keeps.
+      forgejo = {
+        enable = false;
+        ip = "${myInventory.network.nodes.forgejo.ip}/24";
+        domain = myInventory.network.nodes.forgejo.domain;
+        memoryLimit = "1G";
+        admin.passwordFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_admin_password.path;
+        oidc = {
+          enable = true;
+          clientSecretFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_oauth_client_secret.path;
+        };
       };
     };
   };

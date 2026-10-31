@@ -513,6 +513,15 @@ hosts:
       - anythingllm.llmUrl
       - anythingllm.memoryLimit
       - anythingllm.modelName
+      - forgejo
+      - forgejo.admin.passwordFile
+      - forgejo.domain
+      - forgejo.enable
+      - forgejo.ip
+      - forgejo.memoryLimit
+      - forgejo.oidc
+      - forgejo.oidc.clientSecretFile
+      - forgejo.oidc.enable
       - hermes
       - hermes.discord.enable
       - hermes.enable
@@ -589,6 +598,8 @@ hosts:
     - persona-runtime
     - stalwart
     secrets_consumed:
+    - forgejo_admin_password
+    - forgejo_oauth_client_secret
     - ntfy_deploy_topic
     - stalwart_admin_password_hash
     hardware_profile: Apple Mac Mini Mid-2011 (Intel Core i5-2415M, x86_64)
@@ -1495,6 +1506,20 @@ services:
     upstream_preset: null
     persistence_path: /var/lib/machines/ente-web
     description: E2E Encrypted 2FA Web Application.
+  forgejo:
+    name: Forgejo
+    category: Dev
+    host: mac-mini
+    ip: 10.85.50.4
+    port: 3000
+    external_port: 443
+    domain: git.kleinbem.dev
+    public: false
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: nix-presets/containers/forgejo.nix
+    persistence_path: /var/lib/machines/forgejo
+    description: Self-hosted Git forge with mirrors of the GitHub repos.
   frigate:
     name: Frigate NVR
     category: Security

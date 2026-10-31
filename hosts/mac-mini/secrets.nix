@@ -209,6 +209,18 @@ in
         keys = [ "admin_password_hash" ];
       }
     )
+    // lib.optionalAttrs config.my.containers.forgejo.enable (
+      # Owned by uid 990, the forgejo user the preset pins inside the
+      # container, so the bootstrap unit can read the bind mounts without
+      # making them world-readable.
+      lib.mapAttrs (_: s: s // { uid = 990; }) (mkPerContainerSecrets {
+        container = "forgejo";
+        keys = [
+          "admin_password"
+          "oauth_client_secret"
+        ];
+      })
+    )
     // personaRuntimeSecrets;
 
     templates = {

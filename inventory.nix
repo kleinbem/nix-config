@@ -874,6 +874,25 @@ in
           description = "Persona-fleet mail server (SMTP/IMAP/JMAP).";
         };
       };
+      # Git forge next to GitHub (nix-presets containers/forgejo.nix): mirrors
+      # first, private repos later. Logs in through Authentik OIDC itself, so
+      # no forward-auth gate. Mesh only, through Caddy; Git goes over HTTPS.
+      # SSH stays off until it has its own name and a DNAT on mac-mini, since
+      # this domain resolves to Caddy, not to the container.
+      forgejo = {
+        ip = "10.85.50.4";
+        port = 3000;
+        externalPort = 443;
+        domain = "git.kleinbem.dev";
+        meshOnly = true;
+        auth = false;
+        meta = {
+          name = "Forgejo";
+          category = "Dev";
+          icon = "🌳";
+          description = "Self-hosted Git forge with mirrors of the GitHub repos.";
+        };
+      };
       dev-db = {
         ip = "10.85.46.132"; # nixos-nvme bridge
         port = 5432;
