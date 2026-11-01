@@ -1348,6 +1348,28 @@
         "type": "github"
       }
     },
+    "nix-detour": {
+      "inputs": {
+        "nixpkgs": [
+          "nix-packages",
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": "nixpkgs-stable_2"
+      },
+      "locked": {
+        "lastModified": 1793520739,
+        "narHash": "sha256-bZtpkIgtQWJrISc+9lhH2UcWWDvmkeoDnDU3iM3WYQY=",
+        "owner": "kleinbem-dev",
+        "repo": "nix-detour",
+        "rev": "5abc0ab5998f61f51bff1a48ad5db5ecbea803f0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem-dev",
+        "repo": "nix-detour",
+        "type": "github"
+      }
+    },
     "nix-devshells": {
       "inputs": {
         "colmena": "colmena_2",
@@ -1619,28 +1641,6 @@
         "type": "github"
       }
     },
-    "nix-holds_3": {
-      "inputs": {
-        "nixpkgs": [
-          "nix-packages",
-          "nixpkgs"
-        ],
-        "nixpkgs-stable": "nixpkgs-stable_2"
-      },
-      "locked": {
-        "lastModified": 1793512320,
-        "narHash": "sha256-jE/W9Vw2iFnWB1jV+6nCw1bnkof/AtKnwPzDkec8p6c=",
-        "owner": "kleinbem-dev",
-        "repo": "nix-holds",
-        "rev": "f34fae3a16d9e22e8e09a1e300255eef16288bbe",
-        "type": "github"
-      },
-      "original": {
-        "owner": "kleinbem-dev",
-        "repo": "nix-holds",
-        "type": "github"
-      }
-    },
     "nix-index-database": {
       "inputs": {
         "nixpkgs": [
@@ -1747,21 +1747,21 @@
       "inputs": {
         "flake-parts": "flake-parts_8",
         "git-hooks": "git-hooks_6",
+        "nix-detour": "nix-detour",
         "nix-devshells": [
           "nix-devshells"
         ],
-        "nix-holds": "nix-holds_3",
         "nixpkgs": [
           "nixpkgs"
         ],
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1793513091,
-        "narHash": "sha256-vFpkn91MYN6UnlNzQGu2vrtJwojOaXMipk4PFsI2jrQ=",
+        "lastModified": 1793521458,
+        "narHash": "sha256-5sR/96Cf6IU6W0WCXlZsAwoZ4EZ9pyjarJ2vwxoV+jg=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "15733d90adb4b47c7eff573dcc1a6e260aca7348",
+        "rev": "1e694ce2aa555bc3e67fbad86e94c6d619e9fa86",
         "type": "github"
       },
       "original": {
