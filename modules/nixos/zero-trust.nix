@@ -133,6 +133,15 @@ let
       dport = 9000;
       comment = "Caddy -> Authentik (forward-auth subrequests)";
     }
+    # ─── hass-pi: host LAN-address DNAT from the containers ───
+    # Bridged traffic between containers skips this hook; a container calling
+    # 10.0.0.21 is routed and DNATed, so it lands here.
+    {
+      src = inv.nodes.music-assistant.ip;
+      dst = inv.nodes.home-assistant.ip;
+      dport = 8123;
+      comment = "Music Assistant -> Home Assistant (via host LAN DNAT)";
+    }
   ];
 
   # Generate nftables rules from the flow list
