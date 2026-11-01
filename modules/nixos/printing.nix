@@ -19,14 +19,18 @@ in
     services.printing = {
       enable = true;
       startWhenNeeded = false; # Fix socket clash on port 631
-      logLevel = "debug";
+      logLevel = "info";
       listenAddresses = [ "*:631" ];
       allowFrom = [ "all" ];
       browsing = true;
+      # no-link: cups-browsed fails to generate PPDs for printers with partial IPP attributes (missing media-col-default) and creates broken ///dev/null dummy queues
+      browsed.enable = false;
       defaultShared = true;
       extraConf = ''
         DefaultEncryption Never
         ServerAlias *
+        # no-link: permanent local policy: discard failing print jobs rather than stopping the queue indefinitely
+        ErrorPolicy abort-job
       '';
       drivers = [ ricohDriver ];
     };
@@ -56,7 +60,7 @@ in
       ensurePrinters = [
         {
           name = "Ricoh_SP_220Nw";
-          deviceUri = "socket://10.0.5.10:9100";
+          deviceUri = "ipp://10.0.5.10:631/ipp/print";
           model = "ricoh/RICOH-SP-220Nw.ppd";
           ppdOptions = {
             PageSize = "A4";
