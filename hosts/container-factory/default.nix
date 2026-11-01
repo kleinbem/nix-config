@@ -83,6 +83,10 @@ let
       ip = "${myInventory.network.nodes.openclaw.ip}/24"; # hass-pi
       hostDataDir = dataDir "openclaw";
     };
+    music-assistant = {
+      ip = "${myInventory.network.nodes.music-assistant.ip}/24"; # hass-pi
+      hostDataDir = dataDir "music-assistant";
+    };
     monitoring = {
       ip = "${myInventory.network.nodes.monitoring.ip}/24"; # mac-mini
       hostDataDir = dataDir "monitoring";
@@ -269,6 +273,7 @@ in
     inputs.nix-presets.nixosModules.llama-cpp
     inputs.nix-presets.nixosModules.frigate
     inputs.nix-presets.nixosModules.home-assistant
+    inputs.nix-presets.nixosModules.music-assistant
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.dashboard-homepage
     inputs.nix-presets.nixosModules.ente

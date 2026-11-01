@@ -416,6 +416,15 @@ in
           description = "NVIDIA CUDA-accelerated Ollama inference.";
         };
       };
+      music-assistant = {
+        ip = "10.85.49.11"; # Hass-Pi; LAN access via the host's DNAT (http://10.0.0.21:8095)
+        meta = {
+          name = "Music Assistant";
+          category = "Apps";
+          icon = "🎵";
+          description = "Music library and multiroom players.";
+        };
+      };
       openclaw = {
         ip = "10.85.49.112"; # Hass-Pi (kept here — pnpm-deps hash mismatch against its pinned upstream flake blocks a fresh build elsewhere, see hosts/hass-pi/default.nix)
         meta = {
