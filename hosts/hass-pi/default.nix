@@ -184,12 +184,16 @@ in
       "/var/lib/private/matterjs-server"
       "/var/lib/wyoming"
       # Own music files for Music Assistant (mediaDir above), copied in by
-      # Martin; world-readable so the container's DynamicUser can read them.
-      "/var/lib/music"
+      # the primary user; world-readable so the container's DynamicUser can
+      # read them. impermanence creates the folder, so it sets the owner.
+      {
+        directory = "/var/lib/music";
+        user = config.my.username;
+        group = "users";
+        mode = "0755";
+      }
     ];
   };
-
-  systemd.tmpfiles.rules = [ "d /var/lib/music 0755 ${config.my.username} users -" ];
 
   # ─── Native Services (Replacing HassOS Add-ons) ─────────────
   services = {
