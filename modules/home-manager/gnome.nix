@@ -469,6 +469,7 @@
           "Utilities"
           "FleetServices"
           "Media"
+          "Internet"
         ];
       };
 
@@ -542,6 +543,21 @@
       "org/gnome/desktop/app-folders/folders/Media" = {
         name = "Media";
         categories = [ "AudioVideo" ]; # mpv, Amberol, Decibels, Showtime, Snapshot
+      };
+
+      # Last in folder-children, so it only collects the Network apps no folder
+      # above claims (Connections and Pods stay in Virtualization, the service
+      # PWAs in Fleet Services): chat (Buzz, Signal, Element, Discord, Slack),
+      # remote desktop, feeds, transfers. Chrome stays on the dock.
+      "org/gnome/desktop/app-folders/folders/Internet" = {
+        name = "Internet";
+        categories = [ "Network" ];
+        excluded-apps = [
+          "google-chrome-stable.desktop"
+          "google-chrome.desktop"
+          "com.google.Chrome.desktop"
+          "chromium-pentest.desktop"
+        ];
       };
 
       "org/gnome/desktop/privacy" = {
