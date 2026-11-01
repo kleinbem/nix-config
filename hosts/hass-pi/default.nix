@@ -163,15 +163,14 @@ in
   };
 
   # ─── Direct LAN access to Home Assistant ────────────────────
-  # HA is normally reached via Caddy (home.kleinbem.dev). Until the new
-  # router/DNS is in place, hass-dnat above also exposes http://10.0.0.21:8123.
-  # Not forwardPorts: systemd-nspawn DNATs to its own veth address, not the
-  # container's static 10.85.49.10, so the forward hits nothing.
+  # Besides Caddy (hass.kleinbem.dev), hass-dnat above exposes http://10.0.0.21:8123.
+  # Not forwardPorts: nspawn DNATs to its own veth address, not the container's
+  # static 10.85.49.10, so the forward hits nothing.
+  # no-link: not reported upstream yet.
 
   # ─── Persistence ─────────────────────────────────────────────
-  # /var/lib/home-assistant and /var/lib/openclaw are container
-  # hostDataDirs — the container-host module auto-derives their
-  # persistence entries; listing them here too trips impermanence's
+  # Container hostDataDirs (home-assistant, openclaw) get persistence entries from
+  # the container-host module; listing them here too trips impermanence's
   # duplicate-directory assertion.
   environment.persistence."/nix/persist" = {
     directories = [
@@ -180,8 +179,7 @@ in
       # so we must persist the private path — bind-mounting onto the symlink
       # fails with "mount path not canonical" (see matter-server).
       "/var/lib/node-red"
-      # Static `esphome` user (not DynamicUser), so the state is the plain
-      # path; /var/lib/private/esphome was the old DynamicUser location.
+      # Static `esphome` user (not DynamicUser), so the plain path.
       "/var/lib/esphome"
       "/var/lib/private/matterjs-server"
       "/var/lib/wyoming"

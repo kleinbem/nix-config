@@ -1,11 +1,8 @@
 name: "Check Vaultwarden Version"
 
-# Daily nag when the Vaultwarden the fleet ships (pinned nixpkgs) falls behind
-# the latest upstream release. Vaultwarden is an internet-facing credential
-# store on the public Cloudflare tunnel, so it gets a faster, louder signal
-# than the generic weekly flake-lock-age check. This workflow does NOT bump
-# anything — `nix flake update` (maintain.yml) owns the actual version bump.
-# On drift it opens (or refreshes) a single deduplicated tracking issue.
+# Daily check that the Vaultwarden we ship isn't behind upstream. It's an
+# internet-facing credential store, so it gets a faster signal than the weekly
+# lock-age check. Only opens/refreshes one tracking issue; maintain.yml bumps.
 
 on:
   schedule:

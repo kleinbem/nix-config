@@ -1,11 +1,8 @@
 { pkgs, ... }:
 
 {
-  # ==========================================
-  # ANANICY-CPP — Auto-Nice Daemon
-  # ==========================================
-  # This daemon automatically prioritizes interactive applications (GNOME Shell
-  # and Browsers) over background tasks (like Nix builds and AI containers).
+  # ananicy-cpp: interactive apps (GNOME Shell, browsers) get priority over
+  # background work like Nix builds and AI containers.
 
   services.ananicy = {
     enable = true;

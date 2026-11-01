@@ -377,13 +377,11 @@ in
       categories = [ "System" ];
     };
 
-    # Override: upstream google-chrome.desktop ships without StartupWMClass.
-    # Chrome on Wayland sets app_id = CHROME_WRAPPER = "google-chrome-stable",
-    # but the desktop filename is "google-chrome" — GNOME can't match them.
-    # This entry's filename ("google-chrome-stable.desktop") matches the
-    # Wayland app_id, and StartupWMClass handles the X11/XWayland fallback.
-    # Without this, GNOME groups all Chrome windows (including PWAs) under
-    # one generic icon instead of matching each PWA to its own desktop file.
+    # Chrome's Wayland app_id is "google-chrome-stable" but upstream's desktop
+    # file is "google-chrome.desktop" with no StartupWMClass, so GNOME can't
+    # match windows (PWAs included). This filename matches the app_id;
+    # StartupWMClass covers XWayland.
+    # no-link: Google's own package, no public report found.
     "google-chrome-stable" = {
       name = "Google Chrome";
       genericName = "Web Browser";

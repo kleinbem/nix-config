@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# Update the pinned Obsidian Excalidraw plugin (zsviczian/obsidian-excalidraw-
-# plugin) in users/martin/home.nix to the latest GitHub release.
-#
-# Upstream publishes the plugin as 3 plain release assets (main.js,
-# manifest.json, styles.css), each pinned via a separate pkgs.fetchurl. There
-# is no build logic beyond the fetch itself, so nix-prefetch-url downloading
-# + hashing each file IS the verification — no separate Nix build needed.
+# Bump the pinned Obsidian Excalidraw plugin in users/martin/home.nix to the
+# latest release. It's three plain fetchurl assets, so nix-prefetch-url is the
+# whole verification; no build needed.
 #
 # Usage:  ./scripts/update-obsidian-excalidraw.sh
 # Deps:   bash, curl, jq, nix (nix-prefetch-url)

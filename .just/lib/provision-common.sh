@@ -1,16 +1,7 @@
 # shellcheck shell=bash
-# Shared helpers for USB-reader NixOS provisioning (pi-install-usb / orin-install-usb).
-#
-# Sourced from the destructive install recipes in ../deployment.just. The caller
-# is responsible for `set -euo pipefail`. CWD is the nix-config repo root (recipes
-# reference ./hosts/... and ../kleinbem-secrets), so relative paths resolve from there.
-#
-# Everything here uses sudo; call pc_sudo_keepalive first. Functions take explicit
-# arguments (no reliance on just {{...}} substitution) so they are unit-checkable.
-#
-# Host-SPECIFIC steps that intentionally stay in the recipes:
-#   - bootloader install (Pi = config.txt/direct-kernel; Orin = systemd-boot)
-#   - disko invocation (per-host disko.nix) and any host-specific retry logic
+# Shared helpers for the *-install-usb recipes in ../deployment.just. The caller
+# sets `set -euo pipefail`, runs from the nix-config root and calls
+# pc_sudo_keepalive first. Bootloader install and disko stay in the recipes.
 
 # ── sudo ──────────────────────────────────────────────────────────────────────
 pc_sudo_keepalive() {
@@ -37,11 +28,8 @@ pc_assert_safe_target() {
     exit 1
   fi
   d=$(basename "$dev")
-  # Resolve backing disks for / and /boot. A tmpfs / overlay root reports a
-  # non-block SOURCE ("none"), on which `lsblk PKNAME` exits 32 — under the
-  # caller's pipefail+set -e that would abort the whole recipe. Only look up
-  # PKNAME when the source is a real block device; a rootless / has no disk to
-  # collide with, so an empty rootpk is the correct "no match".
+  # A tmpfs root has a non-block SOURCE, where `lsblk PKNAME` exits 32 and
+  # set -e would abort; only look it up for real block devices.
   rootsrc=$(findmnt -no SOURCE / 2>/dev/null || true)
   bootsrc=$(findmnt -no SOURCE /boot 2>/dev/null || true)
   rootpk=""
@@ -82,13 +70,10 @@ pc_require_block_device() {
 }
 
 # ── cache pre-flight ──────────────────────────────────────────────────────────
-# Abort if the host toplevel needs heavy local compilation (a cache miss), so we
-# never silently burn hours emulating aarch64. Set PC_ALLOW_BUILD=1 to bypass
-# (e.g. an Orin closure not yet warmed in CI that you accept building locally).
-# $1 = host attr; $2 = extra `-`-anchored egrep alternation of drv names expected/OK
-#      to build locally ("" for none, e.g. "linux-rpi.*-modules" or "l4t-.*");
-# $3.. = extra nix args (e.g. the OVERRIDES flags) so the dry-run evaluates the
-#      SAME closure the recipe will actually build.
+# Abort on a cache miss so we never burn hours emulating aarch64
+# (PC_ALLOW_BUILD=1 bypasses). $1 = host attr; $2 = extra egrep alternation of
+# drv names OK to build locally ("" for none); $3.. = nix args (OVERRIDES) so
+# the dry-run sees the same closure.
 pc_cache_preflight() {
   local host="$1" extra="${2:-}"
   shift $(($# >= 2 ? 2 : $#))
@@ -100,12 +85,9 @@ pc_cache_preflight() {
   echo "🔍 Pre-flight: verifying Attic cache coverage for $host..."
   output=$(nix build --no-link --dry-run ".#nixosConfigurations.$host.config.system.build.toplevel" "$@" 2>&1) || true
   build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
-  # Trivial config-assembly leaves that ALWAYS build locally for a host not in
-  # CI's cache matrix (Orin, routers are excluded from build-all on purpose):
-  # text/symlink generators that finish in seconds under emulation, never a
-  # compiler. Excluding them lets the pre-flight pass a genuinely-cached closure
-  # while still hard-stopping on a real package/kernel miss — those are named
-  # <pkg>-<version>.drv, not etc/activate/*-units/unit-*/*.{rules,yaml,conf,…}.
+  # Config-assembly leaves (etc, activate, units, generated config files) build
+  # locally in seconds whenever they miss the cache, e.g. because of real
+  # secrets. A real package/kernel miss is named <pkg>-<version>.drv and still stops.
   leaves='nixos-system-|boot\.json|etc|activate|(system|user)-units|unit-.*|.*\.(rules|service|yaml|conf|toml|json)'
   exclude="-(${leaves}${extra:+|$extra})\.drv\$"
   heavy=$(echo "$build_list" | grep -vE -- "$exclude" || true)
@@ -121,13 +103,9 @@ pc_cache_preflight() {
 }
 
 # ── teardown ──────────────────────────────────────────────────────────────────
-# Unmount everything mounted at or under $mnt, looping until clean (peels
-# stacked/ghost mounts one layer per pass). CRITICAL: $mnt itself is usually NOT
-# a mountpoint — the host roots (Orin, Pi) are tmpfs, so only children like
-# $mnt/boot, $mnt/nix, $mnt/mnt/* are mounted. `umount -R $mnt` therefore fails
-# with "not mounted" and unmounts nothing; matching /proc/mounts by prefix is
-# what actually releases them. umount-by-mountpoint works even when the backing
-# device is gone. Hard cap so a genuinely-stuck mount can't spin forever.
+# Unmount everything at or under $mnt, one stacked layer per pass (capped).
+# $mnt itself is usually not a mountpoint (tmpfs roots), so `umount -R $mnt`
+# does nothing; matching /proc/mounts by prefix works, even for gone devices.
 # $1=mnt
 pc_unmount_under() {
   local mnt="$1" u=0 p
@@ -160,10 +138,9 @@ pc_teardown() {
   echo "✅ $mnt fully unmounted; $crypt closed."
 }
 
-# Robustly release a target before wiping. Handles the failure mode where a flaky
-# USB enclosure re-enumerates its device letter mid-run (e.g. sdc->sdd), leaving
-# the SAME mountpoint stacked in /proc/mounts over a now-vanished ("ghost") device.
-# DESTRUCTIVE: also vgremoves the VG — pre-wipe use only, never post-install.
+# Release a target before wiping, including mounts left stacked over a "ghost"
+# device after a flaky USB enclosure re-enumerated (sdc -> sdd).
+# DESTRUCTIVE: also vgremoves the VG; pre-wipe only.
 # $1=mnt  $2=dev  $3=crypt-name  $4=vg-name (optional; "" if LUKS-direct, no LVM)
 pc_cleanup() {
   local mnt="$1" dev="$2" crypt="$3" vg="${4:-}" dn p dm h
@@ -247,12 +224,9 @@ pc_install_closure() {
   sudo nixos-install --root "$mnt" --system "$system" --no-root-passwd --no-bootloader
 }
 
-# Embed boot.initrd.secrets (clevis JWE, initrd-sshd host key, …) into an initrd
-# already copied to the ESP. CRITICAL: without this, initrd-nixos-copy-secrets
-# (and initrd sshd) fail on the FIRST boot and the host drops to EMERGENCY MODE.
-# We skip nixos-install's bootloader step (bootctl can't run under QEMU), but the
-# appender is a self-contained host-side script (its own coreutils/cpio PATH), so
-# it runs fine on the x86 workstation. No-op for hosts that declare no secrets.
+# Embed boot.initrd.secrets (clevis JWE, initrd-sshd key) into the initrd on the
+# ESP. Skipping nixos-install's bootloader step skips this too, and without it
+# the first boot drops to emergency mode. The appender runs fine on x86.
 # $1=host attr  $2=path to the initrd on the ESP  $3..=extra nix args (OVERRIDES)
 pc_append_initrd_secrets() {
   local host="$1" initrd="$2"
@@ -300,16 +274,10 @@ pc_host_identity() {
   echo "$age_pub"
 }
 
-# Rotate a host's age key in kleinbem-secrets/.sops.yaml (cutover 2026-08-07:
-# was nix-secrets/.sops.yaml with a flat key_groups list; kleinbem-secrets uses
-# a `keys:` block of YAML anchors — `&<anchor> age1...` — referenced by name
-# `*<anchor>` from multiple creation_rules, so a host key lives in exactly ONE
-# place regardless of how many files/scopes reference it) and re-encrypt every
-# real content file (not just one secrets.yaml — kleinbem-secrets splits
-# content across nix/shared.yaml, nix/per-host/*.yaml, personas/*.yaml, etc.,
-# and any of them might reference this host's anchor).
-# $1=age-public-key  $2=host-label (hyphenated, e.g. "mac-mini" — converted to
-# the anchor's underscore form, "mac_mini", matching .sops.yaml's convention)
+# Set a host's age key on its `&<anchor>` in kleinbem-secrets/.sops.yaml (one
+# place, referenced by many creation_rules), then updatekeys every sops file,
+# since any of them may reference the anchor.
+# $1=age-public-key  $2=host-label ("mac-mini" -> anchor "mac_mini")
 pc_sops_add_and_reencrypt() {
   local age_pub="$1" label="$2" sops_yaml="../kleinbem-secrets/.sops.yaml"
   local anchor="${label//-/_}"
@@ -323,27 +291,15 @@ pc_sops_add_and_reencrypt() {
     echo "   and a creation_rules entry referencing it first (see kleinbem-secrets/README.md)." >&2
     return 1
   fi
-  # Replace ONLY the age value after the anchor, preserving any trailing comment
-  # (e.g. "# Host Key (mac-mini)" or the "not yet enabled" placeholder note).
-  # NOT `age1[a-zA-Z0-9]+`: placeholders in this file look like
-  # "age1PLACEHOLDER_NASBOOK" — the underscore isn't in that class, so it only
-  # matched up through "PLACEHOLDER" and left "_NASBOOK" stuck onto the new
-  # real key (found the hard way onboarding nasbook, 2026-09-16, corrupting
-  # the anchor into an invalid recipient). Match up to the next run of
-  # whitespace instead — covers real bech32 keys (lowercase alnum) and any
-  # placeholder spelling, and still stops before a trailing "# comment".
+  # Replace only the value up to the next whitespace, keeping any trailing
+  # comment. Not `age1[a-zA-Z0-9]+`: it stops at the "_" in placeholders like
+  # age1PLACEHOLDER_NASBOOK and leaves a corrupt recipient.
   sed -i -E "s|(&${anchor}[[:space:]]+)age1[^[:space:]]+|\\1${age_pub}|" "$sops_yaml"
   echo "🔐 Re-encrypting every real content file (YubiKey touch may be required per file)..."
   local f
   while IFS= read -r -d '' f; do
-    # Not every *.nix match here is actually sops-encrypted — e.g.
-    # personas/contact.nix is deliberately plain Nix (private-repo access
-    # control only, see its own header comment), and `sops updatekeys` on a
-    # non-sops file dies with "Could not unmarshal input data: invalid
-    # character '#'" (found onboarding nasbook, 2026-09-16). A real
-    # sops file always carries a top-level `sops:` metadata block; skip
-    # anything without one instead of assuming every matched extension
-    # is fair game.
+    # Some matches are plain (personas/contact.nix), and updatekeys dies on
+    # them; real sops files carry a top-level `sops:` block.
     if ! grep -q '^sops:' "$f"; then
       echo "   skip (not sops-encrypted): ${f#../kleinbem-secrets/}"
       continue
@@ -358,17 +314,12 @@ pc_sops_add_and_reencrypt() {
 
 # ── FIDO2 (hosts that can't Tang-bind to themselves, e.g. nasbook IS the
 #    tang server) ────────────────────────────────────────────────────────────
-# Enroll BOTH YubiKeys as FIDO2 unlock credentials on a LUKS device, so losing
-# one doesn't lock the box out (same redundancy as martin_primary/backup in
-# kleinbem-secrets). Each enrollment authenticates non-interactively via the
-# existing passphrase keyfile; only the physical FIDO2 touch needs a human.
-# MUST run against a CLOSED device (call pc_teardown first, capturing the raw
-# partition path beforehand) — running it while the mapping is still active
-# failed with "Unlocking via keyfile failed: Operation not permitted" during
-# nasbook's onboarding, 2026-09-16: systemd-cryptenroll verifies the
-# passphrase via its own crypt_activate_by_passphrase check, which conflicts
-# with the device already being active/mounted elsewhere. $1=raw LUKS
-# partition device (e.g. /dev/sdc2, NOT the crypt name)  $2=passphrase-keyfile
+# Enroll both YubiKeys as FIDO2 LUKS unlock, so losing one doesn't lock the box
+# out; the passphrase keyfile authorizes, only the touch needs a human.
+# Run against a CLOSED device (pc_teardown first, note the partition path
+# before): on an active mapping systemd-cryptenroll fails with "Unlocking via
+# keyfile failed: Operation not permitted".
+# $1=raw LUKS partition (e.g. /dev/sdc2, not the crypt name)  $2=passphrase-keyfile
 pc_fido2_enroll_dual() {
   local luks_dev="$1" pass_file="$2"
   [ -b "$luks_dev" ] || {

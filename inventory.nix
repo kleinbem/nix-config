@@ -1,11 +1,8 @@
 let
   # ─── Tang NBDE Servers ──────────────────────────────────────
-  # Every host runs Tang and is a clevis client of all the OTHERS (sss, t=1:
-  # any one server unlocks). A host's own Tang isn't up during its own initrd
-  # unlock, so lib/tang.nix leaves it out of that host's binding.
-  # thp = SHA-256 thumbprint of the server's signing key; clevis verifies the
-  # advertisement against it, so binding needs no trust prompt and can't be
-  # redirected.
+  # Every host runs Tang and is a clevis client of all the others (sss, t=1).
+  # Its own Tang isn't up during its initrd unlock, so lib/tang.nix leaves it
+  # out. thp pins the server's signing key, so binding needs no trust prompt.
   tang = {
     nixos-nvme = {
       url = "http://10.0.0.5:7654";
@@ -52,10 +49,9 @@ in
         "desktop"
       ];
     };
-    # `board` picks the Ansible group (openwrt-config group_vars/board_<board>.yml)
-    # and openwrt-builder profile: bpi-r4, orbi-rbr50, orbi-rbs50 (Orbi APs).
-    # Orbi tags: `mesh-gate` = the RBR50 wired to a BPI-R4, `mesh-node` = the
-    # RBS50 satellites on the 802.11s backhaul. Planned, add when flashed:
+    # `board` picks the Ansible group (openwrt-config group_vars/board_*.yml)
+    # and openwrt-builder profile. Orbi tags: `mesh-gate` = the RBR50 wired to
+    # a BPI-R4, `mesh-node` = RBS50 satellites. Planned, add when flashed:
     #   ap-<location> = { ip = "10.0.0.3"; type = "openwrt"; board = "orbi-rbr50";
     #                     tags = [ "physical" "ap" "mesh-gate" ]; };
     #   ap-<location> = { ip = "10.0.0.4"; type = "openwrt"; board = "orbi-rbs50";
@@ -195,13 +191,10 @@ in
     subnet = "10.85.46.0/24";
     bridge = "cbr0";
     hostIP = "10.85.48.107"; # Caddy Entry Point
-    # Node attrs: `public = true` puts the node's `domain` on the core-pi
-    # Cloudflare Tunnel ingress (→ Caddy). Omit for mesh-only services —
-    # `externalPort`/`auth` don't encode public vs mesh-only (code, frigate,
-    # paperless, s3, … all have both yet stay on NetBird only).
-    # `meshOnly = true` resolves `domain` + `extraDomains` to the Caddy peer
-    # over NetBird DNS: iac/data.nix exports them to nix/infra/netbird/dns.tf,
-    # and ai-hardening's dnsmasq forwards them to the NetBird agent.
+    # `public = true` puts `domain` on the core-pi Cloudflare Tunnel ingress;
+    # `externalPort`/`auth` don't imply public. `meshOnly = true` resolves
+    # `domain` + `extraDomains` to the Caddy peer over NetBird DNS (iac/data.nix
+    # → nix/infra/netbird/dns.tf; ai-hardening's dnsmasq forwards them).
     nodes = {
       # Infrastructure
       caddy = {
@@ -267,11 +260,8 @@ in
         externalPort = 443;
         domain = "ntfy.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
-        # No SSO: CI publishes the fleet-deploy signal with a plain curl and
-        # devices long-poll anonymously; forward-auth would break both. Access
-        # control is the unguessable topic name (sops: ntfy_deploy_topic),
-        # and the only subscriber action is "start nixos-upgrade.service",
-        # which pulls the CI-gated production tag anyway.
+        # No SSO: CI publishes the deploy signal with plain curl and devices
+        # long-poll it; forward-auth would break both.
         auth = false;
         meta = {
           name = "ntfy Push";
@@ -286,11 +276,8 @@ in
         externalPort = 443;
         domain = "s3.kleinbem.dev";
         meshOnly = true;
-        # No SSO/mTLS: S3 clients authenticate with their own SigV4 access keys
-        # (like the cache — must NOT be Authelia-gated, that breaks SDK clients).
-        # NOTE: large objects (backups) should route over NetBird to bypass
-        # Cloudflare's 100 MiB upload cap, same as Attic — this tunnel vhost is
-        # for general/small-object + admin access.
+        # No SSO/mTLS: S3 clients sign with their own SigV4 keys, and a
+        # forward-auth gate breaks SDK clients.
         auth = false;
         meta = {
           name = "Garage S3";
@@ -777,11 +764,9 @@ in
           description = "Persona-fleet mail server (SMTP/IMAP/JMAP).";
         };
       };
-      # Git forge next to GitHub (nix-presets containers/forgejo.nix): mirrors
-      # first, private repos later. Logs in through Authentik OIDC itself, so
-      # no forward-auth gate. Mesh only, through Caddy; Git goes over HTTPS.
-      # SSH stays off until it has its own name and a DNAT on mac-mini, since
-      # this domain resolves to Caddy, not to the container.
+      # Logs in through Authentik OIDC itself, so no forward-auth gate. SSH
+      # stays off: this domain resolves to Caddy, so it needs its own name and
+      # a DNAT on mac-mini first. Git goes over HTTPS.
       forgejo = {
         ip = "10.85.50.4";
         port = 3000;

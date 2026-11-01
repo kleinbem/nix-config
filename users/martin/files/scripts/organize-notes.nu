@@ -54,11 +54,8 @@ try {
 
 print "✅ Organization complete!"
 
-# 3. Distill (CODE workflow's "Distill" step): surface Areas/Resources notes
-# that are stale and never summarized, so progressive summarization actually
-# happens instead of Resources becoming a pile of raw, unrevisited dumps.
-# This only flags candidates — writing the actual summary is a human
-# judgment call, not something to automate.
+# 3. Distill (CODE's "Distill" step): flag stale Areas/Resources notes that
+# were never summarized. Only flags them; the summary is written by hand.
 let distill_days = 30
 let now = (date now)
 
@@ -95,11 +92,8 @@ if ($distill_candidates | is-empty) {
     print "   Add a `> [!summary]` callout with the key takeaway, or move to Archives if stale."
 }
 
-# 4. Regenerate the vault's AGENTS.md: a single orientation file sitting
-# between the raw notes and any LLM touching the vault (Claude Code
-# sessions, persona-runtime containers), mirroring the CLAUDE.md/AGENTS.md
-# pattern every code repo in this fleet already uses. Generated fresh every
-# run so it can't go stale like a hand-written index would.
+# 4. Regenerate the vault's AGENTS.md, the orientation file for any LLM
+# touching the vault. Regenerated every run so it can't go stale.
 print ""
 print "🧭 Regenerating AGENTS.md..."
 

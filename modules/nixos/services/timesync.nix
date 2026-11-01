@@ -32,11 +32,8 @@ let
 in
 {
   options.my.services.timesync = {
-    # Intentional break from the Switchboard `default = false` rule: time sync
-    # is foundational (NixOS itself defaults timesyncd to true), and the
-    # timesyncd→chrony swap should apply everywhere this module is imported.
-    # Hosts that need to opt out (LXC guests inheriting host time, recovery
-    # images, etc.) can still set `my.services.timesync.enable = false`.
+    # Breaks the Switchboard `default = false` rule on purpose: time sync is
+    # foundational (NixOS defaults timesyncd on too). Opt out where needed.
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
@@ -65,11 +62,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # timesyncd waits for a netlink route-change event before its first NTP
-    # query. On hosts where the network comes up before timesyncd starts
-    # listening, that event never arrives and the clock drifts uncorrected —
-    # which then breaks anything that signs short-lived JWTs (e.g. GitHub
-    # Actions runner session creation).
+    # timesyncd waits for a netlink route event before its first query; if the
+    # network was up before it started, that never comes and the clock drifts,
+    # breaking short-lived JWTs (GitHub Actions runner sessions).
+    # no-link: not reported upstream yet.
     services.timesyncd.enable = false;
 
     services.chrony = {

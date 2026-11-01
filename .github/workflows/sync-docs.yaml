@@ -1,12 +1,9 @@
 name: Sync reference docs
 # Keeps docs/SYSTEM_REFERENCE.md, OPTIONS.md, IMPORTS.md and
-# INFRASTRUCTURE.yaml in step with the code (replaces the local regeneration
-# at the end of `just dev::apply`, which left every checkout dirty).
-# - On a PR: regenerates from the PR head and commits any change onto the PR
-#   branch (GitHub-signed), so the PR lands with current docs. A separate
-#   docs PR per merge put every other open PR BEHIND main, and GitHub's own
-#   "update branch" leaves commits unsigned (blocked by the ruleset).
-# - On main: fallback for direct pushes, or a merge that beat the PR run;
+# INFRASTRUCTURE.yaml in step with the code.
+# - On a PR: commits regenerated docs onto the PR branch (GitHub-signed).
+#   A separate docs PR per merge would put every other open PR behind main.
+# - On main: fallback for direct pushes or a merge that beat the PR run;
 #   lands the change as a signed PR with auto-merge.
 on:
   pull_request:
@@ -35,8 +32,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       # The generators read the workspace layout: nix-config next to
-      # kleinbem (repos.nix) and nix-presets. Nothing else is needed (checked
-      # 2026-10-17: same output as with every sibling present).
+      # kleinbem (repos.nix) and nix-presets. No other sibling is needed.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: nix-config

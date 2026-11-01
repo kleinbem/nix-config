@@ -61,7 +61,7 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # Tang auto-unlock; disko.nix's fido2-device=auto is the HDMI/TTY fallback.
+    # Tang auto-unlock; the LUKS passphrase on HDMI/TTY is the fallback.
     # Binds only to other hosts' tang servers: nasbook can't serve itself
     # before it's unlocked. Gated on the JWE made at provisioning.
     boot.clevis-initrd = {
@@ -77,12 +77,8 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # Backups — nix-presets' backup-engine, fleet wiring in
-    # modules/nixos/backup.nix. tang, paperless-db, and qbittorrent register
-    # their own items. nasbook registers syncthing (identity/keys), agent-team,
-    # and paperless intake inbox plus exclude rules for search index/logs.
-    # Secrets: backup_r2_rclone_config (nix/per-host/nasbook.yaml),
-    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
+    # Fleet wiring and required secrets: modules/nixos/backup.nix. tang,
+    # paperless and qbittorrent register their own items.
     backup = {
       enable = true;
       items = {
@@ -127,11 +123,8 @@ in
       podman.enable = true;
     };
 
-    # ─── Container Hosting (via reusable module) ─────────────
-    # Supplies my.network.subnet/.hostAddress (externalInterface stays
-    # above — container-host.nix doesn't set it) plus the container-updater
-    # auto-derivation and persistence wiring every other container-hosting
-    # node already uses (core-pi, mac-mini, hass-pi).
+    # Sets my.network.subnet/.hostAddress plus container-updater and
+    # persistence wiring; externalInterface stays set above.
     container-host = {
       enable = true;
       subnet = "10.85.47.0/24";

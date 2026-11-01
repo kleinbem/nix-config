@@ -1,14 +1,6 @@
-# Projects repo-canonical facts (personas.nix ⊕ private contact data,
-# inventory.nix) to the JSON the `nix/infra` OpenTofu roots consume. See
-# iac/data.nix for the full rationale.
-#
-#   nix build .#iac-data     → result/{personas.json,inventory.json}
-#   nix flake check          → checks.iac-data forces the schema +
-#                              referential-integrity assertions
-#
-# Both files are `jq -S` canonical (sorted keys, 2-space) so the copies in
-# nix/infra diff cleanly. nix/tools/gen-iac-data.sh copies them into place;
-# nix/tools/check-iac-data.sh drift-guards the committed copies.
+# personas.nix + inventory.nix as the JSON the nix/infra OpenTofu roots read
+# (rationale in iac/data.nix). `jq -S` output so the copies diff cleanly;
+# nix/tools/gen-iac-data.sh copies them in, check-iac-data.sh guards drift.
 { inputs, self, ... }:
 {
   # heartbeats.json bridge: each host's evaluated my.heartbeat.checks. A flake

@@ -1,12 +1,9 @@
-# forward-auth-guard.nix — only Caddy (and this host) may reach the ports of
-# containers whose access control is Caddy's forward_auth.
-#
-# `auth = true` nodes have no login of their own, and every host routes to
-# every container subnet, so without this any LAN device reaches them directly.
-# Allowed: core-pi's LAN address (Caddy's cross-host traffic is masqueraded to
-# it), Caddy's container IP, and this host's bridge address (also what NetBird
-# routes masquerade to). Own table with its own forward hook, since a drop in
-# any base chain wins over zero-trust.nix's accepts. Needs nftables.
+# Only Caddy (and this host) may reach `auth = true` containers, which rely
+# on Caddy's forward_auth and have no login; every host routes to every
+# container subnet. Allowed: core-pi's LAN IP (Caddy's cross-host traffic is
+# masqueraded to it), Caddy's container IP, this host's bridge IP (also the
+# NetBird masquerade source). Own table: a drop in any base chain beats
+# zero-trust.nix's accepts. Needs nftables.
 {
   config,
   lib,

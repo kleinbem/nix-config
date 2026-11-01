@@ -111,12 +111,9 @@ rollback name host="":
         ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
     fi
 
-# The tofu provider has no admin-token resource and Garage generates the
-# value itself, so this recipe is the declared way to make it. The scope is
-# every read call garage-ui makes; GetKeyInfo is needed to browse objects.
-# Stored as garage_ui_admin_token in kleinbem-secrets
-# nix/per-container/garage-ui.yaml. Run on nixos-nvme, then commit
-# kleinbem-secrets and `just dev::apply`.
+# The tofu provider has no admin-token resource, so this recipe makes it.
+# Scope is every read call garage-ui makes (GetKeyInfo to browse objects).
+# Run on nixos-nvme, then commit kleinbem-secrets and `just dev::apply`.
 #
 # (Re)create garage-ui's read-only Garage admin token (nixos-nvme)
 [group("Containers")]

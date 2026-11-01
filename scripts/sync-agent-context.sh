@@ -1,17 +1,8 @@
 #!/usr/bin/env bash
-# sync-agent-context.sh — Generates ground-truth docs for AI assistants.
-#
-# Outputs:
-#   <nix-config>/docs/SYSTEM_REFERENCE.md  (via generate-system-reference.py)
-#   <nix-config>/docs/OPTIONS.md           (via generate-options-index.py)
-#   <nix-config>/docs/IMPORTS.md           (via generate-imports-index.py)
-#
-# Lives at nix-config/scripts/; resolves both NIX_CONFIG_ROOT and the parent
-# meta-workspace from the script's own location so it doesn't depend on the
-# invocation directory.
-#
-# Speed: pass --no-ci to skip the gh CLI roundtrips (saves ~6s but loses the
-# CI Status section).
+# Generates the ground-truth docs for AI assistants in docs/: SYSTEM_REFERENCE.md,
+# OPTIONS.md, IMPORTS.md and INFRASTRUCTURE.yaml (one generate-*.py each).
+# Paths resolve from the script's location. --no-ci skips the gh calls
+# (faster, but no CI Status section).
 
 set -e
 

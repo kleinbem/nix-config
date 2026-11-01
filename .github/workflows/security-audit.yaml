@@ -1,13 +1,7 @@
 name: "Security Audit (vulnix)"
 
-# Mirror of the meta-workspace security-audit workflow, building from
-# nix-config directly. Runs alongside meta's copy during the meta-flake →
-# nix-config root migration; meta's will be retired in 5f once this one is
-# proven green for a full cycle.
-#
-# Weekly CVE scan of the nixos-nvme system closure with vulnix.
-# Informational by design: reports findings, does not fail the build
-# (nixpkgs always carries open CVEs). Tighten to fail-on-critical later.
+# Weekly vulnix CVE scan of the nixos-nvme closure. Informational: it reports
+# but never fails, since nixpkgs always carries open CVEs.
 on:
   schedule:
     # Wednesdays 06:00 UTC — midweek, off-peak, away from the Sunday update run.

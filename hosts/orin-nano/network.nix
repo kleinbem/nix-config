@@ -58,11 +58,9 @@
       address = "10.0.0.1";
       interface = "enP8p1s0";
     };
-    # NVIDIA's JetPack 6 vendor kernel (5.15.199-tegra) defconfig lacks
-    # CONFIG_NFT_CT, CONFIG_NFT_REDIR, and CONFIG_NFT_FIB_IPV4, preventing
-    # nftables from loading connection-tracking or redirect rules.
-    # Legacy iptables/xtables (CONFIG_IP_NF_*, CONFIG_NETFILTER_XT_*) is fully
-    # supported. Revert to iptables backend on JetPack 6.
+    # The JetPack 6 vendor kernel lacks CONFIG_NFT_CT, CONFIG_NFT_REDIR and
+    # CONFIG_NFT_FIB_IPV4, so nftables can't load conntrack or redirect rules.
+    # Legacy iptables is fully supported.
     nftables.enable = false;
     nat = {
       enable = true;

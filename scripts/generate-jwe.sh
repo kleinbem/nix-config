@@ -2,16 +2,11 @@
 # (Re)generate kleinbem-secrets/initrd/cryptroot_<host>.jwe, the Tang-wrapped
 # LUKS passphrase that my.boot.clevis-initrd.secretFile unlocks at boot.
 #
-# The binding comes from inventory.nix via scripts/tang-config.sh: every OTHER
-# host's Tang server, t = 1, each pinned by thumbprint.
-#
-# If the current JWE still decrypts (any of its Tang servers reachable), its
-# content is re-wrapped as is: no LUKS change and no prompt. The passphrase
-# only travels through pipes, and the new JWE is decrypted again and compared
-# by hash before it replaces the old one. Otherwise, or with --new-passphrase
-# (when the old content is not a valid key any more), the passphrase is taken
-# from $LUKS_PASSPHRASE or prompted. On the local host it is tested against
-# the LUKS device first, so a typo never ends up in the JWE.
+# Binding from scripts/tang-config.sh: every other host's Tang, t = 1, pinned.
+# If the current JWE still decrypts, its content is re-wrapped without a prompt
+# and verified by hash before replacing the old one. Otherwise (or with
+# --new-passphrase) the passphrase comes from $LUKS_PASSPHRASE or a prompt and,
+# on the local host, is tested against the LUKS device first.
 set -euo pipefail
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || { [ "$#" -eq 2 ] && [ "$2" != "--new-passphrase" ]; }; then

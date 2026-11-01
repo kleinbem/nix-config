@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
-# Fleet Health Check Script
-#
 # Audits the kleinbem fleet for common issues and inconsistencies.
-# Run periodically (weekly recommended) to catch problems early.
-#
 # Usage:
 #   ./tools/fleet-health-check.sh              # Check all
 #   ./tools/fleet-health-check.sh orin-nano    # Check one device
-#   ./tools/fleet-health-check.sh --verbose    # Verbose output
 
 set -euo pipefail
 

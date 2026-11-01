@@ -1,9 +1,6 @@
-# Shared profile for 24/7 hosts that substitute from Attic: pull-based
-# auto-upgrade plus the ntfy fast-path. Import it rather than repeating the
-# block, so hosts only drift through a deliberate override.
-#
-# The ntfy listener stays inert until the host declares the ntfy_deploy_topic
-# sops secret. mkDefault so a host on my.deploy.comin can turn autoUpgrade off.
+# Shared pull-deploy profile for 24/7 hosts: autoUpgrade plus the ntfy
+# fast-path (inert until the host declares the ntfy_deploy_topic secret).
+# mkDefault so a host on my.deploy.comin can turn autoUpgrade off.
 { lib, ... }:
 {
   my.deploy.autoUpgrade = {

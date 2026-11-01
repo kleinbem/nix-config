@@ -1,10 +1,7 @@
-# Garage S3 object storage — INTERIM single-node on nixos-nvme.
-#
-# Data lives on /mnt/data (1.4 TB free, btrfs = CoW+snapshots → mitigates the
-# Garage LMDB single-node crash-fragility caveat). replication_factor = 1 because
-# it's a single node for now; when nasbook comes online, add it as a second node
-# and `garage layout` rebalance, then drain this one. R2 offsite remains the
-# durability backstop regardless.
+# Garage S3 storage, interim single node (replication_factor 1). Data sits on
+# btrfs /mnt/data, whose CoW and snapshots soften the single-node crash risk
+# (db_engine is sqlite).
+# Later: add nasbook as a node, rebalance with `garage layout`, drain this one.
 {
   config,
   pkgs,
@@ -153,8 +150,8 @@ in
     };
   };
 }
-# --- ONE-TIME INIT after first `just apply` (imperative; run on the host) -----
-# The `garage` CLI wrapper auto-sources the env file (RPC secret + admin token).
+# One-time init on the host after the first deploy (the `garage` wrapper loads
+# the RPC secret + admin token):
 #
 #   # 1. give this node storage capacity and apply the layout:
 #   garage layout assign -z dc1 -c 1T "$(garage node id -q | cut -d@ -f1)"

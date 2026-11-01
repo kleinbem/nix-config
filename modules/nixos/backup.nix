@@ -13,14 +13,10 @@
 #           can't erase its recent history.
 #   gdrive  second provider, best-effort; pruned here (Drive has no lifecycle).
 #
-# Before enabling, a host needs backup_r2_rclone_config in its per-host sops
-# file (per host so one token can be revoked alone) plus rclone_config,
-# restic_password and ntfy_alert_topic in nix/shared.yaml.
-#
-# Alerts go to ntfy_alert_topic, shared with CI via nix/infra/github-secrets.tf.
-# Never ntfy_deploy_topic: any message there starts an upgrade
-# on every host. Restore: see backup-engine's header; secure bundles decrypt
-# with either YubiKey.
+# Needs backup_r2_rclone_config per host (revocable alone) plus rclone_config,
+# restic_password and ntfy_alert_topic in nix/shared.yaml. Alerts never go to
+# ntfy_deploy_topic: any message there starts an upgrade on every host.
+# Restore: see backup-engine's header; secure bundles decrypt with either YubiKey.
 let
   cfg = config.my.backup;
   keys = import ./keys.nix;

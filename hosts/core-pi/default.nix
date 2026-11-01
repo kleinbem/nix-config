@@ -155,11 +155,8 @@ in
 
   _module.args.luksName = luksVolumeName;
 
-  # Additive to rpi5-node.nix's martin.openssh.authorizedKeys.keys (list
-  # options merge across modules) — scoped here rather than there because
-  # this key only makes sense on the one host that actually runs Caddy.
-  # See modules/nixos/keys.nix for why it's a plain unattended key rather
-  # than one of the FIDO2 ones every other authorizedKeys entry here uses.
+  # Adds to rpi5-node.nix's keys; only this host runs Caddy. keys.nix
+  # explains why it's a plain unattended key, not FIDO2.
   users.users.martin.openssh.authorizedKeys.keys = [
     (import "${self}/modules/nixos/keys.nix").ssh.caddy-ca-refresh
   ];

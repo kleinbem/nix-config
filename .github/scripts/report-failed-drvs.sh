@@ -1,25 +1,15 @@
 #!/usr/bin/env bash
 # report-failed-drvs.sh <label> <marker-file> [attic-cache]
 #
-# Root-cause report for a failed best-effort nix-fast-build step. nix-fast-
-# build keeps only the last 10k log lines per target, so on big closures the
-# derivation that actually broke (often early) scrolls out and only "N
-# dependencies failed" survives.
+# Root-cause report for a failed best-effort nix-fast-build step. nix-fast-build
+# keeps only the last 10k log lines per target, so the derivation that broke
+# often scrolls out. Every drv built since <marker-file> (touch it at step start)
+# has a fresh log; one with invalid outputs failed. Scoping to the marker skips
+# stale logs whose outputs were GC'd.
 #
-# Every derivation built since <marker-file> was touched (create it at the
-# start of the step) has a fresh log under /nix/var/log/nix/drvs; one whose
-# outputs aren't valid was attempted and failed. For each, print the
-# failure-looking lines from its whole log plus its tail, and list it in the
-# step summary. Scoping to logs newer than the marker (not "has a log, output
-# missing") avoids flagging stale logs whose outputs were later GC'd.
-#
-# With [attic-cache], the derivations that DID build are pushed there.
-# nix-fast-build only pushes when the whole target succeeds, so one broken
-# package otherwise throws away hours of finished builds (2026-10-28: three
-# nvme runs built nearly the whole closure around gimp3-mcp, pushed nothing).
-#
-# The first failure (derivation + its first failure line, else the log's last
-# line) goes to $GITHUB_OUTPUT as `cause`, for the ntfy alert.
+# With [attic-cache], the drvs that did build are pushed there: nix-fast-build
+# only pushes when the whole target succeeds. The first failure goes to
+# $GITHUB_OUTPUT as `cause` for the ntfy alert.
 set -uo pipefail
 
 label=$1

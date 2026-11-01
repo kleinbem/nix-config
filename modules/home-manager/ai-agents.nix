@@ -8,12 +8,9 @@
 let
   cfg = config.modules.ai-agents;
 
-  # Data-driven agent table. `exe` is what actually gets launched; `skillDir`
-  # is that agent's on-disk skills location (relative to $HOME); `package` is
-  # what to add to PATH when the agent is selected (null = supplied elsewhere,
-  # e.g. opencode comes from `modules.opencode`). Omarchy 4 ("Quattro")
-  # symlinks one skill file into each skillDir and installs the picked agent
-  # on first run — we do both, declaratively.
+  # `exe` is what gets launched, `skillDir` the agent's skills dir under
+  # $HOME, `package` what goes on PATH (null = supplied elsewhere, e.g.
+  # opencode by `modules.opencode`).
   agents = {
     claude = {
       exe = "claude";
@@ -47,12 +44,10 @@ let
 
   defaultExe = agents.${cfg.defaultAgent}.exe;
 
-  # The MCP servers nix-presets' modules.mcp registers for every other client
-  # (claude desktop, gemini, antigravity …), as goose stdio extensions, so
-  # goose gets the same tools. Keyed by server name; goose.settings wins on
-  # conflicts, e.g. to disable one. `cmd` may be a bare program (atlas): goose
-  # resolves it from PATH like the other clients do. They start disabled (CLIs
-  # first); one switched on in goose stays on, see gooseSettings below.
+  # nix-presets' modules.mcp servers as goose stdio extensions, so goose gets
+  # the same tools as the other clients. goose.settings wins on conflicts.
+  # They start disabled (CLIs first); one switched on in goose stays on, see
+  # gooseSettings below.
   mcpServers = lib.optionalAttrs (lib.attrByPath [ "modules" "mcp" "enable" ] false config) (
     lib.attrByPath [ "modules" "mcp" "servers" ] { } config
   );

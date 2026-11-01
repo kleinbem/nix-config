@@ -1,9 +1,7 @@
-# hass-pi — SOPS secrets, decrypted with the host's own SSH key so the box
-# stays autonomous (no SSH or YubiKey needed to enroll in NetBird).
-#
-# If the host key ever changes: update its recipient in kleinbem-secrets and
-# `sops updatekeys` every file it reads (nix/shared.yaml, shared/wifi.yaml,
-# nix/per-host/hass-pi.yaml), bump nix-config's lock, then deploy. netbird_setup_key must be a reusable key (shared with other hosts).
+# Decrypted with the host's own SSH key, so the box needs no YubiKey.
+# If the host key changes: update its recipient in kleinbem-secrets, `sops
+# updatekeys` nix/shared.yaml, shared/wifi.yaml and nix/per-host/hass-pi.yaml,
+# bump nix-config's lock, then deploy. netbird_setup_key must be reusable.
 _: {
   sops = {
     age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];

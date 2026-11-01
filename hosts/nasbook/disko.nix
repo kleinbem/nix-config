@@ -1,14 +1,5 @@
-# nasbook disko layout — QNAP TBS-453A NAS
-#
-# NAS storage setup with /mnt/data for large-capacity storage (archives, backups, etc.)
-# Root filesystem on primary device with LUKS encryption.
-#
-# Device parameters:
-#   device = "/dev/sda"    (primary OS drive)
-#
-# NOTE: Data drives (RAID arrays, additional HDDs) should be configured separately
-# via ZFS/mdadm and mounted at /mnt/data. This layout only handles the OS drive.
-# See: https://wiki.nixos.org/wiki/ZFS or https://wiki.nixos.org/wiki/RAID
+# nasbook (QNAP TBS-453A) disko layout: the LUKS-encrypted OS drive only.
+# The /mnt/data disk is set up by my.dataDisk in ./data-disk.nix.
 {
   lib,
   device ? "/dev/sda",

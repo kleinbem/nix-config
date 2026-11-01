@@ -1,26 +1,14 @@
 #!/usr/bin/env bash
 # Build the dummy kleinbem-secrets tree CI substitutes for the private repo
-# (via --override-input kleinbem-secrets). It must mirror every path
-# nix-config dereferences at eval/build time — a missing path fails the
-# BUILD with "failed to get symlink metadata", even when eval-only checks
-# pass:
+# (--override-input kleinbem-secrets). It must hold every path nix-config
+# dereferences at eval/build time, or the build fails with "failed to get
+# symlink metadata" even when eval-only checks pass:
 #   nix/shared.yaml                  defaultSopsFile on every host
 #   nix/per-host/<host>.yaml         per-host sopsFile overrides
 #   initrd/cryptroot_<host>.jwe      my.boot.clevis-initrd secretFile
-#   personas/contact.nix             hosts/mac-mini/default.nix's personasView
-#
-# personas/*.yaml (sops-encrypted, per-persona signing/API keys) are NOT
-# covered here — mac-mini's persona secrets already tolerate a missing
-# sopsFile (validateSopsFiles = false), so that part of the dummy build
-# behavior is unchanged. personas/contact.nix is different: it's plain Nix
-# (reverted from sops-encrypted 2026-08-09 — full-name/email are git
-# commit-author identity, so they're public the moment a persona commits
-# anything; see kleinbem-secrets/personas/contact.nix's own header), so
-# hosts/mac-mini/default.nix `import`s it directly and unconditionally at
-# eval time — validateSopsFiles doesn't apply to a plain import, so a
-# missing file here fails the BUILD outright ("path ... does not exist"),
-# not just a degraded eval. Names below must match nix-config/personas.nix's
-# attribute names — keep in sync when a persona is added/renamed there.
+#   personas/contact.nix             plain Nix, imported by hosts/mac-mini/default.nix
+# personas/*.yaml can stay missing (validateSopsFiles = false), but contact.nix
+# is a plain import. Persona names must match personas.nix.
 set -euo pipefail
 
 out="${1:-/tmp/dummy-secrets}"

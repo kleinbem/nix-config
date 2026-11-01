@@ -1,8 +1,6 @@
-# Declarative LUKS+btrfs data disk mounted at a fixed mountpoint. Shared
-# between nixos-nvme (its own /mnt/data, FIDO2-unlocked in initrd — a
-# desktop, YubiKey always available) and nasbook (its second SSD, no
-# FIDO2 on that host — see hosts/nasbook/disko.nix — so it uses a keyfile
-# embedded into initrd instead).
+# Declarative LUKS+btrfs data disk at a fixed mountpoint. nixos-nvme unlocks
+# it with FIDO2 in initrd; nasbook has no FIDO2 and uses an initrd keyfile
+# (hosts/nasbook/data-disk.nix).
 {
   config,
   lib,
@@ -43,12 +41,9 @@ in
       example = [ "fido2-device=auto" ];
       description = "Additional options passed to crypttab/initrd for LUKS unlock.";
     };
-    # A host with no FIDO2 unlock path (nasbook) should point this at a
-    # path embedded into initrd via boot.initrd.secrets instead — same
-    # plain-file-in-kleinbem-secrets/initrd/ convention as the fleet's SSH
-    # host keys and Tang JWEs (sops secrets aren't available yet at initrd
-    # time). Flows into the real (non-deprecated) boot.initrd.luks.devices
-    # settings.keyFile NixOS option, not disko's own deprecated top-level one.
+    # For hosts without FIDO2: a path embedded via boot.initrd.secrets (sops
+    # isn't available in initrd). Sets boot.initrd.luks.devices' keyFile, not
+    # disko's deprecated top-level one.
     keyFilePath = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;

@@ -1,10 +1,7 @@
-# Keeps ~/.pki/caddy-root.crt and Chrome's NSS trust in sync with Caddy's
-# local CA, which lives only on core-pi, so a CA rotation there doesn't
-# silently break *.kleinbem.dev here.
-#
-# Uses a dedicated no-touch key (~/.ssh/id_ed25519_caddy_ca_refresh, public
-# half `caddy-ca-refresh` in keys.nix, restricted on core-pi to reading this
-# cert): a timer can't answer a FIDO2 touch prompt.
+# Keeps ~/.pki/caddy-root.crt and Chrome's NSS trust in sync with core-pi's
+# Caddy local CA, so a CA rotation there doesn't break *.kleinbem.dev here.
+# Uses a no-touch key (modules/nixos/keys.nix `caddy-ca-refresh`, restricted to
+# reading the cert) because a timer can't answer a FIDO2 touch.
 {
   config,
   pkgs,

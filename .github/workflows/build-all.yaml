@@ -1,10 +1,5 @@
 name: "Build & Cache All (Fast)"
 
-# Mirror of the meta-workspace build-all workflow, building from nix-config
-# directly. Runs alongside the meta version during the meta-flake →
-# nix-config root migration; meta's copy will be retired once this one is
-# proven green for a full cycle.
-
 on:
   push:
     branches:
@@ -24,12 +19,9 @@ on:
   schedule:
     - cron: '0 4 * * 1'
 
-# Only PR runs cancel their superseded predecessor. On main, a newer push
-# queues behind the running one instead (GitHub keeps just the newest pending
-# run): the best-effort toplevels take hours and the lock bot
-# pushes to main several times a day, so cancel-in-progress there meant the
-# heavy cache-warming builds were routinely killed before finishing (e.g. run
-# 37291070182, cancelled by the #98 lock push after 25 min).
+# Only PR runs cancel their predecessor. On main a newer push queues instead:
+# the cache-warming builds take hours and the lock bot pushes several times a
+# day, so cancelling there would kill them before they finish.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -104,36 +96,14 @@ jobs:
       - name: Run nix-fast-build
         run: |
           set -o pipefail
-          # Construct build arguments.
-          # --eval-workers 2: cap parallel eval-jobs forks. Default = nproc,
-          # which on the 7 GiB hosted runner has been OOM-killing the runner
-          # before the build step produces any output (visible as the
-          # "hosted runner lost communication" error). Same issue hits meta's
-          # build-all; this is the conservative first-pass fix.
-          # Check enumeration via `nix eval` + attrNames, NOT `nix flake show`:
-          # flake show evaluates every output of every system just to list
-          # names, and on the CI (Determinate) Nix it emitted `"checks": null`
-          # instead of failing — with stderr discarded, CI_CHECKS was silently
-          # EMPTY and this job built zero checks for months (run 29467089940
-          # and earlier). Hence also the emptiness guard: an empty list is
-          # always an enumeration bug, never a real state, so fail loud.
-          #
-          # Exclusions:
-          # - VM-based NixOS tests (caddy/code-server/mobile-link/recovery) run
-          #   in the dedicated vm-tests.yaml workflow; they remain in .#checks
-          #   for local runs.
-          # - host-* checks: hosts are targeted EXPLICITLY below (hass-pi +
-          #   core-pi hardcoded native on aarch64, mac-mini + nasbook
-          #   hardcoded native on x86_64 — they pull production via
-          #   my.deploy.autoUpgrade with requireCache = true, same "must never
-          #   build on-device" contract as the RPi5 pair; nixos-nvme builds in
-          #   its own workflow (build-nvme.yaml) because its ~8.6 GiB eval
-          #   needs swap + isolation and promote must not wait for it; Orin/routers
-          #   deliberately never build in CI — jetpack/bespoke kernels).
-          #   Enumerating them here would re-add those giant builds blocking.
-          # What this restores is the real checks — pre-commit-check and the
-          # flake-lock-no-file-url reproducibility guard, which must gate
-          # every PR.
+          # --eval-workers 2: the nproc default OOM-kills the 7 GiB hosted
+          # runner ("hosted runner lost communication").
+          # Checks are listed via `nix eval` + attrNames, not `nix flake show`,
+          # which on Determinate Nix printed `"checks": null` and silently
+          # built nothing. An empty list is always an enumeration bug.
+          # no-link: not reported upstream; `nix eval` is the sturdier way anyway.
+          # Excluded: VM tests (vm-tests.yaml runs them) and host-* checks
+          # (hosts are targeted explicitly below; nixos-nvme has build-nvme.yaml).
           SYSTEM="${{ matrix.system }}"
           mapfile -t CI_CHECKS < <(nix eval ".#checks.$SYSTEM" \
               --apply builtins.attrNames --json $NIX_OVERRIDES \
@@ -158,25 +128,11 @@ jobs:
             COMMON+=("--attic-cache" "system")
           fi
 
-          # IMPORTANT: nix-fast-build's `--flake` is SINGLE-VALUED (argparse
-          # store — the LAST one wins). Passing multiple `--flake` silently
-          # builds only the last target, which is why the cache was badly
-          # under-populated (only `.#devShells` ever built). So we invoke
-          # nix-fast-build ONCE PER target.
-          #
-          # Build only what hosts actually DEPLOY: their system toplevels (native
-          # arch) + devShells + non-VM checks. We deliberately do NOT build
-          # `.#packages` — it exposes cross-arch install IMAGES (e.g.
-          # router-1-image, an aarch64 image that gets cross-built on the x86_64
-          # runner) and standalone packages that no host deploys. Everything a
-          # host actually uses is already in its toplevel closure, so building
-          # toplevels caches it natively without the cross-build waste.
-          #
-          # The bare `.#nixosConfigurations` does NOT materialize host toplevels,
-          # so name them explicitly. Each host builds on its native-arch runner
-          # (matrix), so no emulation. RPi5 hosts carry the custom linux-rpi
-          # kernel (absent from cache.nixos.org). Excluded: routers (bespoke
-          # Banana Pi R4 kernel) — add once they're confirmed to build in CI.
+          # nix-fast-build's `--flake` is single-valued (the last one wins), so
+          # it runs once per target. `.#packages` is skipped: it holds
+          # cross-arch install images; what hosts use is in their toplevels.
+          # Toplevels are named explicitly because bare `.#nixosConfigurations`
+          # doesn't build them.
           TARGETS=()
           for c in "${CI_CHECKS[@]}"; do
             TARGETS+=(".#checks.$SYSTEM.$c")
@@ -214,21 +170,11 @@ jobs:
           done
           exit $rc
 
-      # Pull-deploy hosts resolve `github:kleinbem/nix-config?ref=production`
-      # with the COMMITTED flake.lock and the real (private) kleinbem-secrets:
-      # zero overrides. Everything above floats the siblings to their main
-      # and swaps in dummy secrets, so what it built is not the closure a
-      # device fetches — the lock may lag a sibling, and the sops files are
-      # part of `etc`, `activate` and the toplevel. Until 2026-10-20 nothing
-      # in CI built that device closure: promote's cache gate verified the
-      # floated one, and whenever the lock lagged the device compiled on its
-      # own until RuntimeMaxSec killed it, night after night, until the lock
-      # bot caught up. This step builds and pushes the exact device closure
-      # and is BLOCKING: red here means a host that cannot upgrade. The App
-      # token lets Nix fetch the private secrets input (same as promote's
-      # lock-honesty eval); the encrypted sops files it adds to the closure
-      # already sit in Attic from every local `dev::apply`. nixos-nvme and
-      # orin-nano below build from the lock the same way, best-effort.
+      # Pull-deploy hosts build from the committed flake.lock and the real
+      # kleinbem-secrets, with no overrides. The steps above float siblings and
+      # use dummy secrets, so they don't build the closure a device fetches.
+      # This one does, and it blocks: red means a host that cannot upgrade.
+      # The App token lets Nix fetch the private secrets input.
       - name: Mint GitHub App token for kleinbem-secrets
         id: app-token
         if: steps.cache.outputs.push_cache == 'true'
@@ -251,9 +197,8 @@ jobs:
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "1"
-            # mac-mini and core-pi exceed nix-eval-jobs' 4096 MiB default
-            # (seen 2026-10-20: "evaluation exceeded the memory budget ...
-            # even when run alone"); one worker on a 16 GB runner has room.
+            # mac-mini and core-pi exceed nix-eval-jobs' 4096 MiB default;
+            # one worker on a 16 GB runner has room.
             "--eval-max-memory-size" "8192"
             "--systems" "$SYSTEM"
             "--retries" "2"
@@ -276,15 +221,12 @@ jobs:
           done
           exit $rc
 
-      # Flake input SOURCES aren't build outputs, so nix-fast-build never pushes
-      # them; devices then download every new input revision as a tarball from
-      # api.github.com, and a lock update can hit GitHub's per-IP archive limit
-      # (HTTP 429, seen 2026-10-15 for NousResearch/hermes-agent on nixos-nvme
-      # although its Nix token works). Locked inputs carry a narHash, and Nix
-      # looks a narHash'd source up in its substituters before fetching
-      # (builtins.fetchTree docs), so with the sources in Attic devices fetch
-      # them from here instead. `nix flake archive` lists every input,
-      # transitive ones included. Sources are system-independent: x86_64 only.
+      # Flake input sources aren't build outputs, so nix-fast-build never pushes
+      # them, and devices fetching tarballs from GitHub hit its per-IP limit
+      # (HTTP 429). Nix looks narHash'd sources up in substituters first, so
+      # with them in Attic devices fetch from there. System-independent: x86_64 only.
+      # Archived with NIX_OVERRIDES, so kleinbem siblings are pushed at their
+      # main heads, not the committed lock's revs that devices fetch.
       - name: Push flake input sources to Attic (best-effort)
         if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
         continue-on-error: true
@@ -308,27 +250,11 @@ jobs:
           sudo swapon /swapfile-ci
           free -h
 
-      # Orin Nano (Jetson) toplevel: warm the cache so the workstation's
-      # `just apply` / nightly autoUpgrade SUBSTITUTE the jetpack/L4T kernel
-      # instead of emulating an hours-long aarch64 build under qemu locally.
-      # Runs on the NATIVE ubuntu-24.04-arm runner (no emulation), same as the
-      # hass-pi / core-pi toplevels above. BEST-EFFORT for the same reason as
-      # nvme/factory: a jetpack/nixpkgs breakage must warn, never block
-      # `Promote → production`.
-      #
-      # The KERNEL is built as its own target first: nix-fast-build only
-      # pushes a target's closure to Attic when that whole target succeeds,
-      # so a red toplevel alone caches nothing — not even the ~30 min kernel
-      # it did build successfully. As a separate target it's cached whenever
-      # it builds, independent of the rest of the toplevel.
-      #
-      # On failure, the root-cause build logs are printed explicitly:
-      # nix-fast-build keeps only the last 10k log lines, and the kernel build
-      # alone overflows that, so the derivation that actually broke (built
-      # early, failed early) scrolls out and only "N dependencies failed" for
-      # the toplevel survives. .github/scripts/report-failed-drvs.sh (shared
-      # with the nvme and factory steps) finds every attempted-but-failed
-      # derivation and prints its failure lines + log tail.
+      # Orin Nano toplevel: warms the cache so hosts substitute the jetpack
+      # kernel instead of building it. Best-effort: a jetpack/nixpkgs break
+      # must warn, never block promotion. The kernel is its own target because
+      # nix-fast-build only pushes a target that fully succeeds.
+      # report-failed-drvs.sh prints the root cause on failure.
       - name: Build orin-nano toplevel (best-effort)
         id: orin-build
         if: matrix.system == 'aarch64-linux' && steps.cache.outputs.push_cache == 'true'
@@ -358,15 +284,10 @@ jobs:
           .github/scripts/report-failed-drvs.sh orin-nano "$MARK" system
           exit 1
 
-      # Container factory eval is BLOCKING (and runs on PRs, unlike the build
-      # below): if the factory toplevel doesn't evaluate, nix-fast-build reports
-      # "0 successes", NOTHING is built or pushed, and the container manifest
-      # can never converge — new/changed container closures silently drop out
-      # of it cycle after cycle. That exact failure hid inside the best-effort
-      # build step for a day (nix-presets 61352e5 hardcoded a sops path the
-      # factory can't eval; core-pi's monitoring container couldn't stage).
-      # Eval breakage is a code bug that must fail CI loudly at PR time;
-      # build/push flakiness (the reason the BUILD is best-effort) is not.
+      # Factory eval blocks (and runs on PRs): if it doesn't evaluate, nothing
+      # is built and changed containers silently drop out of the manifest.
+      # Eval breakage is a code bug; build flakiness, why the build below is
+      # best-effort, is not.
       - name: Eval container-factory toplevel (blocking)
         id: factory-eval
         run: |
@@ -380,14 +301,8 @@ jobs:
             ".#nixosConfigurations.$FACTORY.config.system.build.toplevel.drvPath" \
             $NIX_OVERRIDES
 
-      # Turn a red factory eval into a phone notification instead of a red run
-      # someone has to go diagnose. The most common cause is a nixpkgs bump
-      # moving an insecure-marked package (openclaw) past its pinned re-ack in
-      # nix-presets lib/factory.nix — a deliberate checkpoint, fixed by bumping
-      # one version string there. Best-effort: no secret / unreachable ntfy
-      # never affects the job result. NTFY_ALERT_TOPIC is separate from
-      # NTFY_DEPLOY_TOPIC on purpose — the deploy topic is machine-consumed
-      # (any message triggers host upgrade polls); this one is for humans.
+      # Phone alert for a red factory eval. NTFY_ALERT_TOPIC is for humans;
+      # NTFY_DEPLOY_TOPIC is machine-consumed (any message triggers upgrade polls).
       - name: Alert factory eval failure via ntfy (best-effort)
         if: failure() && steps.factory-eval.outcome == 'failure'
         continue-on-error: true
@@ -408,28 +323,11 @@ jobs:
             -d "Blocking factory eval is red on ${{ matrix.system }}. Likely an insecure re-ack (openclaw version bump → update the pin in nix-presets lib/factory.nix) or a preset regression. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
-      # Container factory: materializes every standalone container closure for
-      # this arch (they are NOT part of any host closure anymore — standalone
-      # containers boot from a profile symlink, so nothing else would ever push
-      # them to Attic). The promote workflow evals the same factories to
-      # publish the container manifest devices consume.
-      # BEST-EFFORT: a red factory BUILD must not block host promotion; the
-      # manifest gate in promote-production refuses to publish a manifest whose
-      # paths aren't fully cached, so a failed factory build just means
-      # "manifest stays at the previous rev" — devices keep serving the old
-      # closures. Eval correctness is enforced by the blocking step above.
-      #
-      # Built PER CONTAINER (`.config.containers.<name>.path`, same attribute
-      # promote-production's manifest step already uses), not the combined
-      # `.config.system.build.toplevel`. The toplevel bundles every
-      # container's etc/system-units/activate into one derivation graph, so
-      # one container failing to build from source (e.g. a from-source
-      # package regression — this is what actually happened: qdrant 1.18.2
-      # failing to build took code-server/netdata/buzz/syncthing down with it,
-      # nothing repushed for ANY of them for days) previously failed the
-      # WHOLE build. Looping isolates that: a broken container only drops
-      # itself from this cycle's cache refresh, same as it already silently
-      # drops itself from the manifest when its OWN closure isn't cached.
+      # Builds every standalone container closure for this arch; nothing else
+      # pushes them, as they aren't in any host closure. Best-effort: promote
+      # only publishes a fully cached manifest, so a failure keeps the old one.
+      # Built per container (`.config.containers.<name>.path`), not via the
+      # toplevel, so one broken container doesn't block the rest.
       - name: Build container-factory toplevel (best-effort)
         id: factory-build
         if: steps.cache.outputs.push_cache == 'true'
@@ -468,14 +366,9 @@ jobs:
           .github/scripts/report-failed-drvs.sh "$FACTORY (${failed[*]})" "$MARK" system
           exit 1
 
-      # The builds above are continue-on-error so a from-source break (a
-      # nixpkgs test regression, a sops manifest drift) never blocks promotion.
-      # But that also means such a break is INVISIBLE — the run stays green while
-      # the cache silently goes cold and hosts fall back to compiling locally.
-      # This step turns a red best-effort build into a phone alert instead: it
-      # reads the steps' `outcome` (which records the real failure even though
-      # continue-on-error sets `conclusion` to success) and pings the human topic.
-      # Itself best-effort — a missing/unreachable ntfy never affects the result.
+      # continue-on-error keeps the run green while the cache goes cold, so a
+      # red best-effort build becomes a phone alert. `outcome` records the real
+      # failure; continue-on-error only sets `conclusion` to success.
       - name: Alert best-effort toplevel build failure via ntfy
         if: always() && (steps.factory-build.outcome == 'failure' || steps.orin-build.outcome == 'failure')
         continue-on-error: true
@@ -526,9 +419,8 @@ jobs:
             local outcome="$2"
             local desc_prefix="$3"
             local state desc
-            # Only an actual `success` outcome is success — a cancelled run
-            # used to fall through to the success default and mark builds that
-            # never ran as green.
+            # Only an actual `success` outcome is success, so a cancelled or
+            # skipped build never shows green.
             case "$outcome" in
               success) state="success"; desc="${desc_prefix} succeeded" ;;
               failure) state="failure"; desc="${desc_prefix} failed" ;;
