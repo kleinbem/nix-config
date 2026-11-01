@@ -1822,11 +1822,11 @@
         "treefmt-nix": "treefmt-nix_7"
       },
       "locked": {
-        "lastModified": 1793435051,
-        "narHash": "sha256-ZPpYGmoLjlNSZ9h/6G2LjVyYaWKTP7Qm5XKjaJ6wSw8=",
+        "lastModified": 1793524256,
+        "narHash": "sha256-sFBi+xY/lJsj3V0t/YbAabV6L1fLpUIqqj62fRNDuFs=",
         "owner": "kleinbem",
         "repo": "nix-templates",
-        "rev": "b5086ed8f3bfdafcc14701feec7ed7796e261e45",
+        "rev": "39f784131ab2e32a40268a1cc944581c96b57e25",
         "type": "github"
       },
       "original": {
