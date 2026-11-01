@@ -4,14 +4,8 @@ let
   hostMeta = myInventory.hosts;
 in
 {
-  # Direct flake evaluation (colmena >=0.5.0-pre, github:nix-community/colmena
-  # main). Purely additive — wraps the existing `flake.colmena` output below,
-  # no restructuring needed. This is what actually fixes nix-community/
-  # colmena#162 (mismatched version labels breaking Attic substitution — see
-  # its own comment thread) and the separate "/tmp/colmena-assets-*"
-  # bootstrap breakage we hit trying to patch around #162 from userland: both
-  # were artifacts of the OLD builtins.getFlake + temp-copy evaluator, which
-  # this bypasses entirely.
+  # Direct flake evaluation (colmena >= 0.5.0-pre). The old getFlake evaluator
+  # broke Attic substitution with mismatched version labels (colmena#162).
   flake.colmenaHive = inputs.colmena.lib.makeHive self.colmena;
 
   flake.colmena = {
@@ -93,8 +87,6 @@ in
 
     mac-mini = {
       deployment = {
-        # Static IP migration complete (hosts/mac-mini/default.nix stage 2) —
-        # .16 is now the host's real, sole address; DHCP's .70 is retired.
         targetHost = hostMeta.mac-mini.ip;
         targetUser = "martin";
         buildOnTarget = false; # same x86_64 arch as nixos-nvme — fast native build, push via SSH

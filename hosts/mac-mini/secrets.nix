@@ -8,21 +8,14 @@
 let
   mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
 
-  # alertmanager-ntfy: basic-auth password of the `monitoring` ntfy user
-  # (nix/per-host/mac-mini.yaml ntfy_monitoring_password) plus the shared
-  # secret alert topic. Gated on the plaintext key name so eval works
-  # before the value exists; sops-nix fails activation on a missing key.
+  # alertmanager-ntfy: the `monitoring` ntfy user's password plus the alert
+  # topic. Gated on the key existing; sops-nix fails activation on a missing key.
   hostSops = secretFile "nix/per-host/mac-mini.yaml";
   hasMonitoringNtfy =
     builtins.pathExists hostSops
     && lib.hasInfix "\nntfy_monitoring_password:" ("\n" + builtins.readFile hostSops);
 
-  # Guards the not-yet-provisioned cloudflare_dyndns_token the same way
-  # personaHasField guards persona API keys below — sops-install-secrets
-  # validates its whole manifest atomically, so declaring a key before it
-  # exists in mac-mini.yaml would freeze every other secret on this host
-  # (discord_bot_token, stalwart's admin hash, etc.) until someone notices,
-  # same landmine documented in the persona comment further down.
+  # Gates keys that may not be provisioned yet, like personaHasField below.
   macMiniSopsFile = secretFile "nix/per-host/mac-mini.yaml";
   macMiniHasField = field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
 
@@ -33,14 +26,9 @@ let
     envTemplate = "openwebui.env";
   };
 
-  # Which kleinbem-secrets/personas/<name>.yaml key holds the API key for
-  # each tool persona-runtime knows how to run (nix-presets/containers/
-  # persona-runtime.nix's toolSpecs — keep in sync when a new tool gets
-  # wired in there). Declaring secrets via a loop over personas.nix rather
-  # than one-off entries per persona is the point of the persona-runtime
-  # redesign: adding a new invocable persona is "add them to personas.nix
-  # with a tool already in this map", not "hand-write a new sops.secrets
-  # block".
+  # The personas/<name>.yaml key holding each tool's API key. Keep in sync
+  # with persona-runtime.nix's toolSpecs; a new persona only needs an entry
+  # in personas.nix with a tool listed here.
   toolApiKeyField = {
     gemini-cli = "gemini_api_key";
     claude-code = "anthropic_api_key";
@@ -48,25 +36,11 @@ let
   invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
   personaSopsFile = name: secretFile "personas/${name}.yaml";
 
-  # sops-install-secrets validates its ENTIRE manifest atomically before
-  # writing anything — one declared secret whose key doesn't exist yet in
-  # its sopsFile fails the install for every OTHER secret on the host too
-  # (signing keys, tokens, unrelated personas), silently, leaving them all
-  # frozen at their previous generation. Confirmed live 2026-08-09:
-  # michael-gruber's anthropic_api_key was declared here before the real
-  # key was added to kleinbem-secrets/personas/michael-gruber.yaml (needs
-  # manual provisioning via the Anthropic Console — can't be automated,
-  # see commit 9b35079) — validateSopsFiles=false does NOT cover this (it
-  # only skips checking the FILE exists, not that the KEY inside it does),
-  # so this silently broke juan-gonzalez's just-renamed signing key too
-  # and crash-looped hermes-juan. sops yaml keeps top-level key NAMES in
-  # cleartext (only values are ENC[...]), so checking for one doesn't need
-  # decryption — skip declaring an api_key secret for a persona whose
-  # sopsFile doesn't have that field yet instead of bricking the host's
-  # other secrets until someone notices. persona-runtime.nix's own
-  # `config.sops.secrets ? "persona_${name}_api_key"` check already
-  # handles the resulting absence gracefully (null apiKeyPath, fails only
-  # if/when that specific persona is invoked).
+  # sops-install-secrets checks its whole manifest at once: one declared key
+  # missing from its file silently freezes every other secret on the host
+  # (validateSopsFiles=false doesn't cover missing keys). Key names are
+  # cleartext in sops yaml, so skip an api_key the file doesn't have yet;
+  # persona-runtime treats it as absent until that persona is invoked.
   personaHasField =
     name: field:
     let
@@ -99,94 +73,54 @@ let
 in
 {
   sops = {
-    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
-    # fleet-wide in modules/nixos/base.nix.
-
-    # Persistent host key generated during provisioning (provision-common.sh
-    # pc_host_identity) — same convention as every other real host.
+    # Host key generated during provisioning (provision-common.sh pc_host_identity).
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
 
     # martin_password (sops key: martin_password_hash) is already declared by
     # users/martin/nixos.nix, imported below.
     secrets = {
-      # ntfy fast-path for autoUpgrade (see default.nix's deploy.autoUpgrade
-      # block) — same shared topic core-pi/hass-pi already use, from
-      # nix/shared.yaml (no per-host provisioning needed).
+      # ntfy topic for autoUpgrade notifications, shared (nix/shared.yaml).
       ntfy_deploy_topic = { };
-      # NetBird — consumed by modules/nixos/networking.nix → netbird-autojoin
-      # oneshot. Same shared setup key as orin-nano/core-pi/hass-pi.
+      # Shared setup key for the netbird-autojoin oneshot (networking.nix).
       netbird_setup_key = { };
 
-      # Read-only Attic pull token — activates modules/nixos/attic-pull.nix
-      # (netrc Bearer auth + NetBird-routed reads). Without this,
-      # my.deploy.autoUpgrade.requireCache above is pointless: cache pulls
-      # 401 and silently fall back to a local build on this slow CPU,
-      # capped/retried forever by RuntimeMaxSec instead of ever succeeding.
+      # Read-only Attic pull token (attic-pull.nix). Without it requireCache
+      # pulls get 401 and fall back to slow local builds on this CPU.
       attic_pull_token = { };
 
-      # Wires into nix.conf via modules/nixos/core.nix's include directive
-      # (gated on this secret existing) so the nix daemon can authenticate
-      # GitHub fetches of the private kleinbem-secrets repo — needed
-      # whenever autoUpgrade needs a kleinbem-secrets commit not already
-      # sitting in the local store. nixos-nvme/orin-nano already had this;
-      # mac-mini/core-pi/hass-pi didn't (found via nasbook hitting exactly
-      # this failure 2026-09-20: unauthenticated archive fetches of a
-      # private repo 404 unconditionally, regardless of commit).
+      # Lets the nix daemon fetch the private kleinbem-secrets repo (core.nix
+      # includes it); unauthenticated archive fetches of a private repo 404.
       github_read_all_token = {
         mode = "0440";
         group = "wheel";
       };
 
-      # Hermes Agent's Discord gateway bot token — moved from hass-pi
-      # 2026-08-05, see hosts/mac-mini/default.nix my.containers.hermes.
-      # Lives in kleinbem-secrets' per-host scope now (nix/per-host/mac-mini.yaml,
-      # cutover 2026-08-07) rather than the old shared secrets.yaml.
+      # Hermes Agent's Discord gateway bot token.
       discord_bot_token = {
         sopsFile = secretFile "nix/per-host/mac-mini.yaml";
       };
 
-      # Comma-separated Discord user IDs allowed to talk to the Hermes bot
-      # (see templates."hermes.env" below). A real sops secret as of
-      # 2026-08-08, NOT derived from personas-contact.nix at Nix eval time
-      # anymore — that required importing plaintext PII (names/emails/
-      # Matrix IDs) into the build, which only worked via a deferred
-      # exception (nix-secrets-legacy-contact input, now removed). To add
-      # another persona's discord-id: `sops kleinbem-secrets/nix/per-host/
-      # mac-mini.yaml`, edit hermes_discord_allowed_users to a comma-joined
-      # list.
+      # Comma-separated Discord user IDs allowed to talk to the Hermes bot.
+      # Kept in sops so the PII stays out of the build; edit
+      # hermes_discord_allowed_users in nix/per-host/mac-mini.yaml to add one.
       hermes_discord_allowed_users = {
         sopsFile = secretFile "nix/per-host/mac-mini.yaml";
       };
 
     }
     // lib.optionalAttrs (macMiniHasField "cloudflare_dyndns_token") {
-      # Cloudflare API token (Zone:DNS:Edit, scoped to kleinbem.dev only —
-      # deliberately narrower than the Terraform automation token) for
-      # services.cloudflare-dyndns below, which keeps mail.kleinbem.dev's A
-      # record pointed at Digiweb's dynamic PPPoE IP. Add via:
-      #   sops nix/per-host/mac-mini.yaml   (in kleinbem-secrets)
-      # See default.nix's cloudflare-dyndns block.
+      # Cloudflare token (Zone:DNS:Edit on kleinbem.dev only, narrower than the
+      # Terraform token) for cloudflare-dyndns, which keeps mail.kleinbem.dev
+      # pointed at the dynamic PPPoE IP.
       cloudflare_dyndns_token = {
         sopsFile = macMiniSopsFile;
       };
     }
     // lib.optionalAttrs config.my.containers.monitoring.grafanaOidc.enable {
-      # Authentik OIDC client secret for Grafana's own login (Authelia
-      # migration — see default.nix's monitoring.grafanaOidc block).
-      # Value: `tofu output -raw grafana_oidc_client_secret` from
-      # nix/infra, then `sops kleinbem-secrets/nix/per-container/
-      # monitoring.yaml` to set monitoring_grafana_oauth_client_secret —
-      # same manual round-trip as every other Terraform-generated secret
-      # this fleet feeds into sops (e.g. turnstile_secret_key).
-      #
-      # Declared directly (not via mkPerContainerSecrets) because this one
-      # needs mode = "0444": sops-nix's default 0400/root:root is unreadable
-      # by grafana's own unprivileged in-container user (uid 196) once
-      # bind-mounted through — confirmed live 2026-09-22, grafana.service
-      # crash-looping on "permission denied" reading the bind-mounted path.
-      # World-readable is an acceptable tradeoff here (same posture as
-      # other container-bind-mounted secrets in this fleet) rather than
-      # chasing exact UID parity across a package-version-dependent uid.
+      # Authentik OIDC client secret for Grafana's login. Value comes from
+      # `tofu output -raw grafana_oidc_client_secret` in nix/infra.
+      # 0444, not mkPerContainerSecrets' 0400: grafana's in-container user
+      # can't read a root-only bind mount, and its uid varies by package.
       monitoring_grafana_oauth_client_secret = {
         sopsFile = secretFile "nix/per-container/monitoring.yaml";
         mode = "0444";
@@ -194,16 +128,8 @@ in
     }
     // lib.optionalAttrs config.my.containers.open-webui.oidc.enable openWebUiOidc.secrets
     // lib.optionalAttrs config.my.containers.stalwart.enable (
-      # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash, or
-      # plaintext — Stalwart accepts either). Per-CONTAINER scope, not
-      # per-host: the mail server is a fleet service that could migrate
-      # hosts, so `nix/per-container/stalwart.yaml` (already encrypted to
-      # martin + nixos_nvme + mac_mini via the .sops.yaml catch-all) keeps
-      # the secret's location independent of which host runs it. Gated
-      # behind `enable` for the same reason as nixos-nvme's
-      # litellm_master_key: sops-install-secrets validates the whole
-      # manifest atomically, so one declared-but-unprovisioned secret
-      # freezes every other secret on the host.
+      # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash or plaintext).
+      # Per-container scope so it can move hosts with the mail server.
       mkPerContainerSecrets {
         container = "stalwart";
         keys = [ "admin_password_hash" ];

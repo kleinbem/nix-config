@@ -11,24 +11,18 @@
 # nix/tools/check-iac-data.sh drift-guards the committed copies.
 { inputs, self, ... }:
 {
-  # heartbeats.json bridge: slug → { kind, timeout, grace } per host, from
-  # each host's evaluated `my.heartbeat.checks` (modules/nixos/heartbeat.nix).
-  # A flake output rather than part of iac/data.nix because it needs the
-  # evaluated host configs; laziness keeps it to the my.heartbeat/my.backup
-  # slice of each host. Hosts without the option (container-factory, the
-  # bootstrap image) are skipped. Read by nix/tools/gen-iac-data.sh.
+  # heartbeats.json bridge: each host's evaluated my.heartbeat.checks. A flake
+  # output, not iac/data.nix, because it needs evaluated host configs. Read by
+  # nix/tools/gen-iac-data.sh.
   flake.heartbeats = inputs.nixpkgs.lib.mapAttrs (_: c: c.config.my.heartbeat.checks) (
     inputs.nixpkgs.lib.filterAttrs (
       _: c: c.config ? my && c.config.my ? heartbeat
     ) self.nixosConfigurations
   );
 
-  # backup-hosts.json bridge: hosts that register any `my.backup.items` and
-  # so need an R2 key (nix/infra/cloudflare-r2-backup-tokens.tf mints one per
-  # host and tf-apply.sh writes it to that host's sops file). Keyed on items,
-  # not my.backup.enable: the key has to exist BEFORE a host enables backups
-  # (activation needs the secret). Intersected with inventory.hosts so build-
-  # only configs (container-factory, the bootstrap image) never get one.
+  # backup-hosts.json bridge: hosts that need an R2 key (minted by
+  # nix/infra/cloudflare-r2-backup-tokens.tf). Keyed on items, not enable: the
+  # key must exist before a host turns backups on. Build-only configs skipped.
   flake.backupHosts =
     let
       inherit (inputs.nixpkgs) lib;
@@ -54,8 +48,7 @@
     let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
 
-      # kleinbem-secrets checkout (flake input, historically named
-      # "nix-secrets"). personas/contact.nix is plain Nix — import directly.
+      # personas/contact.nix is plain Nix, so import it directly.
       contactFile = inputs.kleinbem-secrets + "/personas/contact.nix";
       contact = if builtins.pathExists contactFile then import contactFile else { };
 

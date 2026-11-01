@@ -1,15 +1,7 @@
-# Keeps the Obsidian vault (~/Documents/Notes) self-maintaining instead of
-# depending on remembering to run `just os notes::organize`/`link-docs` by
-# hand: PARA foldering, distillation-candidate flagging, the AGENTS.md
-# LLM-orientation index, and the fleet `.agent/`-knowledge symlinks all go
-# stale the moment nobody thinks to run them manually.
-#
-# Host-specific (like ./caddy-ca-refresh.nix) rather than shared home.nix:
-# it hardcodes the live git checkout path (not the nix-store-managed
-# `~/.just` copy — same convention `notes.just`'s own `SCRIPTS` var uses,
-# so editing the scripts in-repo takes effect without a rebuild), which
-# only exists on this desktop. Other hosts don't have the vault or the
-# fleet repos cloned at this path.
+# Runs the `notes::organize`/`link-docs` maintenance on the Obsidian vault
+# daily so it doesn't depend on someone remembering.
+# Host-specific: it runs the scripts from the live checkout (edits apply
+# without a rebuild), which only exists on this desktop.
 { config, pkgs, ... }:
 let
   scripts = "${config.home.homeDirectory}/Develop/github.com/kleinbem/nix-config/users/martin/files/scripts";

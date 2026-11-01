@@ -97,13 +97,9 @@
         };
       };
 
-      # Loki's home is nasbook: its inventory IP (10.85.47.116) is on nasbook's
-      # .47 container subnet, which this host routes to 10.0.0.30 (nasbook), not
-      # to cbr0 (.46). Enabling it here does NOT give fluent-bit a reachable
-      # sink — the container comes up with that off-subnet IP and the host
-      # routes traffic away to (currently-off) nasbook. Kept disabled; the
-      # fluent-bit hardening in audit.nix makes the dead sink harmless, and
-      # shipping resumes fleet-wide on its own once nasbook is back.
+      # Loki lives on nasbook: its inventory IP is on nasbook's .47 subnet,
+      # which this host routes to nasbook, so enabling it here gives an
+      # unreachable container.
       loki = {
         enable = false;
         ip = "${myInventory.network.nodes.loki.ip}/24";
@@ -142,13 +138,10 @@
         ip = "${myInventory.network.nodes.cups.ip}/24";
       };
 
-      # Opt-in CI runner. No standing GitHub-hosted workflow targets self-hosted
-      # (every runs-on: is ubuntu-*), so this stays OFF and is toggled on only
-      # for occasional debug / heavy local builds, then off again. It's excluded
-      # from container-updater (below) so it builds embedded on this host —
-      # `runners` here then takes effect directly, no CI/manifest round-trip.
-      # To use: add `github_runner_pat` to nix/per-host/nixos-nvme.yaml, flip
-      # enable, `just apply`, point a workflow at `runs-on: [self-hosted, debug]`.
+      # Debug runner, off unless needed. Excluded from container-updater, so it
+      # builds on this host and `runners` applies directly. To use: add
+      # `github_runner_pat` to nix/per-host/nixos-nvme.yaml, enable, apply, and
+      # target `runs-on: [self-hosted, debug]`.
       github-runner = {
         enable = false;
         ip = "${myInventory.network.nodes.github-runner.ip}/24";
@@ -181,18 +174,11 @@
       };
 
       backup = {
-        # Re-enabled 2026-09-25: the 2026-06-28 "TEMP: toggle false→apply→
-        # true→apply" to recreate a stale container was never flipped back,
-        # so this host went ~3 months with no backups. nasbook's instance of
-        # the same preset writes to the same gdrive repos and was verified
-        # healthy the same day (snapshots dated 2026-09-25).
         enable = true;
         ip = "10.85.46.128/24";
-        # Literal paths (not config.sops.secrets.*.path) on purpose: the sops
-        # attribute evaluated to null inside the container's separate module
-        # eval (mkContainer), which silently flipped restic to the /run/secrets/dummy
-        # fallback. These are exactly what sops renders on the host, so the
-        # read-only bind-mounts still point at the real secrets. See restic backup debug.
+        # Literal paths, not config.sops.secrets.*.path: that is null inside
+        # the container's own module eval, which silently falls back to
+        # /run/secrets/dummy.
         passwordFile = "/run/secrets/restic_password";
         systemPasswordFile = "/run/secrets/restic_system_password";
         rcloneConfigFile = "/run/secrets/rclone_config";
@@ -210,18 +196,10 @@
         // lib.optionalAttrs config.my.containers.caddy.enable {
           "/var/lib/caddy" = "/var/lib/caddy";
         }
-        # Named per-app state dirs, NOT /var/lib/images wholesale: that also
-        # holds model weights (ollama, lmstudio, comfyui), 14G of loki
-        # logs, the attic cache, podman image layers and syncthing (synced
-        # elsewhere) — all regenerable, none worth shipping to Drive. The
-        # preset's `exclude` list can't express this per host (its
-        # innerConfig is built once, centrally — ADR-002), but systemTargets
-        # is per-host bind-mounts, so narrow it here. n8n is already under
-        # `targets` above. Every entry must exist on disk or the bind-mount
-        # fails the container start — so only dirs already guaranteed by the
-        # tmpfiles.rules at the bottom of this file are listed. Leftover dirs
-        # of services since moved off this host (litellm, stalwart,
-        # authelia, agent-team, langflow) are deliberately not included.
+        # Per-app dirs, not /var/lib/images wholesale: the rest is model
+        # weights, logs and caches, all regenerable. The preset's `exclude`
+        # is built centrally, so narrow it here. Each dir must exist (see
+        # tmpfiles.rules below) or the container fails to start.
         // lib.genAttrs [
           "/var/lib/images/open-webui"
           "/var/lib/images/qdrant"
@@ -241,23 +219,13 @@
       };
 
       buzz = {
-        # Re-enabled 2026-08-05: the 2026-08-02 SHIPPED-but-DISABLED IFD/
-        # cross-arch bug (buzz-relay's cargoLock.lockFile = "${src}/Cargo.lock"
-        # forced an eval-time realization of an x86_64-linux-pinned derivation,
-        # which the aarch64 container-manifest promote runner couldn't build —
-        # "platform mismatch", aborting manifest publish for every container
-        # that cycle) is fixed: nix-presets/pkgs/buzz-relay.nix now points
-        # cargoLock.lockFile at a vendored ./buzz-Cargo.lock instead of reading
-        # the fetched source, so no IFD happens at eval time.
         enable = true;
         ip = "${myInventory.network.nodes.buzz.ip}/24";
         hostDataDir = "/var/lib/images/buzz";
         secretsFile = config.sops.templates."buzz.env".path;
         typesenseApiKeyFile = config.sops.secrets.buzz_typesense_api_key.path;
-        # Through Caddy on core-pi (mesh only, Let's Encrypt via DNS-01, see
-        # the buzz node in inventory.nix): Buzz 1.0 joins only over TLS.
-        # The relay binds a community to one host, so the community row was
-        # renamed from 10.85.46.131:3000 to buzz.kleinbem.dev at the switch.
+        # Through Caddy on core-pi (mesh only): Buzz 1.0 joins only over TLS.
+        # The relay binds a community to one host, so this URL must match it.
         relayUrl = "wss://${myInventory.network.nodes.buzz.domain}";
         pairingRelayUrl = "wss://${myInventory.network.nodes.buzz.domain}/pair";
         # Members-only relay: required for mesh-llm compute sharing, which
@@ -271,11 +239,6 @@
           members = [ ];
         };
       };
-
-      # NOTE: the Stalwart persona-fleet mail server lives on mac-mini, not
-      # here — nixos-nvme is a workstation, not a 24/7 host, and a mailserver
-      # must always be up. See hosts/mac-mini/default.nix and
-      # docs/PHASE1_STALWART_STATUS.md.
 
       dev-db = {
         enable = true;
@@ -309,17 +272,12 @@
     "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
     "d /var/lib/images/n8n 0755 root root - -"
     "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
-    # caddy dropped: conflicted with caddy/default.nix's own
-    # `Z ${hostDataDir} 0755 3000 3000` (its actual uid=3000 user) — same
-    # class of bug ai.nix had, see its comment. litellm doesn't write to
-    # its bind mount at all, so its factory-default 0755 1000:100 is left
-    # alone rather than duplicated here.
+    # No caddy line: caddy/default.nix owns that dir (uid 3000).
     "d /var/lib/images/loki 0755 root root - -"
     "d /var/lib/images/crowdsec 0755 root root - -"
     "d /var/lib/images/monitoring 0755 root root - -"
     "d /var/lib/images/monitoring/db 0755 root root - -"
-    # monitoring/grafana dropped: conflicted with monitoring.nix's own
-    # `0755 1000 100` for that exact subdir.
+    # No monitoring/grafana line: monitoring.nix owns it (1000:100).
     "d /var/lib/images/qdrant 0755 root root - -"
     "d /var/lib/images/open-webui 0755 root root - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
@@ -328,10 +286,7 @@
     "d /var/lib/images/netdata/lib 0755 root root - -"
     "d /var/lib/images/langfuse 0755 root root - -"
     "d /var/lib/images/langgraph 0755 root root - -"
-    # langfuse/db dropped: postgres needs uid/gid 71, now set via
-    # dataDirOwner/dataDirGroup in langfuse.nix's langfuse-db container —
-    # this line duplicated the factory's 1000:100 default, which postgres
-    # refuses to start against.
+    # No langfuse/db line: postgres needs uid 71, set in langfuse.nix.
     "d /var/lib/images/buzz 0755 root root - -"
     "d /var/lib/images/buzz/postgresql 0755 root root - -"
     "d /var/lib/images/buzz/redis 0755 root root - -"

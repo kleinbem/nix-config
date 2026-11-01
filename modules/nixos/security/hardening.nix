@@ -5,14 +5,9 @@
   inputs,
   ...
 }:
-# The fleet's one hardening layer. nix-mineral carries the bulk of it where
-# it can run (x86_64; its boot params panic the Jetson/RPi kernels); the
-# manual baseline below covers what nix-mineral doesn't set. The Lynis
-# sysctls every host needs live in security/sysctl.nix.
-#
-# Compatibility overrides live here too, so a host never has to fight this
-# module with mkForce: nspawn needs user namespaces, perf needs a relaxed
-# paranoid level, containers need forwarding.
+# The fleet's hardening layer: nix-mineral on x86_64 only (its boot params
+# panic the Jetson/RPi kernels), plus what it doesn't set. Compatibility
+# overrides live here too, so hosts never need mkForce against it.
 let
   mineral = config.nix-mineral.enable;
   isX86 = pkgs.stdenv.hostPlatform.isx86_64;

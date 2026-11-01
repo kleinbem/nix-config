@@ -1,32 +1,11 @@
-# hass-pi — SOPS secrets.
+# hass-pi — SOPS secrets, decrypted with the host's own SSH key so the box
+# stays autonomous (no SSH or YubiKey needed to enroll in NetBird).
 #
-# Enables fully hands-off NetBird enrollment: the netbird-autojoin oneshot
-# (modules/nixos/networking.nix) runs `netbird up --setup-key` automatically on
-# the next autoUpgrade pull — NO SSH and NO YubiKey on the Pi. hass-pi decrypts
-# with its own SSH host key (Tang already unlocks LUKS at boot; this keeps the
-# box autonomous).
-#
-# hass-pi's age recipient is already in kleinbem-secrets/.sops.yaml
-# (age13prane4e59gww9rs2qu06ahd6krvd76fpd68jpya5xt7632chgks8k0yd8, derived from
-# /etc/ssh/ssh_host_ed25519_key). DEPLOY ORDER MATTERS if that recipient ever
-# changes — nix/shared.yaml must be re-encrypted for it BEFORE this lands on
-# hass-pi:
-#
-#   1. cd kleinbem-secrets && sops updatekeys nix/shared.yaml   (workstation YubiKey)
-#      → commit + push kleinbem-secrets.
-#   2. Update nix-config's lock to that kleinbem-secrets commit
-#      (nix flake update kleinbem-secrets, or the sync_locks autopilot).
-#   3. Commit + push nix-config. hass-pi auto-enrolls on its next pull
-#      (or `just deployment::deploy-fleet` for immediate).
-#
-# A premature deploy only fails the switch (stays on current generation) — not
-# fatal — but do step 1 first to avoid a failed autoUpgrade cycle.
-# NOTE: confirm netbird_setup_key in nix/shared.yaml is a *reusable* key (it's
-# shared with nixos-nvme/orin-nano); a one-time key already consumed won't join.
+# If the host key ever changes: `sops updatekeys nix/shared.yaml` in
+# kleinbem-secrets first, bump nix-config's lock, then deploy. Otherwise the
+# switch fails. netbird_setup_key must be a reusable key (shared with other hosts).
 _: {
   sops = {
-    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
-    # fleet-wide in modules/nixos/base.nix.
     age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];
 
     secrets = {
@@ -37,14 +16,8 @@ _: {
       # (netrc Bearer auth + NetBird routing) so hass-pi can substitute from the
       # private cache instead of compiling (e.g. the linux-rpi kernel).
       attic_pull_token = { };
-      # Wires into nix.conf via modules/nixos/core.nix's include directive
-      # (gated on this secret existing) so the nix daemon can authenticate
-      # GitHub fetches of the private kleinbem-secrets repo — needed
-      # whenever autoUpgrade needs a kleinbem-secrets commit not already
-      # sitting in the local store. nixos-nvme/orin-nano already had this;
-      # mac-mini/core-pi/hass-pi didn't (found via nasbook hitting exactly
-      # this failure 2026-09-20: unauthenticated archive fetches of a
-      # private repo 404 unconditionally, regardless of commit).
+      # Included into nix.conf (modules/nixos/core.nix) so the daemon can fetch
+      # the private kleinbem-secrets repo; unauthenticated fetches 404.
       github_read_all_token = {
         mode = "0440";
         group = "wheel";

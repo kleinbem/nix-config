@@ -6,36 +6,21 @@
   secretFile,
   ...
 }:
-# Fleet wiring for nix-presets' backup-engine: WHERE backups go and with
-# which keys. WHAT goes is registered by the data owners themselves
-# (presets + modules set my.backup.items); a host only flips
-# `my.backup.enable = true` and adds any host-only paths.
+# Fleet wiring for nix-presets' backup-engine: where backups go and with which
+# keys. Data owners register what goes via my.backup.items.
 #
-#   r2      kleinbem-backup bucket (nix/infra/cloudflare-r2.tf). Required.
-#           `secure/` is bucket-LOCKED 30d → a compromised host can't erase
-#           its own recent secure history; expired after 365d by lifecycle.
-#   gdrive  second provider (covers losing R2 / the Cloudflare account),
-#           remote `gdrive-fleet:kleinbem-backups` (own OAuth client).
-#           Best-effort for the secure tier, pruned after 365d here since
-#           Drive has no lifecycle rules.
+#   r2      required. `secure/` is bucket-locked 30d so a compromised host
+#           can't erase its recent history.
+#   gdrive  second provider, best-effort; pruned here (Drive has no lifecycle).
 #
-# Layout per destination: <remote>/secure/<host>/<host>-<ts>.tar.gz.age
-#                         <remote>/restic/<host>   (restic repo)
+# Before enabling, a host needs backup_r2_rclone_config in its per-host sops
+# file (per host so one token can be revoked alone) plus rclone_config,
+# restic_password and ntfy_alert_topic in nix/shared.yaml.
 #
-# Secrets a host needs before enabling (all sops):
-#   nix/per-host/<host>.yaml  backup_r2_rclone_config  — per host so a
-#                             single host's R2 token can be revoked alone
-#   nix/shared.yaml           rclone_config ([gdrive-fleet]), restic_password,
-#                             ntfy_alert_topic
-#
-# Alerts go to ntfy_alert_topic — the fleet's single human-facing alert
-# topic, shared with CI (distributed as the NTFY_ALERT_TOPIC Actions secret
-# by nix/infra/github-secrets.tf from the same shared.yaml key). NEVER
-# ntfy_deploy_topic: every host's nixos-upgrade-listener starts an upgrade on
-# ANY message there.
-#
-# Restore: see nix-presets/nixosModules/backup-engine (header) and
-# docs in hosts that enable it; secure bundles decrypt with either YubiKey.
+# Alerts go to ntfy_alert_topic, shared with CI via nix/infra/github-secrets.tf.
+# Never ntfy_deploy_topic: any message there starts an upgrade
+# on every host. Restore: see backup-engine's header; secure bundles decrypt
+# with either YubiKey.
 let
   cfg = config.my.backup;
   keys = import ./keys.nix;
@@ -84,11 +69,9 @@ in
           rcloneConfigFile = config.sops.secrets.backup_r2_rclone_config.path;
         };
         gdrive = {
-          # Own OAuth client (kleinbem-ai "rclone-fleet-backups", drive.file,
-          # brand-verified for Advanced Protection). drive.file only sees files
-          # this client created, hence its own top-level folder. The legacy
-          # `gdrive:` remote (rclone's shared client, retiring 2026) stays in
-          # rclone_config only for nasbook's legacy backup container.
+          # Own OAuth client with drive.file scope, which only sees files it
+          # created, hence its own top-level folder. The old `gdrive:` remote in
+          # rclone_config is still used by nasbook's legacy backup container.
           remote = "gdrive-fleet:kleinbem-backups";
           rcloneConfigFile = config.sops.secrets.rclone_config.path;
           required = false;

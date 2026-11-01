@@ -23,15 +23,7 @@ in
       enable = true;
       flakePath = "/home/martin/Develop/github.com/kleinbem/nix-devshells";
     };
-    # Disabled 2026-09-22: redundant now that PWAs are installed directly
-    # via Chrome's own "Install site as app" (GNOME-integrated), which
-    # gives a real app window/icon — these were just inventory-derived
-    # "open in default browser" xdg.desktopEntries shortcuts
-    # (modules/home-manager/service-launchers.nix), a much lighter
-    # convenience layer than the old isolated-profile PWA framework
-    # (nix-presets/pwa.nix, removed 2026-09-04) but no longer needed on
-    # top of real installed PWAs. Full service URL list saved to Obsidian
-    # before removal.
+    # Off: PWAs installed through Chrome replace these browser shortcuts.
     service-launchers.enable = false;
     mcp = {
       enable = true;
@@ -86,14 +78,6 @@ in
     android.enable = true; # User tools (apkeep, matepad CLI) for MatePad Pro
   };
 
-  # Bitwarden PWA removed along with the PWA framework (nix-presets pwa.nix,
-  # 2026-09). It existed only to route around bitwarden-desktop's broken
-  # Wayland/Mutter clipboard.write (see gnome.nix's xdg.desktopEntries.bitwarden
-  # comment) — Mutter doesn't implement zwlr_data_control_manager_v1, which
-  # Bitwarden's Rust clipboard lib insists on; a browser-context copy uses
-  # plain wl_data_device instead, which works. Use the Bitwarden Chrome
-  # extension for vault access now — same fix, no dedicated app window needed.
-
   # User Details
   home = {
     inherit (my) username;
@@ -110,15 +94,8 @@ in
       # mkForce: the neovim wrapper module also sets EDITOR (nvim); nano wins
       # so sops/git/etc. open a friendlier editor.
       EDITOR = lib.mkForce "nano";
-      # The buzz CLI, buzz-acp and buzz-agent (nixos-nvme systemPackages)
-      # connect to the self-hosted relay through this. First attempt used NixOS-level
-      # environment.variables (hosts/nixos-nvme/default.nix) — wrong
-      # mechanism: that only applies via /etc/set-environment at login
-      # time, confirmed live 2026-08-10 to stay empty in a fresh terminal
-      # even after a full switch. home.sessionVariables is what BROWSER/
-      # DEFAULT_BROWSER above already use and is proven to reach new
-      # terminals without a relogin — same fix, right place this time.
-      # Harmless on hosts without those tools installed.
+      # Relay for the buzz CLI, buzz-acp and buzz-agent. Set here, not in
+      # NixOS environment.variables, which new terminals only see after relogin.
       BUZZ_RELAY_URL = "wss://${myInventory.network.nodes.buzz.domain}";
     };
 
@@ -142,16 +119,9 @@ in
         recursive = true;
       };
 
-      # Declarative ~/.ssh/allowed_signers. Git resolves signatures
-      # against this file (see nix-presets/vcs.nix: gpg.ssh.allowedSignersFile).
-      #
-      # Principal `*` matches any committer email — so Martin's hardware
-      # keys verify regardless of which identity (gmail / kleinbem.dev)
-      # the commit was made under.
-      #
-      # Persona keys are rendered from keys.ssh.personas. Until those
-      # entries are populated (Phase 1 — Stalwart provisioning), the
-      # renderer emits nothing for them.
+      # ~/.ssh/allowed_signers for git (nix-presets/vcs.nix). Principal `*`
+      # so Martin's keys verify under any commit email; persona keys come
+      # from keys.ssh.personas.
       ".ssh/allowed_signers" = {
         force = true;
         text = ''
@@ -283,12 +253,8 @@ in
       ".ignore/"
     ];
 
-    # SSH multiplexing for github.com — first touch-required FIDO op opens a
-    # master connection; subsequent SSH ops within ControlPersist reuse it
-    # without a fresh touch. Dramatically reduces YubiKey touches during
-    # `just apply` (was ~6 touches per apply, now typically 1-2).
-    #
-    # If stale sockets ever cause "Session open refused by peer" hangs, run:
+    # Multiplexing: one YubiKey touch opens a master connection that later
+    # ops reuse. If stale sockets cause "Session open refused by peer", run:
     #   ssh -O exit git@github.com 2>/dev/null; rm -f ~/.ssh/cm-*
     ssh = {
       enable = true;
@@ -301,19 +267,9 @@ in
           ControlPersist = "10m";
         };
 
-        # hass-pi (Raspberry Pi 5, Home Assistant node). root is locked on the
-        # booted system, so connect as martin + sudo. The login key is a FIDO2
-        # hardware key (id_ed25519_sk); ssh-agent can't do PIN entry for it
-        # ("agent refused operation"), so bypass the agent (IdentityAgent none)
-        # and hand ssh the key file directly — it then prompts for PIN + touch.
-        #
-        # ControlMaster multiplexing (same trick as github.com above): the FIRST
-        # connection costs one PIN+touch and opens a master socket; every later
-        # `ssh hass-pi` / `just hass-pi::*` within ControlPersist reuses it with
-        # NO further touch. So it's ~1 touch per session window, not per command.
-        # (For YubiKey-free access from machines without a key, use NetBird SSH:
-        #  `netbird ssh hass-pi` once hass-pi is enrolled — auth is the peer
-        #  identity, no hardware key involved.)
+        # Fleet hosts: log in as martin with the FIDO2 key. IdentityAgent none
+        # because ssh-agent can't prompt for its PIN ("agent refused
+        # operation"); ControlMaster keeps it to one PIN+touch per hour.
         "hass-pi" = {
           Hostname = "10.0.0.21";
           User = "martin";
@@ -349,12 +305,6 @@ in
           IdentityFile = "~/.ssh/id_ed25519_sk";
           IdentityAgent = "none";
         };
-        # mac-mini (Mid-2011 Mac Mini, interactive/GNOME+RDP box). Same
-        # FIDO2-SK-via-agent pattern as the other headless hosts. Restored
-        # 2026-09-20 — this whole block had gone missing from the file
-        # (not just a stale local ssh config: `ssh mac-mini` failed to
-        # resolve for Martin too), root cause not identified; re-added
-        # from the established per-host pattern rather than left broken.
         "mac-mini 10.0.0.16" = {
           Hostname = "10.0.0.16";
           User = "martin";
@@ -364,9 +314,7 @@ in
           ControlPath = "~/.ssh/cm-%r@%h:%p";
           ControlPersist = "1h";
         };
-        # orin-nano (Jetson Orin Nano, AI edge node). Same FIDO2-SK-via-agent
-        # failure as the Pis ("agent refused operation") — bypass the agent so the
-        # key signs. Match the IP too, so `ssh …10.0.0.15` gets it, not just the alias.
+        # Match the IP too, so `ssh 10.0.0.15` gets the same settings.
         "orin-nano 10.0.0.15" = {
           Hostname = "10.0.0.15";
           User = "martin";
@@ -384,9 +332,7 @@ in
           IdentityFile = "~/.ssh/id_ed25519_sk";
           IdentityAgent = "none";
         };
-        # nasbook (QNAP TBS-453A). Same FIDO2-SK-via-agent pattern as the
-        # Pis/orin-nano — match the IP too, since colmena's targetHost is the
-        # raw IP (hostMeta.nasbook.ip), not the "nasbook" alias.
+        # IP too: colmena's targetHost is the raw IP, not the alias.
         "nasbook 10.0.0.30" = {
           Hostname = "10.0.0.30";
           User = "martin";
@@ -396,12 +342,8 @@ in
           ControlPath = "~/.ssh/cm-%r@%h:%p";
           ControlPersist = "1h";
         };
-        # No-touch alias for automated diagnostics/tooling (Claude Code and
-        # similar) — separate from "nasbook" above so interactive/deploy
-        # access still requires a physical touch. Uses the hardware-backed
-        # but no-touch-required resident credential (keys.ssh.fido2-notouch
-        # in kleinbem/keys.nix), so it's still gated on physically
-        # possessing the YubiKey, just without the per-command touch.
+        # No-touch alias for automated tooling, so plain "nasbook" still needs
+        # a touch. The key is still hardware-backed (keys.ssh.fido2-notouch).
         "nasbook-auto" = {
           Hostname = "10.0.0.30";
           User = "martin";

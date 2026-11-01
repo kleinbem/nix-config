@@ -49,9 +49,7 @@ in
     ./secrets.nix
   ];
 
-  # headless.nix creates the martin user but — unlike orin-nano/core-pi/
-  # hass-pi — nothing here ever authorized a key for it, so it was actually
-  # unreachable by SSH. Same fleet-wide key set as everywhere else.
+  # headless.nix only creates the user; each host authorizes its own keys.
   users.users.martin.openssh.authorizedKeys.keys = [
     keys.ssh.yubikey
     keys.ssh.fido2
@@ -63,14 +61,9 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # Tang auto-unlock at boot, same pattern as hass-pi/mac-mini/core-pi —
-    # silent primary path; disko.nix's fido2-device=auto crypttab option is
-    # the physical-presence fallback (HDMI+TTY per .just/nasbook.just) if
-    # Tang is unreachable. Binds to the OTHER three tang servers (nixos-nvme,
-    # hass-pi, orin-nano — see pc_clevis_bind_tang), never to nasbook's own
-    # (it can't serve itself an advertisement before it's unlocked). `enable`
-    # is gated on the JWE existing rather than hardcoded true: nasbook-install-usb
-    # generates it during provisioning, same as every other clevis-initrd host.
+    # Tang auto-unlock; disko.nix's fido2-device=auto is the HDMI/TTY fallback.
+    # Binds only to other hosts' tang servers: nasbook can't serve itself
+    # before it's unlocked. Gated on the JWE made at provisioning.
     boot.clevis-initrd = {
       enable = builtins.pathExists (secretFile "initrd/cryptroot_nasbook.jwe");
       luksDevice = "nasbook_crypt";
@@ -113,11 +106,8 @@ in
       };
     };
 
-    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
-    # after the mac-mini canary (#201): follow the production branch, signed
-    # heads only. autoUpgrade off (pull-deploy-node.nix sets it with
-    # mkDefault). requireCache: this host never compiles a closure, CI builds
-    # its toplevel (build-all) before promote moves the branch.
+    # comin follows the production branch, signed heads only. requireCache:
+    # this host never compiles; CI builds its toplevel before promote.
     deploy = {
       autoUpgrade.enable = false;
       comin = {
@@ -126,21 +116,11 @@ in
       };
     };
 
-    # Confirmed via lspci on the real hardware 2026-09-17: enp4s0 is the
-    # connected port (Realtek RTL8111/8168, r8169). enp3s0 (Intel I210,
-    # igb) is the second onboard NIC, currently uncabled. "enp2s0" here
-    # before was copied from another host and never matched real hardware.
+    # enp4s0 (Realtek, r8169) is the cabled port; enp3s0 (Intel I210) is unused.
     network.externalInterface = "enp4s0";
 
-    # my.virtualisation.enable gates podman-network-cbr0, the service that
-    # actually creates the shared cbr0 bridge every container — podman or
-    # nspawn — attaches to. podman.enable defaults to true on its own, but
-    # that default is inert without this. Identical to the mac-mini bug
-    # fixed 2026-08-04 ("Failed to add interface vb-monitoring to bridge
-    # cbr0: No such device" — cbr0 never created because this host never
-    # ran a container before); rpi5-node.nix sets this automatically for
-    # core-pi/hass-pi, but nasbook (non-Pi hardware) needs it explicitly
-    # and never got it.
+    # my.virtualisation.enable gates podman-network-cbr0, which creates the
+    # cbr0 bridge every container attaches to; podman.enable alone is inert.
     virtualisation = {
       enable = true;
       libvirtd.enable = false;
@@ -157,10 +137,7 @@ in
       subnet = "10.85.47.0/24";
       hostAddress = "10.85.47.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry's default flipped to false (a stranger without our
-      # always-imported modules/nixos/persistence.nix would otherwise hit
-      # a hard dependency on the impermanence module); this fleet already
-      # has it, so restore the previous behavior explicitly.
+      # nix-gantry defaults this off (it needs impermanence); this fleet has it.
       enablePersistence = true;
     };
 
@@ -240,10 +217,7 @@ in
       "d /mnt/data/Archive 0755 martin users - -"
       "d /mnt/data/Archive/Inbox 0755 martin users - -"
       "d /mnt/data/Archive/Paperless 0755 root root - -"
-      # agent-team's bind-mount sources (nix-presets/containers/agent-team.nix
-      # defaults hostDataDir to /var/lib/images/agent-team) — was missing
-      # entirely, same class of gap as GoogleDrive above: "Failed to clone
-      # /var/lib/images/agent-team/state: No such file or directory".
+      # agent-team's bind-mount sources; the container won't start without them.
       "d /var/lib/images/agent-team 0755 root root - -"
       "d /var/lib/images/agent-team/workspace 0755 root root - -"
       "d /var/lib/images/agent-team/state 0755 root root - -"
@@ -255,46 +229,15 @@ in
     netbird.enable = true;
     fstrim.enable = true;
 
-    # dhcpcd already writes /etc/resolv.conf pointing at the resolved stub
-    # (127.0.0.1) on this NixOS version, but resolved itself was never
-    # enabled — so nothing was listening and every DNS lookup failed
-    # ("Could not resolve host"), which in turn kept systemd-timesyncd from
-    # resolving its NTP pool (root cause of the boot clock reading 2012).
+    # dhcpcd points resolv.conf at the resolved stub, so resolved must run, or
+    # DNS (and with it NTP) fails.
     resolved.enable = true;
   };
 
-  # paperless trusts an unauthenticated X-Authentik-Username header for SSO
-  # login (PAPERLESS_ENABLE_HTTP_REMOTE_USER, nix-presets/containers/paperless.nix
-  # — was Remote-User/Authelia until 2026-09-22) — normally safe because
-  # only Caddy's forward_auth (after a verified Authentik session) is meant
-  # to set that header. But paperless's own container port is otherwise
-  # reachable by anyone who can route to nasbook's cbr0, including
-  # cross-host (network-routing.nix installs a route to every host's
-  # container subnet on every other host), which bypasses Caddy/forward_auth
-  # entirely. Confirmed exploitable live 2026-09-19 (pre-migration, header
-  # was Remote-User then): curling http://10.85.47.131:28981/ directly with
-  # a spoofed identity header logs straight into the dashboard with no
-  # credentials, while the same request without the header correctly
-  # redirects to /accounts/login/.
-  #
-  # UPDATED 2026-09-22: migrated to the nftables firewall backend (same
-  # playbook as nixos-nvme the same night — see its network.nix for the
-  # full nat.enable/nftables.enable/filterForward gotchas), replacing the
-  # iptables nat.extraCommands workaround below. virtualisation.nix's NAT
-  # is already native nftables (migrated in the same change), so this host
-  # needed no NAT-specific work, just the firewall backend + rule syntax.
-  #
-  # Source IP corrected 2026-09-22: this file's own comment previously said
-  # a live tcpdump on 2026-09-19 found NO masquerading on this path, so
-  # matching Caddy's raw container IP was reliable at the time — but
-  # core-pi's blanket `iifname "cbr0" oifname "end0" masquerade` rule
-  # (confirmed live via `nft list ruleset` on core-pi, 2026-09-22) applies
-  # to ALL cbr0 egress regardless of destination, paperless included; it
-  # must have been added to core-pi after that original tcpdump. Confirmed
-  # broken via live reachability testing (Caddy's traffic dropped) before
-  # this fix. myInventory.hosts.core-pi.ip is the real, currently
-  # masqueraded source. 10.85.47.1 is nasbook's own bridge address, allowed
-  # for host-side debugging/administration.
+  # paperless trusts the X-Authentik-Username header for SSO, and its port is
+  # routable fleet-wide, so a spoofed header would log anyone in. Only Caddy
+  # may reach it. core-pi masquerades all cbr0 egress, so Caddy arrives as
+  # core-pi's LAN IP. 10.85.47.1 is this host's bridge, for local admin.
   networking = {
     hostName = "nasbook";
 
@@ -318,16 +261,8 @@ in
   };
 
   boot.initrd = {
-    # QNAP TBS-453A onboard NIC — never explicitly loaded (no hardware.nix
-    # survived the hardware-configuration.nix→disko migration, and NixOS's
-    # default initrd module set is storage/HID only, no Ethernet drivers).
-    # Without this, systemd-networkd has no interface to bring up in stage 1,
-    # so wait-for-tang.service's carrier check always times out and Tang
-    # auto-unlock silently falls back to FIDO2/passphrase on every boot.
-    # Confirmed via lspci 2026-09-17: enp4s0 (the connected port) is a
-    # Realtek RTL8111/8168 on r8169; enp3s0 (uncabled) is an Intel I210 on
-    # igb. Both loaded here so Tang still works in initrd if the cable
-    # ever moves to the other port.
+    # The default initrd has no Ethernet drivers, so Tang would silently fall
+    # back to FIDO2/passphrase. Both onboard NICs, in case the cable moves.
     kernelModules = [
       "r8169"
       "igb"

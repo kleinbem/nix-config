@@ -55,12 +55,6 @@
       "/var/lib/systemd/timers" # Persistent= timer stamps; without them catch-up after downtime never works
     ];
     files = [
-      # RSA host key persistence dropped 2026-09-22 — every host's initrd
-      # hostKeys (rpi5-node.nix, hardware-boot.nix, hardware.nix, mac-mini/
-      # nasbook default.nix) lists only ed25519, and the whole sops/age
-      # recipient chain is ed25519-derived already (kleinbem-secrets
-      # .sops.yaml — 23 age1 recipients, zero RSA/PGP). Nothing referenced
-      # the RSA key; it was just persisted dead weight.
       "/etc/ssh/ssh_host_ed25519_key"
       "/etc/ssh/ssh_host_ed25519_key.pub"
       # /etc/machine-id deliberately absent: pinned on the kernel cmdline
@@ -68,14 +62,9 @@
       # under systemd stage-1, which every host uses.
     ];
 
-    # Shell history survives reboots on edge devices with an ephemeral
-    # root (hass-pi, and similar Pi/Jetson boxes) — without this it's
-    # wiped every boot. Excludes nixos-nvme: its /home is a real, separate,
-    # already-durable partition (/dev/vg0/home), so persisting through the
-    # bind-mount indirection here is unnecessary — and actively breaks
-    # activation the first time, since impermanence refuses to silently
-    # pick a winner when a real file already sits at the target path with
-    # no corresponding source under /nix/persist yet.
+    # Keep shell history on ephemeral-root hosts. Not nixos-nvme: its /home is
+    # a real partition, and impermanence fails activation when a real file
+    # already sits at the target.
     users.martin = lib.mkIf (config.networking.hostName != "nixos-nvme") {
       files = [
         ".bash_history"
@@ -99,11 +88,8 @@
     };
   };
 
-  # Under impermanence, /etc/ssh/ssh_host_ed25519_key is bind-mounted via a
-  # transient systemd unit (persist-nix-persist-etc-ssh-ssh_host_ed25519_key.service).
-  # During switch-to-configuration, that unit may be stopped before sops-install-secrets
-  # executes. Point sops directly to the durable backing path under /nix/persist so
-  # secret decryption never fails due to an unmounted bind.
+  # The /etc/ssh host key bind mount can be down while sops-install-secrets
+  # runs during a switch, so point sops at the /nix/persist path directly.
   sops.age.sshKeyPaths = lib.mkOverride 900 [
     "/nix/persist/etc/ssh/ssh_host_ed25519_key"
   ];

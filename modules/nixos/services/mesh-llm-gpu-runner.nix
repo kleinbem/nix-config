@@ -1,15 +1,8 @@
-# GitHub Actions runner for kleinbem/mesh-llm-gpu: builds nixpkgs' mesh-llm
-# for this Jetson's GPU and serves a model on it, the GPU half of the
-# nix-packages canary, and builds any kleinbem flake attribute on demand
-# (build.yaml: dispatch-only, commits on kleinbem branches only). The repo is
-# private, so only its owner's workflows reach this machine; never attach the
-# runner to a public repo.
-#
-# Turn on: create a fine-grained PAT (resource owner kleinbem, only
-# kleinbem/mesh-llm-gpu, permission Administration: read and write), put it
-# into `sops nix/per-host/orin-nano.yaml` as mesh_llm_gpu_runner_pat, then set
-# my.services.meshLlmGpuRunner.enable on the host (orin-nano only: it
-# relaxes the sandbox for the Jetson GPU nodes).
+# GitHub runner for the private kleinbem/mesh-llm-gpu repo (mesh-llm GPU tests
+# and on-demand builds). Never attach it to a public repo.
+# To enable: a fine-grained PAT for that repo only (Administration: read and
+# write) as mesh_llm_gpu_runner_pat in nix/per-host/orin-nano.yaml. Orin only:
+# it relaxes the sandbox for the Jetson GPU nodes.
 {
   config,
   lib,

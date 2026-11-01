@@ -1,31 +1,8 @@
-# Personas lifecycle state — changes weekly. Kept separate from
-# personas.nix (identity, rarely changes) so day-to-day status updates
-# don't churn the identity file's history.
-#
-# Mutated by recipes:
-#   just personas::activate NAME
-#   just personas::probation NAME
-#   just personas::leave NAME TYPE [UNTIL]
-#   just personas::resume NAME
-#   just personas::retire NAME [REASON]
-#   just personas::purge NAME
-#
-# Schema per persona:
-#   status        active | probation | on-leave | retired | purged
-#   status-since  ISO date — when this state was entered
-#   status-note   Free-text reason (human-readable)
-#   return-date   ISO date (null unless on-leave with planned return)
-#   leave-type    null | vacation | sick | parental | sabbatical | bereavement | jury-duty
-#                 (only meaningful when status = "on-leave")
-#   backup        Persona name covering work while this one is on-leave (null = no backup)
-#
-# State transitions (enforced by recipes):
-#   any         → on-leave    (need leave-type)
-#   on-leave    → active      (just personas::resume)
-#   any         → retired     (graceful end of life)
-#   retired     → purged      (rare; GDPR-style erasure)
-#   probation   → active      (after first reviewed PR)
-#   active      → probation   (only if explicitly demoted)
+# Persona lifecycle state, kept apart from personas.nix so frequent status
+# changes don't churn the identity file. Edit through the `just personas::*`
+# recipes (activate, probation, leave, resume, retire, purge).
+# Valid statuses, leave types and transitions: lib/personas.nix.
+# backup = the persona covering while this one is on leave (null = none).
 
 {
   martin = {

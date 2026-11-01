@@ -21,26 +21,11 @@ in
   hardware = {
     graphics.enable = true;
     enableRedistributableFirmware = true;
-    # Firmware (UEFI capsule) auto-update: with firmware.autoUpdate the
-    # capsule for the pinned L4T release becomes part of the bootloader
-    # install step. Every `switch`/`boot` runs ota-check-firmware; on a
-    # mismatch it stages the capsule on the ESP and the NEXT reboot flashes
-    # the inactive A/B slot (falls back to the old slot if the new one
-    # doesn't reach UEFI). A deploy never reboots on its own.
-    #
-    # It was off from 2026-07 to 2026-10 because the edk2 build timed out
-    # under qemu in CI. The orin-nano toplevel is built on a native arm
-    # runner now, and the capsule + Tegra-edk2 build are in Attic (first
-    # built on the Orin itself for the manual 36.5.0 -> 36.5.2 update on
-    # 2026-10-20). Nothing comes from anduril.cachix.org: jetpack-nixos is
-    # built against our nixpkgs, so the hashes never match theirs.
-    # Escape hatch for a one-off deploy: JETPACK_NIXOS_SKIP_CAPSULE_UPDATE=1.
-    #
-    # JetPack 7 (L4T R39.x / Linux 6.8) Migration Target:
-    # - Kernel Store Path: /nix/store/qymmphigdmsr9bn4db0ylmwn7acbllbs-linux-6.8.12
-    # - Kernel Derivation: /nix/store/dwizr55d8av85yqb7qaz6zqf8sr9c6rf-linux-6.8.12.drv
-    # - Toplevel Drv:      /nix/store/2fbby2n0cjaq2kr16mx6i85qzka4zrdx-nixos-system-orin-nano-26.11.20260928.7a0f122.drv
-    # - Toplevel Path:     /nix/store/gzcd9pr2r17q2g0w45hrvva6bwfj8315-nixos-system-orin-nano-26.11.20260928.7a0f122
+    # firmware.autoUpdate: a switch on a firmware mismatch stages the UEFI
+    # capsule, and the next reboot flashes the inactive A/B slot (falling back
+    # if it fails). Never reboots by itself. The capsule comes from our Attic,
+    # not anduril.cachix.org (built against our nixpkgs, hashes differ).
+    # Skip it for one deploy with JETPACK_NIXOS_SKIP_CAPSULE_UPDATE=1.
     nvidia-jetpack = {
       # majorVersion = "7"; # Switch when QSPI firmware is flashed over USB-C
       firmware.autoUpdate = true;
@@ -132,21 +117,14 @@ in
     };
     swraid.enable = false;
 
-    # Headless node — no audio. The Tegra audio graph card ("sound" DT node)
-    # fails to register with -16 (EBUSY) on every boot, spamming the kernel log.
-    # Blacklist the card driver so it never probes (other tegra audio modules
-    # stay loadable but register nothing). Purely to keep dmesg / `systemctl
-    # --failed` clean.
+    # Headless, no audio: the Tegra audio graph card fails with EBUSY on every
+    # boot. Blacklisted only to keep dmesg and `systemctl --failed` clean.
     blacklistedKernelModules = [ "snd_soc_tegra_audio_graph_card" ];
   };
 
-  # Spin the fan during the initrd for pre-OS thermal safety: nvfancontrol only
-  # starts once the full system boots, so while the Orin waits at the LUKS/Tang
-  # prompt (or drops to an initrd emergency shell) the fan is otherwise off.
-  # The pwm-tegra + pwm-fan modules are in boot.initrd.availableKernelModules above.
-  # 160/255 (~63%): ample airflow for an idle SoC during the short initrd window,
-  # noticeably quieter than full blast. nvfancontrol takes over at switch-root.
-  # Bump toward 255 if a genuinely-stuck boot (minutes at the prompt) ever runs hot.
+  # nvfancontrol only starts after switch-root, so the fan would be off while
+  # waiting at the LUKS/Tang prompt. 160/255 is enough for an idle SoC; raise
+  # it if a boot stuck at the prompt ever runs hot.
   my.boot.initrd-fan = {
     enable = true;
     pwm = 160;
@@ -194,10 +172,8 @@ in
   # on the second SSD — see disko.nix + the stage-2 crypttab in services.nix)
   disko.devices.disk.main.device = lib.mkDefault "/dev/nvme0n1";
   _module.args.device = "/dev/nvme0n1"; # Passed to disko.nix function argument
-  # Dedicated Frigate storage SSD (Seagate FireCuda, installed 2026-08-30).
-  # LUKS (orin_frigate_crypt) → ext4 → /mnt/data/frigate. Keyfile-unlocked in
-  # stage 2 (not initrd — see disko.nix). Provision the raw disk to match
-  # before deploying: create /nix/persist/etc/crypt/frigate.key, then run
-  # disko's format step scoped to this disk (partlabel disk-second-frigate).
+  # Frigate SSD: LUKS → ext4 → /mnt/data/frigate, keyfile-unlocked in stage 2
+  # (see disko.nix). A new disk needs /nix/persist/etc/crypt/frigate.key and
+  # disko's format step scoped to partlabel disk-second-frigate before deploy.
   _module.args.secondDiskDevice = "/dev/nvme1n1";
 }

@@ -5,34 +5,16 @@
   deployedContainers ? null,
   ...
 }:
-# ---------------------------------------------------------------------------
-# Dedicated build/cache factory for ALL decoupled containers (ADR 002).
-#
-# This host does not boot. Its sole purpose is to expose container system
-# closures at `config.containers.<name>.path` so CI can build & push them to
-# Attic and publish the container manifest devices consume (see
-# .github/workflows/build-all.yaml + promote-production.yaml).
-#
-# DEPLOYMENT-DRIVEN: `deployedContainers` (a specialArg computed in
-# modules/flake/hosts.nix from every real host's container-updater
-# registrations, plus an explicit pre-warm extras list) decides which
-# catalogue entries are enabled. The factory builds exactly what some device
-# will request from the manifest — nothing more. Passing null (e.g. a manual
-# `nix build` without the specialArg wiring) enables the full catalogue.
-#
-# Containers are force-built with `standaloneRunner = false` so `.path`
-# resolves to a real, buildable closure rather than the runtime symlink
-# string (`/var/lib/machines/<name>/current`). IPs / data dirs / secret paths
-# are host-level container attributes and do NOT affect the inner closure, so
-# dummy-but-valid values are sufficient for building & caching.
-# ---------------------------------------------------------------------------
+# Build/cache factory for all standalone containers (ADR 002). It never boots:
+# CI builds `config.containers.<name>.path` from here, pushes to Attic and
+# publishes the manifest devices pull from.
+# `deployedContainers` (from modules/flake/hosts.nix) limits the build to what
+# some host deploys; null enables the whole catalogue.
+# Data dirs and secret paths don't reach the inner closure, so dummies do.
 let
-  # Dummy .46 address for containers that ONLY ever deploy to nixos-nvme
-  # (the .46 subnet). mkContainer now derives the container's baked default
-  # gateway from `.1` of this address's /24, so any container that deploys
-  # to another host's subnet MUST pass its real address here (see the .47/
-  # .48/.49/.50 entries below) — a dummy .46 would bake a 10.85.46.1 gateway
-  # that doesn't exist on that host. Source of truth: inventory.nix.
+  # Dummy address, only for containers that run on nixos-nvme (.46). The baked
+  # default gateway is .1 of the container's /24, so anything deployed to
+  # another subnet must use its real inventory.nix address.
   ip = n: "10.85.46.${toString n}/24";
   dataDir = name: "/var/lib/factory/${name}";
 
@@ -104,32 +86,13 @@ let
     monitoring = {
       ip = "${myInventory.network.nodes.monitoring.ip}/24"; # mac-mini
       hostDataDir = dataDir "monitoring";
-      # Non-null so the cached closure includes the auth.generic_oauth
-      # block (grafana's own $__file{} syntax reads the fixed in-container
-      # path at runtime — see monitoring.nix). Real bind mount is supplied
-      # by the deploying host (mac-mini, sops path).
+      # Non-null so the cached closure includes the auth.generic_oauth block.
       grafanaOidc = {
         enable = true;
         clientSecretFile = "/run/secrets/factory-dummy";
       };
     };
     agent-zero = {
-      # FIXED 2026-09-22: was the generic `ip 35` helper (container-factory's
-      # own 10.85.46.0/24 base subnet) — wrong for a container that actually
-      # deploys standalone to mac-mini (10.85.50.0/24), same class of bug
-      # factory.nix's own defaultGateway-fix comment describes ("baking the
-      # factory's ... hostAddress made every container deployed off the .46
-      # subnet route wrong"), except this was the catalogue's OWN ip value
-      # being wrong, not the gateway derivation — the derivation was correct,
-      # it just computed the wrong gateway FROM a wrong base ip. Confirmed
-      # live: agent-zero's container had two addresses on eth0 (the correct
-      # host-assigned 10.85.50.5 AND a stale baked-in 10.85.46.35 from this
-      # catalogue value), with the wrong one winning as the default route —
-      # "Destination Host Unreachable" for all outbound traffic, including
-      # the image pull that's the whole point of this container. Never
-      # surfaced before because agent-zero was disabled since 2026-08-05,
-      # so this path was never actually exercised until re-enabling it
-      # tonight. anythingllm (below) already had the correct pattern.
       ip = "${myInventory.network.nodes.agent-zero.ip}/24"; # mac-mini
       hostDataDir = dataDir "agent-zero";
     };
@@ -144,15 +107,7 @@ let
       typesenseApiKeyFile = "/run/secrets/factory-dummy";
       relayUrl = "wss://buzz.example.invalid";
     };
-    # Briefly excluded 2026-08-07: an attrsOf (one-instance-per-persona)
-    # experiment on this preset reproducibly triggered "infinite recursion
-    # encountered" here, but the experiment was reverted back to a singular
-    # submodule the same day (nix-presets 0e8c25d, 7 minutes after the
-    # attrsOf commit) and the exclusion here was never revisited. Restored
-    # 2026-09-24 after confirming a clean eval + real build through the
-    # factory with today's (singular) hermes.nix. persona-runtime is the
-    # actual attrsOf preset now (its `personas` option) and remains embedded
-    # on mac-mini for that reason.
+    # persona-runtime (an attrsOf preset) isn't here: it stays embedded on mac-mini.
     hermes = {
       ip = "${myInventory.network.nodes.hermes.ip}/24"; # mac-mini
       hostDataDir = dataDir "hermes";
@@ -167,22 +122,14 @@ let
         hostPath = "/var/www/kleinbem.dev";
       };
     };
-    cups.ip = "${myInventory.network.nodes.cups.ip}/24"; # core-pi — fixed 2026-09-24, see inventory.nix's cups comment
+    cups.ip = "${myInventory.network.nodes.cups.ip}/24"; # core-pi
     frigate.ip = ip 39;
     home-assistant.ip = "${myInventory.network.nodes.home-assistant.ip}/24"; # hass-pi
     paperless.ip = "${myInventory.network.nodes.paperless.ip}/24"; # nasbook
     stalwart = {
-      # REAL deployment IP, not a dummy — mkContainer now derives the
-      # container's baked default gateway from its own address (.1 of the
-      # /24), so a standalone closure must be built with the address it
-      # will actually run on. Stalwart runs on mac-mini (10.85.50.0/24);
-      # a .46 dummy would bake a 10.85.46.1 gateway that doesn't exist
-      # there.
-      ip = "${myInventory.network.nodes.stalwart.ip}/24";
+      ip = "${myInventory.network.nodes.stalwart.ip}/24"; # mac-mini
       hostDataDir = dataDir "stalwart";
-      # Non-null so the closure includes the fallback-admin block (its
-      # secret path is a fixed /run/credentials/... macro, not this
-      # value). Real bind mount is supplied by the deploying host.
+      # Non-null so the closure includes the fallback-admin block.
       adminPasswordFile = "/run/secrets/factory-dummy";
     };
     forgejo = {
@@ -197,7 +144,6 @@ let
         clientSecretFile = "/run/secrets/factory-dummy";
       };
     };
-    # authelia removed 2026-09-22 — decommissioned, replaced by Authentik.
     # github-runner: opt-in debug runner, built embedded on nixos-nvme
     # (excludeFromUpdater) so it's not a factory target.
     llama-cpp = {
@@ -213,12 +159,8 @@ let
       # Real hostname, not a dummy: it's baked into museum's WebAuthn config.
       inherit (myInventory.network.nodes.ente) domain;
       hostDataDir = dataDir "ente";
-      # Non-null so the cached closure's env-setup script includes every
-      # `cat` branch (each reads a fixed in-container path — see
-      # ente.nix — bind-mounted onto those paths by the deploying host,
-      # core-pi). Same dummy-path convention as authentik/vaultwarden
-      # above; a null here would bake the branch out of the script
-      # entirely at factory build time, not just leave it unused.
+      # Non-null so the env-setup script keeps every `cat` branch; a null
+      # bakes that branch out of the cached closure.
       minioRootPasswordFile = "/run/secrets/factory-dummy";
       jwtSecretFile = "/run/secrets/factory-dummy";
       keyEncryptionFile = "/run/secrets/factory-dummy";
@@ -233,14 +175,9 @@ let
     };
     gatus = {
       ip = "${myInventory.network.nodes.gatus.ip}/24"; # core-pi
-      # Non-null so the cached closure includes the config-setup + bind-mount
-      # branch. Real endpoints file is supplied by the deploying host
-      # (core-pi) — same dummy-path convention as vaultwarden's
-      # adminTokenFile above.
+      # Non-null so the cached closure includes the config-setup branch.
       endpointsFile = "/run/secrets/factory-dummy";
     };
-    # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
-    # Authentik (catalogue entry below).
     authentik = {
       ip = "${myInventory.network.nodes.authentik.ip}/24"; # core-pi
       hostDataDir = dataDir "authentik";
@@ -285,14 +222,8 @@ let
     # with runtime image pulling and produce no static factory closure to cache.
   };
 
-  # Catalogue entries are keyed by my.containers.<option> name, but hosts
-  # register REAL container instance names in deployedContainers (see
-  # nix-gantry's modules/host.nix — its lib/factory.nix's isStandalone
-  # matches against those real names). Usually the two are
-  # identical; where a preset's mkContainer `name` differs from its own
-  # option name (one option can also emit more than one real container,
-  # e.g. langfuse → langfuse + langfuse-db), list the real name(s) here so
-  # `wanted` still recognizes a host that only ever registers the real name.
+  # Hosts register real container names, the catalogue uses option names.
+  # List the real names here where a preset's container name differs.
   realContainerNames = {
     dashboard = [ "dashboard-homepage" ];
   };
@@ -349,12 +280,8 @@ in
     inputs.nix-presets.nixosModules.garage-ui
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
-    # NOTE: dashboard-homer re-declares the same `my.containers.dashboard`
-    # option slot as dashboard-homepage above, so it cannot be imported
-    # alongside it in one host. To cache the homer skin instead, swap the
-    # import above for `dashboard-homer` (the `dashboard` catalogue entry
-    # below stays the same either way — it's keyed by option name, not by
-    # which container the module actually emits).
+    # dashboard-homer declares the same `my.containers.dashboard` option as
+    # dashboard-homepage, so only one can be imported. Swap them to cache homer.
   ];
 
   # The same held packages as the hosts (modules/nixos/base.nix).

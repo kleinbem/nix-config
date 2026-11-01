@@ -49,14 +49,9 @@ in
     keys.ssh.fido2
     keys.ssh.fido2-backup
   ];
-  # No root authorized_keys here: the only key that was ever wired in
-  # (`temp-builder`) had no matching private key anywhere, no script or CI
-  # reference, and was labeled "Temporary" — a dead, unrestricted root
-  # credential on internet-facing hosts (core-pi fronts the public
-  # internet). Real access is martin + sudo (security/sudo.nix) or, for
-  # disk unlock, the FIDO2-backed initrd SSH — see caddy-ca-refresh.nix's
-  # pattern for what a genuine unattended root-adjacent key should look
-  # like (command=-restricted, documented private-key location).
+  # No root authorized_keys: access is martin + sudo, or initrd SSH for unlock.
+  # An unattended root key should be command=-restricted, like
+  # caddy-ca-refresh.nix's.
 
   # ─── Stateless Root (Impermanence) ──────────────────────────
   fileSystems = {
@@ -354,9 +349,6 @@ in
   systemd.tmpfiles.rules = [
     "d /nix/persist/tmp/nix-builds 1777 root root 7d"
   ];
-
-  # ─── Storage & Memory ───────────────────────────────────────
-  # Swap is now natively handled by disko via a dedicated randomly-encrypted swap partition.
 
   system.stateVersion = "25.11";
 }

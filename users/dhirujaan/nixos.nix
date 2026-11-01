@@ -6,14 +6,10 @@
   ...
 }:
 let
-  # Password hash lives in kleinbem-secrets nix/shared.yaml under
-  # `dhirujaan_password_hash` (mkpasswd -m yescrypt). Until that key
-  # exists the account has NO password and cannot log in locally — the
-  # old `initialPassword = "nix"` was permanent: with the fleet-wide
-  # users.mutableUsers = false it is re-applied on every activation and
-  # `passwd` cannot change it. Key presence is checked on the (plaintext)
-  # key names so eval keeps working before the value is added; sops-nix
-  # would otherwise fail activation on a missing key.
+  # Hash in nix/shared.yaml as `dhirujaan_password_hash` (mkpasswd -m yescrypt).
+  # Until it exists the account has no password. Not initialPassword: with
+  # mutableUsers = false it's reapplied on every activation. Gated on the key
+  # name so a missing key can't fail activation.
   sharedSops = secretFile "nix/shared.yaml";
   hasPasswordHash =
     builtins.pathExists sharedSops

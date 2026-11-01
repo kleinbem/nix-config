@@ -35,13 +35,8 @@ let
 in
 {
   # --- Secrets ------------------------------------------------------------
-  # garage_rpc_secret/garage_admin_token live in kleinbem-secrets'
-  # infra/terraform.yaml (Terraform/OpenTofu's garage bucket bootstrap also
-  # needs them), not nix/shared.yaml (defaultSopsFile) — the old flat
-  # nix-secrets/secrets.yaml had them accessible to every host by virtue of
-  # being one file; the migration split them into the Terraform-scoped file
-  # only and this override was missed. Explicit sopsFile here instead of
-  # falling through to the default.
+  # The RPC secret and admin token live in infra/terraform.yaml, not the
+  # default file, because the tofu garage bootstrap needs them too.
   sops = {
     secrets = {
       garage_rpc_secret = {
@@ -90,13 +85,9 @@ in
   };
   users.groups.garage = { };
 
-  # Pre-create the data/metadata dirs in a SEPARATE, un-sandboxed oneshot ordered
-  # before garage. garage's own unit has ReadWritePaths=/mnt/data/garage/{meta,data}
-  # (set by the module for non-default dirs), and systemd requires those to exist
-  # when it sets up the unit's mount namespace. Neither tmpfiles (races a live
-  # `switch`) nor an ExecStartPre with `+` reliably creates them first — the `+`
-  # still inherited garage's mount namespace here (status 226/NAMESPACE). A plain
-  # oneshot has no namespace directives, so its mkdir runs in the host namespace.
+  # garage's ReadWritePaths must exist before systemd builds its mount namespace
+  # (else 226/NAMESPACE). tmpfiles races a live switch and an ExecStartPre `+`
+  # still runs in that namespace, so a plain oneshot creates the dirs first.
   systemd.services.garage-init-dirs = {
     description = "Pre-create Garage data/metadata directories";
     before = [ "garage.service" ];
@@ -133,10 +124,7 @@ in
       metadata_dir = "/mnt/data/garage/meta";
       data_dir = "/mnt/data/garage/data";
 
-      # lmdb is the default + most-tested engine. The 2026-04 roadmap flags lmdb
-      # crash-fragility (replacement planned); btrfs CoW under the data dir +
-      # the R2 offsite copy are the mitigations. Switch to "sqlite" here if you
-      # want to prioritise crash-resilience over raw speed on this single node.
+      # sqlite over the default lmdb: lmdb is crash-fragile on a single node.
       db_engine = "sqlite";
 
       replication_factor = 1; # single node (interim). Raise + add nodes later.
@@ -180,6 +168,3 @@ in
 #   garage bucket allow --read --write backups     --key restic-key
 #   garage bucket allow --read --write tofu-state  --key tofu-key
 #   # → note each key's Key ID + Secret (shown once) for restic / the tofu pg-or-s3 config
-#
-# Next wiring (separate step): a network.nodes entry + Caddy upstream so the S3
-# API is reachable at https://s3.kleinbem.dev (LAN + over NetBird for CI).

@@ -6,19 +6,10 @@
   secretFile,
   ...
 }:
-# Foundational modules every deployed NixOS host should pull in by default.
-#
-# Imported by `modules/nixos/default.nix`, `modules/nixos/rpi5-node.nix`, and
-# directly by `hosts/{mac-mini,nasbook,orin-nano}/default.nix` (Pattern B
-# devices — see docs/MODULE-ORGANIZATION.md), plus the router LXC guests —
-# every entry-point bundle the fleet uses. To add a new fleet-wide
-# foundational concern, add it here once instead of touching every entry
-# point.
-#
-# Excluded by design:
-#   - phone (nix-on-droid, different module system)
-#   - container-factory (build-only, never boots)
-#   - orin-nano-bootstrap (installer/recovery image)
+# Foundational modules every deployed NixOS host pulls in, through every
+# entry-point bundle (see docs/MODULE-ORGANIZATION.md). Add fleet-wide
+# concerns here once. Not imported by phone (nix-on-droid), container-factory
+# (never boots) or orin-nano-bootstrap (installer image).
 {
   imports = [
     # my.* schema (declares every option the rest of the fleet sets).
@@ -63,19 +54,12 @@
     ./host-secrets.nix # my.hostSecrets — host-local plaintext keys (initrd SSH, LUKS key files), never in the store
   ];
 
-  # Fleet-wide sops defaults — every host used to repeat these 3 lines
-  # verbatim in its own secrets.nix; hoisted here 2026-09-11. mkDefault so a
-  # host can still override (none currently need to).
+  # Fleet-wide sops defaults; mkDefault so a host can override.
   sops = {
     defaultSopsFile = lib.mkDefault (secretFile "nix/shared.yaml");
     defaultSopsFormat = lib.mkDefault "yaml";
-    # Don't fail the *build* validating secret presence against the sops
-    # file. CI builds every host's toplevel with an empty dummy
-    # nix/shared.yaml (--override-input kleinbem-secrets /tmp/dummy-secrets),
-    # so sops-install-secrets' build-time manifest check would otherwise
-    # abort on "key '<foo>' cannot be found" — the documented sops-nix CI
-    # workaround. Real decryption at activation is unaffected (it uses the
-    # real shared/per-host files on the host).
+    # CI builds with a dummy secrets tree, so the build-time key check would
+    # abort. Activation still decrypts the real files.
     validateSopsFiles = lib.mkDefault false;
   };
 
@@ -99,15 +83,10 @@
       # where it worked) goes to kleinbem/nix-holds-fleet instead.
       # -----------------------------------------------------------------------
 
-      # reuse: nixos-unstable's python builder now hands attrs over as
-      # structured attrs, but sphinxHook still expands `$sphinxBuilders` as a
-      # string, so only the first builder (html) runs and the `man` output is
-      # never produced ("failed to produce output path for output 'man'";
-      # khal hits the same, NixOS/nixpkgs#576161). amberol needs reuse at
-      # build time, so every x86 desktop toplevel (mac-mini in CI) fails and
-      # promote-production never publishes a container manifest. The real
-      # fix is NixOS/nixpkgs#573479, merged to staging 2026-10-13 — drop
-      # this once it reaches nixos-unstable. Until then skip the man build.
+      # reuse: sphinxHook expands `$sphinxBuilders` as a string under
+      # structured attrs, so only html runs and the `man` output is never
+      # produced; amberol needs reuse to build. Drop once NixOS/nixpkgs#573479
+      # reaches nixos-unstable.
       reuse = prev.python3Packages.toPythonApplication (
         prev.python3Packages.reuse.overrideAttrs (old: {
           # keep out/doc/dist (the python builder adds dist itself)
@@ -125,14 +104,10 @@
         doInstallCheck = false;
       });
 
-      # nodejs 26.10.0 fails to compile on aarch64-linux under GCC 16: V8's
-      # NEON-only path in deps/v8/src/base/memcopy.h uses CHAR_BIT without
-      # including <climits> (NixOS/nixpkgs#568974, no fix PR yet). Breaks
-      # every aarch64 host pulling nodejs_latest — orin-nano via its CUDA
-      # llama-cpp (webui build). aarch64-linux only so x86_64 keeps Hydra's
-      # cached build. Self-retiring: skipped once nodejs-slim_26 moves past
-      # 26.10.0 or upstream's postPatch already adds <climits> — delete this
-      # block then.
+      # nodejs 26.10.0 fails on aarch64 under GCC 16: V8's memcopy.h uses
+      # CHAR_BIT without <climits> (NixOS/nixpkgs#568974). aarch64 only so
+      # x86_64 keeps Hydra's cache. Self-retiring once the version moves or
+      # upstream adds <climits>; delete it then.
       nodejs-slim_26 =
         if
           !prev.stdenv.hostPlatform.isAarch64
@@ -147,13 +122,9 @@
                 --replace-fail '#include <stdlib.h>' '#include <climits>
               #include <stdlib.h>'
             '';
-            # Hydra never gets past the compile error, so nothing upstream has
-            # run this test suite on aarch64 yet. One test fails on the native
-            # GH arm runner: test-tls-hello-parser-failure asserts the client
-            # socket closes *with* an error after the server rejects 1 MiB of
-            # garbage, which depends on RST-vs-FIN timing in the network stack
-            # (build-all run 37293702282: `false !== true` at :64). Skipped the
-            # same way nixpkgs skips its other environment-dependent TLS tests.
+            # test-tls-hello-parser-failure depends on RST-vs-FIN timing and
+            # fails on the GH arm runner; skipped like nixpkgs' other
+            # environment-dependent TLS tests.
             checkFlags = map (
               f: if lib.hasPrefix "CI_SKIP_TESTS=" f then f + ",test-tls-hello-parser-failure" else f
             ) old.checkFlags;
@@ -167,15 +138,10 @@
             pythonRelaxDeps = [ "chardet" ];
           });
 
-          # pyopenjtalk-plus 0.4.1-post9's test suite expects the exception
-          # text of Cython < 3.3 ("must be str"); nixos-unstable 09063bd
-          # ships Cython 3.3.0 ("Expected str, got int"), so one test fails
-          # on every platform (hydra builds 349753099/349753109) and with it
-          # piper-tts → wyoming-piper → the hass-pi toplevel. Upstream fixed
-          # the test in tsukumijima/pyopenjtalk-plus@90b644f and
-          # NixOS/nixpkgs#576063 backports it. Self-retiring: a no-op once
-          # the pinned package already carries a cython patch — delete this
-          # block once #576063 reaches nixos-unstable.
+          # pyopenjtalk-plus tests expect Cython < 3.3's error text, which breaks
+          # piper-tts and the hass-pi toplevel. Upstream fix backported in
+          # NixOS/nixpkgs#576063; no-op once a cython patch is present, delete
+          # once it reaches nixos-unstable.
           pyopenjtalk-plus =
             if
               lib.any (p: lib.hasInfix "cython" (p.name or "")) (python-prev.pyopenjtalk-plus.patches or [ ])

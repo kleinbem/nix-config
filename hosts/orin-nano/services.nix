@@ -16,24 +16,17 @@
     };
   };
 
-  # RTSP creds for Frigate — only required once a camera env-file is actually
-  # wired (containers.frigate.environmentFile != null). Gating on `.enable` alone
-  # meant a camera-less bring-up still demanded this key exist; gating on the
-  # env-file lets Frigate run with `cameras = {}` while this stays absent.
-  # Create it before setting environmentFile back to a path; see the container
-  # preset's environmentFile option. Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
+  # RTSP creds for Frigate, gated on environmentFile so a camera-less Frigate
+  # runs without the key. Create it before setting environmentFile.
+  # Format: FRIGATE_RTSP_USER=… / FRIGATE_RTSP_PASSWORD=…
   sops.secrets.frigate_rtsp_env = lib.mkIf (config.my.containers.frigate.environmentFile != null) {
     sopsFile = secretFile "nix/per-host/orin-nano.yaml";
   };
 
   # ─── Frigate data disk (second SSD, nvme1n1) ────────────────
-  # Stage-2 unlock for orin_frigate_crypt. disko (disko.nix) formats the disk
-  # and declares the /mnt/data/frigate mount, but with initrdUnlock = false it
-  # emits nothing to actually open the LUKS device — that's this crypttab entry.
-  # It must run in stage 2, not initrd: the keyfile sits on /nix, which lives
-  # inside the clevis/Tang-unlocked orin_crypt root and isn't mounted until
-  # after initrd. nofail + requires/after nix.mount: never wedge boot if the
-  # disk is absent (e.g. pre-provisioning) or /nix is late.
+  # Stage-2 unlock for orin_frigate_crypt: with initrdUnlock = false disko
+  # emits nothing to open it. Stage 2 because the keyfile is on /nix, inside
+  # the Tang-unlocked root. nofail so a missing disk never wedges boot.
   environment.etc.crypttab.text = ''
     orin_frigate_crypt /dev/disk/by-partlabel/disk-second-frigate /nix/persist/etc/crypt/frigate.key luks,discard,nofail,x-systemd.requires=nix.mount,x-systemd.after=nix.mount
   '';
@@ -56,10 +49,8 @@
       # Nightly GPU half of the nix-packages mesh-llm canary; it serves on its
       # own ports (29337/23131/27842), so it coexists with the node below.
       meshLlmGpuRunner.enable = true;
-      # The fleet's MeshLLM node that creates the mesh (always on, CUDA). It
-      # replaced the llama-cpp container on 2026-10-19: same job (a small
-      # model on the GPU), but any node in the mesh can route to it. Qwen3-4B
-      # instead of the old Gemma file because goose needs tool calling.
+      # The fleet's MeshLLM node that creates the mesh (always on, CUDA).
+      # Qwen3-4B because goose needs tool calling.
       meshLlm = {
         enable = true;
         package = pkgs.mesh-llm-cuda;
@@ -90,7 +81,7 @@
         memoryLimit = "6G";
       };
       llama-cpp = {
-        enable = false; # Replaced by my.services.meshLlm above (2026-10-19); /mnt/models/gemma-3-4b-it-Q4_K_M.gguf can go
+        enable = false; # Replaced by my.services.meshLlm above
         enableCuda = true;
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-3-4b-it-Q4_K_M.gguf"; # Gemma 3 4B — fits 8GB unified mem with headroom
@@ -98,24 +89,17 @@
         memoryLimit = "5G";
       };
       frigate = {
-        # SMOKE-TEST bring-up (2026-08-30): SSD is provisioned, so Frigate is on,
-        # but running camera-less and CPU-only to prove the container + the
-        # /mnt/data/frigate mount + the web UI (port 5000) come up cleanly.
-        #   To go to Phase 1 (GPU TensorRT detection): set enableGPU = true,
-        #   jetson = true, detector = "tensorrt" (after building the engine
-        #   on-device and confirming the jetsonDevices set), add cameras, create
-        #   the frigate_rtsp_env secret and point environmentFile back at it.
-        enable = true; # Back on 2026-10-19 after the mesh-llm GPU tests; still the camera-less smoke test
+        # Camera-less, CPU-only smoke test. For GPU detection: enableGPU,
+        # jetson, detector = "tensorrt" (engine built on-device), add cameras,
+        # create frigate_rtsp_env and set environmentFile.
+        enable = true;
         ip = "${myInventory.network.nodes.frigate.ip}/24";
         detector = "cpu"; # temp — bundled CPU model; target is "tensorrt"
         enableGPU = false; # temp — no GPU passthrough during the smoke test
         jetson = false; # temp — no Tegra /dev/nv* binds (target is true)
-        # Validated on the real Orin 2026-07-23 (JetPack 6 / r36). The preset's
-        # default list has 4 nodes THIS board does not expose (nvhost-ctrl,
-        # -nvdec, -vic, -nvjpg) — binding a missing node fails container start —
-        # and on r36 the iGPU/CUDA lives under /dev/nvgpu/igpu0/*, not the legacy
-        # nvhost-*-gpu nodes alone. This is the present GPU-compute set; the exact
-        # minimal set for TensorRT gets confirmed on the first test-enable.
+        # The preset default binds nodes this board (JetPack 6 / r36) lacks, and
+        # a missing node fails container start. On r36 the iGPU lives under
+        # /dev/nvgpu/igpu0/*. The minimal TensorRT set is still unconfirmed.
         jetsonDevices = [
           "/dev/nvhost-ctrl-gpu"
           "/dev/nvhost-gpu"
@@ -132,11 +116,8 @@
         mediaDir = "/mnt/data/frigate";
         hostDataDir = "/nix/persist/var/lib/frigate"; # persist across tmpfs reboots
         memoryLimit = "3G"; # leave room for mesh-llm (Qwen3-4B, ~3 GB) + syncthing + system on 8GB host
-        # Camera RTSP creds: sops secret → env-file → Frigate {VAR} substitution.
-        # null during the camera-less smoke test (nothing to substitute, and it
-        # keeps sops.secrets.frigate_rtsp_env from being required — see the gate
-        # near the top of this file). Set back to "/run/secrets/frigate_rtsp_env"
-        # when adding real cameras.
+        # RTSP creds for Frigate's {VAR} substitution. null keeps the secret
+        # optional; set "/run/secrets/frigate_rtsp_env" when adding cameras.
         environmentFile = null;
         innerConfig.services.frigate.settings = {
           # MQTT → Home Assistant. Off during the smoke test (hass-pi broker not
@@ -146,10 +127,8 @@
             enabled = false;
           };
 
-          # No cameras yet. Frigate 0.17 starts fine with an empty set — the web
-          # UI comes up and cameras can be added there / here later. The target
-          # camera (front_door on the cameras VLAN, 10.0.30.100, DHCP-reserved in
-          # openwrt-secrets, {FRIGATE_RTSP_*} env substitution — never inline):
+          # No cameras yet; Frigate starts fine with an empty set. Target camera
+          # (cameras VLAN; creds via {FRIGATE_RTSP_*}, never inline):
           #   cameras.front_door.ffmpeg.inputs = [{
           #     path = "rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.0.30.100:554/stream1";
           #     roles = [ "detect" "record" ];

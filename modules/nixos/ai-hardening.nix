@@ -8,21 +8,12 @@ let
   cfg = config.my.security.ai-hardening;
   net = config.my.network;
   inv = import ../../inventory.nix;
-  # This host's own NetBird mesh IP (null when not enrolled, e.g. orin-nano).
-  # The NetBird agent runs an embedded DNS server bound to exactly this
-  # address — the forward below sends cache.kleinbem.dev there so the
-  # tofu-managed mesh record (infra/netbird/dns.tf) is authoritative instead
-  # of a static /etc/hosts pin.
+  # This host's NetBird mesh IP (null when not enrolled), where the agent's
+  # embedded DNS server listens.
   hostNetbirdIp = (inv.hosts.${config.networking.hostName} or { }).netbirdIp or null;
   cacheViaNetbirdDns = cfg.strictEgress && hostNetbirdIp != null;
-  # Every FQDN NetBird answers authoritatively over the mesh: the inventory's
-  # `meshOnly` nodes, the same list nix/infra/netbird/dns.tf creates zones
-  # for (via iac/data.nix). Public DNS answers these with the Cloudflare
-  # tunnel's IPs (wrong or, for the mesh-only ones, plain unreachable
-  # off-mesh), so this dnsmasq — which has no-resolv=true and otherwise only
-  # talks to public upstreams — needs an explicit per-domain forward to the
-  # local NetBird agent's own embedded DNS server (bound to this host's own
-  # mesh IP) for each one, or it never queries NetBird for them at all.
+  # The inventory's `meshOnly` FQDNs, the same list nix/infra/netbird/dns.tf
+  # serves. dnsmasq only talks to public upstreams, so each needs a forward.
   meshOnlyFqdns = (import ../../iac/data.nix { inherit lib; }).inventoryJson.mesh_only_fqdns;
 in
 {
@@ -97,13 +88,10 @@ in
             "8.8.8.8" # Google
             "9.9.9.9" # Quad9
           ]
-          # Mesh-only FQDNs resolve via this host's own NetBird agent so the
-          # mesh record is authoritative (public DNS answers with Cloudflare
-          # tunnel IPs — wrong for cache, whose 100 MiB NAR cap breaks big
-          # pulls, and unreachable off-mesh for the others). Note dnsmasq
-          # does NOT fall back to the general upstreams for a /domain/-scoped
-          # server: if the agent is down these names SERVFAIL — acceptable,
-          # the WireGuard path is unreachable without the agent anyway.
+          # Mesh-only FQDNs go to the local NetBird agent. Public DNS returns
+          # Cloudflare tunnel IPs (the tunnel's 100 MiB cap breaks big cache
+          # pulls). No fallback: with the agent down these SERVFAIL, which is
+          # fine since the mesh is down too.
           ++ lib.optionals cacheViaNetbirdDns (map (fqdn: "/${fqdn}/${hostNetbirdIp}") meshOnlyFqdns);
         };
       };

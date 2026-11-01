@@ -69,17 +69,8 @@ in
           };
         };
 
-        # Without this, any container image referenced by a short/
-        # unqualified name (e.g. "frdel/agent-zero:latest", no registry
-        # prefix) fails to pull outright: "short-name ... did not resolve
-        # to an alias and no unqualified-search registries are defined in
-        # /etc/containers/registries.conf". NixOS doesn't default this the
-        # way most distros' containers-common package does. Confirmed live
-        # 2026-08-05: agent-zero and anythingllm (nix-presets containers)
-        # both use short names and had been failing this way since they
-        # were first enabled — 0 bytes of ever-persisted state on hass-pi
-        # proved neither had ever successfully pulled its image, on any
-        # host, the whole time.
+        # Unlike most distros, NixOS sets no search registry, so short image
+        # names (e.g. "frdel/agent-zero:latest") fail to pull without this.
         registries.settings.unqualified-search-registries = [ "docker.io" ];
       };
     };
@@ -97,20 +88,9 @@ in
           prefixLength = 24;
         }
       ];
-      # UPDATED 2026-09-22: native nftables masquerade table, replacing
-      # networking.nat.enable (the legacy iptables-only NAT module).
-      # Functionally identical (masquerade bridge/virbr0 egress out the
-      # external interface) but networking.nat.* is fundamentally
-      # incompatible with networking.firewall.backend = "nftables" — its
-      # own internal teardown script trips a hard assertion the moment
-      # ANY host using this module switches backends (found migrating
-      # nixos-nvme, blocking code-server/syncthing's forward-auth-only
-      # security fix from actually working cross-host). Native
-      # networking.nftables.tables works regardless of firewall.backend
-      # (ai-hardening.nix already proves this on nixos-nvme, which stays
-      # on the iptables backend for its firewall module while this exact
-      # mechanism runs fine) — safe for mac-mini/nasbook too, which don't
-      # switch backends and keep working exactly as before.
+      # Native nftables masquerade, not networking.nat: that module trips an
+      # assertion with firewall.backend = "nftables", while this table works
+      # with either firewall backend.
       nftables.tables.virtualisation-nat = {
         family = "inet";
         content =
@@ -129,7 +109,6 @@ in
           '';
       };
 
-      # Egress Airlock and Zero-Trust rules moved to zero-trust.nix for centralization
       firewall = {
         trustedInterfaces = lib.optional cfg.libvirtd.enable "virbr0";
         extraForwardRules = ''

@@ -83,12 +83,9 @@ let
       {
         name = "Authentik";
         group = "Identity";
-        # An unauthenticated app endpoint, not `/` with `< 500`: during the
-        # 2026-09-26 outage (worker grabbed :9000, server crash-looping)
-        # `/` and every UI/API path answered 404 while /-/health/* stayed
-        # 200 — a `< 500` probe stayed green for 80 minutes. This one only
-        # answers 200 when the real server (Django behind the Rust front)
-        # is serving.
+        # Not `/` or /-/health/*: those answer even when the Django server
+        # behind the Rust front is down. This endpoint only returns 200 when
+        # the real server is serving.
         url = "https://auth.kleinbem.dev/api/v3/root/config/";
         interval = "3m";
         conditions = [
@@ -185,18 +182,8 @@ in
     };
 
     firewall = {
-      # UPDATED 2026-09-22: added backend + filterForward — found while
-      # doing the fleet-wide nftables migration that extraForwardRules
-      # below (and container-host.nix's own broader bridge-accept
-      # fragment) had been silently dead this whole time without these,
-      # same class of bug hit on nixos-nvme/mac-mini/nasbook the same
-      # night. This host is public-facing (Caddy fronts kleinbem.dev,
-      # Vaultwarden, Authentik, etc.) so this genuinely activates
-      # previously-unverified restriction logic — container-host.nix's own
-      # broad "oifname cbr0 accept" fragment covers host->container traffic
-      # (cloudflared -> Caddy) as a safety net regardless of this rule, but
-      # verify all public services live after switching, same rigor as the
-      # nixos-nvme migration earlier the same night.
+      # Without backend + filterForward, extraForwardRules below (and
+      # container-host.nix's bridge-accept fragment) are silently ignored.
       backend = "nftables";
       filterForward = true;
       # Open all ports that Caddy is proxying to allow external access
@@ -215,11 +202,9 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
-    # after the mac-mini canary (#201): follow the production branch, signed
-    # heads only. autoUpgrade off (pull-deploy-node.nix sets it with
-    # mkDefault). requireCache: this host never compiles a closure, CI builds
-    # its toplevel (build-all) before promote moves the branch.
+    # comin pull-deploy (modules/nixos/comin.nix) follows the signed production
+    # branch. requireCache: this host never compiles a closure, CI builds its
+    # toplevel before promote moves the branch.
     deploy = {
       autoUpgrade.enable = false;
       comin = {
@@ -246,10 +231,8 @@ in
       subnet = "10.85.48.0/24";
       hostAddress = "10.85.48.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry's default flipped to false (a stranger without our
-      # always-imported modules/nixos/persistence.nix would otherwise hit
-      # a hard dependency on the impermanence module); this fleet already
-      # has it, so restore the previous behavior explicitly.
+      # nix-gantry defaults this off to avoid requiring impermanence; this
+      # fleet always imports it.
       enablePersistence = true;
       excludeFromUpdater = [
         "attic"
@@ -263,12 +246,9 @@ in
       cloudflareTunnel.enable = true;
     };
 
-    # Backups — nix-presets' backup-engine, fleet wiring in
-    # modules/nixos/backup.nix. Nothing to list here: vaultwarden,
-    # authentik, ente, caddy (local CA) and tang register their own items.
-    # Secrets: backup_r2_rclone_config (nix/per-host/core-pi.yaml, token
-    # `backup-core-pi`), rclone_config/restic_password/ntfy_alert_topic
-    # (nix/shared.yaml). Enabled 2026-09-26.
+    # Fleet wiring in modules/nixos/backup.nix. vaultwarden, authentik, ente,
+    # caddy (local CA) and tang register their own items. R2 credentials come
+    # from backup_r2_rclone_config in nix/per-host/core-pi.yaml.
     backup.enable = true;
 
     # ─── Containers ──────────────────────────────────────────────
@@ -339,30 +319,16 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.gatus.ip}/24";
         inherit (myInventory.network.nodes.gatus) port;
-        # `[STATUS] < 500` rather than `== 200`: several of these sit behind
-        # Authentik forward-auth or Cloudflare Access (home, chat, n8n,
-        # grafana), so an unauthenticated probe gets a redirect, not a
-        # clean 200 — this only proves the edge + backend are up, not that
-        # the app itself is healthy behind the login. status.kleinbem.dev
-        # deliberately doesn't check itself.
-        #
-        # The actual list lives in gatusEndpointsFile above, not inline
-        # here: container-factory builds this container's closure once,
-        # centrally (ADR-002), so an inline `endpoints` list would only
-        # ever reach container-factory's own build, never the container
-        # core-pi actually runs. endpointsFile is bind-mounted into the
-        # running container instead — see nix-presets' containers/gatus.nix.
+        # Most probes use `[STATUS] < 500`: apps behind forward-auth or
+        # Cloudflare Access answer a redirect, not 200. The list is a
+        # bind-mounted file because container-factory builds the closure
+        # centrally (ADR-002), so inline endpoints would never reach core-pi.
         endpointsFile = gatusEndpointsFile;
       };
 
-      # Shared IdP: replaces kleinbem-auth (decommissioned 2026-09-21 —
-      # Phase 4 of the migration; kleinbem-site's own auth moved to this in
-      # Phase 3) for kleinbem.dev visitor login,
-      # and also serves persona OIDC / Matrix federation / sigstore — the
-      # scope this preset was originally built for (see authentik.nix's own
-      # description). One instance, multiple Applications configured inside
-      # Authentik itself (not via NixOS options — that's Terraform's job,
-      # see nix/infra/).
+      # Shared IdP: kleinbem.dev visitor login, persona OIDC, Matrix
+      # federation, sigstore. Applications are managed by Terraform in
+      # nix/infra/, not by NixOS options.
       authentik = {
         enable = true;
         ip = "${myInventory.network.nodes.authentik.ip}/24";
@@ -372,18 +338,9 @@ in
         postgresPasswordFile = config.sops.secrets.authentik_postgres_password.path;
         bootstrapAdminPasswordFile = config.sops.secrets.authentik_bootstrap_admin_password.path;
         bootstrapApiTokenFile = config.sops.secrets.authentik_bootstrap_api_token.path;
-        # Preset default (1G, "comfortable for ~50 persona users") turned
-        # out too tight once a forward_domain Proxy Provider existed:
-        # confirmed live 2026-09-22 via `podman logs authentik-server` —
-        # "Worker was sent SIGKILL! Perhaps out of memory?" — every single
-        # time right after "refreshing outpost", crash-looping the whole
-        # container (5-45s up, repeat) and taking kleinbem.dev's public
-        # login down with it, since it's the same server process. Real hard
-        # limit confirmed via `systemctl show container@authentik.service
-        # -p MemoryMax` = 1073741824 (exactly 1G, not a fluke). core-pi has
-        # room (7.9Gi total, ~4Gi available even mid-incident) — doubling
-        # rather than micro-tuning since the actual per-provider-type cost
-        # of an outpost refresh isn't characterized.
+        # The preset's 1G gets the worker OOM-killed on every outpost refresh
+        # once a forward_domain Proxy Provider exists, crash-looping the
+        # container and the public login with it.
         memoryLimit = "2G";
       };
 
@@ -427,23 +384,10 @@ in
   # (auto-derived from each enabled container's hostDataDir, incl.
   # /var/lib/ente). Add only non-container directories here.
 
-  # kleinbem.dev static site bind-mount, wired here (a real, separate
-  # `containers.caddy.bindMounts` definition) rather than through
-  # my.containers.caddy.staticSites' own wiring — that path is dead:
-  # nix-presets/containers/caddy/default.nix combines
-  # `lib.mkIf (hostDataDir != null) {...}` with plain `//`, and since
-  # mkIf's result carries a `_type = "if"` marker, the module system's
-  # dischargeProperties collapses the WHOLE merged value down to just that
-  # mkIf's own `content` (`/var/lib/caddy`), silently dropping everything
-  # merged in after it — including the module's own PKI-cert mounts, which
-  # means those have likely never actually applied either. Not fixed here:
-  # that's shared code fronting every live public service on this host —
-  # fix it in nix-presets separately, verify the PKI-cert host paths
-  # actually exist first, then this workaround (and the
-  # my.containers.caddy.staticSites option's own bindMounts logic) can be
-  # revisited. The staticSites option itself still IS used above, for the
-  # Caddy vhost it generates (that half of the module isn't affected by
-  # this bug).
+  # Bind-mount the static site here: staticSites' own bindMounts never apply,
+  # because nix-presets' caddy module merges a `lib.mkIf` with `//`, which keeps
+  # only the mkIf content (its PKI-cert mounts are lost too). Fix it there,
+  # then drop this. staticSites still generates the vhost.
   containers.caddy.bindMounts."/var/www/kleinbem.dev" = {
     hostPath = "${pkgs.kleinbem-site}";
     isReadOnly = true;

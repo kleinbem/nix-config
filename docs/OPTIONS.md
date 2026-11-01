@@ -23,7 +23,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.anythingllmVaultSync`
 
-- **Declared:** `nix-config/modules/nixos/services/vault-anythingllm-sync.nix:37`
+- **Declared:** `nix-config/modules/nixos/services/vault-anythingllm-sync.nix:24`
 - **Sub-options:** `enable`, `workspaceSlug`
 - **Consumed by:** _(no opt-ins detected)_
 
@@ -39,7 +39,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.atticPull`
 
-- **Declared:** `nix-config/modules/nixos/attic-pull.nix:37`
+- **Declared:** `nix-config/modules/nixos/attic-pull.nix:17`
 - **Sub-options:** `cacheHostIp`, `manageHostsEntry`
 - **Consumed by:** `host:core-pi`
 
@@ -362,7 +362,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.autoUpgrade`
 
-- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:50`
+- **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:44`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
 - **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
@@ -377,7 +377,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop`
 
-- **Declared:** `nix-config/modules/nixos/desktop.nix:34`
+- **Declared:** `nix-config/modules/nixos/desktop.nix:28`
 - **Sub-options:** `gnome.enable`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
@@ -411,7 +411,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.heartbeat`
 
-- **Declared:** `nix-config/modules/nixos/heartbeat.nix:58`
+- **Declared:** `nix-config/modules/nixos/heartbeat.nix:46`
 - **Sub-options:** `baseUrl`, `checks`, `enable`
 - **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
@@ -443,7 +443,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.security.ai-hardening`
 
-- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:29`
+- **Declared:** `nix-config/modules/nixos/ai-hardening.nix:20`
 - **Sub-options:** `airlockIPs`, `enable`, `strictEgress`, `whitelistDomains`
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
@@ -451,13 +451,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.services.cloudflareTunnel`
 
-- **Declared:** `nix-config/modules/nixos/services/cloudflare-tunnel.nix:27`
+- **Declared:** `nix-config/modules/nixos/services/cloudflare-tunnel.nix:18`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:core-pi`
 
 ### `my.services.meshLlm`
 
-- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:30`
+- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:24`
 - **Sub-options:** `autoStart`, `enable`, `extraArgs`, `joinTokenSecret`, `meshPort`, `models`, `package`
 - **Consumed by:** `host:nixos-nvme`, `host:orin-nano`
 
@@ -487,7 +487,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.services.threeDPrinting`
 
-- **Declared:** `nix-config/modules/nixos/threed-printing.nix:21`
+- **Declared:** `nix-config/modules/nixos/threed-printing.nix:16`
 - **Sub-options:** `enable`
 - **Consumed by:** `host:nixos-nvme`
 

@@ -46,8 +46,7 @@ in
     fallbackMessage = "Tang still unreachable; continuing (FIDO2 or passphrase fallback)";
   };
 
-  # Keep the id this host has always had (pre-dates machine-id.nix's
-  # hostname-derived default) — the systemd.machine_id= param comes from there.
+  # Keep this host's original id instead of machine-id.nix's hostname-derived one.
   my.machineId = "875e6f722d80415e955ebddd39206430";
 
   boot = {
@@ -58,10 +57,8 @@ in
     kernelParams = [
       "usb-storage.quirks=152d:0581:u"
     ];
-    # The ACPI Time and Alarm Device registers before rtc_cmos and takes
-    # rtc0 (/dev/rtc). chrony can't sample it (0 RTC samples) and hwclock
-    # can't use it, so the CMOS clock was never trimmed and sat at 2021,
-    # making every boot start 5.5 years behind. Without it rtc_cmos is rtc0.
+    # acpi_tad takes rtc0 before rtc_cmos, and neither chrony nor hwclock can
+    # use it, so the CMOS clock never gets trimmed and boots start years behind.
     blacklistedKernelModules = [ "acpi_tad" ];
     initrd = {
       availableKernelModules = [
@@ -116,8 +113,6 @@ in
       pkiBundle = "/nix/persist/var/lib/sbctl";
       configurationLimit = 15;
     };
-    # Kernel parameters now handled by kernel.nix and audit.nix
-    # i915 enhancements moved to kernel.nix
     tmp.useTmpfs = true;
     tmp.tmpfsSize = "8G";
   };
@@ -171,15 +166,8 @@ in
       # Use kyber scheduler for NVMe to improve latency
       ACTION=="add|change", KERNEL=="nvme*", ATTR{queue/scheduler}="kyber"
 
-      # 2026-09-16: sda (WD Red SA500, LUKS+btrfs /mnt/data on ata1) hit a
-      # hard link failure mid-write — 4 failed hard resets, kernel disabled
-      # the ATA device ("ata1.00: disable device"), btrfs aborted its
-      # transaction and forced itself read-only. Default link power policy
-      # was medium_power_with_dipm (ALPM); the drive dropping into a deep
-      # link-power state and not waking reliably is a well-documented cause
-      # of exactly this "link is slow to respond -> hard reset -> give up"
-      # signature. This is a desktop always on AC — no benefit from SATA
-      # link power saving, so just disable it fleet-wide on this host.
+      # No SATA link power saving: the data disk failed to wake from ALPM,
+      # the link reset out and btrfs went read-only. Always on AC anyway.
       ACTION=="add|change", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
     '';
     fwupd.enable = true;
@@ -197,12 +185,9 @@ in
     # --- High-Performance Scheduling (Official Nixpkgs) ---
     scx = {
       enable = true;
-      # lavd over rusty on this box: rusty's load balancing is built around
-      # AMD CCX/NUMA domains and treats all cores as equal; lavd is
-      # latency-criticality aware WITH hybrid-core (P/E) support — on the
-      # i3-1315U (2P+4E) it keeps interactive tasks on P-cores while builds
-      # and containers ride the E-cores. If a BPF scheduler ever misbehaves,
-      # the kernel auto-evicts it and falls back to EEVDF (safe to experiment).
+      # lavd understands hybrid P/E cores (rusty doesn't): interactive tasks
+      # stay on P-cores, builds ride the E-cores. A misbehaving BPF scheduler
+      # is evicted by the kernel, falling back to EEVDF.
       scheduler = "scx_lavd";
     };
   };

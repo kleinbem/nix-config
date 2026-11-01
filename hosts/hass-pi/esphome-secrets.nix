@@ -1,15 +1,8 @@
-# The ESPHome dashboard's secrets.yaml (what `!secret` in ./esphome/*.yaml
-# reads), rendered from sops instead of hand-edited state:
-#   - wifi_ssid / wifi_password: kleinbem-secrets shared/wifi.yaml, the same
-#     file openwrt-config builds the 16CVG SSID from (one place to rotate it).
-#   - api_key_* / ota_password: nix/per-host/hass-pi.yaml, prefixed esphome_;
-#     a device whose key isn't there yet is left out.
-# The dashboard serves secrets.yaml to anyone who can reach it, so all of this
-# stays off until its login password (esphome_dashboard_password) exists too.
-#
-# Values reach the unit as systemd credentials and preStart writes the file
-# with jq (JSON is valid YAML, and every value comes out quoted). A hand-made
-# secrets.yaml already there is kept once as secrets.yaml.pre-sops.
+# ESPHome's secrets.yaml (`!secret` in ./esphome/*.yaml), rendered from sops.
+# Wifi comes from shared/wifi.yaml, the same file openwrt-config uses.
+# The dashboard serves secrets.yaml to anyone who reaches it, so this stays
+# off until esphome_dashboard_password exists. preStart writes JSON (valid
+# YAML) with jq; an older hand-made file is kept once as secrets.yaml.pre-sops.
 {
   config,
   lib,

@@ -28,13 +28,9 @@ in
     ./secrets.nix
     ./esphome-secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
-    # openclaw stays here (not moved with the rest of the AI stack to
-    # mac-mini 2026-08-05): its pnpm-deps fixed-output derivation hash
-    # mismatches its pinned upstream flake (github:openclaw/nix-openclaw)
-    # on a from-scratch build — a genuine bug in that external project's
-    # own lockfile. This host's copy is unaffected since it's running an
-    # already-built/cached artifact (container-updater decouples container
-    # updates from full host rebuilds).
+    # openclaw stays here rather than on mac-mini: its pnpm-deps hash in
+    # nix-openclaw mismatches on a from-scratch build, and this host runs an
+    # already-cached build.
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
@@ -49,12 +45,7 @@ in
 
   networking = {
     hostName = "hass-pi";
-    # UPDATED 2026-09-22: migrated to the nftables firewall backend, same
-    # fleet-wide playbook as nixos-nvme/mac-mini/nasbook/orin-nano the same
-    # night. Replaces the DNAT workaround below (previously iptables —
-    # this host had networking.nftables.enable = false, so
-    # networking.nftables.tables.* would have silently no-op'd here) with
-    # a native nftables prerouting DNAT chain.
+    # nftables must be on, or nftables.tables.* below silently does nothing.
     nftables.enable = true;
     nftables.tables.hass-dnat = {
       family = "ip";
@@ -90,11 +81,8 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
-    # after the mac-mini canary (#201): follow the production branch, signed
-    # heads only. autoUpgrade off (pull-deploy-node.nix sets it with
-    # mkDefault). requireCache: this host never compiles a closure, CI builds
-    # its toplevel (build-all) before promote moves the branch.
+    # comin pull-deploy replaces autoUpgrade. requireCache: this host never
+    # compiles a closure; CI builds its toplevel before promote moves the branch.
     deploy = {
       autoUpgrade.enable = false;
       comin = {
@@ -121,10 +109,7 @@ in
       subnet = "10.85.49.0/24";
       hostAddress = "10.85.49.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry's default flipped to false (a stranger without our
-      # always-imported modules/nixos/persistence.nix would otherwise hit
-      # a hard dependency on the impermanence module); this fleet already
-      # has it, so restore the previous behavior explicitly.
+      # nix-gantry defaults this to false; this fleet always has impermanence.
       enablePersistence = true;
     };
 
@@ -161,22 +146,10 @@ in
   };
 
   # ─── Direct LAN access to Home Assistant ────────────────────
-  # The HA container lives on the private cbr0 bridge (10.85.49.10) and is
-  # normally reached via Caddy (home.kleinbem.dev). Until the new router/DNS
-  # is set up, also forward the Pi's LAN port straight to the container so it's
-  # reachable by IP at **http://10.0.0.21:8123** (HTTP, not HTTPS). Safe to drop
-  # once DNS/Caddy is the only path again.
-  #
-  # NOT using `containers.home-assistant.forwardPorts` here — confirmed
-  # non-functional for this container. NixOS's forwardPorts implementation
-  # passes `--port=` straight through to systemd-nspawn, which tracks its
-  # own internally-assigned veth address for the DNAT target. That doesn't
-  # necessarily match the address the container's own NixOS network config
-  # statically self-assigns (10.85.49.10 here) via `localAddress`+hostBridge,
-  # so the forward silently targets the wrong (unused) address inside the
-  # container. Plain host-side DNAT to the verified-working address
-  # sidesteps that mismatch — see the networking.nftables.tables.hass-dnat
-  # declaration above.
+  # HA is normally reached via Caddy (home.kleinbem.dev). Until the new
+  # router/DNS is in place, hass-dnat above also exposes http://10.0.0.21:8123.
+  # Not forwardPorts: systemd-nspawn DNATs to its own veth address, not the
+  # container's static 10.85.49.10, so the forward hits nothing.
 
   # ─── Persistence ─────────────────────────────────────────────
   # /var/lib/home-assistant and /var/lib/openclaw are container
@@ -203,14 +176,10 @@ in
     node-red = {
       enable = true;
       openFirewall = true;
-      # Node-RED's editor has no login by default, and its exec/function
-      # nodes run arbitrary commands as the node-red user — with the port
-      # open on the LAN that was code execution on this host for any LAN
-      # device. adminAuth is wired once `node_red_admin_hash` exists in
-      # kleinbem-secrets nix/per-host/hass-pi.yaml (bcrypt, generate with
-      # `node-red admin hash-pw`); until then the editor stays open, so
-      # add the key. Gated on the plaintext key name so eval works before
-      # the value is there; sops-nix would fail activation on a missing key.
+      # The editor has no login by default and its exec nodes run commands,
+      # so adminAuth turns on once `node_red_admin_hash` (bcrypt, from
+      # `node-red admin hash-pw`) is in nix/per-host/hass-pi.yaml. Gated on
+      # the key name because sops-nix fails activation on a missing key.
       configFile = pkgs.writeText "node-red-settings.js" ''
         const base = require("${config.services.node-red.package}/lib/node_modules/node-red/packages/node_modules/node-red/settings.js");
         ${lib.optionalString hasNodeRedAdminHash ''
@@ -230,35 +199,24 @@ in
     esphome = {
       enable = true;
       openFirewall = true;
-      # openFirewall = true already expressed the intent to be LAN-reachable,
-      # but the module's own default (address = "localhost") meant it was
-      # only ever listening on loopback — confirmed live 2026-09-20 via
-      # `ss -tlnp` showing 127.0.0.1/::1 only, openFirewall doing nothing.
-      # Needed anyway now that Home Assistant's panel_iframe (below) embeds
-      # this URL directly in a browser tab, which can't reach loopback on
-      # a different machine.
+      # The module defaults to localhost, which makes openFirewall useless;
+      # HA's panel_iframe also loads this URL from other machines' browsers.
       address = "0.0.0.0";
     };
 
     # Matter controller for Home Assistant's matter integration
-    # (ws://10.85.49.1:5580/ws from inside the container). matterjs-server
-    # replaces python-matter-server, which upstream archived in 2026-06 and
-    # whose last release (8.1.2) dies at start-up with cryptography 49
-    # (rejects one PAA root cert from the CSA DCL) — the unit stayed
-    # "active" here with nothing on :5580 since 2026-10-13. Same WebSocket
-    # API, fresh fabric: no Matter devices were ever commissioned.
+    # (ws://10.85.49.1:5580/ws from inside the container). Not
+    # python-matter-server: it is archived and dies at start-up with
+    # cryptography 49.
     matterjs-server = {
       enable = true;
       listenAddress = "10.85.49.1";
       bluetoothSupport = true; # commission over BLE with the Pi's adapter
     };
 
-    # Thread border router for the Home Assistant SkyConnect (the Thread
-    # radio the HAOS install used; device id from its config entry).
-    # Prepared ahead of the dongle actually moving to this host: the
-    # ConditionPathExists below keeps otbr-agent inactive (not failed, no
-    # crash loop) until the device appears. HA's otbr/thread integrations
-    # then point at http://10.85.49.1:8081.
+    # Thread border router for the SkyConnect dongle. ConditionPathExists below
+    # keeps otbr-agent inactive (not failed) until the device appears. HA's
+    # otbr/thread integrations point at http://10.85.49.1:8081.
     openthread-border-router = {
       enable = true;
       backboneInterfaces = [ "end0" ];
@@ -309,30 +267,15 @@ in
     services.otbr-agent.unitConfig.ConditionPathExists =
       config.services.openthread-border-router.radio.device;
 
-    # Upstream ESPHome removed its built-in `dashboard` command (confirmed via
-    # `esphome dashboard` erroring "The built-in dashboard has been removed
-    # from ESPHome" on 2026.8.0, the version nixpkgs currently ships); the
-    # NixOS services.esphome module (nixos/modules/services/home-automation/
-    # esphome.nix) hasn't been updated to match and still hardcodes that
-    # subcommand, so esphome.service crash-looped on every start. nixpkgs
-    # already packages the replacement dashboard tool, esphome-device-builder
-    # — override just this ExecStart to use it (same default port 6052,
-    # equivalent --host/--port flags) rather than waiting on upstream nixpkgs.
-    # Firmware compilation itself is untouched: services.esphome.package
-    # (still real esphome) stays on PATH for it via the base module's own
-    # `path = [ cfg.package ];`, this just adds the new dashboard binary
-    # alongside it.
+    # ESPHome 2026.8 removed `esphome dashboard`, which the NixOS module still
+    # runs; use esphome-device-builder instead (same port and flags). esphome
+    # itself stays on PATH for firmware builds.
     services.esphome = {
       path = [ pkgs.esphome-device-builder ];
-      # Declarative ESPHome device configs (hosts/hass-pi/esphome/*.yaml)
-      # for the Waveshare ESP32-P4 panels, linked read-only into the
-      # dashboard's state dir so it compiles/OTAs them while this repo
-      # stays the source of truth. Done from the unit itself (runs as the
-      # esphome user inside its own StateDirectory) rather than tmpfiles:
-      # systemd-tmpfiles refuses to write into a directory owned by
-      # another user ("unsafe path transition"), so the tmpfiles variant
-      # silently created nothing. secrets.yaml comes from sops
-      # (./esphome-secrets.nix).
+      # Link the device configs in ./esphome into the state dir so this repo
+      # stays the source of truth. Done in preStart, not tmpfiles: tmpfiles
+      # refuses to write into another user's directory ("unsafe path
+      # transition"). secrets.yaml comes from ./esphome-secrets.nix.
       preStart = lib.concatMapStrings (f: "ln -sfn ${./esphome}/${f} /var/lib/esphome/${f}
 ") (
         builtins.filter (f: lib.hasSuffix ".yaml" f) (builtins.attrNames (builtins.readDir ./esphome))

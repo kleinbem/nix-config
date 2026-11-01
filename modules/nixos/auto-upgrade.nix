@@ -17,15 +17,9 @@ let
     builtins.pathExists sharedSops
     && lib.hasInfix "\nntfy_deploy_token:" ("\n" + builtins.readFile sharedSops);
 
-  # Pre-flight gate for `nixos-upgrade.service`. The Attic binary cache is only
-  # reachable over the NetBird mesh (wt0 -> caddy DNAT). The fixed nightly timer
-  # can fire before the mesh has reconverged after a relay/peer blip; when that
-  # happens the upgrade can't substitute and falls back to compiling the whole
-  # closure locally (observed: a 4h16m / 16-CPU-hour kernel rebuild on hass-pi).
-  # This probe retries for ~2min to let NetBird converge, then aborts the cycle
-  # (the host simply catches up on the next run) instead of melting the CPU.
-  # Any HTTP response — including 401, since the cache requires auth — counts as
-  # "reachable"; only a connection/timeout failure counts as "down".
+  # Pre-flight gate: the cache is mesh-only and the timer can fire before
+  # NetBird reconverges. Wait ~2min, then skip the cycle rather than build
+  # locally. Any HTTP response (even 401) counts as reachable.
   cacheProbe = pkgs.writeShellScript "autoupgrade-cache-gate" ''
     export PATH=${
       lib.makeBinPath [
@@ -223,18 +217,10 @@ in
         "--refresh"
         "-L"
       ]
-      # Substitute-only: see requireCache. No pull-deploy host has remote
-      # builders configured, so this forbids every build, not just local ones.
-      #
+      # Substitute-only (see requireCache); no host has remote builders.
       # always-allow-substitutes: nixpkgs marks cheap derivations
-      # `allowSubstitutes = false` (buildEnv → system-path, etc,
-      # system-units, every writeText*), so Nix never asks the cache for
-      # them and builds them locally. With max-jobs = 0 that is a hard
-      # failure ("local builds are disabled") on every upgrade that changes
-      # the system, even though CI pushed the whole closure (first hit
-      # 2026-10-21 on core-pi/hass-pi/nasbook with #227-#229, the first
-      # upgrades that ever ran with max-jobs = 0). The setting makes Nix
-      # substitute those too.
+      # `allowSubstitutes = false` (system-path, etc, writeText*), which
+      # max-jobs 0 then can't build at all, though CI cached them.
       ++ lib.optionals cfg.requireCache [
         "--max-jobs"
         "0"
@@ -263,20 +249,10 @@ in
       };
     };
 
-    # Push-triggered early upgrade: long-poll the secret ntfy topic and start
-    # nixos-upgrade.service on any message. Message CONTENT is deliberately
-    # ignored — the only trusted input is the production tag the upgrade unit
-    # pulls itself. Reconnects forever (Restart=always); curl's --max-time
-    # bounds each poll so half-dead connections through the tunnel recover.
-    #
-    # The poll must survive a WAN outage (the router gets firmware updates
-    # regularly, ~15 min offline each). curl then fails instantly, the
-    # script exits 0 right away and Restart=always re-runs it every 30 s —
-    # with systemd's default start-rate limit that is 5 starts in a row and
-    # the unit ends up *failed* for good (start-limit-hit on mac-mini,
-    # nasbook and hass-pi on 2026-10-20), until a manual reset-failed or the
-    # next switch. So: no start-rate limit, and back off 30 s → 5 min while
-    # the network is down instead of hammering a dead resolver.
+    # Long-poll the secret ntfy topic and start nixos-upgrade on any message.
+    # Content is ignored: the only trusted input is the production tag.
+    # No start limit, with backoff: during a WAN outage curl fails instantly
+    # and the default limit would leave the unit failed for good.
     systemd.services.nixos-upgrade-listener = lib.mkIf cfg.ntfy.enable {
       description = "Start nixos-upgrade on fleet-deploy ntfy signal";
       wantedBy = [ "multi-user.target" ];

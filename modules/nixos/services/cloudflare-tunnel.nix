@@ -9,18 +9,9 @@ let
   cfg = config.my.services.cloudflareTunnel;
   caddy = "https://${myInventory.network.nodes.caddy.ip}:443";
 
-  # Every inventory node marked `public = true` gets its `domain` on the
-  # tunnel (→ Caddy, which already has a vhost for it from `externalPort`).
-  # Generated rather than hand-maintained since 2026-09-26: the old literal
-  # list silently missed new/renamed hostnames three times (authelia/login,
-  # auth.kleinbem.dev, then 2fa.kleinbem.dev after Ente's rename), each
-  # time a 404 at Cloudflare's edge that never even reached Caddy.
-  #
-  # Mesh-only services (code, frigate, paperless, s3, …) simply don't set
-  # `public` — they're reached over NetBird via the per-FQDN DNS overrides
-  # in nix/infra/netbird/dns.tf (→ core-pi mesh IP → DNAT → caddy). Retired
-  # hostnames (authelia., login.) fall through to the 404 `default` below,
-  # deliberately.
+  # Every `public = true` inventory node gets its `domain` routed to Caddy.
+  # Mesh-only services leave `public` unset and are reached over NetBird
+  # (nix/infra/netbird/dns.tf); anything else hits the 404 default.
   publicNodes = lib.filterAttrs (_: n: n.public or false) myInventory.network.nodes;
 in
 {

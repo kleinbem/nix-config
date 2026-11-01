@@ -13,11 +13,8 @@
       # ---------------------------------------------------------
       formatter = inputs.nix-devshells.formatter.${system};
 
-      # Gated to x86 only: the override creates a unique derivation hash, so
-      # aarch64 misses the cache and forces source compilation of the devenv
-      # Rust dependency chain (aws-lc-sys etc.) — either OOMs or hits a known
-      # aarch64 build bug. Our ARM hosts (orin-nano, core-pi, …) are servers
-      # without dev shells anyway, so the loss is purely cosmetic.
+      # x86 only: the override misses the cache, and on aarch64 that means
+      # building devenv's Rust chain from source. ARM hosts have no dev shells.
       devShells = lib.optionalAttrs (system == "x86_64-linux") {
         default = inputs.nix-devshells.devShells.${system}.default.overrideAttrs (old: {
           shellHook = ''
@@ -51,14 +48,9 @@
             name: host: lib.nameValuePair "host-${name}" host.config.system.build.toplevel
           ) systemHosts;
 
-          # NO host-phone check: nix-on-droid can never be evaluated purely —
-          # upstream pins its cross-compiled proot-static as a context-free
-          # /nix/store string, which types.package coerces via
-          # builtins.storePath (rejected in pure eval; --impure additionally
-          # needs nix-on-droid.cachix.org to substitute the path). It builds
-          # on-device only (nix-on-droid switch runs --impure by design), so a
-          # checks entry just breaks `nix flake check` for every consumer.
-          # The config stays exposed as nixOnDroidConfigurations.phone.
+          # No host-phone check: nix-on-droid pins proot-static as a bare store
+          # path, which pure eval rejects. It builds on-device only
+          # (nixOnDroidConfigurations.phone).
 
         in
         {
@@ -71,15 +63,9 @@
             };
           };
 
-          # Reproducibility guard: the committed flake.lock must pin every input
-          # to a fetchable source (github:, …), never a local file:///home path.
-          # Those creep in when local `nix` evals dirty the lock (the OVERRIDES
-          # dev flow) and someone commits it, or when sibling `inputs.follows`
-          # get stripped from flake.nix and a re-lock resolves siblings
-          # independently. Unlike a pre-commit hook scoped to `flake.lock$` (which
-          # only fires when the lock is in the changeset), this is a flake check —
-          # build-all builds it on EVERY PR, so committed drift can never sneak in
-          # via a PR that doesn't happen to touch the lock.
+          # flake.lock must never pin a local file:// input; local OVERRIDES
+          # evals dirty the lock. A flake check rather than a pre-commit hook,
+          # so it runs on every PR, not only ones touching the lock.
           flake-lock-no-file-url =
             inputs.nixpkgs.legacyPackages.${system}.runCommand "flake-lock-no-file-url" { }
               ''
@@ -92,14 +78,9 @@
                 touch "$out"
               '';
 
-          # The packages from our open nixpkgs PRs (nix-packages'
-          # nixpkgs-prs.json) that this system's hosts install, each built
-          # from its host's own pkgs: exactly the derivation the host fetches.
-          # build-all builds every check on every PR, the daily lock PRs
-          # included, so a pin or a nixpkgs update that breaks one stops in
-          # its PR, and the builds are in Attic before promote lets a host
-          # install them. "Install" means environment.systemPackages or the
-          # package of one of the PRs' own services (services.<module name>).
+          # Packages from our open nixpkgs PRs (nix-packages' nixpkgs-prs.json)
+          # that hosts install, built from each host's own pkgs, so a breaking
+          # update stops in its PR and the builds reach Attic before promote.
           # orin-nano is left out: CI never builds its jetpack closure.
           nixpkgs-prs =
             let

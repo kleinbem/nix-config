@@ -1,14 +1,5 @@
-# workstation.nix — bundle for primary-desktop hosts (nixos-nvme).
-#
-# After the home-manager promotion to base.nix, only true desktop machines
-# need this file. RPi nodes, NASbook, routers, and the orin-nano edge device
-# use `headless.nix` instead. Foundational bits (my.* schema, sops-nix,
-# home-manager, common overlays, locale, nix settings) live in `base.nix`.
-#
-# This file owns: desktop-specific overlays (NUR for community packages,
-# VSCode extensions, nix-topology diagrams, nixpkgs-master), Lynis/hardening,
-# snapper (btrfs snapshots), lanzaboote (UEFI Secure Boot), and Avahi mDNS
-# with reflector (cross-bridge discovery).
+# workstation.nix: bundle for desktop hosts (nixos-nvme); headless hosts use
+# headless.nix, and the shared foundation is in base.nix.
 {
   inputs,
   ...

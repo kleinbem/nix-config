@@ -57,15 +57,10 @@ in
       extraModulePackages =
         let
           inherit (config.boot.kernelPackages) v4l2loopback;
-          # Since the nixpkgs bump to linux-zen 7.2.11 (nix-config #186) the
-          # kernel's dev output ships System.map, so kbuild's modules_install
-          # runs depmod for out-of-tree modules too. v4l2loopback then carries
-          # its own lib/modules/<ver>/modules.alias and collides with the
-          # kernel's in aggregateModules ("two given paths contain a
-          # conflicting subpath") — the nixos-nvme toplevel on main stopped
-          # building. The aggregator runs depmod over everything anyway, so
-          # skip it here, the same way #191 does for the Orin's L4T modules.
-          # Self-retiring: a no-op once the package passes DEPMOD itself.
+          # With System.map in the kernel's dev output, kbuild runs depmod for
+          # out-of-tree modules, and v4l2loopback's own modules.alias collides
+          # with the kernel's in aggregateModules. The aggregator runs depmod
+          # anyway, so skip it here. A no-op once the package passes DEPMOD.
           withoutDepmod =
             if lib.any (lib.hasPrefix "DEPMOD=") (v4l2loopback.makeFlags or [ ]) then
               v4l2loopback

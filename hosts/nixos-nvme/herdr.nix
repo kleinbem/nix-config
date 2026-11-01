@@ -1,10 +1,6 @@
-# Phone pushes from the herdr server that runs here: an agent is blocked, or
-# finished in a pane nobody is looking at (nix-presets herdr.nix,
-# modules.herdr.ntfy). Its own topic, so agent chatter stays out of the
-# fleet alert topic.
-#
-# Gated on the key name in the plaintext sops file, so this evals before the
-# secret exists. Mint it with:
+# Phone pushes from herdr when an agent is blocked or done, on its own topic
+# so agent chatter stays out of fleet alerts. Gated on the key name so this
+# evals before the secret exists. Mint it with:
 #   sops --set '["ntfy_agents_topic"] "agents-<random>"' nix/per-host/nixos-nvme.yaml
 {
   config,

@@ -1,23 +1,10 @@
-# Keeps ~/.pki/caddy-root.crt (trusted into Chrome/Chromium's NSS db directly
-# by this file's own certutil calls below — nix-presets/pwa.nix's
-# `trustFleetInternalCas` activation did this too before the PWA framework
-# was removed (2026-09-04), but this script never depended on it) in sync
-# with the Caddy container's actual local CA, which only ever lives on
-# core-pi (the one host that runs
-# it — see nix-config/modules/nixos/core.nix's PKI comment). Unlike core-pi,
-# which can just copy the file locally in its own container postStart hook,
-# nixos-nvme has to pull it over SSH since Caddy runs on a different physical
-# host. Without this, a CA rotation on core-pi (container recreated/moved)
-# would silently break every *.kleinbem.dev PWA here until someone noticed
-# and copied the new cert by hand.
+# Keeps ~/.pki/caddy-root.crt and Chrome's NSS trust in sync with Caddy's
+# local CA, which lives only on core-pi, so a CA rotation there doesn't
+# silently break *.kleinbem.dev here.
 #
-# Uses a dedicated, non-FIDO2 key (~/.ssh/id_ed25519_caddy_ca_refresh,
-# generated once locally, private half never in the nix store; public half
-# in modules/nixos/keys.nix as `caddy-ca-refresh`, authorized only on core-pi
-# with a `command=`/`restrict` prefix so it can do nothing but read that one
-# already-public cert file). A daily systemd --user timer can't wait for a
-# touch prompt the way the main hardware-backed key would require — first
-# attempt at this used the default agent identity and just hung forever.
+# Uses a dedicated no-touch key (~/.ssh/id_ed25519_caddy_ca_refresh, public
+# half `caddy-ca-refresh` in keys.nix, restricted on core-pi to reading this
+# cert): a timer can't answer a FIDO2 touch prompt.
 {
   config,
   pkgs,
@@ -53,11 +40,7 @@ let
       echo "Caddy internal root CA updated from core-pi"
     fi
 
-    # This used to be pwa.nix's job (home.activation, ran once at build
-    # activation, well before this timer's first tick). Now this script is
-    # the only thing that touches the NSS db, so it has to be able to
-    # create it from nothing too — a fresh profile (or one where Chrome
-    # hasn't run yet) has no ~/.pki/nssdb at all.
+    # A fresh profile (Chrome never run) has no NSS db yet.
     mkdir -p "${config.home.homeDirectory}/.pki"
     if [ ! -f "${config.home.homeDirectory}/.pki/nssdb/cert9.db" ]; then
       ${pkgs.nss.tools}/bin/certutil -N -d "${nssdb}" --empty-password

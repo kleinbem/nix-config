@@ -1,18 +1,9 @@
-# Kernel attack-surface baseline for every host (imported via core.nix).
+# Kernel attack-surface baseline for every host (imported via core.nix); the
+# heavier hardening.nix layer is only on nixos-nvme and orin-nano.
 #
-# security/hardening.nix is the big-tier layer (nix-mineral, AppArmor,
-# accounting) and only nixos-nvme and orin-nano import it. The Lynis
-# sysctls and the module blacklist are cheap and arch-neutral, so they
-# belong to the fleet: the Pis, nasbook and mac-mini front the same
-# networks and ran stock values until now.
-#
-# Priority 950, between nix-mineral (900) and mkDefault (1000): nixpkgs'
-# own config/sysctl.nix and virtualisation modules set some of these keys
-# with mkDefault to a weaker value (kptr_restrict = 1, for one), and two
-# definitions at the same priority with different values are a conflict,
-# not an override. nix-mineral sets the same values as strings, so it wins
-# where it runs without changing anything; a plain host definition
-# (priority 100) wins over both.
+# Priority 950, between nix-mineral (900) and mkDefault (1000): nixpkgs sets
+# some keys with mkDefault to weaker values, and equal priorities with
+# different values conflict. A plain host definition still wins.
 { lib, ... }:
 let
   fleet = lib.mkOverride 950;
