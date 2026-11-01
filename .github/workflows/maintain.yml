@@ -162,7 +162,7 @@ jobs:
         id: holds
         if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         continue-on-error: true
-        uses: kleinbem-dev/nix-detour/update@dad9ec7126d40ab791ef9dc8c5f54d5380406e9d # v0.3.0
+        uses: kleinbem-dev/nix-detour/update@b1bad90a62b55305a6a545b56de7bc2cb8392c42 # v0.3.1
         with:
           token: ${{ steps.app-token.outputs.token }}
           directory: nix-config
