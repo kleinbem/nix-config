@@ -137,27 +137,6 @@
             nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ python-prev.pythonRelaxDepsHook ];
             pythonRelaxDeps = [ "chardet" ];
           });
-
-          # pyopenjtalk-plus tests expect Cython < 3.3's error text, which breaks
-          # piper-tts and the hass-pi toplevel. Upstream fix backported in
-          # NixOS/nixpkgs#576063; no-op once a cython patch is present, delete
-          # once it reaches nixos-unstable.
-          pyopenjtalk-plus =
-            if
-              lib.any (p: lib.hasInfix "cython" (p.name or "")) (python-prev.pyopenjtalk-plus.patches or [ ])
-            then
-              python-prev.pyopenjtalk-plus
-            else
-              python-prev.pyopenjtalk-plus.overrideAttrs (old: {
-                patches = (old.patches or [ ]) ++ [
-                  (prev.fetchpatch {
-                    name = "fix-cython-3.3.0.patch";
-                    url = "https://github.com/tsukumijima/pyopenjtalk-plus/commit/90b644f9e9d397882e6eafe4dcd1843a4fde6a63.patch";
-                    includes = [ "tests/test_frontend.py" ];
-                    hash = "sha256-Jb7T/bRUHxqwBLwV6xYC/teaFHm5GmqJxA7sCX+oiNI=";
-                  })
-                ];
-              });
         })
       ];
     })
