@@ -155,16 +155,20 @@ jobs:
             eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
           done
 
-      # Report only: which packages nix-detour would hold for this update.
-      # The fleet's holds live in kleinbem/nix-detour-fleet, so the action
-      # can't apply them here; the report goes into the validation issue.
+      # Report only: which packages nix-detour would hold for this update,
+      # checked against kleinbem/nix-detour-fleet; the report goes into the
+      # validation issue.
       - name: What nix-detour would hold
         id: holds
         if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         continue-on-error: true
-        uses: kleinbem-dev/nix-detour/update@5abc0ab5998f61f51bff1a48ad5db5ecbea803f0 # main
+        uses: kleinbem-dev/nix-detour/update@dad9ec7126d40ab791ef9dc8c5f54d5380406e9d # v0.3.0
         with:
+          token: ${{ steps.app-token.outputs.token }}
           directory: nix-config
+          # The holds are in nix-detour-fleet: checked through this input.
+          holds-repo: kleinbem/nix-detour-fleet
+          holds-input: nix-detour-fleet
           nix-args: --override-input kleinbem-secrets /tmp/dummy-secrets
           systems: x86_64-linux aarch64-linux
           build: "false"
