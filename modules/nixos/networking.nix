@@ -6,11 +6,9 @@
 }:
 
 let
-  # When set, the host's NetBird daemon runs the built-in SSH server, enabling
-  # keyless `netbird ssh <host>` (auth = NetBird peer identity, gated by your
-  # NetBird access policies — scope it to your devices in the console, NOT the
-  # whole 42-peer fleet). Only takes effect on the FIRST `netbird up`, i.e. a
-  # fresh enrollment; an already-joined host needs a manual re-`up` to flip it.
+  # NetBird's built-in SSH server for keyless `netbird ssh <host>`, gated by the
+  # access policies in nix/infra/netbird/policies.tf. Only applies on the first
+  # `netbird up`; an already-joined host needs a manual re-`up`.
   sshServerFlag = lib.optionalString config.my.services.netbird.allowServerSsh " --allow-server-ssh";
 in
 {

@@ -1,27 +1,15 @@
 #!/usr/bin/env bash
 # persona-scaffold.sh — provision a single persona end-to-end.
 #
-# Steps (idempotent — safe to re-run; already-done steps skip):
-#   1. Verify the persona is declared in personas.nix.
-#   2. Generate ed25519 signing key + mailbox password (tmpfs-staged), merge
-#      into kleinbem-secrets/personas/<name>.yaml (id_ed25519, id_ed25519_pub,
-#      mailbox_password keys — one YAML per persona, cutover 2026-08-07).
-#   3. Patch nix-config/modules/nixos/keys.nix ssh.personas.<name> with pubkey.
-#   4. Upload the pubkey to GitHub as a Signing key (gh auth required).
-#   5. Create the mailbox via Stalwart admin CLI (only if Stalwart is running).
+# Idempotent: generates the signing key + mailbox password into
+# kleinbem-secrets/personas/<name>.yaml, patches keys.nix, uploads the key to
+# GitHub as a signing key and creates the Stalwart mailbox if Stalwart runs.
 #
-# Run AFTER:
-#   - nix-config/personas.nix has the entry
-#   - kleinbem-secrets/.sops.yaml has a &persona_<name> anchor + a
-#     personas/<name>.yaml creation rule (see that repo's README "Adding a
-#     new scope" section) — this script WARNS but does not fail if missing;
-#     without it the new content still encrypts, just to the generic
-#     personas/.+ catch-all (masters-only, no nixos_nvme/mac_mini access).
-#   - Stalwart container is up (for step 5; steps 1-4 work without it)
-#   - `gh auth status` shows you're logged in
+# Before: the personas.nix entry, `gh auth status`, and a personas/<name>.yaml
+# creation rule in kleinbem-secrets/.sops.yaml (its README "Adding a new scope").
+# Without the rule it only warns and the file falls to the masters-only catch-all.
 #
-# Usage: just personas::add <name>      (preferred, via the just recipe)
-#    or: ./persona-scaffold.sh <name>
+# Usage: just personas::add <name>   (or ./persona-scaffold.sh <name>)
 
 set -euo pipefail
 
@@ -37,12 +25,8 @@ NIX_CONFIG="$(dirname "$SCRIPT_DIR")"
 META_ROOT="$(dirname "$NIX_CONFIG")"
 PERSONAS_NIX="$NIX_CONFIG/personas.nix"
 KEYS_NIX="$NIX_CONFIG/modules/nixos/keys.nix"
-# kleinbem-secrets holds signing key + mailbox password (cutover 2026-08-07)
-# AND personas/contact.nix (public-destined identity data — full-name/email/
-# bio/etc; git commit authorship for a persona becomes public the moment
-# they commit anything, so encrypting it at rest never bought real
-# confidentiality — plain Nix, protected by the private repo only, since
-# 2026-08-09).
+# kleinbem-secrets holds the signing key + mailbox password, and the plain
+# personas/contact.nix (identity data that goes public with the first commit).
 SECRETS_REPO="$META_ROOT/kleinbem-secrets"
 PERSONA_YAML="$SECRETS_REPO/personas/$NAME.yaml"
 
@@ -68,9 +52,7 @@ if ! grep -q "&persona_${NAME}\b" "$SECRETS_REPO/.sops.yaml" 2>/dev/null; then
 fi
 
 # full-name/email live in kleinbem-secrets/personas/contact.nix (plain Nix,
-# not the public personas.nix), only available via lib/personas.nix's joined
-# view (see that file's header comment). Plain since 2026-08-09 — imported
-# directly, no decrypt step needed.
+# imported directly), joined in by lib/personas.nix.
 persona_field() {
   nix eval --impure --raw --expr "
     let
@@ -142,17 +124,9 @@ fi
 
 # --- 5. Upload pubkey to GitHub as a Signing key ---
 if command -v gh &>/dev/null && gh auth status &>/dev/null; then
-  # Idempotency check matches on the KEY MATERIAL (the base64 blob, field 2
-  # of the pubkey string), not the title. Matching by title (as this used
-  # to) breaks the moment a persona's email changes — the title embeds
-  # "$PERSONA_EMAIL signing", so a rename makes this script blind to the
-  # already-uploaded key and it uploads a duplicate instead of recognizing
-  # it. The key material itself is what's cryptographically stable across
-  # a rename; the title is just a label. GitHub's API has no update
-  # endpoint for an existing signing key's title (create/delete only), so
-  # a stale title on an already-uploaded key is left as a harmless cosmetic
-  # mismatch rather than deleting/recreating — signature verification goes
-  # by key material, not title.
+  # Match on key material, not the title: the title embeds the email, so a
+  # rename would upload a duplicate. GitHub can't edit a key's title, so a
+  # stale one stays (harmless).
   PUBKEY_BLOB=$(awk '{print $2}' <<<"$PUBKEY")
   EXISTING=$(gh api /user/ssh_signing_keys --jq ".[] | select((.key | split(\" \")[1]) == \"$PUBKEY_BLOB\") | .id" 2>/dev/null || true)
   if [[ -n $EXISTING ]]; then
@@ -169,19 +143,9 @@ else
 fi
 
 # --- 6. Create mailbox via Stalwart's principal API (if Stalwart is running) ---
-# NOT `stalwart-cli` (nixpkgs ships 1.0.x): that tool is schema-driven and
-# GETs /api/schema from the server on first use, but the fleet's Stalwart
-# is pinned to 0.15.5 (0.16.x isn't yet compatible with services.stalwart)
-# whose api/v1/openapi.yml has no /schema route — stalwart-cli 404s before
-# it can do anything, no matter the subcommand. The real, version-matched
-# surface on 0.15.5 is the plain JMAP management REST endpoint
-# `POST /api/principal` (see that file's "Create Principal" path). Called
-# from mac-mini (the HOST, not `machinectl`/`systemd-run` into the
-# container) straight at the container's IP:port — the container's own
-# minimal NixOS closure doesn't ship curl, and there's no longer any
-# reason to run inside its namespace: the automation password below is
-# decrypted client-side, not read from a container-local credential file
-# the way the human fallback-admin's secret is.
+# Not `stalwart-cli`: it needs /api/schema, which our pinned Stalwart 0.15.5
+# lacks (404). Plain `POST /api/principal` instead, curl'd from the mac-mini
+# host at the container IP, since the container ships no curl.
 STALWART_HOST="mac-mini"
 STALWART_IP="10.85.50.8" # inventory.nix network.nodes.stalwart
 STALWART_PORT="8080"
@@ -195,24 +159,17 @@ if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
       {type: "individual", name: $name, description: $desc, quota: 0,
        emails: [$email], secrets: [$secret], roles: ["user"]}
     ' >"$WORK/principal.json"
-  # Dedicated `automation` principal — NOT the human fallback-admin. Its
-  # plaintext lives in kleinbem-secrets (this IS scriptable, unlike the
-  # human admin's password which is Bitwarden-only by design — see
-  # docs/PHASE1_STALWART_STATUS.md "Automation principal bootstrap"). A
-  # one-time manual bootstrap (using the human admin password once) creates
-  # this principal; after that, this script never needs a human secret.
+  # Dedicated `automation` principal, not the human fallback-admin (whose
+  # password stays out of sops). Created once by hand: see
+  # docs/PHASE1_STALWART_STATUS.md "Automation principal bootstrap".
   AUTOMATION_PASSWORD="$(sops -d --extract '["stalwart_automation_password"]' \
     "$SECRETS_REPO/nix/per-container/stalwart.yaml")"
   if [[ -z $AUTOMATION_PASSWORD ]]; then
     echo "  ⚠️  stalwart_automation_password not in kleinbem-secrets — skipping mailbox creation." >&2
     echo "     See docs/PHASE1_STALWART_STATUS.md 'Automation principal bootstrap' — one-time setup." >&2
   else
-    # No 2>/dev/null here on purpose: swallowing stderr previously hid the
-    # real failure behind a generic "000" (curl's code for "never got an
-    # HTTP response at all" — connection/SSH-level, not an auth rejection).
-    # AUTOMATION_PASSWORD is base64 (openssl rand -base64 32 in the
-    # bootstrap doc) so it's always safe inside these single quotes — no
-    # embedded quote/backslash characters to worry about.
+    # stderr stays visible: otherwise a connection failure shows only as "000".
+    # The password is base64, so it's safe inside these single quotes.
     HTTP_CODE=$(ssh -o BatchMode=yes "$STALWART_HOST" \
       "curl -sS -o /dev/null -w '%{http_code}' \
         -u automation:$AUTOMATION_PASSWORD -H 'Content-Type: application/json' \

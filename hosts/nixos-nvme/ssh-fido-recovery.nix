@@ -1,9 +1,7 @@
-# ssh wrapper for this desktop's YubiKey (USB 1050:0406). Its ED25519-SK key
-# is verify-required, so ssh-sk-helper falls back to $SSH_ASKPASS for the PIN,
-# and the GUI askpass is unreliable ("invalid format" / "agent refused
-# operation"). SSH_ASKPASS_REQUIRE=never asks in the terminal instead.
-# If that still fails: tier 1 resets the USB device, tier 2 restarts a stuck
-# ssh-agent (the PIN exchange happens inside the agent).
+# ssh wrapper for this desktop's YubiKey (USB 1050:0406). The verify-required
+# SK key's PIN goes through $SSH_ASKPASS, and the GUI askpass is unreliable, so
+# SSH_ASKPASS_REQUIRE=never asks in the terminal. On failure it resets the USB
+# device, then restarts ssh-agent (the PIN exchange happens inside the agent).
 { pkgs, ... }:
 let
   wrappedSsh = pkgs.writeShellScriptBin "ssh" ''

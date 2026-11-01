@@ -1,8 +1,6 @@
-# Persona lifecycle state, kept apart from personas.nix so frequent status
-# changes don't churn the identity file. Edit it by hand. Valid statuses,
-# leave types and transitions are in lib/personas.nix. return-date and
-# leave-type apply while on leave; backup is the persona covering then
-# (null = none).
+# Persona lifecycle state, apart from personas.nix so status changes don't
+# churn the identity file. Valid values are in lib/personas.nix; return-date,
+# leave-type and backup (covering persona, null = none) apply while on leave.
 
 {
   martin = {

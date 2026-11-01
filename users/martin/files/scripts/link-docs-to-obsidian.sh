@@ -1,27 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
-# Documentation Linker for Obsidian
-# Purpose: Symlink every fleet repo's `.agent/` directory (lessons,
-# architecture notes, rules, CONTEXT/handover, knowledge/) into the
-# Obsidian vault for browsing. Always a symlink, never a copy — each repo
-# stays the source of truth and stays git-versioned; the vault just gets a
-# read-only window into it.
+# Symlink every fleet repo's `.agent/` directory into the Obsidian vault.
+# Symlinks, never copies, so each repo stays the source of truth.
 
 VAULT_PATH="$HOME/Documents/Notes"
 KNOWLEDGE_ROOT="$VAULT_PATH/System/Knowledge"
-# The flat workspace root (~15 sibling repos), not any one repo inside it —
-# see the workspace CLAUDE.md. Previously this pointed at the `nix` repo
-# itself, so the sibling-repo glob below searched inside `nix/` and never
-# found anything; only `nix/.agent/knowledge` (as "Main") ever got linked.
+# The flat workspace root holding the sibling repos, not any one repo.
 WORKSPACE_ROOT="$HOME/Develop/github.com/kleinbem"
 
 mkdir -p "$KNOWLEDGE_ROOT"
 
 echo "🔗 Linking fleet repo knowledge to Obsidian..."
 
-# Drop the old special-cased "Main" symlink from the pre-fix layout — every
-# repo (including `nix`) is now linked under its own name below.
+# Drop the legacy "Main" link; every repo is linked under its own name.
 rm -f "$KNOWLEDGE_ROOT/Main"
 
 for repo in "$WORKSPACE_ROOT"/*/; do

@@ -1,20 +1,9 @@
 #!/usr/bin/env bash
-# Compare the Vaultwarden version the fleet currently ships (whatever the
-# pinned nixpkgs in ./flake.lock packages) against the latest upstream GitHub
-# release, and shout if we're behind.
-#
-# Why this exists separately from the daily `nix flake update` PR (maintain.yml):
-# that job bumps nixpkgs wholesale and treats a Vaultwarden security release
-# like any other churn — no urgency signal, and if `main` is un-mergeable the
-# bump silently stalls. Vaultwarden is an internet-facing credential store, so
-# it gets its own nag. This script does NOT bump anything; nixpkgs owns that.
-#
-# Exit 0 always (a drift still exits 0 — the emitted GH issue is the signal, a
-# red workflow badge is not). Prints a one-line verdict to stdout; writes a
-# richer summary to $GITHUB_STEP_SUMMARY when running under Actions.
-#
-# Usage:  ./scripts/check-vaultwarden-version.sh
-# Deps:   bash, curl, jq, nix (with flakes)
+# Compare the Vaultwarden version our locked nixpkgs ships with the latest
+# upstream release. The daily lock update (maintain.yml) gives a security
+# release no urgency and can stall, and this is an internet-facing credential
+# store, so it gets its own nag. Bumps nothing. A drift still exits 0: the
+# workflow's tracking issue is the signal, not a red badge.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

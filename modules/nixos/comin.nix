@@ -1,9 +1,6 @@
-# Pull-based fleet deploy via comin (github:nlewo/comin). The host polls the
-# `production` branch of kleinbem/nix-config and switches to it: 60 s polling,
-# signed-head verification, a per-host testing branch, Prometheus metrics and
-# generation retention come from upstream instead of our own timer + ntfy
-# listener + cache probe (my.deploy.autoUpgrade). Hosts opt in per host; the
-# two mechanisms are mutually exclusive.
+# Pull-based deploy via comin (github:nlewo/comin): the host polls the
+# `production` branch of kleinbem/nix-config and switches to signed heads.
+# Per-host opt-in, mutually exclusive with my.deploy.autoUpgrade.
 {
   config,
   lib,
@@ -150,12 +147,9 @@ in
           exporter.port = cfg.exporter.port;
         };
 
-        # Scoped to comin's own nix client (root is a trusted user, so the
-        # daemon honours it) instead of the host-wide nix.settings.max-jobs.
-        # always-allow-substitutes: nixpkgs marks system-path, etc,
-        # system-units and every writeText* `allowSubstitutes = false`;
-        # without it Nix builds them locally, which max-jobs = 0 forbids,
-        # and every real upgrade fails (same fix as autoUpgrade.requireCache).
+        # Scoped to comin's nix client, not host-wide. always-allow-substitutes:
+        # nixpkgs marks system-path, etc and writeText* `allowSubstitutes = false`,
+        # which max-jobs = 0 can't build locally, so every upgrade would fail.
         systemd.services.comin.environment.NIX_CONFIG = lib.mkIf cfg.requireCache ''
           max-jobs = 0
           always-allow-substitutes = true

@@ -1,18 +1,8 @@
 # Persona library: joins public identity (personas.nix), private contact data
 # (kleinbem-secrets/personas/contact.nix) and lifecycle state (personas-state.nix).
 #
-# contact.nix is plain Nix: callers import it directly (see .just/personas.just).
-# Callers that pass no contact data get "(private)" for PII fields.
-#
-# Usage:
-#   # With private data:
-#   import ./lib/personas.nix {
-#     inherit lib;
-#     contact = import ../kleinbem-secrets/personas/contact.nix;
-#   }
-#
-#   # Public-only:
-#   import ./lib/personas.nix { inherit lib; }
+# contact.nix is plain Nix, so callers import it and pass it as `contact`
+# (see .just/personas.just). Without it, PII fields read "(private)".
 
 {
   lib,

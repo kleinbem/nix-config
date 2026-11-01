@@ -60,15 +60,9 @@ deploy host:
         echo "✅ Host is booted from the SSD."
     fi
 
-    # colmena's ssh subprocess bypasses the interactive-shell-only FIDO2
-    # recovery wrapper (hosts/nixos-nvme/ssh-fido-recovery.nix's
-    # home.shellAliases.ssh — aliases don't apply to subprocesses spawned
-    # directly, only to commands typed at an interactive prompt), so it
-    # always hits raw stock ssh. A transient CTAP2/PIN-signing glitch that
-    # wrapper would normally clear via usbreset + ssh-agent restart instead
-    # kills the whole deploy on the first hit, even with correct PIN+touch
-    # (confirmed 2026-08-09, reproduced twice in a row against core-pi).
-    # Mirror that same two-tier recovery here, around colmena itself.
+    # colmena's ssh subprocess skips the FIDO2 recovery wrapper in
+    # hosts/nixos-nvme/ssh-fido-recovery.nix (a shell alias), so a transient
+    # CTAP2 glitch would kill the deploy. Same two-tier recovery, around colmena.
     yubikey_id="1050:0406"
     errfile="$(mktemp)"
     trap 'rm -f "$errfile"' EXIT
@@ -108,12 +102,8 @@ deploy host:
         fi
     fi
 
-    # The activation above is the part that matters and it has now succeeded.
-    # Everything below (Attic cache warming, RPi bootloader sync) is
-    # best-effort housekeeping — a network blip, an Attic auth hiccup or a
-    # transient `nix run` failure in here must NOT flip a green deploy to a
-    # red one. Each step is guarded so its exit code can't abort the recipe
-    # under `set -e`.
+    # Activation succeeded. Everything below (cache warming, RPi bootloader
+    # sync) is best-effort and guarded so it can't turn the deploy red.
     push_cache_args="{{host}}"
     if [[ "{{host}}" != "$(hostname)" ]]; then
         push_cache_args="--remote {{host}}"
@@ -173,18 +163,13 @@ deploy-edge:
 [doc("Push built closure(s) to Attic cache. E.g. 'just deployment::push-cache core-pi' or 'just deployment::push-cache --remote orin-nano'")]
 push-cache +args:
     #!/usr/bin/env bash
-    # NOT `set -e`: this recipe is best-effort cache warming, frequently run
-    # as the tail of a `deploy` whose activation already succeeded. A flaky
-    # `nix run` / `nix path-info` / Attic timeout here must degrade to a
-    # warning, never abort — every load-bearing failure below is handled
-    # explicitly (|| echo / continue / exit).
+    # No `set -e`: best-effort cache warming, often the tail of a successful
+    # deploy. Failures below are handled explicitly and only warn.
     set -uo pipefail
 
-    # Push token (nixos-nvme.yaml: attic_push_token) in a tmpfs config that
-    # lives only for this run, so no token sits in ~/.config/attic. On
-    # nixos-nvme the host decrypts it at activation (/run/secrets, no
-    # YubiKey); elsewhere it is decrypted with Martin's key on the first push,
-    # so a run with nothing to push never asks for the YubiKey.
+    # attic_push_token goes in a per-run tmpfs config, never ~/.config/attic.
+    # nixos-nvme reads it from /run/secrets; elsewhere it's decrypted with the
+    # YubiKey on the first push, so a run with nothing to push never asks.
     ATTIC_CFG=""
     ATTIC_BIN=""
     trap '[ -n "$ATTIC_CFG" ] && rm -rf "$ATTIC_CFG"' EXIT
@@ -203,16 +188,10 @@ push-cache +args:
             "$token" >"$ATTIC_CFG/attic/config.toml")
     }
 
-    # Attic is a SPARSE OVERLAY on the public caches (see the design note in
-    # nix-presets/containers/attic.nix): it must hold ONLY paths no public cache
-    # has. attic's own upstream filter covers cache.nixos.org ALONE, so cachix
-    # paths (nix-community/devenv/cuda/anduril) leak in. We instead filter every
-    # closure member by its on-disk signatures: a path substitutable from any
-    # cache this flake trusts carries that cache's signature (key names below
-    # mirror trusted-public-keys in nix-config/modules/nixos/core.nix). We push
-    # only the unsigned remainder with --no-closure. This is a LOCAL, instant
-    # check (no per-path network probe) that keeps Attic small and cuts the RPi5
-    # ingest load behind the `os error 110` push timeouts.
+    # Attic is a sparse overlay: it should hold only paths no public cache has.
+    # A path from a trusted upstream carries that cache's signature, so push
+    # only closure members without one (--no-closure). Local check, no network.
+    # Key names should match keys.upstreamCacheKeyNames in modules/nixos/keys.nix.
     UPSTREAM_KEYS='cache.nixos.org-1 nix-community.cachix.org-1 devenv.cachix.org-1 cuda-maintainers.cachix.org-1 anduril.cachix.org-1'
     push_filtered() {
         local root="$1" label="$2"
@@ -315,12 +294,9 @@ push-cache +args:
 # Note: SSH-based diagnostic recipes (ping/tegrastats/logs/shell) live in
 # `orin.just` alongside the on-device ones. Run `just --list orin` to see them.
 
-# INERT as of 2026-07-23 — do not run. This Jetson exposes no /dev/tpm0 (see
-# hosts/orin-nano/disko.nix: tpm2-device was removed from the LUKS config), so
-# the tpm2_pcrseal below has no device to seal against. Nothing consumes the
-# output either, and the path is wrong (Orin persist is /nix/persist, not
-# /persist). LUKS unlock is FIDO2 + Tang/clevis. Kept as a placeholder for if
-# TPM sealing is ever wired up (hardware.nix does load the tpm_crb module).
+# INERT, do not run: this Jetson has no /dev/tpm0, nothing consumes the
+# output, and the path is wrong (Orin persist is /nix/persist). LUKS unlock is
+# FIDO2 + Tang. Placeholder in case TPM sealing is ever wired up.
 [group("Provisioning")]
 [confirm("🔐 Seal the TPM key on the Orin Nano? This can only be done once after boot.")]
 orin-seal:
@@ -570,25 +546,14 @@ mac-mini-install-usb device:
     pc_sudo_keepalive
     pc_require_block_device "$DEV"
     pc_assert_safe_target "$DEV"
-    # No cache pre-flight here on purpose: mac-mini is x86_64, same arch as
-    # this workstation, so a local build is a normal fast native build, not
-    # an hours-long QEMU-emulated cross-arch one (the thing pc_cache_preflight
-    # exists to catch). It's also a brand-new host with nothing in Attic yet.
+    # No cache pre-flight: mac-mini is x86_64 like this workstation, so a
+    # local build is native and fast, not the emulated build it guards against.
 
-    # Random alnum passphrase, not human-chosen: this box has no console to
-    # ever type it at again in normal operation (Tang auto-unlock is the real
-    # unlock path) — 14 chars (~83 bits of alnum entropy) is still far beyond
-    # brute-force reach for a passphrase this rarely used, and short enough to
-    # type by hand for the one legitimate reason to ever need it: the
-    # initrd-SSH fallback if Tang is ever unreachable at boot. Also avoids the
-    # old real risk of a mismatch between the disko-format-time and
-    # generate-jwe-time passphrase from manual entry. Save it to Bitwarden per
-    # the printed output — this script does NOT persist it anywhere itself.
-    # NOT `tr ... | head -c 14`: head closes the pipe after 14 bytes, tr gets
-    # SIGPIPE writing into it, and under this script's `set -o pipefail` that
-    # aborts the whole recipe (exit 141) despite the passphrase itself being
-    # fine. Read a generous fixed amount up front instead (tr fully consumes
-    # it, no pipe closes early) and slice with bash, no second pipe at all.
+    # Random 14-char alnum passphrase (~83 bits): Tang does normal unlocks, and
+    # this is short enough to type over initrd SSH if Tang is down. The script
+    # never stores it; save it from the printed output.
+    # Not `tr | head -c 14`: head closing the pipe SIGPIPEs tr, and pipefail
+    # aborts the recipe. Read a fixed amount and slice in bash instead.
     RAW_ENTROPY="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9')"
     if [ "${#RAW_ENTROPY}" -lt 14 ]; then
       echo "❌ Only got ${#RAW_ENTROPY} alnum chars from 256 random bytes (need 14) — vanishingly unlikely, just retry."
@@ -598,9 +563,7 @@ mac-mini-install-usb device:
     PASS_FILE="$(mktemp)"
     chmod 600 "$PASS_FILE"
     printf '%s' "$PASSPHRASE" > "$PASS_FILE"
-    # Belt-and-suspenders: wipe the passphrase from this script's memory and
-    # the temp file on ANY exit path (success, error, or Ctrl-C), not just
-    # the happy path at the bottom.
+    # Shred the temp file on every exit path, Ctrl-C included.
     cleanup_passfile() { shred -u "$PASS_FILE" 2>/dev/null || rm -f "$PASS_FILE"; }
     trap cleanup_passfile EXIT
 
@@ -608,14 +571,9 @@ mac-mini-install-usb device:
     pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
     pc_wipe "$DEV" 100
 
-    # Generate the Tang JWE BEFORE formatting, using the passphrase we just
-    # chose ourselves — no need to wait until after disko like the old
-    # (manual-passphrase) flow did, since we already know the exact value.
-    # git add makes the new file visible to the git+file:// override
-    # {{OVERRIDES}} uses to resolve inputs.kleinbem-secrets to this local checkout
-    # (Nix flakes only see tracked/staged files, not arbitrary untracked
-    # ones) — jj::save-all later gives it a real commit message, this just
-    # gets it build-visible right now.
+    # The passphrase is known, so the Tang JWE can be made before formatting.
+    # git add makes it visible to the git+file:// override in {{OVERRIDES}}
+    # (flakes only see tracked files); jj::save-all commits it later.
     echo "🔑 Generating Tang JWE with the new passphrase..."
     LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh mac-mini
     git -C ../kleinbem-secrets add initrd/cryptroot_mac-mini.jwe
@@ -630,35 +588,18 @@ mac-mini-install-usb device:
     # Guard: /mnt/mac-mini/boot MUST be the target's ESP, not the workstation's.
     pc_assert_esp_on_target "$MNT" "$DEV"
 
-    # Host identity + age key rotation MUST happen before the build below,
-    # not after: pc_host_identity generates the SSH host key directly onto
-    # the mounted disk itself (needs nothing but the mount — not the built
-    # closure), so there's no reason to defer it. Doing this after the build
-    # instead (the original order here) meant the INSTALLED closure was
-    # built against the OLD, now-mismatched encrypted secrets.yaml — the
-    # fresh host's new key was never a valid recipient for what actually got
-    # installed, so nothing needing a secret (e.g. the NetBird setup key)
-    # could decrypt anything after first boot. Confirmed the hard way on
-    # mac-mini's actual reinstall 2026-08-03: fixed after the fact by
-    # bumping flake.lock and redeploying, but that's exactly the manual step
-    # this reorder removes the need for.
+    # Host key + age re-encryption MUST come before the build: otherwise the
+    # installed closure carries secrets the new host key can't decrypt, and
+    # nothing needing a secret (e.g. NetBird) works after first boot.
     AGE_PUB="$(pc_host_identity "$MNT" mac-mini)"
     echo "📋 mac-mini age public key: ${AGE_PUB}"
     pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
-    # Same reason the JWE needed `git add` above: the build below resolves
-    # inputs.kleinbem-secrets via {{OVERRIDES}}' git+file:// override, which only
-    # sees tracked/staged files, not arbitrary untracked/modified ones.
-    # pc_sops_add_and_reencrypt may touch .sops.yaml plus ANY content file
-    # that references the mac_mini anchor (nix/per-host/mac-mini.yaml, every
-    # personas/*.yaml — mac_mini is a recipient on all of them) — stage
-    # whatever it actually modified rather than guessing a fixed file list.
+    # Stage whatever the re-encryption touched (.sops.yaml and any file with
+    # the mac_mini recipient) so the git+file:// override sees it.
     git -C ../kleinbem-secrets add -u
 
-    # my.boot.clevis-initrd.enable is gated on the JWE existing (see
-    # hosts/mac-mini/default.nix) — it already does now, so this one build
-    # comes out clevis-enabled from the start; no second pass required. It
-    # also now builds against the JUST-rotated age key above, so the
-    # installed system can actually decrypt its own secrets from first boot.
+    # Clevis is gated on the JWE existing, which it now does, so one build
+    # comes out clevis-enabled with the rotated secrets.
     SYSTEM="$(pc_build_toplevel mac-mini {{OVERRIDES}})"
     [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ mac-mini closure build failed."; exit 1; }
     pc_install_closure "$MNT" "$SYSTEM"
@@ -677,12 +618,9 @@ mac-mini-install-usb device:
     sudo cp "${BOOT_EFI}" "${ESP}/EFI/BOOT/BOOTX64.EFI"
     sudo cp "${KERNEL_SRC}" "${ESP}/EFI/nixos/kernel"
     sudo cp "${INITRD_SRC}" "${ESP}/EFI/nixos/initrd"
-    # CRITICAL: embed boot.initrd.secrets (initrd-sshd host key + the clevis
-    # JWE, both already present now) into the ESP initrd. nixos-install
-    # --no-bootloader skipped this; without it the first boot fails
-    # copy-secrets + sshd and drops to EMERGENCY MODE (which, with no
-    # physical keyboard attached, is unrecoverable without re-plugging the
-    # SSD into this workstation).
+    # CRITICAL: embed boot.initrd.secrets (initrd-sshd host key + clevis JWE),
+    # which --no-bootloader skipped. Without them first boot drops to emergency
+    # mode, unrecoverable on a box with no keyboard.
     pc_append_initrd_secrets mac-mini "${ESP}/EFI/nixos/initrd" {{OVERRIDES}}
     printf 'timeout 5\ndefault nixos-1.conf\neditor no\n' | sudo tee "${ESP}/loader/loader.conf" > /dev/null
     ENTRY="$(mktemp)"
@@ -794,22 +732,13 @@ mac-mini-verify ip="10.0.0.16":
     ok() { echo "✅ $1"; }
     bad() { echo "❌ $1"; fail=1; }
 
-    # This YubiKey's SSH credential requires PIN entry, not just touch (see
-    # hosts/nixos-nvme/ssh-fido-recovery.nix) — that PIN has to go through the
-    # terminal, not a GUI askpass dialog which doesn't work headlessly/in a
-    # script. A `just` recipe's shebang script is a non-interactive bash
-    # process, so shellAliases.ssh (which normally sets this) never applies
-    # here — set it explicitly instead. BatchMode=yes would silently disable
-    # the PIN prompt entirely and fail closed, so it's deliberately not used
-    # for the first connection.
+    # The FIDO2 PIN must be asked on the terminal, and the ssh alias that
+    # normally sets this doesn't apply in a recipe. Not BatchMode=yes: that
+    # disables the PIN prompt and fails.
     export SSH_ASKPASS_REQUIRE=never
 
-    # After a mac-mini reinstall its SSH host key is new — this workstation's
-    # known_hosts still has the OLD one, so ssh refuses the connection for
-    # safety ("REMOTE HOST IDENTIFICATION HAS CHANGED"). Expected after a
-    # legitimate reinstall, not a MITM — but only auto-clear the stale entry
-    # on that SPECIFIC error, never for a generic connection failure (that
-    # would defeat the whole point of host-key checking).
+    # A reinstall gives mac-mini a new host key. Clear the stale known_hosts
+    # entry only on that specific error, never on a generic failure.
     check "SSH reachable"
     sshErr="$(mktemp)"
     if ssh -o ConnectTimeout=15 "$IP" true 2>"$sshErr"; then
@@ -899,13 +828,9 @@ nasbook-install-usb device:
     # (native build, not an hours-long cross-arch emulation), and it's a
     # brand-new host with nothing in Attic yet anyway.
 
-    # Random alnum passphrase — the FIDO2 enrollment below is the real unlock
-    # path; this is only the fallback for the rare case neither YubiKey is
-    # available at boot. 14 chars (~83 bits of alnum entropy) is far beyond
-    # brute-force reach for a passphrase this rarely typed. Save it to
-    # Bitwarden per the printed output — this script does NOT persist it.
-    # (See mac-mini-install-usb for why this reads a fixed chunk of
-    # /dev/urandom rather than piping tr into head -c.)
+    # Random 14-char fallback passphrase; FIDO2 (below) is the real unlock.
+    # Not stored anywhere: save it from the printed output. See
+    # mac-mini-install-usb for why this avoids `tr | head -c`.
     RAW_ENTROPY="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9')"
     if [ "${#RAW_ENTROPY}" -lt 14 ]; then
       echo "❌ Only got ${#RAW_ENTROPY} alnum chars from 256 random bytes (need 14) — vanishingly unlikely, just retry."

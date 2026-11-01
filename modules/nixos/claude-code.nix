@@ -9,13 +9,10 @@ let
   json = pkgs.formats.json { };
 in
 {
-  # Claude Code's managed settings: the policy part of its config (permission
-  # rules, auto-mode rules, default mode). Claude Code reads every file in
-  # /etc/claude-code/managed-settings.d/ above all user and project settings,
-  # and combines their lists with the lower scopes', so rules saved from an
-  # "always allow" in ~/.claude or a repo still add on top. Preferences
-  # (theme, model, hooks) stay in ~/.claude/settings.json, which Claude Code
-  # writes itself; see modules.ai-agents.claude.settings in home-manager.
+  # Managed settings (permission and auto-mode rules) rank above user and
+  # project settings, but their lists merge, so "always allow" rules saved
+  # elsewhere still add on top. Preferences stay in ~/.claude/settings.json
+  # (home-manager ai-agents.nix, claude.settings).
   options.my.claudeCode = {
     enable = lib.mkEnableOption "the fleet's Claude Code managed settings";
 

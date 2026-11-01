@@ -64,10 +64,8 @@ in
   };
 
   # ─── User ───────────────────────────────────────────────────
-  # Hosts that need SSH access add `users.users.${config.my.username}.openssh.authorizedKeys.keys`
-  # in their own configuration (with keys.nix references). This block ensures
-  # the user exists with the right groups and wires the sops password hash so
-  # sudo authentication works with the fleet-shared password.
+  # Hosts add their own authorizedKeys (from keys.nix); this only creates the
+  # user and wires the fleet-shared sudo password hash.
   users.users.${config.my.username} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
@@ -79,17 +77,13 @@ in
     neededForUsers = true;
   };
 
-  # No blanket wheelNeedsPassword=false here: these are always-on,
-  # network-facing hosts (core-pi fronts the public internet), so root
-  # access is scoped through the fleet-wide per-command NOPASSWD allowlist
-  # (security/sudo.nix, imported via core.nix) instead of unrestricted
-  # passwordless sudo.
+  # No blanket wheelNeedsPassword=false: these hosts are network-facing, so
+  # passwordless root goes through the per-command allowlist in security/sudo.nix.
 
   # ─── Sudo with Hardware YubiKey (SSH Agent Forwarding) ──────
-  # With `ssh -A`, sudo asks the forwarded agent for a YubiKey signature;
-  # without an agent it falls back to the password. pam_rssh because
-  # pam_ssh_agent_auth doesn't accept sk-ssh-ed25519 keys. Dedicated key
-  # file: authorized_keys options are ignored here, so restricted automation
+  # With `ssh -A`, sudo asks the forwarded agent for a YubiKey signature, else
+  # the password. pam_rssh because pam_ssh_agent_auth rejects sk-ssh-ed25519.
+  # Own key file: pam ignores authorized_keys options, so restricted automation
   # keys there would satisfy sudo too.
   security.pam = {
     rssh = {

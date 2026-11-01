@@ -1,10 +1,7 @@
 { myInventory, ... }:
 {
-  # ==========================================
-  # ENTERPRISE AI TEAM AIRLOCK (RBAC)
-  # ==========================================
-  # These rules enforce 'Least Privilege' at the network level on the host,
-  # ensuring that agents can only communicate with approved upstream targets.
+  # AI agent-team airlock: the container may only reach its approved
+  # upstreams (plus DNS/HTTPS, see below); everything else is rejected.
   networking.nftables.tables.ai-airlock = {
     family = "inet";
     content = ''

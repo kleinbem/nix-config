@@ -1,10 +1,8 @@
 name: "VM Tests (KVM)"
 
-# NixOS VM integration tests on GitHub-hosted ubuntu-latest, which DOES expose
-# /dev/kvm (verified 2026-06-24 — ARM runners don't). The Determinate installer
-# in nix-setup opens it up for the nix daemon (its kvm input). One test per runner
-# (matrix) for parallelism. The test set is the same one build-all.yaml
-# excludes from its non-VM build.
+# NixOS VM tests on ubuntu-latest, which exposes /dev/kvm (ARM runners don't);
+# nix-setup's Determinate installer opens it for the nix daemon. One test per
+# runner. Same test set that build-all.yaml excludes from its non-VM build.
 
 on:
   workflow_dispatch:

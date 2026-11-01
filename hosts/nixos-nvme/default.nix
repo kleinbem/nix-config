@@ -42,11 +42,8 @@
     ./herdr.nix
   ];
 
-  # security/ssh.nix (workstation tier) requires publickey+MFA but this host
-  # never actually authorized a key for its own normal sshd (port 22) — only
-  # the initrd-stage unlock sshd (hardware-boot.nix, port 2222) had one, with
-  # the same key set. Needed so other fleet devices (orin-nano, phone) can
-  # SSH in, e.g. to attach a remote herdr client to the server running here.
+  # Lets other fleet devices (orin-nano, phone) SSH in, e.g. to attach a remote
+  # herdr client. Same keys as the initrd unlock sshd (hardware-boot.nix).
   users.users.martin.openssh.authorizedKeys.keys =
     with (import "${self}/modules/nixos/keys.nix").ssh; [
       yubikey
@@ -98,13 +95,8 @@
       buzz-app # Buzz 1.0 desktop app (NixOS/nixpkgs#577918 via nix-packages' nixpkgs-prs pin)
       berd # Berd desktop app for Goose agents (NixOS/nixpkgs#580616 via nix-packages' nixpkgs-prs pin)
 
-      # RDP clients for mac-mini's GNOME Remote Desktop (reached via
-      # `ssh -L 3389:localhost:3389 mac-mini`, see hosts/mac-mini/default.nix).
-      # GNOME Connections (already installed via desktop.nix's core-apps)
-      # gave a confusing "not responding" error on a credential-provisioning
-      # race — freerdp gives a CLI fallback (wlfreerdp, native Wayland) with
-      # actual error output instead of a silent GUI hang; remmina is a more
-      # full-featured GUI alternative.
+      # RDP clients for mac-mini (`ssh -L 3389:localhost:3389 mac-mini`).
+      # GNOME Connections hides errors; freerdp prints them, remmina is the GUI.
       freerdp
       remmina
     ];
@@ -122,27 +114,18 @@
       tang.enable = true;
       threeDPrinting.enable = true; # Bambu Lab A1 mini: slicers + LAN discovery
     };
-    # Backups — nix-presets' backup-engine, fleet wiring in
-    # modules/nixos/backup.nix. tang, buzz, caido and dev-db register their
-    # own items. /home and the per-app state dirs still go through the
-    # legacy backup container (containers.nix) until they move here.
-    # Secrets: backup_r2_rclone_config (nix/per-host/nixos-nvme.yaml),
-    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
+    # Fleet backups (modules/nixos/backup.nix); tang, buzz, caido and dev-db
+    # register their own items. /home and per-app state still go through the
+    # legacy backup container (containers.nix).
     backup.enable = true;
-    # Preserves this host's exact prior data-disk.nix hardcoded values now
-    # that the module is parameterized via options (nasbook needed its own
-    # device + keyfile-based unlock instead of FIDO2).
     dataDisk = {
       enable = true;
       device = "/dev/disk/by-id/ata-WD_Red_SA500_2.5_2TB_2548TKD00121";
     };
     deploy.autoUpgrade = {
       enable = true;
-      # Unlike orin-nano, this host has no legitimate multi-hour local
-      # build (no on-device kernel compile) — CI already builds this
-      # host's toplevel and pushes it to Attic (build-all.yaml), so a
-      # cache-unreachable cycle should abort and retry next time rather
-      # than fall back to compiling the whole closure from source.
+      # CI builds this toplevel (build-nvme.yaml), so a cache miss should
+      # abort and retry next cycle rather than compile the closure locally.
       requireCache = true;
     };
     # Claude Code's permission and auto-mode policy, as read-only managed
@@ -165,11 +148,9 @@
   };
 
   services = {
-    # 4G, matching core.nix: 500M rotated out in hours on this host (runner +
-    # fluent-bit churn), which made the 2026-07-15 freeze un-diagnosable.
-    # SystemMaxUse restates core.nix's own value (mkForce in the settings
-    # branch, to resolve the attrset merge conflict); the other two keys
-    # aren't set there. See core.nix for why both branches exist.
+    # SystemMaxUse restates core.nix's 4G (mkForce resolves the attrset merge
+    # in the settings branch); the other keys are host-only. See core.nix for
+    # why both branches exist.
     journald =
       if options.services.journald ? settings then
         {
@@ -192,12 +173,9 @@
   };
 
   # ── Memory-creep logger ───────────────────────────────────────────
-  # The 2026-07-15 and 2026-07-22 freezes were both slow anonymous-memory
-  # creep filling swap over days. journald backlogs and dies once thrashing
-  # starts, so the offender is invisible after the fact. This samples the top
-  # swap/RSS consumers every 10 min at idle priority and logs them to the
-  # journal (tag `mem-creep`), so the next creep is attributable to a process.
-  # Retire once the leaker is identified and fixed.
+  # Past freezes were slow anonymous-memory creep, and journald dies once the
+  # host thrashes, hiding the culprit. Log the top swap/RSS users every 10 min
+  # (tag `mem-creep`). Retire once the leak is found.
   systemd.services.mem-creep-logger = {
     description = "Log top memory/swap consumers for leak diagnosis";
     serviceConfig = {
@@ -240,13 +218,8 @@
     };
   };
 
-  # Override core.nix's fleet-wide zramSwap.memoryPercent = 50. This is the
-  # only workstation and routinely holds a large Chrome tab set + local AI
-  # workloads; zstd compresses idle anon pages ~2-3x, so a zram device sized
-  # at 100% of the 62 GiB RAM still only costs a few GiB of real RAM for its
-  # own bookkeeping while roughly doubling the effective swap headroom that
-  # idle tabs get parked in before systemd-oomd/earlyoom have to kill
-  # anything. Pis keep the 50% default (they can't spare the overhead).
+  # Over core.nix's 50%: the workstation parks many idle Chrome tabs and AI
+  # workloads in zram, and zstd's ~2-3x ratio makes 100% cheap in real RAM.
   zramSwap.memoryPercent = lib.mkForce 100;
 
   home-manager.users.${config.my.username} = {

@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 # Usage: lock-failure-report.sh <eval log> <flake.lock before the update>
-#
-# Prints a Markdown report of why the nightly lock update failed validation:
-# the failing check and the first error lines. When a package is refused as
-# broken, it adds the derivation chain from the failing host down to that
-# package and a ready kleinbem/nix-holds-fleet entry pinned to the nixpkgs commit the
-# fleet runs now (the lock before the update), so holding the leaf the fleet
-# really uses is one short PR.
+# Markdown report of why the nightly lock update failed. For a broken package it
+# adds the derivation chain and a ready kleinbem/nix-holds-fleet entry pinned to
+# the nixpkgs the fleet runs now (the lock before the update).
 set -euo pipefail
 log=$1 lock_before=$2
 

@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
-# Push new/changed Obsidian vault notes into AnythingLLM via its documented
-# REST API (verified live against the instance's own /api/docs spec,
-# 2026-09-20: POST /api/v1/document/upload/{folder} to ingest+embed, DELETE
-# /api/v1/system/remove-documents to remove). AnythingLLM has no
-# watched-folder ingestion, and re-uploading an unchanged file creates a
-# duplicate (each upload gets a random suffix, not a content hash) — hence
-# the mtime-keyed state file: only touch files that actually changed, and
-# explicitly delete-then-reupload so the vector store never accumulates
-# stale copies of an edited note.
+# Push new/changed Obsidian notes into AnythingLLM's REST API. A re-upload
+# always makes a duplicate (random suffix), so an mtime-keyed state file picks
+# the changed notes, and each is deleted before it's uploaded again.
 set -euo pipefail
 
 VAULT_PATH="$HOME/Documents/Notes"

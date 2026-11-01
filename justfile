@@ -1,10 +1,5 @@
-# nix-config Justfile
-#
-# Recipes that operate ON the nix-config flake itself: building, evaluating,
-# deploying, host operations. Meta-workspace concerns (cross-repo git, devshell
-# entry, workspace-wide audits) stay in the meta-workspace justfile one level up.
-#
-# Run from anywhere inside nix-config. `just --list` for the full hub.
+# nix-config Justfile: building, evaluating, deploying, host operations.
+# Cross-repo concerns live in the conductor justfile one level up.
 
 import '.just/common.just'
 

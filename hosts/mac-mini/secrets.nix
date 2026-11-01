@@ -36,11 +36,9 @@ let
   invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
   personaSopsFile = name: secretFile "personas/${name}.yaml";
 
-  # sops-install-secrets checks its whole manifest at once: one declared key
-  # missing from its file silently freezes every other secret on the host
-  # (validateSopsFiles=false doesn't cover missing keys). Key names are
-  # cleartext in sops yaml, so skip an api_key the file doesn't have yet;
-  # persona-runtime treats it as absent until that persona is invoked.
+  # One declared key missing from its file silently freezes every other secret on
+  # the host (validateSopsFiles=false doesn't cover that). Key names are cleartext
+  # in sops yaml, so skip an api_key the file doesn't have yet.
   personaHasField =
     name: field:
     let

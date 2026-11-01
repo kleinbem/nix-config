@@ -33,13 +33,9 @@ let
               allowUnfree = true;
               allowUnfreePredicate = _: true;
               android_sdk.accept_license = true;
-              # NO permittedInsecurePackages here: insecure re-acks belong next
-              # to the thing that needs them, not blanket-applied to every
-              # host's pkgs. openclaw's ack lives in nix-presets lib/factory.nix
-              # (the container's own nixpkgs instance — the only place that
-              # evaluates it); a host-level entry would let a direct
-              # `pkgs.openclaw` reference eval silently instead of tripping
-              # the per-version checkpoint.
+              # No insecure-package acks here: they sit next to what needs them
+              # (openclaw's in nix-gantry lib/factory.nix, the container's own
+              # nixpkgs), so a stray host-level reference still fails to eval.
             };
           };
         }
@@ -48,10 +44,9 @@ let
     };
 
   # ── Deployment-driven factory enables (ADR 002) ──────────────────────────
-  # The factories build exactly the union of containers registered with
-  # my.services.container-updater on real hosts of the matching arch, plus an
-  # explicit pre-warm list. Scanning is limited to this fixed host list —
-  # never the factories themselves (that would recurse into their own config).
+  # Factories build the containers that real hosts of the same arch register
+  # with my.services.container-updater, plus a pre-warm list. Only this fixed
+  # list is scanned; scanning the factories would recurse into themselves.
   deploySources = [
     "nixos-nvme"
     "core-pi"

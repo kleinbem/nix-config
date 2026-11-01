@@ -1,10 +1,6 @@
-# mac-mini — Mid-2011 Mac Mini (Macmini5,x), Intel, real 64-bit EFI.
-#
-# Role: dedicated interactive box (no physical keyboard/mouse/screen — GUI
-# access is remote-desktop only). First concrete use case: join/record Zoom
-# calls from a container. Provisioned like orin-nano/core-pi/hass-pi — SSD
-# wiped+installed via USB-SATA adapter (see .just/deployment.just
-# mac-mini-install-usb), then moved internally.
+# mac-mini: Mid-2011 Mac Mini (Macmini5,x), Intel, real 64-bit EFI.
+# Headless (no keyboard or screen), GUI only over remote desktop. Installed
+# over a USB-SATA adapter with `just deployment::mac-mini-install-usb`.
 {
   config,
   lib,
@@ -179,11 +175,9 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # Backups — nix-presets' backup-engine, fleet wiring in
-    # modules/nixos/backup.nix. tang, open-webui and stalwart register
-    # their own secure items. Secrets: backup_r2_rclone_config
-    # (nix/per-host/mac-mini.yaml), rclone_config/restic_password/
-    # ntfy_alert_topic (nix/shared.yaml).
+    # Fleet backups (modules/nixos/backup.nix); tang, open-webui and stalwart
+    # register their own items. Needs backup_r2_rclone_config in
+    # nix/per-host/mac-mini.yaml.
     backup.enable = true;
 
     # Tang auto-unlock is mandatory here: with no keyboard or screen a LUKS
@@ -224,11 +218,9 @@ in
         enable = true;
         ip = "10.85.50.2/24";
         hostDataDir = "/var/lib/monitoring";
-        # alertmanager-ntfy credentials + the secret alert topic, rendered
-        # by secrets.nix once ntfy_monitoring_password exists in
+        # Rendered by secrets.nix once ntfy_monitoring_password exists in
         # nix/per-host/mac-mini.yaml. Until then alerts go to the preset's
-        # default topic "alerts" — guessable and, on the still-open ntfy
-        # server, readable by anyone.
+        # guessable default topic "alerts".
         ntfy.authConfigFile =
           if config.sops.templates ? "alertmanager-ntfy.yml" then
             config.sops.templates."alertmanager-ntfy.yml".path
@@ -297,12 +289,10 @@ in
         discord.enable = true;
       };
 
-      # One shared worker for all personas (see nix-presets persona-runtime.nix).
-      # persona-invoke.sh writes the identity files below right before each
-      # `machinectl start` and shreds them after.
-      # hostDataDir is deliberately not persisted: it's a bind mount the
-      # ephemeral rootfs doesn't reset, and one persona's state must not
-      # leak into the next. persona-invoke.sh also wipes it before each start.
+      # One shared worker for all personas (nix-presets persona-runtime.nix).
+      # hostDataDir is deliberately not persisted: the ephemeral rootfs doesn't
+      # reset a bind mount, and one persona's state must not leak into the next
+      # (persona-invoke also wipes it before each start).
       persona-runtime = {
         enable = true;
         ip = "10.85.50.9/24";
@@ -341,12 +331,9 @@ in
         adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
       };
 
-      # Git forge (nix-presets containers/forgejo.nix). Off until
-      # kleinbem-secrets/nix/per-container/forgejo.yaml holds
-      # forgejo_admin_password and forgejo_oauth_client_secret (the
-      # Authentik client from nix/infra authentik.tf's oidc_apps), see
-      # secrets.nix. State lives under the preset's default
-      # /var/lib/images/forgejo, which modules/nixos/persistence.nix keeps.
+      # Off until nix/per-container/forgejo.yaml holds forgejo_admin_password
+      # and forgejo_oauth_client_secret (Authentik client from nix/infra
+      # authentik.tf). State is under /var/lib/images, which is persisted.
       forgejo = {
         enable = false;
         ip = "${myInventory.network.nodes.forgejo.ip}/24";

@@ -1,45 +1,21 @@
-# --- Shared variables (nix-config standalone view) ---
-#
-# When this flake is consumed from the meta-workspace, the *meta* justfile's
-# common.just generates OVERRIDES that point every sibling sub-flake (nix-presets,
-# nix-hardware, …) at its local checkout. When `just` is run inside nix-config
-# directly, we re-derive the same overrides for nix-config's own inputs — minus
-# nix-config itself, since you can't override your own flake.
+# --- Shared variables ---
+# OVERRIDES point nix-config's sibling inputs at their local checkouts.
 
-# nix-config directory (parent of this .just/ dir) — or, inside a jj agent
-# workspace (`just jj::ws-new nix-config <name>`, see kleinbem/CLAUDE.md's
-# multi-agent protocol), <repo>.ws/<name>/.
+# nix-config directory (parent of this .just/ dir), or <repo>.ws/<name>/ in a
+# jj workspace.
 ROOT := parent_directory(justfile())
 
-# Meta-workspace directory. Normally ROOT's direct parent, but a jj
-# workspace sits one directory deeper (<repo>.ws/<name>/ instead of
-# <repo>/), which used to make this resolve to <repo>.ws/ itself and break
-# every sibling-repo override with "Git repository ... does not exist" —
-# confirmed live 2026-09-24 running `just dev::apply` from a workspace.
-# Detected by the `.ws` suffix `just jj::ws-new` always gives that parent
-# directory, rather than anything workspace-internal, so this only needs
-# ROOT itself to locate it.
+# Workspace root holding the sibling repos: ROOT's parent, or one level higher
+# when ROOT is a jj workspace (its parent dir ends in `.ws`).
 META := if trim_end_match(file_name(parent_directory(ROOT)), ".ws") == file_name(parent_directory(ROOT)) {
     absolute_path(ROOT / "..")
 } else {
     absolute_path(ROOT / "../..")
 }
 
-# Sibling sub-flakes that nix-config depends on, discovered at parse time.
-# kleinbem-secrets is excluded from this glob (it doesn't match "nix-*"
-# anyway) and remapped explicitly below. Also excludes any leftover/archived
-# "nix-secrets*" checkout by glob, not exact name, so a renamed/archived
-# checkout (e.g. nix-secrets.deleted) can't leak back in as a bogus sibling —
-# nix's flake CLI parses dots in --override-input names as nested attribute
-# paths, so a stray "nix-secrets.deleted" directory here produces an
-# "invalid flake input attribute path element" error instead of silently
-# no-opping. nix-toolbox is also excluded: it matches "nix-*" but is a
-# standalone dev-workflow toolset (nix-check-versions, nix-audit-deps, …),
-# never a nix-config flake input — including it produced a real (if inert)
-# "--override-input nix-toolbox ... does not match any input" warning on
-# every eval. Same reasoning excludes any "*.ws" directory (jj agent
-# workspace containers, e.g. nix-config.ws — confirmed live 2026-09-24
-# that "nix-*.ws" matches the glob and isn't a flake input either).
+# Sibling nix-* checkouts used as input overrides. Excluded: nix-toolbox and
+# *.ws dirs (not inputs, so nix warns), and nix-secrets* leftovers (a dot in the
+# name is parsed as an input attribute path and the eval errors out).
 SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -not -name '*.ws' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,

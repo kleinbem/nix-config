@@ -211,13 +211,11 @@ attic-token:
       \$ATTICADM -f \$CONFIG make-token --sub \"admin\" --validity \"1y\" --pull \"*\" --push \"*\" --create-cache \"*\" --configure-cache \"*\" --configure-cache-retention \"*\" --destroy-cache \"*\" \\
     '"
 
-# Mint a LEAST-PRIVILEGE Attic token for CI (push/pull on one cache only — no
-# create/configure/destroy). Use this for the ATTIC_PUSH_TOKEN stored in CI,
-# NOT the admin token above. Pipe into sops, e.g.:
+# For CI's ATTIC_PUSH_TOKEN (not the admin token above), e.g.:
 #   TOKEN=$(just nixos::attic-ci-token | grep '^eyJ')
 #   sops --set "[\"attic_push_token\"] \"$TOKEN\"" ../kleinbem-secrets/nix/per-host/orin-nano.yaml
-# Usage: just nixos::attic-ci-token                  # github-ci, system, 1y
-#        just nixos::attic-ci-token github-ci system 10y
+
+# Mint a push/pull-only Attic token for one cache (no create/configure/destroy).
 [group("System")]
 attic-ci-token sub="github-ci" cache="system" validity="1y":
     #!/usr/bin/env bash
@@ -232,38 +230,16 @@ attic-ci-token sub="github-ci" cache="system" validity="1y":
         --sub \"{{ sub }}\" --validity \"{{ validity }}\" --pull \"{{ cache }}\" --push \"{{ cache }}\"
     '"
 
-# Run a one-shot Attic garbage-collection sweep in the cache container.
-#
-# Attic has NO per-path/per-generation delete — retention + GC is the ONLY
-# reclaim mechanism (see nix-presets/containers/attic.nix). This fires a single
-# sweep on demand, equivalent to `atticd --mode garbage-collector-once`.
-#
-# What it reclaims:
-#   • ALWAYS — orphaned chunks/NARs no longer referenced by any cache entry
-#     (e.g. after an entry was overwritten). Safe regardless of retention.
-#   • AGE-BASED — entries whose created_at AND last_accessed_at are both older
-#     than the cache's retention window. Steady-state config sets this to
-#     90 days (nix-presets/containers/attic.nix), and the container's own 12h
-#     timer already applies it — so this recipe is mostly a way to force that
-#     sweep NOW (e.g. right after lowering the window) rather than wait for the
-#     timer. Actively-pulled paths renew last_accessed and survive; an evicted
-#     non-upstream path is refilled by the next build-all and gated by
-#     promote-production's verify-cache, so this never causes a device build.
-#
-# To reclaim harder on demand WITHOUT a rebuild (e.g. disk pressure): lower the
-# retention temporarily, sweep, then restore. Do it only after a confirmed
-# full-fleet rebuild so everything live is fresh and can't be evicted:
-#   TOKEN=$(just nixos::attic-token | grep '^eyJ')
-#   attic login kleinbem https://cache.kleinbem.dev "$TOKEN"   # needs mesh/Caddy reachable
-#   attic cache configure system --retention-period 30d
+# Forces what the container's 12h timer does anyway: drop orphaned chunks and
+# entries past the retention window (server default 14 days, see
+# nix-presets/containers/attic.nix). To reclaim harder, shorten it, sweep,
+# then restore it:
+#   just nixos::attic cache configure system --retention-period 7d
 #   just nixos::attic-gc
-#   attic cache configure system --retention-period 90d        # restore steady-state
-#
-# CAUTION: this spawns a second atticd process against the same DB as the
-# running server. Fine for Postgres; on SQLite a busy server can briefly report
-# "database is locked" — just re-run, or `sudo machinectl stop attic` for a cold
-# sweep and restart after. UNVERIFIED against the live container — confirm the
-# binary/config globs resolve on first run.
+# A second atticd runs against the live SQLite DB, so "database is locked"
+# can happen: re-run, or stop the container for a cold sweep.
+
+# Run a one-shot Attic garbage-collection sweep in the cache container.
 [group("System")]
 attic-gc:
     #!/usr/bin/env bash

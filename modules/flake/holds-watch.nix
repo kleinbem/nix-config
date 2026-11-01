@@ -1,9 +1,7 @@
 # What nix-detour's update action checks on the daily lock update
-# (maintain.yml), per system: the top-level packages each host installs
-# (incl. its home-manager users'), and each host's toplevel, whose error
-# trace names packages reached any other way (services, MCP configs). A
-# package that fails after the update is one to hold in
-# kleinbem/nix-holds-fleet.
+# (maintain.yml), per system: each host's installed packages (home-manager
+# users' too) and its toplevel, whose error trace names everything else.
+# A package that fails after the update gets held in kleinbem/nix-holds-fleet.
 {
   inputs,
   self,

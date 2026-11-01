@@ -1,22 +1,12 @@
 name: "Build nixos-nvme toplevel (best-effort)"
 
-# Workstation (nixos-nvme) toplevel: CI is the main builder, so warm the
-# cache for the workstation too — `just apply` and its nightly autoUpgrade
-# then substitute instead of compiling locally. Committed lock + real
-# secrets, like the blocking host step in build-all.
-#
-# Own WORKFLOW, not a job in build-all: this closure is the biggest in the
-# fleet (eval ~4.6 GiB, hours of from-source builds) and it has killed the
-# hosted x86 runner outright twice — "The hosted runner lost communication
-# with the server" after ~4 h (runs 39370850633, 39385551311, 2026-10-20).
-# promote-production fires when build-all COMPLETES, and a workflow only
-# completes once every job is done, so inside build-all this build delayed
-# the production tag and the container manifest by hours and held the
-# concurrency group against the next push (run 39431394093). Here it has
-# its own group; build-all finishes when the matrix finishes. A failure
-# reaches the phone via ntfy and the CI/nixos-nvme commit status, never a
-# green build-all. No pull_request trigger: without a cache push the
-# artifacts would be thrown away.
+# Warm the cache with the nixos-nvme toplevel so applies on the workstation
+# substitute instead of compiling. Committed lock + real secrets, like the
+# blocking host step in build-all.
+# Own workflow because this closure takes hours and can kill the hosted
+# runner; inside build-all it held back promote-production (which waits for
+# build-all to complete). Failures go to ntfy and the CI/nixos-nvme status.
+# No pull_request trigger: without a cache push the build would be wasted.
 
 on:
   push:
@@ -100,11 +90,8 @@ jobs:
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "1"
-            # nix-fast-build's per-worker eval budget defaults to 4096 MiB and
-            # is now enforced as a hard failure ("evaluation exceeded the
-            # memory budget"). The eval peaked at 4.6 GiB on 2026-10-19 (10.2
-            # GiB before #102 dropped the specialisations). 8 GiB leaves room to
-            # grow, and a blowup like that one still fails here early.
+            # nix-fast-build fails evals over its 4096 MiB default budget. This
+            # eval peaks around 4.6 GiB; 8 GiB leaves room but still catches a blowup.
             "--eval-max-memory-size" "8192"
             "--systems" "x86_64-linux"
             "--retries" "2"

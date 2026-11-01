@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 # Rotate the Attic token signing key and re-issue every token, least privilege
-# per consumer. Every token signed with the old key (including the admin
-# tokens that sat in plaintext in ~/.config/attic/config.toml) stops working
-# once core-pi runs with the new key.
-#
-# Everything is generated locally and written straight into sops via stdin:
-# nothing lands on disk unencrypted or in a process listing.
+# per consumer. Old tokens stop working once core-pi runs the new key.
+# Values go straight into sops via stdin, never to disk or a process listing.
 #
 #   attic_server_token_rs256  nix/per-host/core-pi.yaml     new signing key
 #   attic_pull_token          nix/shared.yaml               sub fleet-pull: pull system

@@ -1,9 +1,7 @@
-# Plaintext key material that must exist unencrypted on the host — the
-# initrd SSH host key, LUKS key files copied into the initrd — lives in a
-# root-only directory on the host and is generated there (`just
-# access::host-keygen <host>`). It is referenced by string path, never as a
-# Nix path, so it never enters the store, a closure or Attic. An encrypted
-# copy can be kept in kleinbem-secrets as a backup; Nix never reads it.
+# Key material that must be plaintext on the host (initrd SSH host key, initrd
+# LUKS keyfiles) lives in a root-only dir there, made by
+# `just access::host-keygen <host>`. Referenced by string path only, so it
+# never enters the store or Attic.
 { config, lib, ... }:
 
 let

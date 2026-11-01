@@ -97,11 +97,9 @@ in
         dconf-editor
         gnome-extension-manager
 
-        # GNOME extensions: stock top bar and overview plus dash-to-dock. Check
-        # an extension supports the current shell version before adding it
-        # (search-light and media-controls are out until they support Shell 50;
-        # weather-oclock can't resolve our location).
-        # Enable/dconf settings live in modules/home-manager/gnome.nix.
+        # Check an extension supports the current Shell before adding it
+        # (search-light, media-controls: not on Shell 50 yet). Enable/dconf
+        # settings live in modules/home-manager/gnome.nix.
         gnomeExtensions.blur-my-shell
         gnomeExtensions.dash-to-dock # Fast autohide bottom dock
         gnomeExtensions.arcmenu # Top-bar app menu (search, categories, pinned/recent apps)

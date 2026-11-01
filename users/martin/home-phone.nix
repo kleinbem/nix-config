@@ -14,11 +14,8 @@
       pkgs.herdr # client-only — attaches to the herdr server on nixos-nvme
     ];
 
-    # LAN-only IP: this only connects while the phone is on the home
-    # network. nixos-nvme also has a NetBird mesh IP (see inventory.nix)
-    # for true away-from-home access, but the phone isn't enrolled in that
-    # mesh yet — that's a manual step in the Android NetBird app, not
-    # something this config can do.
+    # `nvme` (ssh settings below) is the LAN IP, so this only works at home
+    # until the phone joins NetBird (a manual step in the Android app).
     shellAliases.agents = "herdr --remote nvme";
   };
 

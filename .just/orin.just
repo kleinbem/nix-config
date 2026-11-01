@@ -1,11 +1,5 @@
-# Orin Nano Operations
-#
-# Recipes here run in two contexts:
-#   - On the Orin itself (when SSH'd in): `stats`, `logs-vision`, `logs-ai`, `ai-chat`.
-#   - From the dev workstation via SSH:   `ping`, `tegrastats`, `logs`, `shell`.
-#
-# Orin is a pure headless edge device — no desktop specialisation. If you need
-# a remote GUI on the rare occasion, `waypipe` a Wayland app from your dev box.
+# Orin Nano operations. `stats`, `logs-vision`, `logs-ai`, `ai-chat` run on the
+# Orin itself; `ping`, `tegrastats`, `logs`, `shell`, `gui` run from the workstation.
 import 'common.just'
 
 set working-directory := ".."

@@ -88,11 +88,8 @@ jobs:
         run: |
           set -euo pipefail
           cd nix-config
-          # kleinbem-secrets is user-managed (rotated deliberately, not nightly)
-          # AND private — CI has no PAT for it in Nix's access-tokens, so
-          # fetching it here would 404. Discover remaining inputs dynamically
-          # so new inputs are picked up automatically. jq is preinstalled on
-          # ubuntu-latest.
+          # kleinbem-secrets is updated by hand and private (CI has no token
+          # for it, so fetching would 404). Every other input is discovered.
           all=$(nix flake metadata --json | jq -r '
             .locks.nodes.root.inputs
             | keys[]
@@ -120,12 +117,9 @@ jobs:
 
       - name: Validate flake (eval-only — blocks a bad lock from landing)
         id: validate
-        # Not `nix flake check --no-build`: devenv's task runner (inside the
-        # devShell re-exported from nix-devshells) is fetched via IFD, and
-        # --no-build refuses to realize that drv ("path …-source.drv is not
-        # valid"). Plain eval may realize IFD, so eval every check and devShell
-        # drvPath instead — checks include every host toplevel (host-*), so a
-        # bad lock still can't land.
+        # Not `nix flake check --no-build`: devenv's task runner comes via IFD,
+        # which --no-build refuses to realize. Evaluating every check and
+        # devShell drvPath covers the same ground, host-* toplevels included.
         run: |
           # kleinbem-secrets is private and CI has no PAT in nix access-tokens, so
           # substitute the shared dummy stub (see .github/scripts/).
@@ -160,15 +154,9 @@ jobs:
             eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
           done
 
-      # One issue for a nightly update that fails validation: opened or
-      # commented with the error (and, for a package marked broken, the
-      # derivation chain and a ready kleinbem/nix-holds-fleet entry), closed when an
-      # update validates again. A broken package used to hold the whole
-      # fleet's nixpkgs back for a week before anyone looked.
-      # Report only for now (2026-11): which packages nix-detour would hold
-      # for this update. The fleet's holds live in kleinbem/nix-holds-fleet,
-      # so the action can't check them here; the report goes into the
-      # validation issue below.
+      # Report only: which packages nix-detour would hold for this update.
+      # The fleet's holds live in kleinbem/nix-holds-fleet, so the action
+      # can't apply them here; the report goes into the validation issue.
       - name: What nix-detour would hold
         id: holds
         if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
@@ -183,6 +171,9 @@ jobs:
           # (validated) when it continues that PR, else main's.
           base: ${{ steps.lock-pr.outputs.head || 'main' }}
 
+      # One issue for a nightly update that fails validation: opened or
+      # commented with the error (for a broken package, a ready
+      # nix-holds-fleet entry), closed when an update validates again.
       - name: Report validation result
         if: always() && github.ref == 'refs/heads/main' && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         env:

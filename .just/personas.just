@@ -3,24 +3,14 @@ import 'common.just'
 set working-directory := ".."
 
 # --- Persona orchestration ---
-#
-# Reads from nix-config/personas.nix (the manifest) and orchestrates the
-# infrastructure that makes a persona operational: signing key, sops
-# secrets, GitHub key registration, Stalwart mailbox.
-#
-# Add a new persona:
-#   1. Edit nix-config/personas.nix and add the attribute block.
-#   2. Run: just personas::add <name>
-#   3. (One-time per session) Run: just personas::tf-apply
-#
-# The Stalwart/SES Terraform changes don't run on every add — only when
-# DNS/IAM needs updating (rare). Per-persona setup is fast (~30s).
+# Add a persona: edit personas.nix, run `just personas::add <name>`, then
+# `just personas::tf-apply` only if DNS records need to change.
 
-# Both recipes below `import` kleinbem-secrets/personas/contact.nix directly
-# — plain Nix since 2026-08-09 (full-name/email/etc. become public the
-# moment a persona commits anything, so sops-encrypting them at rest never
-# bought real confidentiality; protected by the private repo only now,
-# matching the file's own original design intent).
+# Both recipes below import kleinbem-secrets/personas/contact.nix, plain Nix
+# protected by the private repo: names and emails go public with a persona's
+# first commit anyway.
+#
+# List declared personas
 [group("Personas")]
 list:
     #!/usr/bin/env bash
@@ -34,11 +24,10 @@ list:
             p = import ./lib/personas.nix { inherit lib contact; };
          in builtins.concatStringsSep "\n" (map (n: "  - " + p.all.${n}."full-name" + " <" + p.all.${n}.email + ">  (" + p.all.${n}.tool + ")") (builtins.attrNames p.all))'
 
-# Regenerate the team directory page. Output lives in kleinbem-secrets/docs/
-# (private repo, plaintext — not sops-managed, same "repo privacy is the
-# boundary" model as initrd/; a rendered directory page isn't meaningfully
-# re-encryptable the way a discrete secret value is) because it contains
-# personas' emails/names/matrix-ids.
+# Output goes to kleinbem-secrets (private, plaintext): it lists personas'
+# names and emails.
+#
+# Regenerate the team directory page in kleinbem-secrets/docs/
 [group("Personas")]
 team:
     #!/usr/bin/env bash
@@ -66,15 +55,10 @@ team:
 add name:
     @./scripts/persona-scaffold.sh {{name}}
 
-# Apply the persona/mail DNS records only, without touching the rest of
-# the Cloudflare/GitHub state. Run after editing personas.nix if it needs
-# DNS changes (per-persona DKIM, Access apps). The real Terraform root is
-# nix/infra — driven by nix/tools/tf-apply.sh (sops decrypt + R2 backend).
+# SES isn't targeted while nix/infra/aws-ses.tf.disabled has no AWS creds;
+# see docs/PHASE1_STALWART_STATUS.md.
 #
-# SES resources (aws-ses.tf) are NOT targeted here: that file is currently
-# `aws-ses.tf.disabled` (no AWS creds). Re-enable it and add its targets
-# back once outbound relay is provisioned — see
-# nix-config/docs/PHASE1_STALWART_STATUS.md.
+# Apply only the mail DNS records in nix/infra (via nix/tools/tf-apply.sh)
 [group("Personas")]
 tf-apply: tf-export
     @cd ../nix && tools/tf-apply.sh -- \

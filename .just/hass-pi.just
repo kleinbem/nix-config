@@ -1,18 +1,7 @@
-# hass-pi Operations — remote ops via SSH from the dev workstation.
-# hass-pi is a Raspberry Pi 5 smart-home / automation node. HDMI gets a TTY for emergencies.
-#
-# Access notes:
-#   - These recipes use the `hass-pi` / `hass-pi-initrd` ssh aliases defined in
-#     martin's home-manager ssh config (users/martin/home.nix). Those aliases
-#     carry the FIDO2 key, agent bypass, and ControlMaster multiplexing — so the
-#     FIRST connection costs one PIN+touch and the rest of the session reuses the
-#     master socket with no further touch. Requires `just apply` to have run once
-#     so the aliases exist in ~/.ssh/config.
-#   - root login is LOCKED on the booted system; we connect as martin + sudo.
-#     (root is only used by the initrd SSH on port 2222 for the LUKS unlock,
-#     reachable via `just hass-pi::initrd-shell`.)
-#   - YubiKey-free access from a machine without a key: `netbird ssh hass-pi`
-#     once hass-pi is enrolled in NetBird.
+# hass-pi (Raspberry Pi 5, smart home) ops over SSH from the workstation.
+# Uses the `hass-pi` / `hass-pi-initrd` aliases from users/martin/home.nix
+# (FIDO2 key + ControlMaster: one PIN+touch per hour). Root login is locked,
+# except on the initrd unlock SSH (`just hass-pi::initrd-shell`).
 import 'common.just'
 
 set working-directory := ".."

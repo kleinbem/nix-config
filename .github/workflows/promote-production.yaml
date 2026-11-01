@@ -1,15 +1,8 @@
 name: "Promote → production"
 
-# Pull-based fleet deploy: hosts run my.deploy.autoUpgrade which polls the
-# `production` git tag. This workflow advances that tag to the current main
-# SHA after a successful build-all, gating deploys behind CI green.
-#
-# Triggers:
-# - workflow_run: automatic on successful Build & Cache All (Fast)
-# - workflow_dispatch: manual override (e.g. promote without waiting)
-#
-# A failed build-all does NOT advance the tag — hosts keep running the last
-# known-good revision until the next green run.
+# Pull-based fleet deploy: hosts follow `production` (comin the branch,
+# autoUpgrade the tag). After a green build-all this moves both to that SHA;
+# a failed build-all leaves hosts on the last good revision.
 
 on:
   workflow_run: # zizmor: ignore[dangerous-triggers] both jobs require event == push from this repo
@@ -31,28 +24,14 @@ permissions:
   contents: write
 
 jobs:
-  # Device-faithful completeness gate. A host that opts into
-  # my.deploy.autoUpgrade pulls the `production` tag and switches — and MUST
-  # never compile on-device (RPi hosts carry the custom linux-rpi kernel, which
-  # is absent from cache.nixos.org). build-all already builds + pushes those
-  # toplevels, but a push can be partial (network blip mid-NAR, a path
-  # nix-fast-build didn't push, Attic GC racing). This job proves, from a clean
-  # store using EXACTLY the substituters a device trusts (cache.nixos.org +
-  # cachix mirrors + private Attic), that every deployed closure is fully
-  # fetchable. If anything "will be built", we refuse to advance the tag — hosts
-  # keep running the last fully-cached revision instead of risking an on-device
-  # build. This is what makes the setup-only Attic push (skip-push) safe: Attic
-  # holds only non-upstream paths, and this gate verifies the union still covers
-  # the whole closure.
+  # Pull-deploy hosts must never compile on-device, but build-all's cache push
+  # can be partial. This job proves from a clean store, with the substituters a
+  # device trusts, that every deployed closure is fetchable; if anything
+  # "will be built", production doesn't move.
   verify-cache:
     name: "Verify closures are fully cached"
-    # Runner arch doesn't matter here: `nix build --dry-run` never executes a
-    # builder, it only queries substituters and classifies each path as
-    # fetchable or not — verified cross-arch locally (dry-running an
-    # aarch64-linux target from an x86_64-linux machine correctly classified
-    # all 446 derivations, no arch-mismatch error). Stayed on aarch64 as the
-    # historical default now that hosts span both arches (mac-mini added
-    # 2026-08-02); revisit only if a real quirk shows up.
+    # Runner arch doesn't matter: `nix build --dry-run` only queries
+    # substituters, so it classifies paths of either arch correctly.
     runs-on: ubuntu-24.04-arm
     # `branches: [main]` matches the head branch name, which a fork PR can
     # also call main: only promote runs from pushes to this repo.
@@ -82,40 +61,19 @@ jobs:
           attic-token: ${{ secrets.ATTIC_PULL_TOKEN }}
           free-disk-space: 'false'
 
-      # Lock-honesty gate: every check in this job so far evaluates with
-      # nix-presets (and siblings) floated to their latest main via
-      # $NIX_OVERRIDES — useful for catching cross-repo breakage early, but it
-      # means CI never actually builds what a device resolves
-      # (`nixos-rebuild switch --flake github:kleinbem/nix-config?ref=production`,
-      # zero overrides). A stale flake.lock can sail through every overridden
-      # check and still crash on-device — exactly what happened 2026-09-22:
-      # nix-presets gained a `gatus` module, this repo's committed lock
-      # wasn't bumped, and every autoUpgrade attempt on core-pi failed with
-      # "attribute 'gatus' missing" until the lock was fixed by hand. Force a
-      # full eval of every autoUpgrade host using ONLY the committed lock —
-      # no $NIX_OVERRIDES at all — so this class of bug blocks promotion
-      # instead of reaching a device.
-      #
-      # That "no overrides" honesty is exactly why this step (alone in the
-      # job) needs its own github.com auth: kleinbem-secrets is a private
-      # repo, so the unauthenticated `github:` fetcher 404s on it the same
-      # way an anonymous `curl` would — confirmed live 2026-09-24, blocking
-      # every promotion since this gate was added. Real devices solve this
-      # with their own sops-decrypted github_read_all_token wired into
-      # nix.conf's access-tokens (core.nix) — mint the equivalent here via
-      # the same GitHub App the `promote` job below already uses.
+      # Lock-honesty gate: $NIX_OVERRIDES floats siblings to main, but devices
+      # resolve only the committed lock, so a stale flake.lock can pass every
+      # overridden check and still fail on-device. Evaluating without overrides
+      # pulls the private kleinbem-secrets input, which needs a github.com token
+      # (devices use github_read_all_token via core.nix); mint one from the App.
       - name: Mint GitHub App installation token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          # Without this, create-github-app-token defaults to scoping the
-          # token to ONLY the current repo (nix-config) — confirmed live
-          # 2026-09-24 via its own log ("Inputs 'owner' and 'repositories'
-          # are not set. Creating token for this repository."), which is
-          # exactly why the first version of this fix still 404'd on
-          # kleinbem-secrets despite minting a token successfully.
+          # Without this the token is scoped to nix-config only and the
+          # kleinbem-secrets fetch still 404s.
           repositories: |
             kleinbem-secrets
 
@@ -150,34 +108,18 @@ jobs:
           NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
         run: |
           set -euo pipefail
-          # The hosts that pull `production` via my.deploy.autoUpgrade with
-          # requireCache = true: since 2026-10-20 they run `nixos-rebuild
-          # --max-jobs 0`, so anything missing from the cache fails their
-          # upgrade outright. Mirrors build-all's committed-lock step
-          # (hass-pi/core-pi on aarch64, mac-mini/nasbook on x86_64).
-          # Excluded (deliberately, same as build-all): nixos-nvme (best-effort
-          # build, Martin deploys it by hand), orin-nano + routers (build
-          # on-device by design). Edit this list as hosts opt into pull-deploy.
-          #
-          # Resolved WITHOUT $NIX_OVERRIDES: committed lock, real secrets —
-          # the exact closure the device evaluates. Checking the floated
-          # closure instead (as this step did until 2026-10-20) let a lagging
-          # lock through every time; the device then compiled until
-          # RuntimeMaxSec killed it.
+          # Pull-deploy hosts with requireCache deploy with max-jobs 0, so a cache
+          # miss fails their upgrade. Mirrors build-all's committed-lock step;
+          # nixos-nvme and orin-nano are left out (they may build locally).
+          # No $NIX_OVERRIDES: this must be the exact closure the device evaluates.
           HOSTS=(hass-pi core-pi mac-mini nasbook)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"
             target=".#nixosConfigurations.$h.config.system.build.toplevel"
-            # Run exactly what a device runs: `--max-jobs 0` plus
-            # `always-allow-substitutes` (nixpkgs marks system-path, etc,
-            # system-units and every writeText* `allowSubstitutes = false`;
-            # without the option Nix reports "will be built" for cached
-            # paths, which is what fooled the 2026-09-30 flake-attr check,
-            # and the devices failed the same way on 2026-10-21). Anything
-            # the runner's substituters (Attic + upstreams) cannot provide
-            # shows up as "will be built"; a path only in the local store
-            # of the runner cannot happen here (fresh runner, nothing built).
+            # Same flags as a device. always-allow-substitutes matters: nixpkgs
+            # marks system-path, etc and writeText* `allowSubstitutes = false`,
+            # and without it Nix reports cached paths as "will be built".
             if ! out="$(nix build --dry-run --max-jobs 0 \
                   --option always-allow-substitutes true "$target" 2>&1)"; then
               echo "$out"
@@ -197,14 +139,10 @@ jobs:
           done
           exit $fail
 
-      # Container manifest: the standalone container updater on every host
-      # (nixos-nvme, core-pi, hass-pi) is eval-free — it fetches this JSON and
-      # substitutes the listed store path. Generate it here from the SAME SHA
-      # being promoted, and apply the same device-faithful gate as hosts: a
-      # container path that isn't fully cached is DROPPED from the manifest
-      # (devices then keep serving the previous closure) rather than published
-      # as a path an RPi would have to compile. Manifest generation is
-      # best-effort overall: it must never block host promotion.
+      # Container manifest for the eval-free container-updater on the hosts:
+      # built from the promoted SHA, and a container whose closure isn't fully
+      # cached is dropped (devices keep the previous one). Best-effort: it must
+      # never block host promotion.
       - name: Generate container manifest
         id: manifest
         continue-on-error: true
@@ -221,16 +159,10 @@ jobs:
               ".#nixosConfigurations.$factory.config.containers" \
               --apply 'cs: builtins.mapAttrs (n: c: c.path) cs' \
               $NIX_OVERRIDES > "/tmp/paths-$sys.json"
-            # Device-faithful filter, per container, against exactly the
-            # substituters a device trusts; repeated evals share the flake eval
-            # cache. Ask for the whole closure from a store that has nothing:
-            # "will be fetched" means a device can pull it all, "don't know how
-            # to build" is a miss (a literal path has no build recipe to fall
-            # back to). The chroot store never enters the daemon, which crashed
-            # on `nix build --dry-run <literal path>` here (2026-09-30). Until
-            # 2026-10-21 this was `nix path-info -r`, which only reads the local
-            # store, printed "path ... is not valid" and matched neither phrase,
-            # so every container passed.
+            # Dry-run each closure into an empty chroot store: "don't know how to
+            # build" is a miss (a literal path has no recipe). The chroot store
+            # avoids the daemon, which crashed on `nix build --dry-run <path>`;
+            # `nix path-info -r` doesn't work here, it only reads the local store.
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
@@ -306,9 +238,7 @@ jobs:
         run: |
           set -euo pipefail
           SHA="${{ steps.target.outputs.sha }}"
-          # PATCH the tag ref. Force-move (PATCH with force=true) so we can
-          # advance even when the new SHA isn't a fast-forward descendant —
-          # rare, but happens after a force-push to main or a hotfix branch.
+          # Force-move so the tag advances even after a force-push to main.
           gh api -X PATCH \
             "repos/${{ github.repository }}/git/refs/tags/production" \
             -f sha="$SHA" \
@@ -339,13 +269,9 @@ jobs:
             echo "Hosts running \`my.deploy.comin\` switch within a minute; \`my.deploy.autoUpgrade\` hosts on their next cycle (default 04:00 ±30min)."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Advisory push signal: hosts running my.deploy.autoUpgrade.ntfy long-poll
-      # this topic and start nixos-upgrade immediately instead of waiting for
-      # the nightly timer. Best-effort by design — the timer remains the
-      # catch-up path, so a missing secret, unreachable tunnel, or dropped
-      # message only delays the deploy until 04:00, never blocks promotion.
-      # The secret topic name is the access control (public, un-gated vhost);
-      # message content is untrusted and ignored by subscribers.
+      # Advisory: hosts on my.deploy.autoUpgrade.ntfy upgrade now instead of at
+      # the nightly timer, which stays the catch-up path. The secret topic name
+      # is the access control; subscribers ignore the message content.
       - name: Notify fleet via ntfy (best-effort)
         continue-on-error: true
         env:
@@ -367,11 +293,8 @@ jobs:
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
           echo "📣 Fleet notified via ntfy — subscribed hosts upgrade now." >> "$GITHUB_STEP_SUMMARY"
 
-      # Publish the container manifest generated by verify-cache as a rolling
-      # release asset. Devices (my.services.container-updater) fetch it at
-      # 03:00 and substitute the listed paths — no on-device eval. Best-effort:
-      # if the manifest step failed, the previous asset stays in place and
-      # containers simply hold their current closures for one more cycle.
+      # Rolling release asset read by my.services.container-updater. If the
+      # manifest step failed, the previous asset stays and containers hold.
       - name: Download manifest artifact
         id: dl-manifest
         continue-on-error: true
