@@ -292,7 +292,9 @@ in
   # The same held packages as the hosts (modules/nixos/base.nix).
   nixpkgs.overlays = [
     inputs.nix-packages.overlays.default
-    (inputs.nix-holds-fleet.lib.mkOverlay { extraOverlays = [ inputs.nix-packages.overlays.default ]; })
+    (inputs.nix-detour-fleet.lib.mkOverlay {
+      extraOverlays = [ inputs.nix-packages.overlays.default ];
+    })
   ];
 
   # Minimal host scaffolding to satisfy NixOS assertions during evaluation.

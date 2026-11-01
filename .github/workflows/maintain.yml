@@ -156,7 +156,7 @@ jobs:
           done
 
       # Report only: which packages nix-detour would hold for this update.
-      # The fleet's holds live in kleinbem/nix-holds-fleet, so the action
+      # The fleet's holds live in kleinbem/nix-detour-fleet, so the action
       # can't apply them here; the report goes into the validation issue.
       - name: What nix-detour would hold
         id: holds
@@ -174,7 +174,7 @@ jobs:
 
       # One issue for a nightly update that fails validation: opened or
       # commented with the error (for a broken package, a ready
-      # nix-holds-fleet entry), closed when an update validates again.
+      # nix-detour-fleet entry), closed when an update validates again.
       - name: Report validation result
         if: always() && github.ref == 'refs/heads/main' && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         env:

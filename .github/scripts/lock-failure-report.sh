@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Usage: lock-failure-report.sh <eval log> <flake.lock before the update>
 # Markdown report of why the nightly lock update failed. For a broken package it
-# adds the derivation chain and a ready kleinbem/nix-holds-fleet entry pinned to
+# adds the derivation chain and a ready kleinbem/nix-detour-fleet entry pinned to
 # the nixpkgs the fleet runs now (the lock before the update).
 set -euo pipefail
 log=$1 lock_before=$2
@@ -27,7 +27,7 @@ echo '```'
 grep -oE "while evaluating (derivation '[^']+'|the option \`[^']+')" "$log" | sed 's/^while evaluating //' | head -20
 echo '```'
 echo
-echo "Hold the package the fleet uses (the lowest top-level package in the chain, not \`$broken\` itself) in kleinbem/nix-holds-fleet \`held-packages.json\`:"
+echo "Hold the package the fleet uses (the lowest top-level package in the chain, not \`$broken\` itself) in kleinbem/nix-detour-fleet \`held-packages.json\`:"
 echo
 echo '```json'
 jq -n --arg rev "$rev" --arg narHash "$narHash" --arg broken "$broken" --arg since "$(date -u +%F)" '{
