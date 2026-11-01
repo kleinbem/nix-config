@@ -264,7 +264,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/music-assistant.nix:14`
 - **Sub-options:** `enable`, `hostDataDir`, `ip`, `mediaDir`, `memoryLimit`, `providers`
-- **Consumed by:** _(no opt-ins detected)_
+- **Consumed by:** `host:hass-pi`
 
 ### `my.containers.n8n`
 

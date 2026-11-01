@@ -397,6 +397,7 @@ hosts:
     - '[local] ./secrets.nix'
     - '[local] ./esphome-secrets.nix'
     - '[preset] nix-presets:home-assistant'
+    - '[preset] nix-presets:music-assistant'
     - '[preset] nix-presets:openclaw'
     - '[preset] nix-presets:herdr-remote-client'
     enabled_subsystems:
@@ -422,6 +423,11 @@ hosts:
       - home-assistant.hostDataDir
       - home-assistant.ip
       - home-assistant.memoryLimit
+      - music-assistant
+      - music-assistant.enable
+      - music-assistant.hostDataDir
+      - music-assistant.ip
+      - music-assistant.mediaDir
       - openclaw
       - openclaw.enable
       - openclaw.hostDataDir
@@ -441,6 +447,7 @@ hosts:
       - tang.enable
     containers_hosted:
     - home-assistant
+    - music-assistant
     - openclaw
     secrets_consumed:
     - key
@@ -1716,6 +1723,20 @@ services:
     upstream_preset: nix-presets/containers/monitoring.nix
     persistence_path: /var/lib/machines/monitoring
     description: VictoriaMetrics + Grafana Stack.
+  music-assistant:
+    name: Music Assistant
+    category: Apps
+    host: hass-pi
+    ip: 10.85.49.11
+    port: null
+    external_port: null
+    domain: null
+    public: false
+    auth: Default
+    mtls: false
+    upstream_preset: nix-presets/containers/music-assistant.nix
+    persistence_path: /var/lib/machines/music-assistant
+    description: Music library and multiroom players.
   n8n:
     name: n8n Automation
     category: Apps
