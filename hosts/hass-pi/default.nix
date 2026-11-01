@@ -57,6 +57,11 @@ in
           # Music Assistant: web UI, stream port (players fetch audio from
           # it) and Sendspin.
           iifname "end0" tcp dport { 8095, 8097, 8927 } dnat to 10.85.49.11
+          # The same from the containers to the host's LAN address, so one URL
+          # works everywhere: Music Assistant's "Login with Home Assistant"
+          # sends the browser to the HA URL it uses itself.
+          iifname "cbr0" ip daddr 10.0.0.21 tcp dport 8123 dnat to 10.85.49.10:8123
+          iifname "cbr0" ip daddr 10.0.0.21 tcp dport { 8095, 8097, 8927 } dnat to 10.85.49.11
         }
         chain postrouting {
           type nat hook postrouting priority srcnat; policy accept;
