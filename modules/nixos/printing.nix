@@ -19,14 +19,16 @@ in
     services.printing = {
       enable = true;
       startWhenNeeded = false; # Fix socket clash on port 631
-      logLevel = "debug";
+      logLevel = "info";
       listenAddresses = [ "*:631" ];
       allowFrom = [ "all" ];
       browsing = true;
+      browsed.enable = false; # Prevent cups-browsed from auto-creating broken dummy queues
       defaultShared = true;
       extraConf = ''
         DefaultEncryption Never
         ServerAlias *
+        ErrorPolicy abort-job
       '';
       drivers = [ ricohDriver ];
     };
@@ -56,7 +58,7 @@ in
       ensurePrinters = [
         {
           name = "Ricoh_SP_220Nw";
-          deviceUri = "socket://10.0.5.10:9100";
+          deviceUri = "ipp://10.0.5.10:631/ipp/print";
           model = "ricoh/RICOH-SP-220Nw.ppd";
           ppdOptions = {
             PageSize = "A4";
