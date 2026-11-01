@@ -236,8 +236,10 @@ attic-ci-token sub="github-ci" cache="system" validity="1y":
 # then restore it:
 #   just nixos::attic cache configure system --retention-period 7d
 #   just nixos::attic-gc
+#   just nixos::attic-reap   # GC only marks chunks; this unlinks them
 # A second atticd runs against the live SQLite DB, so "database is locked"
-# can happen: re-run, or stop the container for a cold sweep.
+# can happen: just re-run it (the sweep runs inside the container, so it
+# needs the container up).
 
 # Run a one-shot Attic garbage-collection sweep in the cache container.
 [group("System")]

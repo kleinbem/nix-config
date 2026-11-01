@@ -2,6 +2,7 @@
 # SK key's PIN goes through $SSH_ASKPASS, and the GUI askpass is unreliable, so
 # SSH_ASKPASS_REQUIRE=never asks in the terminal. On failure it resets the USB
 # device, then restarts ssh-agent (the PIN exchange happens inside the agent).
+# no-link: local YubiKey/askpass flakiness, no upstream bug pinned down.
 { pkgs, ... }:
 let
   wrappedSsh = pkgs.writeShellScriptBin "ssh" ''

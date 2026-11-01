@@ -119,7 +119,8 @@ jobs:
         id: validate
         # Not `nix flake check --no-build`: devenv's task runner comes via IFD,
         # which --no-build refuses to realize. Evaluating every check and
-        # devShell drvPath covers the same ground, host-* toplevels included.
+        # devShell drvPath covers most of it (host-* toplevels included), but
+        # not the container-factory configs or non-x86_64 devShells.
         run: |
           # kleinbem-secrets is private and CI has no PAT in nix access-tokens, so
           # substitute the shared dummy stub (see .github/scripts/).

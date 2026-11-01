@@ -828,7 +828,7 @@ nasbook-install-usb device:
     # (native build, not an hours-long cross-arch emulation), and it's a
     # brand-new host with nothing in Attic yet anyway.
 
-    # Random 14-char fallback passphrase; FIDO2 (below) is the real unlock.
+    # Random 14-char fallback passphrase; Tang (below) is the real unlock.
     # Not stored anywhere: save it from the printed output. See
     # mac-mini-install-usb for why this avoids `tr | head -c`.
     RAW_ENTROPY="$(head -c 256 /dev/urandom | tr -dc 'A-Za-z0-9')"

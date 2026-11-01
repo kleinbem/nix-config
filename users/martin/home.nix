@@ -381,6 +381,7 @@ in
     # file is "google-chrome.desktop" with no StartupWMClass, so GNOME can't
     # match windows (PWAs included). This filename matches the app_id;
     # StartupWMClass covers XWayland.
+    # no-link: Google's own package, no public report found.
     "google-chrome-stable" = {
       name = "Google Chrome";
       genericName = "Web Browser";

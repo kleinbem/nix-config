@@ -146,9 +146,10 @@ in
   };
 
   # ─── Direct LAN access to Home Assistant ────────────────────
-  # Besides Caddy (home.kleinbem.dev), hass-dnat above exposes http://10.0.0.21:8123.
+  # Besides Caddy (hass.kleinbem.dev), hass-dnat above exposes http://10.0.0.21:8123.
   # Not forwardPorts: nspawn DNATs to its own veth address, not the container's
   # static 10.85.49.10, so the forward hits nothing.
+  # no-link: not reported upstream yet.
 
   # ─── Persistence ─────────────────────────────────────────────
   # Container hostDataDirs (home-assistant, openclaw) get persistence entries from

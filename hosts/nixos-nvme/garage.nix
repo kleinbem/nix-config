@@ -1,5 +1,6 @@
 # Garage S3 storage, interim single node (replication_factor 1). Data sits on
-# btrfs /mnt/data, whose CoW and snapshots soften LMDB's single-node crash risk.
+# btrfs /mnt/data, whose CoW and snapshots soften the single-node crash risk
+# (db_engine is sqlite).
 # Later: add nasbook as a node, rebalance with `garage layout`, drain this one.
 {
   config,

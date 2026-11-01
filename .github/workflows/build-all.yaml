@@ -101,6 +101,7 @@ jobs:
           # Checks are listed via `nix eval` + attrNames, not `nix flake show`,
           # which on Determinate Nix printed `"checks": null` and silently
           # built nothing. An empty list is always an enumeration bug.
+          # no-link: not reported upstream; `nix eval` is the sturdier way anyway.
           # Excluded: VM tests (vm-tests.yaml runs them) and host-* checks
           # (hosts are targeted explicitly below; nixos-nvme has build-nvme.yaml).
           SYSTEM="${{ matrix.system }}"
@@ -224,6 +225,8 @@ jobs:
       # them, and devices fetching tarballs from GitHub hit its per-IP limit
       # (HTTP 429). Nix looks narHash'd sources up in substituters first, so
       # with them in Attic devices fetch from there. System-independent: x86_64 only.
+      # Archived with NIX_OVERRIDES, so kleinbem siblings are pushed at their
+      # main heads, not the committed lock's revs that devices fetch.
       - name: Push flake input sources to Attic (best-effort)
         if: matrix.system == 'x86_64-linux' && steps.cache.outputs.push_cache == 'true'
         continue-on-error: true

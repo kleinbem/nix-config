@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Rotate the Attic token signing key and re-issue every token, least privilege
 # per consumer. Old tokens stop working once core-pi runs the new key.
-# Values go straight into sops via stdin, never to disk or a process listing.
+# Values go into sops via stdin, never to disk. The signing key is exported to
+# nix build and atticadm, so it is in their environment while they run.
 #
 #   attic_server_token_rs256  nix/per-host/core-pi.yaml     new signing key
 #   attic_pull_token          nix/shared.yaml               sub fleet-pull: pull system

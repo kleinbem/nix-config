@@ -3,7 +3,6 @@
 # Usage:
 #   ./tools/fleet-health-check.sh              # Check all
 #   ./tools/fleet-health-check.sh orin-nano    # Check one device
-#   VERBOSE=1 ./tools/fleet-health-check.sh    # Verbose output
 
 set -euo pipefail
 

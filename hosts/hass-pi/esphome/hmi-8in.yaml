@@ -1,6 +1,7 @@
 # Waveshare ESP32-P4-WIFI6 8" HMI. The camera isn't wired up: ESPHome has no
 # MIPI-CSI component until esphome/esphome#19480. One file per unit: copy and
-# change `name`. Pins come from waveshareteam/ESP32-P4-WIFI6-Touch-LCD-X.
+# change `name`, `friendly_name` and the api key secret (add it to
+# ../esphome-secrets.nix). Pins come from waveshareteam/ESP32-P4-WIFI6-Touch-LCD-X.
 substitutions:
   name: hmi-8in-1
   friendly_name: HMI 8in 1

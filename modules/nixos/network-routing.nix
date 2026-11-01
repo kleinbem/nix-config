@@ -34,6 +34,7 @@ in
   # NetworkManager drops these routes hours after boot, so the oneshot also
   # runs on a timer (`ip route replace` is idempotent). RemainAfterExit must
   # stay off, or the timer can't re-trigger the still-active unit.
+  # no-link: not reported upstream yet.
   systemd.services.enforce-container-routes = lib.mkIf (routes != [ ]) {
     description = "Enforce static routes to other container networks";
     after = [ "network-online.target" ];

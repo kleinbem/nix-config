@@ -65,6 +65,7 @@ in
     # timesyncd waits for a netlink route event before its first query; if the
     # network was up before it started, that never comes and the clock drifts,
     # breaking short-lived JWTs (GitHub Actions runner sessions).
+    # no-link: not reported upstream yet.
     services.timesyncd.enable = false;
 
     services.chrony = {

@@ -61,7 +61,7 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # Tang auto-unlock; disko.nix's fido2-device=auto is the HDMI/TTY fallback.
+    # Tang auto-unlock; the LUKS passphrase on HDMI/TTY is the fallback.
     # Binds only to other hosts' tang servers: nasbook can't serve itself
     # before it's unlocked. Gated on the JWE made at provisioning.
     boot.clevis-initrd = {
