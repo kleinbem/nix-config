@@ -23,11 +23,13 @@ in
       listenAddresses = [ "*:631" ];
       allowFrom = [ "all" ];
       browsing = true;
-      browsed.enable = false; # Prevent cups-browsed from auto-creating broken dummy queues
+      # no-link: cups-browsed fails to generate PPDs for printers with partial IPP attributes (missing media-col-default) and creates broken ///dev/null dummy queues
+      browsed.enable = false;
       defaultShared = true;
       extraConf = ''
         DefaultEncryption Never
         ServerAlias *
+        # no-link: permanent local policy: discard failing print jobs rather than stopping the queue indefinitely
         ErrorPolicy abort-job
       '';
       drivers = [ ricohDriver ];
