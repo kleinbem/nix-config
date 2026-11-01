@@ -1,15 +1,14 @@
 # Persona library: joins public identity (personas.nix), private contact data
 # (kleinbem-secrets/personas/contact.nix) and lifecycle state (personas-state.nix).
 #
-# contact.nix is sops-encrypted, so callers with sops access decrypt it to a
-# tmpfs file and import that (see .just/personas.just). Without it, PII fields
-# render as "(private)", which is what CI and NixOS modules use.
+# contact.nix is plain Nix: callers import it directly (see .just/personas.just).
+# Callers that pass no contact data get "(private)" for PII fields.
 #
 # Usage:
 #   # With private data:
 #   import ./lib/personas.nix {
 #     inherit lib;
-#     contact = import /path/to/decrypted/contact.nix;
+#     contact = import ../kleinbem-secrets/personas/contact.nix;
 #   }
 #
 #   # Public-only:

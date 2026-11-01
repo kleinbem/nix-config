@@ -1,5 +1,5 @@
-# nixos-nvme core host secrets. Feature secrets are gated behind the feature's
-# enable flag, so a disabled feature needs no provisioned key.
+# nixos-nvme core host secrets. Secrets under lib.optionalAttrs <feature>.enable
+# need no provisioned key while that feature is off; the rest always do.
 {
   pkgs,
   config,

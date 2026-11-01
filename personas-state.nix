@@ -1,8 +1,8 @@
 # Persona lifecycle state, kept apart from personas.nix so frequent status
-# changes don't churn the identity file. Edit through the `just personas::*`
-# recipes (activate, probation, leave, resume, retire, purge).
-# Valid statuses, leave types and transitions: lib/personas.nix.
-# backup = the persona covering while this one is on leave (null = none).
+# changes don't churn the identity file. Edit it by hand. Valid statuses,
+# leave types and transitions are in lib/personas.nix. return-date and
+# leave-type apply while on leave; backup is the persona covering then
+# (null = none).
 
 {
   martin = {

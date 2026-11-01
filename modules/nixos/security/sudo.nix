@@ -9,7 +9,8 @@
 #             exclude `@`, `.` and leading `-` because template instances take
 #             arbitrary input (podman-kube@<any yaml>), so `start *` would be root.
 #   deploy    root-equivalent (profile switches, container shells,
-#             systemd-run). Authenticates like any sudo call (see headless.nix).
+#             systemd-run). Authenticates like any sudo call, unless
+#             my.security.sudo.unattendedDeploy makes it NOPASSWD.
 #
 # sudoers: the LAST matching entry wins. So deploy comes first, then the
 # read-only `machinectl shell * <cmd>` patterns override it, and the
