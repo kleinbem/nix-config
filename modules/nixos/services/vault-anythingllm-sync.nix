@@ -1,26 +1,13 @@
-# Push new/changed Obsidian vault notes into AnythingLLM (mac-mini, already
-# deployed — nix-presets/containers/anythingllm.nix) via its documented REST
-# API. Replaces workspace-indexer.go, a bespoke tool that walked the vault,
-# called Ollama's embeddings endpoint directly, and wrote a flat
-# cosine-similarity JSON index — AnythingLLM already does parsing, chunking,
-# embedding and vector search itself; this only needs to push files in.
+# Push changed Obsidian vault notes into AnythingLLM (mac-mini) over its REST
+# API; it has no watched-folder ingestion. The script runs from the live
+# checkout (users/martin/files/scripts/), so edits need no rebuild.
 #
-# AnythingLLM has no watched-folder ingestion (checked live against the
-# instance's own /api/docs OpenAPI spec, 2026-09-20) — every file has to go
-# through a real API call, hence a script rather than a bare bind-mount. The
-# script itself lives at users/martin/files/scripts/sync-vault-to-anythingllm.sh
-# (same "live git checkout, not nix-store copy" convention as
-# notes-maintenance.nix, so edits take effect without a rebuild).
-#
-# ─── ENABLING — one-time manual bootstrap (needs the UI, not Nix-doable) ────
-#  1. http://<anythingllm ip>:3001 (see inventory.nix's "anythingllm" node)
-#     → create a workspace (any name; note the slug AnythingLLM derives from
-#     it and set `workspaceSlug` below if it isn't "vault").
-#  2. Settings → API Keys → Generate New API Key.
-#  3. sops kleinbem-secrets/nix/per-host/nixos-nvme.yaml — add
-#     anythingllm_api_key: <the key from step 2>.
-#  4. Flip `enable = true` below, deploy. Until then this is fully inert:
-#     no secret declared, no systemd units, no footprint.
+# One-time setup in the UI:
+#  1. http://<anythingllm ip>:3001: create a workspace; set `workspaceSlug`
+#     if its slug isn't "vault".
+#  2. Settings → API Keys → generate a key, and add it as anythingllm_api_key
+#     to kleinbem-secrets nix/per-host/nixos-nvme.yaml.
+#  3. Enable and deploy.
 {
   config,
   lib,

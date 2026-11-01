@@ -18,15 +18,9 @@
 let
   keys = import "${self}/modules/nixos/keys.nix";
 
-  # Persona identity (full-name/email) for git commit authorship, sourced
-  # live from kleinbem-secrets/personas/contact.nix via lib/personas.nix's
-  # joined view, instead of a hand-maintained duplicate map here. That
-  # file is plain Nix since 2026-08-09 (full-name/email become public the
-  # moment a persona commits anything, so encrypting it at rest never
-  # bought real confidentiality) — importable directly, no decrypt dance.
-  # Sourcing live also removes the risk of this file drifting from the
-  # actual source of truth (a near miss: almost shipped a guessed name for
-  # michael before this).
+  # Persona identity (full-name/email) for git authorship, read live from
+  # kleinbem-secrets/personas/contact.nix so it can't drift. That file is
+  # plain Nix: the values go public with the first commit anyway.
   personasView = import "${self}/lib/personas.nix" {
     inherit lib;
     contact = import "${inputs.kleinbem-secrets}/personas/contact.nix";
@@ -55,14 +49,8 @@ in
     inputs.nix-gantry.nixosModules.host-persistence
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/desktop.nix"
-    # firejail.nix is a separate file from desktop.nix, only pulled in
-    # transitively via modules/nixos/default.nix's aggregator — which
-    # mac-mini deliberately doesn't import wholesale (pulls in unrelated
-    # things like kernel.nix/security/). my.desktop.gnome.enable alone does
-    # NOT bring this in; without this explicit import,
-    # programs.firejail.wrappedBinaries evaluates empty here even though
-    # the option's own lib.mkIf condition is satisfied — confirmed via
-    # `nix eval .#nixosConfigurations.mac-mini.config.programs.firejail.wrappedBinaries`.
+    # Normally pulled in by modules/nixos/default.nix, which this host doesn't
+    # import; my.desktop.gnome.enable alone leaves the firejail wrappers empty.
     "${self}/modules/nixos/firejail.nix"
 
     inputs.disko.nixosModules.disko
@@ -96,30 +84,16 @@ in
   # remote task goes through martin + sudo (the per-command allowlist in
   # security/sudo.nix, pam_rssh touch key for the rest).
 
-  # Same GNOME look/feel/keybindings/extensions martin uses on nixos-nvme
-  # (blur-my-shell, dash-to-dock, workspace shortcuts, etc.) —
-  # base.nix already pulls in the home-manager NixOS module fleet-wide, so
-  # this only needs a per-host opt-in. Deliberately NOT users/martin/home.nix
-  # (nixos-nvme's full profile) — that pulls in dev tooling, pentesting,
-  # vscode, syncthing, opencode, herdr, etc. that don't belong on this
-  # single-purpose, no-console box. Just the shared dconf-settings module
-  # (modules/home-manager/gnome.nix), same one nixos-nvme's home.nix imports.
-  # ~/.config is already in this host's persistence list below, so dconf
-  # state (extension enable/disable, any interactive tweaks) survives
-  # reboots despite the tmpfs root.
+  # Same GNOME setup as nixos-nvme, but only the shared gnome.nix module, not
+  # users/martin/home.nix (dev tooling that doesn't belong on this box).
+  # ~/.config is persisted below, so dconf state survives the tmpfs root.
   home-manager.users.${config.my.username} = {
     imports = [ "${self}/modules/home-manager/gnome.nix" ];
     modules.gnome.enable = true;
 
-    # gnome.nix's org/gnome/settings-daemon/plugins/power (sleep-inactive-
-    # ac-type, power-button-action = "interactive") lives under the exact
-    # path programs.dconf.profiles.user.databases below locks with
-    # lockAll = true — a plain user-db write there fails activation
-    # outright ("non-writable keys"). Not just a technical workaround:
-    # "interactive" would reintroduce the suspend bug that lock exists to
-    # fix (this host has no display to show the confirm dialog on, so it
-    # falls straight through to suspend — see the lock's own comment
-    # further down). Defer entirely to the system-wide lock instead.
+    # The system-wide dconf lock below owns this path: a user-db write there
+    # fails activation ("non-writable keys"), and gnome.nix's "interactive"
+    # power button would bring back the suspend bug.
     dconf.settings."org/gnome/settings-daemon/plugins/power" = lib.mkForce { };
 
     home = {
@@ -127,10 +101,8 @@ in
       homeDirectory = config.my.home;
       stateVersion = "25.11";
 
-      # Chrome. nixos-nvme gets this from the nix-presets/desktop.nix bundle,
-      # which this host deliberately doesn't import (see above) — so declare
-      # it directly. Same Wayland-decorations override as the bundle. Not
-      # firejailed (see modules/nixos/firejail.nix's Chrome note).
+      # Chrome, declared directly since this host skips the nix-presets
+      # desktop bundle. Not firejailed (see modules/nixos/firejail.nix).
       packages = [
         (pkgs.google-chrome.override {
           commandLineArgs = "--enable-features=WaylandWindowDecorations";
@@ -138,11 +110,9 @@ in
       ];
     };
 
-    # Matches nixos-nvme's users/martin/home.nix entry: upstream ships
-    # google-chrome.desktop, but Chrome's Wayland app_id is
-    # "google-chrome-stable" — GNOME can't match them, so the dash favorite
-    # (gnome.nix favorite-apps) and per-window icon grouping break without a
-    # desktop file whose name matches the app_id.
+    # Chrome's Wayland app_id is "google-chrome-stable" but upstream ships
+    # google-chrome.desktop; without a matching desktop file the dash favorite
+    # and window grouping break.
     xdg.desktopEntries."google-chrome-stable" = {
       name = "Google Chrome";
       genericName = "Web Browser";
@@ -166,56 +136,21 @@ in
     };
   };
 
-  # All my.* fleet options for this host live in one block (statix flags
-  # repeated top-level keys — this used to be three separate my.* spots).
+  # All my.* options in one block (statix flags repeated top-level keys).
   my = {
     # External dead-man's switch (modules/nixos/heartbeat.nix): <host>-alive
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # Remote desktop: this host's whole reason for existing (see top-of-file
-    # comment) is GUI access with zero physical keyboard/screen/console ever
-    # attached. Was Wayland (sway) + wayvnc + noVNC (bespoke systemd services
-    # driving a headless wlroots compositor by hand — see git history for that
-    # setup); replaced with real GNOME (my.desktop.gnome.enable, the same
-    # fleet-wide module nixos-nvme uses) via GNOME Remote Desktop, which is
-    # the module's own supported answer to "no physical display ever
-    # attached" rather than a hand-rolled runtime dir + WLR_BACKENDS=headless
-    # trick. See the NOT autologin comment further down for the actual
-    # login/RDP architecture — it isn't the simple "headless daemon on
-    # autologin" this paragraph originally described.
-    #
-    # Auth/exposure: kept identical to the old wayvnc posture. RDP's only auth
-    # is a username+password (grdctl-provisioned below), the same
-    # weaker-than-FIDO2 tradeoff wayvnc had — so it stays OFF the firewall
-    # entirely (no networking.firewall.allowedTCPPorts / openFirewall) and is
-    # reachable only via `ssh -L 3389:localhost:3389 mac-mini` (FIDO2/Yubikey
-    # pubkey, the fleet's real trust mechanism) + a local RDP client pointed
-    # at localhost:3389. No NetBird ACL change needed — this never touches a
-    # routable interface, same as wayvnc never did.
-    #
-    # NOT autologin (reverted 2026-08-04, see git history for the autologin +
-    # headless-only version this replaced): gnome-remote-desktop's --headless
-    # daemon is designed to run standalone, as the only compositor on the
-    # machine — layering it on top of an already-running GDM autologin
-    # session consistently failed with "Session creation inhibited" on every
-    # connection attempt (reproduced with both GNOME Connections and
-    # wlfreerdp, including on a freshly-restarted daemon's very first
-    # attempt — not stale state). The architecture GNOME actually supports
-    # for "headless box, RDP for GUI access" is RDP straight into the GDM
-    # login screen itself (gnome-remote-desktop.service, System daemon,
-    # WantedBy=graphical.target — was sitting inactive this whole time) with
-    # a real interactive login, then GDM's own handover mechanism
-    # (gnome-remote-desktop-handover.service, packaged, not authored here)
-    # bridges the RDP connection into the resulting session. defaultSession
-    # still applies to whatever session GDM starts after that login.
+    # GUI access over RDP into the GDM login screen; GDM hands the session over after login.
+    # Not autologin: grd --headless on top of an autologin session fails with
+    # "Session creation inhibited". RDP is password-only, so it stays off the firewall:
+    # reach it with `ssh -L 3389:localhost:3389 mac-mini`.
     desktop.gnome.enable = true;
     desktop.sandboxedApps.enable = true;
 
-    # First comin host (fleet canary for the pull-deploy switch): follows
-    # the production branch instead of the nightly tag poll. requireCache
-    # keeps the 2011 Sandy Bridge from ever compiling a closure locally,
-    # same rule as the rest of the pull-deploy tier.
+    # comin follows the production branch. requireCache keeps the 2011 Sandy
+    # Bridge from ever compiling a closure locally.
     deploy = {
       autoUpgrade.enable = false;
       comin = {
@@ -226,17 +161,9 @@ in
 
     monitoring.node.enable = true;
 
-    # Required for the monitoring container below: modules/nixos/
-    # virtualisation.nix wraps its ENTIRE config (including
-    # podman-network-cbr0, the service that actually creates the shared
-    # cbr0 bridge every container — podman or nspawn — attaches to) in
-    # `lib.mkIf cfg.enable`, the my.virtualisation.enable master switch.
-    # podman.enable defaults to true on its own, but that default is inert
-    # without this — confirmed live 2026-08-04: the monitoring container
-    # failed to start with "Failed to add interface vb-monitoring to
-    # bridge cbr0: No such device" because cbr0 had never been created on
-    # this host (mac-mini never ran a container before). Same explicit
-    # values rpi5-node.nix sets for core-pi/hass-pi.
+    # my.virtualisation.enable gates podman-network-cbr0, which creates the
+    # cbr0 bridge every container attaches to; podman.enable alone is inert.
+    # Without it containers fail with "Failed to add interface ... to bridge cbr0".
     virtualisation = {
       enable = true;
       libvirtd.enable = false;
@@ -259,18 +186,9 @@ in
     # ntfy_alert_topic (nix/shared.yaml).
     backup.enable = true;
 
-    # Tang auto-unlock at boot — mandatory here, not optional: this host has
-    # no physical keyboard/screen, ever, so a plain LUKS passphrase prompt
-    # would hang forever with nobody able to answer it.
-    #
-    # `enable` is gated on the JWE existing rather than hardcoded true: the
-    # JWE (kleinbem-secrets/initrd/cryptroot_mac-mini.jwe) can only be generated
-    # AFTER the real LUKS passphrase is set during the physical install
-    # (disko), so it doesn't exist at the time this file is first committed.
-    # Once it's generated — `scripts/generate-jwe.sh mac-mini`, same
-    # passphrase used during disko format — this flips on automatically on
-    # the next rebuild/redeploy; no further code change needed. Same pattern
-    # hosts/nixos-nvme/hardware-boot.nix uses for its initrd SSH key.
+    # Tang auto-unlock is mandatory here: with no keyboard or screen a LUKS
+    # prompt would hang forever. Gated on the JWE existing, which can only be
+    # made after install (`scripts/generate-jwe.sh mac-mini`).
     boot.clevis-initrd = {
       enable = builtins.pathExists (secretFile "initrd/cryptroot_mac-mini.jwe");
       luksDevice = "mac_mini_crypt";
@@ -279,12 +197,8 @@ in
       # hostIp left null (default) — DHCP in initrd, no static IP assigned yet.
     };
 
-    # Container hosting via reusable module (see container-host.nix).
-    # externalInterface: Fixes network-routing.nix (fleet-wide via base.nix)
-    # silently targeting a nonexistent "wlo1" (the default) on every boot/5min timer.
-    # subnet/hostAddress: this host's own slice of the fleet's container network
-    # (modules/nixos/network-routing.nix's subnets map has a "mac-mini" entry).
-    # Same pattern core-pi/nixos-nvme/hass-pi use.
+    # externalInterface: network-routing.nix otherwise targets the default
+    # "wlo1", which doesn't exist here.
     network.externalInterface = "enp2s0f0";
 
     container-host = {
@@ -292,45 +206,20 @@ in
       subnet = "10.85.50.0/24";
       hostAddress = "10.85.50.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry's default flipped to false (a stranger without our
-      # always-imported modules/nixos/persistence.nix would otherwise hit
-      # a hard dependency on the impermanence module); this fleet already
-      # has it, so restore the previous behavior explicitly.
+      # nix-gantry defaults this off (it needs impermanence); this fleet has it.
       enablePersistence = true;
-      # persona-runtime is structurally excluded from container-factory's
-      # catalogue (hosts/container-factory/default.nix — its `personas`
-      # option is attrsOf, which triggers an infinite recursion there), so
-      # it's built directly on this host instead of pulled from the CI
-      # manifest. excludeFromStandalone (not excludeFromUpdater — that only
-      # skips the nightly auto-restart, a pulled container still needs a
-      # real manifest entry) keeps it out of container-updater's list
-      # entirely, so nothing ever tries to pull+stage it and fail with
-      # "Container ... has no entry for x86_64-linux in manifest".
-      #
-      # hermes was excluded for the same reason until 2026-09-24, but its
-      # own attrsOf experiment (2026-08-07) was reverted the same day it
-      # landed — the exclusion here just never got cleaned up. It now
-      # builds and evals cleanly through the factory (see
-      # hosts/container-factory/default.nix's catalogue.hermes comment),
-      # so it's back on the normal CI-manifest pull path like everything
-      # else.
+      # persona-runtime can't go through container-factory (its attrsOf
+      # `personas` option recurses there), so it's built on this host.
+      # excludeFromStandalone, not excludeFromUpdater: the updater would
+      # otherwise look for a manifest entry that never exists.
       excludeFromStandalone = [
         "persona-runtime"
       ];
     };
 
     containers = {
-      # Moved from core-pi 2026-08-04: core-pi was genuinely RAM-constrained
-      # (7.9GB, actively swapping under its existing container load —
-      # grafana alone was ~226MB) while this host sat nearly idle (15GB
-      # RAM, <1GB used). Verified before moving that CPU/network aren't a
-      # downgrade either: same Gigabit link speed on both hosts' real
-      # uplink, and a direct zstd -3 benchmark showed core-pi's Cortex-A76
-      # is actually slightly *faster* per-core than this 2011 Sandy Bridge
-      # chip (159 vs 142 MB/s) — so this move is purely about RAM/disk
-      # headroom, not a performance upgrade. nodeTargets matches core-pi's
-      # list plus this host's own bridge address (self-monitoring, wasn't
-      # scraped before).
+      # Here rather than core-pi for RAM headroom (core-pi swapped, this host
+      # has 15GB mostly idle).
       monitoring = {
         enable = true;
         ip = "10.85.50.2/24";
@@ -354,25 +243,16 @@ in
           "10.85.50.1" # mac-mini itself (my.network.hostAddress above)
         ];
         githubMetrics.enable = false;
-        # Grafana logs visitors in directly via Authentik OIDC instead of
-        # sitting behind Caddy's shared forward_auth gate (Authelia
-        # migration — see nix-presets/containers/caddy/helpers.nix and
-        # nix/infra/authentik.tf's grafana Provider). inventory.nix's
-        # monitoring node keeps auth = false to match — see its own comment.
+        # Grafana logs in via Authentik OIDC itself rather than Caddy's
+        # forward_auth, so inventory.nix's monitoring node keeps auth = false.
         grafanaOidc = {
           enable = true;
           clientSecretFile = config.sops.secrets."monitoring_grafana_oauth_client_secret".path;
         };
       };
 
-      # Moved from hass-pi 2026-08-05: hass-pi's actual purpose (Home
-      # Assistant + Zigbee/Z-Wave/BLE device integration, enableUSB/
-      # enableBluetooth hardware pass-through) stays put — these five are
-      # just AI chat/agent orchestration frontends with no local-hardware
-      # dependency and no local inference (all route to litellm.internal ->
-      # orin-nano's vLLM/Ollama, same as before), same profile as the
-      # monitoring move above. IPs continue mac-mini's 10.85.50.0/24 slice
-      # (.2 is monitoring above).
+      # AI frontends: no local hardware or inference (they route to
+      # litellm.internal / orin-nano), so they don't need to live on hass-pi.
       open-webui = {
         enable = true;
         ip = "10.85.50.3/24";
@@ -387,27 +267,10 @@ in
             null;
       };
 
-      # NOT openclaw (deliberately left on hass-pi): its pnpm-deps
-      # fixed-output derivation has a hash mismatch against its pinned
-      # upstream flake (github:openclaw/nix-openclaw) — confirmed
-      # 2026-08-05 via a from-scratch build here, a genuine bug in that
-      # external project's own lockfile, unrelated to this migration.
-      # hass-pi's copy still works fine since it's running an
-      # already-built/cached artifact (container-updater decouples
-      # container updates from full host rebuilds) — only a *fresh*
-      # build hits this. Move it once upstream fixes their lockfile.
+      # openclaw stays on hass-pi: a fresh build fails on a pnpm-deps hash
+      # mismatch in upstream's lockfile; hass-pi runs a cached build.
       #
-      # RE-ENABLED 2026-09-22: was disabled 2026-08-05 after
-      # frdel/agent-zero:latest on Docker Hub was confirmed to have
-      # rotted into a plain Kali Linux base image with no application
-      # code — genuine upstream image drift. The project itself is
-      # alive: it rebranded to agent0ai/agent-zero (v2.x rewrite),
-      # confirmed actively maintained (multi-arch, updated within the
-      # last two weeks) — see nix-presets/containers/agent-zero.nix for
-      # the image/wiring update. LiteLLM auth is via the existing mTLS
-      # client-cert mechanism (tlsOpts, shared with every other
-      # mTLS-fronted container on this host), not an API key — no
-      # secretsFile needed here.
+      # LiteLLM auth is the mTLS client cert, so no secretsFile.
       agent-zero = {
         enable = true;
         ip = "10.85.50.5/24";
@@ -434,27 +297,12 @@ in
         discord.enable = true;
       };
 
-      # Generic, persona-agnostic worker — see nix-presets/containers/
-      # persona-runtime.nix's header comment for the full "why one
-      # container, not one per persona" reasoning (up to ~200 personas,
-      # never concurrent, made hermes-juan's standing-container-per-
-      # persona shape the wrong model). scripts/persona-invoke.sh writes
-      # real identity into the three files below immediately before each
-      # `machinectl start persona-runtime`, then shreds them after. Fixed
-      # paths, root:root — the invoke script needs sudo/root to write
-      # them anyway (same requirement as machinectl start/stop itself).
-      #
-      # hostDataDir is intentionally NOT in this host's persistence list
-      # below (unlike hermes-juan's /var/lib/hermes-juan). It's a
-      # host-side bind mount, so the container's own `ephemeral` rootfs
-      # reset does NOT clear it — if it persisted across reboots, one
-      # persona's session/memory state (hermes-agent's state.db) would
-      # bleed into the next persona's context on this SAME shared
-      # runtime. persona-invoke.sh wipes its contents before every
-      # start, which already gives a clean slate per invocation; letting
-      # it survive a reboot with stale content from whoever ran last
-      # would only matter for the narrow case of a mid-session crash,
-      # not worth the persistence-list entry.
+      # One shared worker for all personas (see nix-presets persona-runtime.nix).
+      # persona-invoke.sh writes the identity files below right before each
+      # `machinectl start` and shreds them after.
+      # hostDataDir is deliberately not persisted: it's a bind mount the
+      # ephemeral rootfs doesn't reset, and one persona's state must not
+      # leak into the next. persona-invoke.sh also wipes it before each start.
       persona-runtime = {
         enable = true;
         ip = "10.85.50.9/24";
@@ -464,16 +312,9 @@ in
         gitConfigFile = "/var/lib/persona-runtime/gitconfig";
         signingKeyFile = "/var/lib/persona-runtime/signing-key";
 
-        # Built from personasView (above, live from personas.nix +
-        # contact.nix) ⋈ the sops secrets hosts/mac-mini/secrets.nix
-        # declares per invocable persona (personaRuntimeSecrets loop,
-        # driven by personas.nix's tool field — must be a key in
-        # nix-presets/containers/persona-runtime.nix's toolSpecs / this
-        # host's toolApiKeyField). No live git checkout / sops shell-out
-        # needed on this host at invoke time — `persona-invoke <name>`
-        # (packaged by nix-presets/containers/persona-runtime.nix, in PATH
-        # via environment.systemPackages) just reads the paths below,
-        # already decrypted at activation.
+        # personasView joined with the per-persona sops secrets from
+        # secrets.nix. `tool` must be a key in persona-runtime.nix's toolSpecs.
+        # Everything is decrypted at activation, so persona-invoke only reads paths.
         personas = lib.genAttrs invocablePersonaNames (name: {
           tool = personasView.all.${name}.tool;
           signingKeyPath = config.sops.secrets."persona_${name}_signing_key".path;
@@ -487,15 +328,10 @@ in
         });
       };
 
-      # Persona-fleet mail server (Phase 1 — docs/PHASE1_STALWART_STATUS.md).
-      # Lives here because a mailserver must be 24/7 and mac-mini is; the
-      # personas it serves are fleet-wide, so its admin secret is scoped
-      # per-container (kleinbem-secrets/nix/per-container/stalwart.yaml),
-      # not to this host. Mailboxes are created imperatively by
-      # scripts/persona-scaffold.sh (POST /api/principal, not stalwart-cli
-      # — see STATUS doc), not declared in Nix.
-      # relaySecretFile unset → direct delivery (fine for mesh-internal
-      # persona↔persona mail; external delivery needs a relay — STATUS doc).
+      # Persona mail server (docs/PHASE1_STALWART_STATUS.md). Admin secret is
+      # per-container since the personas are fleet-wide. Mailboxes come from
+      # scripts/persona-scaffold.sh, not Nix. No relay: direct delivery only,
+      # external mail needs one.
       stalwart = {
         enable = true;
         ip = "${myInventory.network.nodes.stalwart.ip}/24";
@@ -525,77 +361,43 @@ in
     };
   };
 
-  # anythingllm runs podman nested inside its own ephemeral nspawn
-  # container (my.containers.anythingllm above) — that container's own
-  # root is tmpfs, capped small (~3.9G, systemd-nspawn's own default for
-  # --ephemeral, not something my.containers exposes). Its image
-  # consistently ran out of disk mid-unpack on every attempt — confirmed
-  # live 2026-08-05, not a fluke. This gives podman's own storage dir
-  # (/var/lib/containers, confirmed via /etc/containers/storage.conf
-  # graphroot) a dedicated, generously-sized tmpfs mount instead of
-  # resizing the whole ephemeral root — mac-mini has 15GB RAM with room to
-  # spare. containers.<name>.tmpfs is the plain NixOS nixos-containers
-  # option (nspawn's own --tmpfs=PATH:size=X), separate from and merging
-  # fine alongside whatever my.containers.<name> (mkContainer) already
-  # sets for the same container name. Historically NOT agent-zero here
-  # (when it was disabled 2026-08-05 — 2026-09-22: with
-  # my.containers.agent-zero.enable = false, this attribute alone left
-  # the rest of containers.agent-zero unset, breaking eval:
-  # "containers.agent-zero.path was accessed but has no value defined").
-  # Moot now that agent-zero is re-enabled — noted for context only.
+  # anythingllm runs podman inside its ephemeral nspawn container, whose
+  # ~3.9G tmpfs root is too small to unpack its image. Give podman storage
+  # its own tmpfs. Only set this for enabled containers: on a disabled one it
+  # leaves containers.<name> half-defined and breaks eval.
   containers.anythingllm.tmpfs = [ "/var/lib/containers:size=8G" ];
 
-  # All services.* for this host in one block too (same statix repeated-key
-  # concern as my.* above).
+  # All services.* in one block (statix).
   services = {
-    # Moved from hass-pi 2026-08-05: not actually Home-Assistant-related
-    # (network-wide DNS ad-blocking), just scope creep onto that box.
-    # Confirmed with martin nothing depends on it being at hass-pi's IP
-    # specifically (not wired into router/DHCP) before moving. port here
-    # is the web admin UI (3000), not DNS (53) — doesn't conflict with
-    # services.resolved below, which only binds loopback + the NetBird
-    # interface, never the LAN-facing one.
     adguardhome = {
       enable = true;
       openFirewall = true;
-      # AdGuard's default bind is 0.0.0.0:53, which collides with resolved's
-      # stub (127.0.0.53/.54), NetBird's DNS and podman's aardvark — it never
-      # started on this host ("bind: address already in use"). Serve DNS on
-      # the LAN address only; port 53 is opened on that interface below
-      # (openFirewall covers just the web UI).
+      # The default 0.0.0.0:53 collides with resolved, NetBird DNS and
+      # aardvark, so bind DNS to the LAN address only. Port 53 is opened on
+      # that interface below; openFirewall covers just the web UI.
       settings = {
         http.address = "0.0.0.0:3000";
         dns.bind_hosts = [ myInventory.hosts.mac-mini.ip ];
       };
     };
 
-    # Whatever session GDM starts after a successful login (see the NOT
-    # autologin comment above for the actual login/RDP architecture).
+    # Session GDM starts after an RDP login (see my.desktop above).
     displayManager.defaultSession = "gnome";
 
     gnome.gnome-remote-desktop.enable = true;
 
-    # Defense-in-depth alongside the dconf lock further down: logind's OWN
-    # power-key handling (independent of GNOME's gsd-media-keys, e.g. before
-    # a session exists to claim it) also gets set to ignore, so there's no
-    # path — GNOME session up or not — where a power-button signal results
-    # in suspend.
+    # Alongside the dconf lock below: logind handles the power key itself
+    # when no GNOME session claims it, so ignore it there too.
     logind.settings.Login.HandlePowerKey = "ignore";
 
     # Fleet convention (rpi5-node.nix, nasbook, orin-nano): periodic TRIM
     # alongside disko's allowDiscards, not instead of it.
     fstrim.enable = true;
 
-    # Join the NetBird mesh — same pattern as orin-nano/nasbook/core-pi/hass-pi
-    # (modules/nixos/networking.nix netbird-autojoin, gated on netbird_setup_key
-    # from secrets.nix).
     netbird.enable = true;
 
-    # DNS was broken out of the box: modules/nixos/networking.nix defaults
-    # networking.resolvconf.enable to true fleet-wide, and every OTHER host
-    # overrides that (resolved.enable=true here like orin-nano, or forced off
-    # like the rpi5 nodes) — mac-mini never got either override, so resolv.conf
-    # pointed at a systemd-resolved stub (127.0.0.1) that was never enabled.
+    # networking.nix defaults resolvconf on; with resolved off, resolv.conf
+    # points at a stub nobody serves. Paired with resolvconf.enable = false below.
     resolved = {
       enable = true;
       settings.Resolve.FallbackDNS = "1.1.1.1 8.8.8.8";
@@ -603,11 +405,7 @@ in
     };
   };
 
-  # grdctl --system talks to gnome-remote-desktop-configuration.service over
-  # the system bus, not a per-user session bus — this runs as a plain system
-  # service, no gnome-session.target dependency.
-  # All systemd.* for this host in one block (same statix repeated-key
-  # concern as my.*/services.*/environment.* above).
+  # grdctl --system uses the system bus, so this is a plain system service.
   systemd = {
     services = {
       gnome-remote-desktop-system-rdp-setup = {
@@ -619,25 +417,11 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          # NOT User = "gnome-remote-desktop" (tried first, wrong): confirmed
-          # live 2026-08-04 via direct comparison — `sudo -u gnome-remote-desktop
-          # grdctl --system rdp set-credentials ...` (this service's exact prior
-          # execution context) reports exit 0 but silently writes nothing;
-          # `pkexec --user gnome-remote-desktop grdctl ...` run AS ROOT actually
-          # writes credentials.ini correctly. grdctl's own internal pkexec call
-          # apparently doesn't correctly escalate when the invoking user is
-          # already the target user — needs a real privilege transition, not a
-          # same-user one. Running this service as root (systemd's default,
-          # hence no User= here) lets grdctl's own pkexec do that transition
-          # properly, matching the working manual invocation.
+          # Runs as root on purpose: as User = "gnome-remote-desktop", grdctl's
+          # internal pkexec exits 0 but silently writes no credentials.
         };
-        # Confirmed live 2026-08-04: grdctl --system shells out to pkexec (the
-        # security.polkit setuid wrapper at /run/wrappers/bin, already enabled
-        # via services.gnome.gnome-remote-desktop's own module) to actually
-        # configure the system daemon. Plain systemd services get systemd's
-        # own minimal built-in PATH, not the full system profile — same
-        # PATH-missing-pkexec/dbus-daemon class of bug the old (now-removed)
-        # sway-headless service hit for dbus-daemon specifically.
+        # grdctl --system shells out to pkexec, which lives in /run/wrappers/bin,
+        # not on systemd's minimal service PATH.
         environment.PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
         script = ''
           set -euo pipefail
@@ -664,18 +448,8 @@ in
         '';
       };
 
-      # Confirmed live 2026-08-04: unlike gnome-remote-desktop-system-rdp-setup
-      # (which explicitly declares wantedBy itself), the PACKAGED
-      # gnome-remote-desktop.service's own [Install] WantedBy=graphical.target
-      # never actually got linked — `ls /etc/systemd/system/graphical.target.wants/`
-      # had no entry for it. NixOS does not appear to auto-process a
-      # systemd.packages-provided unit's [Install] section into that symlink;
-      # it needs an explicit wantedBy from a systemd.services.<name> override
-      # here to actually get created declaratively. This is also very likely
-      # why `grdctl --system rdp enable` failed with EROFS trying to write
-      # that exact symlink itself at runtime — NixOS's /etc is immutable, so
-      # nothing (grdctl included) can create it there at runtime; it has to be
-      # done at build/activation time via this option instead.
+      # NixOS ignores the packaged unit's [Install] WantedBy, and grdctl can't
+      # create the symlink at runtime (read-only /etc), so declare it here.
       gnome-remote-desktop = {
         after = [ "gnome-remote-desktop-system-rdp-setup.service" ];
         requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
@@ -683,7 +457,7 @@ in
       };
     };
 
-    # Homarr dashboard's data dirs — moved from hass-pi 2026-08-05.
+    # Homarr dashboard's data dirs.
     tmpfiles.rules = [
       "d /var/lib/homarr 0755 root root - -"
       "d /var/lib/homarr/configs 0755 root root - -"
@@ -692,42 +466,10 @@ in
     ];
   };
 
-  # nixos-nvme disables GNOME's idle-suspend via a home-manager dconf setting
-  # (modules/home-manager/gnome.nix, sleep-inactive-ac-type = "nothing"), but
-  # that's only wired to martin's home-manager profile — mac-mini has no
-  # home-manager at all (headless tier). Without this, GNOME's stock
-  # idle-suspend default applies, and with zero physical peripherals ever
-  # generating input, the box suspends itself shortly after autologin —
-  # confirmed live 2026-08-03 (pulsing sleep LED, full ARP-level
-  # unreachability including over NetBird) not long after a clean first
-  # boot. programs.dconf.profiles.user is the non-home-manager equivalent:
-  # a system-wide dconf default any user picks up, no home-manager needed.
-  #
-  # lockAll = true (not a plain default): dconf's own precedence puts the
-  # user's personal database (user-db:user, ~/.config/dconf/user) ahead of
-  # system defaults — enableUserDb defaults to true — so a plain default
-  # here can be silently shadowed by anything that ever writes an explicit
-  # value into the user db (a GNOME component initializing/migrating
-  # settings, gnome-control-center's Power panel being opened, etc.).
-  # Locking is mandatory-enforcement instead: no per-user write can
-  # override it. Appropriate here because there's no legitimate reason for
-  # this specific value to ever differ on this single-purpose, no-console
-  # host — unlike nixos-nvme, where a real human might reasonably want to
-  # change power settings via the GUI.
-  # power-button-action added after idle-suspend locking turned out NOT to
-  # be the whole story: confirmed via /var/log/journal (persisted through
-  # impermanence, modules/nixos/persistence.nix) that the box suspended
-  # again 26 minutes into a normal running session, with NO idle-timeout
-  # involved at all — systemd-logind logged "Power key pressed short" /
-  # "suspend requested from client ... ('.gsd-media-keys')". desktop.nix's
-  # shared power-button-action = "interactive" (meant to show a confirm
-  # dialog) has no display to show that dialog on here, so it appears to
-  # fall through straight to suspend. Whether the button press itself was
-  # a genuine spurious ACPI signal (a known quirk class on older Apple
-  # hardware under Linux) or something else, the fix is the same either
-  # way: this box has no legitimate reason to ever honor a power-button
-  # suspend, since resume-from-sleep is already confirmed broken on this
-  # hardware (see mac-mini-wake's doc).
+  # Never suspend: no input device ever wakes it, and resume is broken on this
+  # hardware. The power button counts too: with no display, "interactive"
+  # falls through to suspend. Locked, because the user db would otherwise
+  # shadow a plain system default.
   programs.dconf.profiles.user.databases = [
     {
       settings."org/gnome/settings-daemon/plugins/power" = {
@@ -739,19 +481,9 @@ in
     }
   ];
 
-  # STILL not the whole story: confirmed via /var/log/journal that both the
-  # earlier power-button suspend AND a later idle-looking suspend were
-  # actually requested by unit `user@60578.service` — that's gdm-greeter,
-  # NOT martin (uid 1000). GDM keeps a greeter session alive on the seat
-  # even after autologin succeeds (`loginctl list-sessions` shows both a
-  # martin session and a gdm-greeter session running the whole time), and
-  # that greeter session runs its OWN gsd-power/gsd-media-keys instance,
-  # governed by the separate "gdm" dconf profile (desktop.nix, currently
-  # only sets org/gnome/login-screen keys) — completely untouched by the
-  # programs.dconf.profiles.user lock above, which only covers martin's
-  # actual session. Every dconf.databases entry for a profile concatenates
-  # (list-type option), so this adds to desktop.nix's existing gdm database
-  # rather than replacing it.
+  # The GDM greeter stays alive with its own gsd-power under the "gdm"
+  # profile, which the user lock above doesn't cover. This list merges
+  # with desktop.nix's gdm database.
   programs.dconf.profiles.gdm.databases = [
     {
       settings."org/gnome/settings-daemon/plugins/power" = {
@@ -763,29 +495,12 @@ in
     }
   ];
 
-  # NOT headless mode (removed 2026-08-04, see git history): gnome-remote-
-  # desktop --headless goes through mutter's XDG remote-desktop PORTAL API,
-  # which — per upstream (gitlab.gnome.org/GNOME/gnome-remote-desktop
-  # issue #16; matches https://bugs.launchpad.net/ubuntu/+source/gnome-
-  # remote-desktop/+bug/1936261) — refuses to create or restore a screencast
-  # session whenever the session is considered locked. Confirmed live: this
-  # is not specific to autologin — the packaged gnome-remote-desktop-headless
-  # unit is WantedBy=gnome-session.target, which is NOT scoped to any one
-  # user; GDM's greeter is itself a real gnome-session, so this same unit
-  # was also running under the gdm-greeter account this whole time, and hit
-  # the IDENTICAL "Session creation inhibited" error there too — ruling out
-  # "layered on an existing autologin session" as the cause. The system
-  # daemon (gnome-remote-desktop.service, above) uses mutter's privileged
-  # remote-desktop API instead of the portal, which upstream documents as
-  # exactly the intended fix for "works at the GDM login screen, never
-  # inhibited by the lock shield." Disabling headless entirely — it was
-  # also actively harmful here: its Conflicts=gnome-remote-desktop.service
-  # meant it was stopping the system daemon and claiming port 3389 for
-  # itself (the portal-based, always-inhibited path) every time it started.
+  # The headless unit uses the portal API, which refuses locked sessions
+  # (gnome-remote-desktop #16), and it also runs in the greeter's
+  # gnome-session. Its Conflicts= stops the system daemon and takes port 3389.
   systemd.user.services.gnome-remote-desktop-headless.enable = false;
 
-  # All environment.* for this host in one block (same statix repeated-key
-  # concern as my.*/services.* above — this used to be two separate spots).
+  # All environment.* in one block (statix).
   environment = {
     persistence."/nix/persist" = {
       # /home has no disk-backed mount of its own (disko.nix only declares
@@ -796,31 +511,14 @@ in
       ];
 
       directories = [
-        # /var/lib/gnome-remote-desktop is the dedicated system user's home
-        # (modules created by services.gnome.gnome-remote-desktop.enable) —
-        # where the system daemon's own grdctl --system state (credentials,
-        # TLS cert) lives. Not in modules/nixos/persistence.nix's shared
-        # list (that's for fleet-wide state, this is specific to this host
-        # actually using the system RDP daemon) — needed here or
-        # credentials regenerate every boot.
+        # System RDP credentials and TLS cert; otherwise they regenerate every boot.
         "/var/lib/gnome-remote-desktop"
 
-        # NOTE: enabled-container hostDataDirs — /var/lib/monitoring
-        # (moved from core-pi 2026-08-04), /var/lib/open-webui,
-        # /var/lib/anythingllm, /var/lib/hermes (moved from hass-pi
-        # 2026-08-05), /var/lib/agent-zero (re-enabled 2026-09-22, see
-        # its my.containers.agent-zero block above) — are NOT listed
-        # here: the container-host module auto-derives a persistence
-        # entry from each enabled container's hostDataDir, and
-        # impermanence hard-asserts on duplicate directory entries.
-        # /var/lib/homarr stays (a plain virtualisation.oci-containers
-        # container, not my.containers.*).
+        # my.containers hostDataDirs are persisted by container-host
+        # automatically; listing them again trips impermanence's duplicate check.
 
-        # Homarr + AdGuard Home — moved from hass-pi 2026-08-05 (not
-        # HA-related, see the my.containers.open-webui / services block
-        # comments above for the same reasoning). DynamicUser service
-        # (AdGuard) needs the /var/lib/private path, not the /var/lib
-        # symlink — same convention hass-pi used.
+        # AdGuard is a DynamicUser service, so persist /var/lib/private, not
+        # the /var/lib symlink.
         "/var/lib/homarr"
         "/var/lib/private/AdGuardHome"
       ];
@@ -836,20 +534,11 @@ in
     ];
   };
 
-  # Initrd SSH fallback — same pattern as hosts/nixos-nvme/hardware-boot.nix.
-  # mac-mini has zero physical keyboard/screen access, ever, so if Tang is
-  # ever unreachable at boot the normal ask-password prompt would hang
-  # forever with nobody able to answer it. This lets the passphrase be typed
-  # in remotely instead. Gated on the key file existing, same convention as
-  # clevis-initrd.enable above.
+  # Initrd SSH fallback for when Tang is unreachable: with no console, the
+  # passphrase can only be typed remotely.
   boot = {
     initrd = {
-      # tg3 (onboard Broadcom NetXtreme NIC) was missing from the initrd
-      # entirely — neither Tang nor the initrd SSH fallback below can bring up
-      # networking without it. Confirmed the hard way 2026-08-03: first reboot
-      # after enabling both hung at an unreachable LUKS prompt with no network
-      # in initrd at all, needing a one-off physical passphrase entry to
-      # recover. Eager-load like nixos-nvme's e1000e (hardware-boot.nix).
+      # Onboard NIC; without it neither Tang nor initrd SSH has a network.
       kernelModules = [ "tg3" ];
 
       network = {
@@ -876,72 +565,35 @@ in
     };
   };
 
-  # Real x86 hardware (2011 Mac Mini, Sandy Bridge i5-2415M) — same reasoning
-  # as nixos-nvme: microcode security/stability fixes, and redistributable
-  # firmware in case the internal Broadcom Wi-Fi/Bluetooth ever gets used.
-  # NOT required for the onboard tg3 Ethernet (BCM57765 is in the
-  # 57765_PLUS chip group, which brings the link up without a firmware
-  # blob) — Tang-unlock-in-initrd doesn't depend on this.
+  # Microcode, plus firmware for the Broadcom Wi-Fi/Bluetooth. The tg3
+  # Ethernet needs no blob, so Tang unlock doesn't depend on this.
   hardware = {
     enableRedistributableFirmware = true;
     cpu.intel.updateMicrocode = true;
 
-    # VAAPI for the eventual Zoom-recording container workload — a 2-core
-    # CPU wants encode/decode offloaded to the iGPU. `intel-vaapi-driver`
-    # (legacy i965), NOT `intel-media-driver` (iHD): the latter only
-    # supports Broadwell+/Gen8+, this is Sandy Bridge/Gen6. Encode
-    # support on Gen6 via i965 is known to be flaky on Linux (decode is
-    # solid) — untested until the actual container exists; enabled now
-    # so it's ready to try.
+    # VAAPI for Zoom recording. i965 (intel-vaapi-driver), since iHD needs
+    # Gen8+ and this is Sandy Bridge; encode on Gen6 is flaky, decode is fine.
     graphics = {
       enable = true;
       extraPackages = with pkgs; [ intel-vaapi-driver ];
     };
   };
 
-  # (services.fwupd is already on fleet-wide via core.nix — LVFS almost
-  # certainly has nothing for this specific hardware anyway: Apple's own
-  # Boot ROM firmware isn't LVFS-published, and the Samsung SATA SSD is
-  # out of scope too — but it's already there for whatever's plugged in
-  # later, no host-specific override needed.)
-  #
-  # Boot ROM confirmed current as of the 2026-08-02 High Sierra install
-  # (133.0.0.0.0) — the last firmware Apple ever shipped for Macmini5,x.
-  # Not upgradable further, and not LVFS-managed (see above), so if
-  # third-party-OS boot flakiness ever shows up here, stale firmware is
-  # ruled out as the cause.
+  # Boot ROM is at 133.0.0.0.0, the last Apple shipped for Macmini5,x and not
+  # on LVFS, so stale firmware isn't a suspect for boot trouble.
 
-  # Static IP migration, stage 2 (cutover): DHCP lease (.70) retired, .16
-  # (inventory.nix) is now the sole address with an explicit gateway. Stage 1
-  # (ran first, verified .16 reachable/SSH-auth-working before cutting DHCP)
-  # added .16 as a second address alongside DHCP as a safety net — no longer
-  # needed now that .16 is confirmed. modules/flake/colmena.nix's targetHost
-  # is updated to match in the same change.
   networking = {
     hostName = "mac-mini";
 
-    # Paired with services.resolved above — see that comment for why this
-    # override is needed on this host specifically.
+    # Paired with services.resolved above.
     resolvconf.enable = lib.mkForce false;
 
-    # UPDATED 2026-09-22: migrated to the nftables firewall backend
-    # (same playbook as nixos-nvme the same night — see its network.nix for
-    # the full nat.enable/nftables.enable/filterForward gotchas) so
-    # extraForwardRules actually works, replacing the iptables
-    # nat.extraCommands workaround below. virtualisation.nix's NAT is
-    # already native nftables (migrated in the same change), so this host
-    # needed no NAT-specific work, just the firewall backend + rule syntax.
+    # nftables backend so extraForwardRules works (see nixos-nvme's network.nix).
     nftables = {
       enable = true;
-      # Inbound SMTP: Digiweb's WAN IP is unblocked on port 25 (confirmed live
-      # 2026-09-24 via canyouseeme.org against 84.203.9.163), and the Zyxel +
-      # Orbi both forward WAN:25 -> this host's LAN IP (10.0.0.16). Stalwart
-      # itself lives on the cbr0 container bridge (10.85.50.8), not on this
-      # host's own address, so it needs the same dstnat-in-prerouting pattern
-      # core-pi already uses for Caddy over wt0 (see core-pi's netbird-nat
-      # table) — just on the physical LAN interface instead of the mesh one.
-      # No extraForwardRules needed: container-host.nix's own
-      # `oifname "cbr0" accept` fragment already covers the forwarded packet.
+      # Inbound SMTP: the router forwards WAN:25 to this host, and Stalwart
+      # lives on cbr0, so DNAT it in prerouting (like core-pi's netbird-nat).
+      # container-host.nix's `oifname "cbr0" accept` covers the forward.
       tables.mail-nat = {
         family = "inet";
         content = ''
@@ -953,28 +605,10 @@ in
       };
     };
 
-    # Alertmanager has no built-in authentication at all (upstream Prometheus
-    # design — it's meant to sit behind a reverse proxy). Caddy's forward_auth
-    # (Authentik, was Authelia until 2026-09-22) is that proxy for the fleet,
-    # but alertmanager's own container port was reachable directly, bypassing
-    # it entirely: confirmed live
-    # 2026-09-19, curling http://10.85.50.2:9093/ cross-host from nixos-nvme
-    # returned the full Alertmanager UI (view/silence alerts) with no auth
-    # challenge at all. Same class of bug as paperless/code-server/syncthing
-    # (nasbook cea111b0/da236067).
-    #
-    # Source IP corrected 2026-09-22: this ACCEPT rule matched Caddy's raw
-    # container IP (myInventory.network.nodes.caddy.ip, 10.85.48.107) — but
-    # core-pi masquerades ALL cbr0->end0 egress unconditionally (`iifname
-    # "cbr0" oifname "end0" masquerade`, confirmed live via `nft list
-    # ruleset` on core-pi), so Caddy's cross-host traffic actually arrives
-    # here as core-pi's own physical LAN address instead. This rule had
-    # never been exercised end-to-end from cross-host since it was written
-    # (alertmanager only got a real domain + forward-auth path this
-    # session) — confirmed dropped via live reachability testing before
-    # this fix. myInventory.hosts.core-pi.ip is the real, masqueraded
-    # source. 10.85.50.1 is mac-mini's own bridge address, allowed for
-    # host-side debugging/administration.
+    # Alertmanager has no auth of its own, so only Caddy (behind Authentik
+    # forward_auth) may reach its port. core-pi masquerades all cbr0 egress,
+    # so Caddy arrives as core-pi's LAN IP, not its container IP.
+    # 10.85.50.1 is this host's bridge, for local admin.
     firewall = {
       enable = true;
       backend = "nftables";
@@ -998,10 +632,7 @@ in
           prefixLength = 16;
         }
       ];
-      # Wake-on-LAN: zero physical access (no keyboard/screen/case access
-      # after it's mounted) makes remote power-on genuinely useful. Was
-      # deliberately left unwired until the udev-assigned interface name was
-      # known; enp2s0f0 is now confirmed.
+      # No physical access once mounted, so power-on is remote.
       wakeOnLan.enable = true;
     };
     defaultGateway = {
@@ -1010,16 +641,10 @@ in
     };
   };
 
-  # Keeps mail.kleinbem.dev's A record pointed at Digiweb's WAN IP, which is
-  # dynamic (PPPoE) — confirmed reachable + unblocked on port 25 2026-09-24.
-  # Deliberately NOT Terraform-managed (nix/infra/cloudflare-dns.tf): a
-  # value that changes on its own can't live in Terraform state without the
-  # two fighting every apply/tick, so this one record's source of truth is
-  # live network state, not a Nix/Tofu input — everything else about the
-  # domain (MX/SPF/DMARC/MTA-STS) stays in Terraform as usual. Gated on the
-  # sops secret existing (secrets.nix) so an unprovisioned token can't crash
-  # this one service — see that file for the atomic-manifest landmine this
-  # avoids on every OTHER secret on this host.
+  # Keeps mail.kleinbem.dev's A record on the dynamic WAN IP. Not in Terraform:
+  # a value that changes by itself would fight every apply. The rest of the
+  # mail DNS stays in nix/infra. Gated on the token so a missing one can't
+  # break activation (see secrets.nix).
   services.cloudflare-dyndns = lib.mkIf (config.sops.secrets ? "cloudflare_dyndns_token") {
     enable = true;
     apiTokenFile = config.sops.secrets."cloudflare_dyndns_token".path;
@@ -1029,17 +654,11 @@ in
     proxied = false; # SMTP can't be Cloudflare-proxied
   };
 
-  # Override the fleet-wide zstd zram default (core.nix): zstd's better
-  # ratio costs more CPU per swap page than lz4, which matters more on
-  # this 2-core CPU than on the rest of the fleet. 16GB RAM means this
-  # host is unlikely to swap heavily anyway, so it's a marginal call —
-  # revisit if the recording workload turns out to be swap-hungry.
+  # lz4 instead of the fleet's zstd: cheaper CPU per page on this 2-core CPU.
   zramSwap.algorithm = lib.mkForce "lz4";
 
-  # Stateless root (impermanence) — same pattern as modules/nixos/rpi5-node.nix
-  # (shared by core-pi/hass-pi). disko.nix only declares the real, disk-backed
-  # mounts (ESP, /nix/persist); the ephemeral tmpfs "/" and "/var" are a
-  # NixOS-only concept with no disk backing, so they're declared here instead.
+  # Stateless root: disko.nix declares only disk-backed mounts, so the tmpfs
+  # "/" and "/var" live here.
   fileSystems = {
     "/" = lib.mkForce {
       device = "none";
@@ -1065,8 +684,7 @@ in
     "/nix/persist".neededForBoot = true;
   };
 
-  # Homarr dashboard — moved from hass-pi 2026-08-05, same reasoning as
-  # AdGuard Home above (general-purpose start page, not HA-related).
+  # Homarr dashboard (start page).
   virtualisation.oci-containers.containers.homarr = {
     image = "ghcr.io/ajnart/homarr:latest";
     ports = [ "7575:7575" ];

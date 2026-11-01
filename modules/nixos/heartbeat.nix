@@ -4,25 +4,13 @@
   pkgs,
   ...
 }:
-# External dead-man's switch (healthchecks.io). Everything *local* that
-# alerts — ntfy, gatus, the backup freshness watchdog — runs on core-pi or on
-# the host being watched, so a dead core-pi (or a dead host) goes silent
-# instead of alerting. Pings go out to healthchecks.io; *missing* pings alert
-# from outside the fleet (its own email/phone channels, never ntfy.kleinbem.dev).
+# External dead-man's switch (healthchecks.io). Local alerting lives on core-pi
+# or the watched host, so a dead host goes silent; missing pings alert from
+# outside the fleet instead. Pings: <host>-alive every 5 min, and
+# <host>-backup-<job> after each backup job.
 #
-# Per host, when `my.heartbeat.enable`:
-#   <host>-alive              every 5 min (timer)       — host/network is up
-#   <host>-backup-<job>       after each backup job     — via the backup engine
-#                             (…/fail from its OnFailure unit)
-#
-# `my.heartbeat.checks` lists exactly those slugs with their expected period;
-# nix-config's flake output `heartbeats` projects it for nix/infra, whose
-# healthchecks.tf creates one check per slug (data bridge: infra/heartbeats.json,
-# written by nix/tools/gen-iac-data.sh). Slugs are the check names — the
-# healthchecks API derives the slug from the name.
-#
-# Secret: `healthchecks_ping_key` (the project ping key) in nix/shared.yaml.
-# Only enable on always-on hosts — the alive check alerts on any gap.
+# my.heartbeat.checks feeds nix/infra/healthchecks.tf via infra/heartbeats.json
+# (slug = check name). Only for always-on hosts: the alive check alerts on any gap.
 let
   cfg = config.my.heartbeat;
   host = config.networking.hostName;
@@ -75,9 +63,7 @@ in
           "${host}-alive" = {
             kind = "alive";
             timeout = 300; # timer below pings every 5 min
-            # Must outlast a planned WAN outage: the router gets firmware
-            # updates regularly and is offline ~15 min each time (16 min on
-            # 2026-10-20, which blew through the previous 15 min grace).
+            # Must outlast a router firmware update (WAN down 15+ min).
             grace = 1800;
           };
         }

@@ -1,14 +1,6 @@
 # nasbook bulk-storage data disk — QNAP TBS-453A's second SSD bay.
-#
-# Previously a QNAP-formatted drive (mdadm RAID members); wiped 2026-09-18
-# after Martin confirmed its data was already backed up elsewhere. Single
-# LUKS-encrypted partition + btrfs, mounted at /mnt/data — same pattern as
-# nixos-nvme's own data disk (modules/nixos/data-disk.nix, my.dataDisk.*).
-#
-# No FIDO2 on this host (see disko.nix) and this disk isn't needed for
-# boot, so instead of adding another Tang/passphrase ceremony it unlocks
-# silently via a keyfile embedded into initrd. The keyfile is generated on
-# nasbook itself (my.hostSecrets) and never enters the Nix store.
+# LUKS + btrfs at /mnt/data via my.dataDisk. No FIDO2 on this host, so it
+# unlocks from a keyfile in initrd, generated on nasbook (my.hostSecrets).
 { config, ... }:
 {
   my.dataDisk = {

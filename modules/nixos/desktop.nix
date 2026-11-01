@@ -8,17 +8,11 @@
 let
   cfg = config.my.desktop;
 
-  # metadata-cleaner's mat2 dependency fails its test suite on build: a
-  # ffmpeg-version-dependent MP4 TimeScale assertion in
-  # test_libmat2.py::TestCleaning::test_all_parametred flakes against
-  # whatever ffmpeg happens to be pinned right now. Not a real regression
-  # in mat2 or metadata-cleaner — deselect just that parametrized test
-  # rather than disabling the whole suite.
+  # mat2's test_all_parametred has an ffmpeg-version-dependent assertion that
+  # flakes; skip just that test.
   metadata-cleaner-fixed = pkgs.metadata-cleaner.overrideAttrs (old: {
-    # buildPythonPackage's `dependencies` arg is translated into
-    # `propagatedBuildInputs` before mkDerivation ever sees it — that's the
-    # attribute overrideAttrs's `old` exposes and the one that actually
-    # drives the build, so patch that instead of `dependencies`.
+    # `dependencies` becomes propagatedBuildInputs before mkDerivation, so
+    # that's the attribute to patch.
     propagatedBuildInputs = map (
       dep:
       if (dep.pname or null) == "mat2" then
@@ -42,12 +36,9 @@ in
     # DESKTOP (GNOME 50)
     # ==========================================
     (lib.mkIf cfg.gnome.enable {
-      # Per-version insecure re-ack, co-located with its consumer and gated to
-      # the desktop host (never blanket host-level — see modules/flake/hosts.nix).
-      # bitwarden-desktop pins electron_39; when it bumps, eval trips here and
-      # forces a conscious re-ack rather than silently carrying an old Electron.
-      # firefox-esr-140-bin-unwrapped: zotero 10.0.4 runtime (revived via NixOS/nixpkgs#572466).
-      # Upstream marked ESR 140 insecure after its 2026-10-13 EOL; drop when Zotero 11 lands with ESR 153.
+      # Insecure re-acks, gated to desktop hosts. electron: bitwarden-desktop's
+      # pinned Electron. firefox-esr-140: Zotero's runtime; drop when Zotero 11
+      # moves to ESR 153.
       nixpkgs.config.allowInsecurePredicate =
         pkg:
         builtins.elem (lib.getName pkg) [
@@ -106,19 +97,11 @@ in
         dconf-editor
         gnome-extension-manager
 
-        # GNOME 50 extensions — GNOME-native workflow: keep the stock top bar +
-        # overview, use dash-to-dock (fast autohide) instead of a full bottom
-        # panel. Dropped 2026-09-10: dash-to-panel, arcmenu,
-        # desktop-icons-ng-ding, logo-menu, user-themes, quick-settings-tweaker,
-        # fly-pie — either redundant with the native shell or the highest-churn
-        # extensions on each shell bump. Dropped 2026-09-11: search-light,
-        # media-controls — both OUT OF DATE (metadata.json shell-version caps
-        # at 49) on GNOME Shell 50.4; re-add once nixpkgs bumps them. Also
-        # dropped weather-oclock — no usable location (Watergrasshill isn't
-        # in libgweather's DB and location-services is off), it just spun.
-        # Re-added 2026-09-11: arcmenu — wanted a top-bar app menu after all;
-        # verified shell-version 50 support (v73) before adding this time.
-        # See modules/home-manager/gnome.nix for the enable/dconf rationale.
+        # GNOME extensions: stock top bar and overview plus dash-to-dock. Check
+        # an extension supports the current shell version before adding it
+        # (search-light and media-controls are out until they support Shell 50;
+        # weather-oclock can't resolve our location).
+        # Enable/dconf settings live in modules/home-manager/gnome.nix.
         gnomeExtensions.blur-my-shell
         gnomeExtensions.dash-to-dock # Fast autohide bottom dock
         gnomeExtensions.arcmenu # Top-bar app menu (search, categories, pinned/recent apps)
@@ -126,7 +109,7 @@ in
         gnomeExtensions.just-perfection
         gnomeExtensions.vitals
         gnomeExtensions.caffeine
-        gnomeExtensions.clipboard-indicator # Clipboard manager (pano removed upstream 2026-07)
+        gnomeExtensions.clipboard-indicator # Clipboard manager
         gnomeExtensions.gsconnect
         gnomeExtensions.space-bar
         gnomeExtensions.removable-drive-menu
@@ -203,12 +186,9 @@ in
         })
 
         # Password Management
-        # Installed as a plain package (NOT firejail-wrapped): the launcher,
-        # app-grid entry, icons, the biometric-unlock polkit policy
-        # (share/polkit-1/actions/com.bitwarden.Bitwarden.policy) and the
-        # libexec/desktop_proxy native-messaging bridge all need to land in the
-        # system profile (the bridge backs the Chrome extension <-> desktop-app
-        # integration).
+        # Plain package, not firejail-wrapped: its polkit policy (biometric
+        # unlock) and desktop_proxy bridge (Chrome extension link) must land
+        # in the system profile.
         bitwarden-desktop
       ];
 
@@ -281,15 +261,9 @@ in
       };
 
       environment = {
-        # Ozone/Wayland works without a managed policy — the package's own
-        # commandLineArgs (nix-presets/desktop.nix) carries browser-specific
-        # flags now. Deliberately UNMANAGED (2026-09-04): no
-        # /etc/{chromium,opt/chrome}/policies/managed/ — that's what disables
-        # sign-in, sync, GenAI features, etc. Lost along with it: force-
-        # installed uBlock Origin (cjpalhdlnbpafiamejdnhcphjbkeiagm — install
-        # manually once), and the enforced privacy defaults (password
-        # manager/autofill/metrics/spellcheck were off; now whatever you set
-        # in chrome://settings).
+        # Chrome stays unmanaged (no policies/managed/): a managed policy
+        # disables sign-in, sync and GenAI features. Browser flags live in
+        # commandLineArgs (nix-presets/desktop.nix); install uBlock Origin by hand.
         sessionVariables.NIXOS_OZONE_WL = "1";
 
         systemPackages = with pkgs; [

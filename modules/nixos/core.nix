@@ -10,13 +10,9 @@
 let
   keys = import ./keys.nix;
 
-  # waypipe 0.11.0's video-hwaccel feature fails to build against current
-  # nixpkgs ffmpeg: its Rust bindings hardcode `nb_encode_queues`/
-  # `nb_decode_queues` on AVVulkanDeviceContext, fields ffmpeg's Vulkan
-  # hwcontext struct no longer has. That's an optional acceleration path
-  # (`-Dwith_video`) for streaming video buffers over waypipe, not needed
-  # for its actual use here (remote GUI debug over SSH) — disable it
-  # instead of chasing ffmpeg's Vulkan API through waypipe's Rust FFI.
+  # waypipe 0.11.0's video path doesn't build against current ffmpeg (its
+  # bindings use removed AVVulkanDeviceContext fields). Remote GUI debug
+  # doesn't need it.
   waypipe-novideo = pkgs.waypipe.overrideAttrs (old: {
     mesonFlags = (old.mesonFlags or [ ]) ++ [ "-Dwith_video=disabled" ];
   });
@@ -26,12 +22,8 @@ in
     # Wraps nix-index/nix-locate with the prebuilt weekly database, so the
     # command-not-found hook works without ever running `nix-index` locally.
     inputs.nix-index-database.nixosModules.default
-    # Per-command NOPASSWD allowlist (nh/nixos-rebuild, systemctl/machinectl
-    # for container hosts, etc). Fleet-wide here so headless hosts get the
-    # same scoped root access as the desktop instead of a blanket
-    # wheelNeedsPassword=false — see headless.nix. workstation-bundle.nix
-    # also pulls the full ./security bundle, which re-imports this same
-    # file; NixOS module dedup by path makes that a no-op, not a conflict.
+    # Per-command NOPASSWD allowlist, fleet-wide so headless hosts get scoped
+    # root access instead of wheelNeedsPassword=false.
     ./security/sudo.nix
     # Lynis sysctl baseline + module blacklist for every host; the
     # hardening tier (security/hardening.nix) layers nix-mineral on top.
@@ -42,14 +34,9 @@ in
   # NIX SETTINGS & CORE
   # ==========================================
 
-  # Fleet-wide, not just users.nix (desktop/orin): with the default
-  # mutableUsers=true, hashedPasswordFile only applies when a user is FIRST
-  # created, so later martin_password_hash changes in sops never reached
-  # core-pi/hass-pi/mac-mini/nasbook — their sudo password silently stayed
-  # whatever it was at install (found 2026-10-02 on core-pi; same root
-  # cause as the earlier mac-mini "hash drift"). Declarative-only means
-  # every activation re-applies the sops hash. Users without a declared
-  # password (root on headless hosts) get password login locked.
+  # With mutableUsers=true, hashedPasswordFile only applies when a user is
+  # first created, so sops password changes never land. Users without a
+  # declared password (root on headless hosts) get password login locked.
   users.mutableUsers = false;
 
   time.timeZone = "Europe/Dublin";
@@ -96,13 +83,8 @@ in
         "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU="
         keys.binaryCache.kleinbem-fleet-build
       ];
-      # Lets `nix copy --from ssh://<host>` between fleet machines
-      # (push-cache's cache-warming step) verify a closure another host
-      # just built locally, instead of rejecting it outright for having
-      # no signature at all — see keys.nix's kleinbem-fleet-build doc
-      # comment. Empty list (harmless no-op for `nix.settings`, which
-      # accepts a list here) until kleinbem-secrets' nix/shared-signing.yaml
-      # has actually reached this host's pinned input and it's redeployed.
+      # Signs local builds so `nix copy --from ssh://<host>` on a sibling
+      # accepts them (see keys.nix). Empty until the secret is deployed.
       secret-key-files = lib.optional (
         config.sops.secrets ? nix_signing_key
       ) config.sops.secrets.nix_signing_key.path;
@@ -139,13 +121,7 @@ in
     };
   };
 
-  # Fleet build-signing secret key — declared here (fleet-wide, since
-  # core.nix is imported by every host via base.nix) rather than
-  # duplicated into each host's own secrets.nix, the way
-  # github_read_all_token used to need re-adding per host. Every host
-  # signs its own locally-built closures with this so a sibling host's
-  # `nix copy --from ssh://<host>` verifies them — see keys.nix and
-  # nix.settings.secret-key-files above.
+  # Fleet build-signing key, for nix.settings.secret-key-files above.
   sops.secrets.nix_signing_key = {
     sopsFile = secretFile "nix/shared-signing.yaml";
     mode = "0400";
@@ -155,27 +131,18 @@ in
   # ==========================================
   # PKI CERTIFICATES (Fleet Trust Chain)
   # ==========================================
-  # Root CA of the caddy container that terminates TLS for cache.kleinbem.dev
-  # (on core-pi). SINGLE SOURCE OF TRUTH: the same file CI trusts
-  # (.github/actions/nix-fleet-setup). If the caddy container is ever recreated
-  # or moved, Caddy mints a NEW local CA — refresh this file from
-  # /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt on the
-  # host that runs it, or the whole fleet fails cert verification against the
-  # cache (2026-07-07 outage).
+  # Root CA of the caddy container fronting cache.kleinbem.dev; CI trusts the
+  # same file. A recreated caddy mints a new CA: refresh this from
+  # /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt on its
+  # host, or the whole fleet fails TLS against the cache.
   security.pki.certificateFiles = [ ../../pki/caddy-root.crt ];
 
   services = {
     xserver.xkb.layout = "gb";
 
-    # Prevent /var/log/journal from growing indefinitely. 1G rotated out in
-    # under a day on the workstation (runners + fluent-bit churn), leaving
-    # incidents un-diagnosable; headless.nix overrides tighter for RPi nodes.
-    #
-    # Newer nixpkgs removed the string-concat `journald.extraConfig` (hard
-    # assertion) in favour of the `settings.Journal` attrset; the pinned
-    # nixpkgs still only has `extraConfig`. Straddle both until the flake
-    # pin floor is past the removal, then drop the `else` branch here and in
-    # headless.nix / hosts/nixos-nvme.
+    # 4G: 1G rotated out in under a day on the workstation. headless.nix sets
+    # less. Newer nixpkgs replaced `extraConfig` with `settings.Journal`;
+    # handle both until every pin has `settings`.
     journald =
       if options.services.journald ? settings then
         { settings.Journal.SystemMaxUse = "4G"; }
@@ -193,15 +160,9 @@ in
     # Resolves paths like /usr/bin/google-chrome, /usr/bin/env, /bin/bash dynamically.
     envfs.enable = true;
 
-    # Mitigate kernel panics under extreme memory pressure (AI workloads).
-    #
-    # earlyoom is the *RAM* guard: it kills only when mem-avail AND swap-free
-    # are BOTH below threshold. That AND is why it could NOT save the host from
-    # the 2026-07-22 freeze — swap crept to 0% over ~2.5 days while mem-avail
-    # floated at ~21% (zram makes MemAvailable look healthy), so the condition
-    # never fired and the box thrashed to death. Swap exhaustion is now owned by
-    # systemd-oomd below; earlyoom stays as the fast RAM backstop, bumped to
-    # m=10 so it engages a little sooner once RAM itself is genuinely low.
+    # earlyoom is the RAM guard. It only fires when free memory AND free swap
+    # are both low, and zram keeps MemAvailable looking healthy, so slow swap
+    # exhaustion is left to systemd-oomd below.
     earlyoom = {
       enable = true;
       # m=10: kill at 10% free memory, s=10: kill at 10% free swap
@@ -220,13 +181,8 @@ in
     };
   };
 
-  # systemd-oomd is the *swap* guard, and the real fix for the 2026-07-22
-  # freeze. It was already running but monitored ZERO cgroups (empty
-  # `Swap Monitored CGroups`), so its 90%-swap-used rule had nothing to act on.
-  # Enabling the slices below arms `ManagedOOMSwap=kill` on system + user +
-  # root cgroups: when system swap passes 90% used, oomd kills the single
-  # cgroup hogging the most swap — stopping the multi-day creep long before it
-  # can wedge the machine, regardless of how healthy MemAvailable looks.
+  # systemd-oomd is the swap guard. Without the slices below it monitors no
+  # cgroups; with them, past 90% swap it kills the cgroup using the most swap.
   systemd = {
     oomd = {
       enable = true;

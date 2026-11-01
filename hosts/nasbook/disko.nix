@@ -12,29 +12,16 @@
 {
   lib,
   device ? "/dev/sda",
-  # Path to a file containing the LUKS passphrase, for non-interactive format
-  # during scripted provisioning (nasbook-install-usb generates a random
-  # passphrase and writes it here). null preserves the normal interactive
-  # cryptsetup prompt for manual/other-host use. This parameter was missing
-  # entirely until 2026-09-16 — silently swallowed by the `...` below, so
-  # every --argstr passwordFile the install recipe passed had NO effect and
-  # disko fell back to its own interactive default, leaving the recipe's own
-  # (recorded, generated) passphrase unable to unlock the real LUKS header
-  # it never actually set. Symptom: systemd-cryptenroll's later FIDO2
-  # enrollment step failed with "Unlocking via keyfile failed: Operation not
-  # permitted" — nothing to do with which YubiKey was plugged in.
+  # LUKS passphrase file for scripted provisioning (nasbook-install-usb);
+  # null keeps the interactive prompt. Must stay a named arg: `...` would
+  # swallow --argstr passwordFile silently.
   passwordFile ? null,
   ...
 }:
 {
   # ─── Stateless Root (Impermanence) ──────────────────────────
-  # disko only mounts /boot, /nix, /nix/persist above — it never defined
-  # a root filesystem (a longstanding gap, only surfaced once an unrelated
-  # journald assertion stopped masking it; nasbook likely hasn't rebuilt
-  # since the hardware-configuration.nix→disko migration). Matches the
-  # RPi5 (rpi5-node.nix) / nixos-nvme (hardware-boot.nix) pattern: real
-  # state lives under /nix/persist via persistence.nix, bind-mounted back
-  # in by hostname-agnostic module — see default.nix's import of it.
+  # disko only declares /boot, /nix and /nix/persist, so / and /var are
+  # tmpfs here; real state lives under /nix/persist via persistence.nix.
   fileSystems = {
     "/" = lib.mkForce {
       device = "none";

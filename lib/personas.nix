@@ -1,20 +1,12 @@
-# Persona library — joins public identity (personas.nix) with private
-# contact data (kleinbem-secrets/personas/contact.nix, sops-encrypted) and
-# lifecycle state (personas-state.nix) into a single queryable view.
+# Persona library: joins public identity (personas.nix), private contact data
+# (kleinbem-secrets/personas/contact.nix) and lifecycle state (personas-state.nix).
 #
-# Callers pass in an optional `contact` attribute set. contact.nix is
-# sops-encrypted (real PII), so it can't be `import`ed directly at Nix
-# eval time the way a flake input can — callers with real sops access
-# (interactive scripts, e.g. .just/personas.just, scripts/persona-scaffold.sh)
-# decrypt it to a tmpfs temp file first and import THAT. Without contact
-# data, the lib returns a public-only view where PII fields render as the
-# literal string "(private)" — useful in CI / public eval contexts, and
-# what hosts/*/secrets.nix use now (no NixOS module imports contact data
-# directly anymore as of 2026-08-08 — see mac-mini/secrets.nix's
-# hermes_discord_allowed_users for how that dependency was removed).
+# contact.nix is sops-encrypted, so callers with sops access decrypt it to a
+# tmpfs file and import that (see .just/personas.just). Without it, PII fields
+# render as "(private)", which is what CI and NixOS modules use.
 #
 # Usage:
-#   # With private data (see .just/personas.just for the full decrypt dance):
+#   # With private data:
 #   import ./lib/personas.nix {
 #     inherit lib;
 #     contact = import /path/to/decrypted/contact.nix;

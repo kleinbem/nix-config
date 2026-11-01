@@ -10,18 +10,11 @@ rec {
 
   # Other Binary Cache Public Keys (non-cachix)
   binaryCache = {
-    # Official CUDA-enabled nixpkgs cache (Harmonia), successor to the
-    # cuda-maintainers.cachix.org project (archived, moved Nov 2025 — see
-    # https://wiki.nixos.org/wiki/CUDA). Public, no auth token needed.
+    # Official CUDA nixpkgs cache (https://wiki.nixos.org/wiki/CUDA). Public.
     nixos-cuda = "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M=";
-    # Fleet-internal build-signing key (secret half in kleinbem-secrets'
-    # nix/shared-signing.yaml, wired via nix.settings.secret-key-files in
-    # core.nix). Every host signs what it builds locally with this same
-    # key, so `nix copy --from ssh://<host>` between fleet machines
-    # verifies cleanly instead of hitting "lacks a signature by a trusted
-    # key" for anything not yet through CI→Attic. Not a real "cache" —
-    # just reusing the nix binary-cache-key mechanism for host-to-host
-    # trust within the fleet.
+    # Fleet build-signing key (secret in nix/shared-signing.yaml, core.nix).
+    # Every host signs local builds with it, so `nix copy` between hosts
+    # verifies without going through CI and Attic.
     kleinbem-fleet-build = "kleinbem-fleet-build-1:2WtnzmBEU1YqC25CzcVOXs/j926Qp9yT5REoNkEqnbw=";
   };
 
@@ -32,11 +25,9 @@ rec {
     fido2 = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPbkLwSKFiip5e/0j9aHzIDr+4srK7s9C/aLbNOl7xJQAAAABHNzaDo=";
     # FIDO2 backup resident key
     fido2-backup = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINYunZXaiafJQO6qnCPsiQkaaZvZEBDLkgx4ygjVFP+6AAAABHNzaDo= ssh:";
-    # FIDO2 *truly* no-touch SK key — used for git/jj commit signing without
-    # YubiKey touch prompts. V2 because the original "NoTouch" key was generated
-    # without -O no-touch-required and silently required touch for every sign
-    # (eating a full day of friction before we caught it). Lives at
-    # ~/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2.
+    # No-touch SK key for git/jj commit signing
+    # (~/.ssh/id_ed25519_sk_rk_GitHubNoTouchV2). Generate with
+    # -O no-touch-required, or every sign still asks for a touch.
     fido2-notouch = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIBZ4U3wGwDb7DDfBsT4wH208lzSiQRhFb+CN3tJc+HIHAAAAE3NzaDpHaXRIdWJOb1RvdWNoVjI= ssh:GitHubNoTouchV2";
 
     # Dedicated SSH key for Huawei MatePad Pro (Termux)
@@ -45,28 +36,16 @@ rec {
     # Dedicated SSH key for Samsung Galaxy XCover 6 Pro (Termux)
     phone-termux = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJUdmrp/ONOwEEzJFtojToFYXOQSDBiOCcr608xqbF42 martin-phone--termux";
 
-    # Plain (non-FIDO2) key for nixos-nvme's daily unattended pull of Caddy's
-    # internal root CA from core-pi (hosts/nixos-nvme/caddy-ca-refresh.nix) —
-    # a systemd user timer, so it can't wait for a YubiKey touch the way the
-    # main fido2 key requires. Deliberately not hardware-backed: the
-    # `restrict`+`command=` prefix means this key can do nothing but read one
-    # already-public root certificate, so there's nothing worth protecting
-    # with a touch requirement. Private half lives only at
-    # ~/.ssh/id_ed25519_caddy_ca_refresh on nixos-nvme, never in the nix store.
+    # Plain key for nixos-nvme's unattended Caddy CA pull (caddy-ca-refresh.nix);
+    # a timer can't answer a touch. `restrict`+`command=` limit it to reading
+    # one public cert.
     caddy-ca-refresh = ''command="cat /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfu0f4YfeLsHx9CO4BZtgBpx1YJ8Qdv7LwM57zyBVP/ refresh-caddy-ca@nixos-nvme'';
 
-    # Per-persona signing public keys. Populated when each persona's
-    # private key is generated (Phase 1 — Stalwart provisioning). Until
-    # then the entries are empty strings; consumers (allowed_signers
-    # generator in lib/personas.nix) skip missing entries.
-    #
-    # Generation pattern per persona, run once per name in personas.nix:
+    # Per-persona signing keys; lib/personas.nix skips missing entries.
+    # New persona:
     #   ssh-keygen -t ed25519 -C "<email>" -f sops/personas/<name>/id_ed25519 -N ""
     #   # then paste the .pub contents below.
     personas = {
-      # Trailing string is just an SSH key comment (cosmetic label, not part
-      # of the key material) — kept in sync with kleinbem-secrets/personas/
-      # contact.nix's email field for readability, not load-bearing.
       michael-gruber = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOVfwD0GCXVUnFMOLDrCaqLNnhQCYNnG+vkEDXdUAerE michael.gruber@kleinbem.dev";
       thomas-schmidt = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIxNAzon0u0FduqmXLtBSAOwzfmQ5OU3fNKap0oTLcN thomas.schmidt@kleinbem.dev";
       daniel-meier = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSXFMGWBPlN80vuOiJrMd+safHcKCjcHeDU8iCYHchL daniel.meier@kleinbem.dev";
@@ -83,8 +62,8 @@ rec {
   };
 
   # Initrd (remote-unlock) SSH host keys, port 2222. Private halves live only
-  # on each host in /nix/persist/secrets (my.hostSecrets), generated
-  # 2026-10-16 with `just access::host-keygen <host>`.
+  # on each host in /nix/persist/secrets (my.hostSecrets); make them with
+  # `just access::host-keygen <host>`.
   initrdHostKeys = {
     nixos-nvme = {
       ip = "10.0.0.5";

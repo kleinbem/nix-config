@@ -1,15 +1,5 @@
-# nixos-nvme Secrets Management
-#
-# This file handles core host secrets (database passwords, API keys, etc.).
-# Additional secrets are defined in:
-#   - ai.nix (LLM/AI API keys, litellm config — gated behind my.ai.enable)
-#
-# Rationale for splitting: Secrets are scoped to features that use them.
-# This avoids decrypting unnecessary secrets at activation and keeps each
-# feature's configuration self-contained. Persona contact info was moved to
-# kleinbem-secrets/personas/contact.nix (plain Nix, re-encrypted at deployment).
-#
-# See also: modules/nixos/keys.nix (public SSH keys)
+# nixos-nvme core host secrets. Feature secrets are gated behind the feature's
+# enable flag, so a disabled feature needs no provisioned key.
 {
   pkgs,
   config,
@@ -32,9 +22,6 @@ in
   # SOPS — Secrets Management
   # ==========================================
   sops = {
-    # defaultSopsFile/defaultSopsFormat/validateSopsFiles now default
-    # fleet-wide in modules/nixos/base.nix.
-
     # Use host SSH keys for automated decryption (avoids YubiKey prompts for background tasks)
     age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];
     gnupg.sshKeyPaths = [ ]; # No GPG keys used
@@ -57,11 +44,8 @@ in
         mode = "0400";
       };
       netbird_setup_key = { };
-      # Read-only Attic pull token — activates modules/nixos/attic-pull.nix so
-      # the daemon can substitute from the private cache instead of 401-ing and
-      # rebuilding everything CI already pushed. The cache entrypoint (caddy)
-      # and attic both live on core-pi since 2026-07-06; nixos-nvme pulls like
-      # every other mesh peer via the attic-pull default cacheHostIp.
+      # Read-only Attic pull token; activates modules/nixos/attic-pull.nix so
+      # the daemon substitutes from the private cache.
       attic_pull_token = { };
       rclone_config = {
         owner = "martin";
@@ -74,12 +58,8 @@ in
         group = "wheel";
       };
       u2f_keys = { };
-      # Buzz (Nostr relay) — 32-byte hex Nostr signing key + Garage RPC/admin
-      # creds + Typesense admin key + Garage S3 API key (buzz_s3_access_key/
-      # buzz_s3_secret_key, created via the one-time init documented at the
-      # bottom of nix-presets/containers/buzz.nix, 2026-08-09). buzz_typesense_api_key
-      # is also used directly as services.typesense.apiKeyFile (raw value, no
-      # template needed there — see hosts/nixos-nvme/containers.nix).
+      # Buzz (Nostr relay). The S3 keys come from the one-time init at the
+      # bottom of nix-presets/containers/buzz.nix.
       buzz_relay_private_key = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
@@ -89,12 +69,9 @@ in
         group = "users";
         mode = "0400";
       };
-      # HA-MCP connect URL (the "Secret URL" of the ha_mcp_tools entry in
-      # Home Assistant on hass-pi — the URL *is* the credential). Read at
-      # launch by nix-presets' modules.mcp.homeAssistant wrapper, which
-      # bridges the server into Claude Code & co. Create the integration in
-      # HA first (Settings → Devices & Services → HA-MCP Server), then
-      # `sops --set '["ha_mcp_url"] "<url>"' nix/per-host/nixos-nvme.yaml`.
+      # HA-MCP "Secret URL" (the URL is the credential), read by nix-presets'
+      # modules.mcp.homeAssistant wrapper. Create the HA-MCP Server integration
+      # in HA, then `sops --set '["ha_mcp_url"] "<url>"' nix/per-host/nixos-nvme.yaml`.
       ha_mcp_url = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
         owner = "martin";
@@ -119,14 +96,8 @@ in
       buzz_garage_admin_token = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -base64 32`
-      # mode 0444: services.typesense's own module `cat`s apiKeyFile
-      # INSIDE its script=, which runs as the unprivileged static
-      # `typesense` user (after DynamicUser was disabled for the
-      # StateDirectory-vs-bind-mount fix below) — the sops-nix default
-      # 0400/root:root left it unreadable there ("Permission denied",
-      # confirmed live 2026-08-09). No new exposure: the same value is
-      # already sitting in the 0444 buzz.env template two secrets below,
-      # readable by every process in this container regardless.
+      # 0444: services.typesense reads apiKeyFile as the unprivileged
+      # `typesense` user. No new exposure: buzz.env (0444) holds it too.
       buzz_typesense_api_key = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
         mode = "0444";
@@ -214,48 +185,29 @@ in
         neededForUsers = true;
       };
     }
-    # LiteLLM's real admin/management credential — mints virtual keys,
-    # Teams, budgets. Gated behind the container's own enable flag: a
-    # disabled container must have ZERO activation-time footprint, not
-    # require a real secret value nobody's provisioned yet just because
-    # the declaration exists. Was a hardcoded "sk-1234" placeholder baked
-    # straight into the Nix store (nix-presets/containers/litellm.nix)
-    # until 2026-08-09 — real switch-time activation genuinely requires
-    # the key to exist in kleinbem-secrets regardless of
-    # validateSopsFiles (that only suppresses CI's dummy-file eval-time
-    # check, per this file's header comment) — confirmed live: an
-    # unconditional declaration broke a real `nixos-rebuild switch` on
-    # this host with the key still unprovisioned. Once you actually want
-    # to turn litellm on: generate a value (e.g. `openssl rand -hex 32`),
-    # `sops nix/per-host/nixos-nvme.yaml`, THEN flip the enable flag.
+    # Secrets below are gated on their feature: activation fails if a declared
+    # key is missing from sops. To enable one, add the key first (e.g.
+    # `openssl rand -hex 32` into nix/per-host/nixos-nvme.yaml), then flip the flag.
+    # LiteLLM master key: mints virtual keys, teams, budgets.
     // lib.optionalAttrs config.my.containers.litellm.enable {
       litellm_master_key = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
     }
-    # GitHub runner registration token — only declared while the opt-in
-    # runner container is enabled (same footgun-avoidance as litellm above).
-    # Password of langfuse's own least-privilege Postgres role (replaced a
-    # hardcoded postgres/postgres superuser, 2026-09-25). Gated like
-    # litellm above: to turn langfuse on, first `openssl rand -hex 32`
-    # into `sops nix/per-host/nixos-nvme.yaml` as langfuse_db_password,
-    # THEN flip the enable flag.
+    # Password of langfuse's least-privilege Postgres role.
     // lib.optionalAttrs config.my.containers.langfuse.enable {
       langfuse_db_password = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
     }
+    # GitHub runner registration token.
     // lib.optionalAttrs config.my.containers.github-runner.enable {
       github_runner_pat = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
     }
-    # AnythingLLM API key for vault-anythingllm-sync.nix — generated via the
-    # AnythingLLM UI (Settings → API Keys), not Nix-creatable, so this is
-    # gated the same way as litellm_master_key above: declaring it
-    # unconditionally would break activation before the key exists in
-    # kleinbem-secrets. owner=martin: the sync job is a home-manager user
-    # service, not root.
+    # AnythingLLM API key (created in its UI, Settings → API Keys) for the
+    # vault sync, which runs as a home-manager user service.
     // lib.optionalAttrs config.my.anythingllmVaultSync.enable {
       anythingllm_api_key = {
         owner = "martin";
@@ -351,8 +303,7 @@ in
       # '';
     }
     // lib.optionalAttrs config.my.containers.langfuse.enable {
-      # 0400, not the old 0444: it now carries a real DB password, and
-      # the bind-mount into the container is read by root there anyway.
+      # 0400: carries the DB password; root reads it inside the container.
       "langfuse.env" = {
         mode = "0400";
         content = ''

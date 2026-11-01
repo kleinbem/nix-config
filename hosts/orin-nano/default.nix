@@ -61,12 +61,8 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # comin pull-deploy (modules/nixos/comin.nix), rolled out fleet-wide
-    # after the mac-mini canary (#201): follow the production branch, signed
-    # heads only. Unlike the Pi tier this host still compiles its own
-    # kernel/L4T closure on-device (build-all does not build orin-nano), so
-    # requireCache stays off and comin's build timeout (default 30 min) is
-    # raised to 12 h, the same "as long as it needs" rule autoUpgrade had.
+    # comin pull-deploy. This host still compiles its kernel/L4T closure on
+    # device (CI doesn't build it), so no requireCache and a 12 h build timeout.
     deploy = {
       autoUpgrade.enable = false;
       comin = {
@@ -112,14 +108,10 @@ in
           jpOverlayAttrNames = builtins.attrNames (inputs.jetpack-nixos.overlays.default final prev);
           jetpackNames = lib.filter (lib.hasPrefix "nvidia-jetpack") jpOverlayAttrNames;
           jetpackOverrides = lib.genAttrs jetpackNames (name: jpPkgs.${name});
-          # nixpkgs 09063bd ships System.map in kernel.dev (for
-          # linuxPackages.rebuildImage), so kbuild's modules_install now runs
-          # depmod for the out-of-tree L4T modules too. Their modules.dep then
-          # collides with the kernel's in aggregateModules ("two given paths
-          # contain a conflicting subpath", build-all run 39385551311). The
-          # aggregator runs depmod over everything anyway, so skip it here,
-          # like nixpkgs' amneziawg does. Self-retiring: skipped once
-          # jetpack-nixos passes DEPMOD itself.
+          # kernel.dev now ships System.map, so the L4T out-of-tree modules
+          # run depmod and their modules.dep collides with the kernel's in
+          # aggregateModules. The aggregator runs depmod anyway, so skip it
+          # (as nixpkgs' amneziawg does). No-op once jetpack-nixos sets DEPMOD.
           withoutOotDepmod =
             jp:
             if !(jp ? kernelPackagesOverlay) then
@@ -140,16 +132,10 @@ in
                   }
                 );
               };
-          # nixpkgs 3fe146e660 (2026-10-21) dropped its pre-5.19 kernel
-          # support, so buildLinux now always applies
-          # randstruct-provide-seed-5.19.patch, which edits
-          # scripts/gen-randstruct-seed.sh. The L4T 5.15 kernel doesn't have
-          # that file (its seed script is scripts/gcc-plugins/gen-random-seed.sh),
-          # so patchPhase fails for the kernel, its config and cpupower. Add
-          # the file with its unpatched 5.19 content so the patch applies.
-          # Nothing in 5.15 runs it, and the L4T config doesn't enable
-          # GCC_PLUGIN_RANDSTRUCT. Self-retiring: skipped when the source
-          # already has the file, and from 5.19 on.
+          # buildLinux always applies randstruct-provide-seed-5.19.patch now
+          # (nixpkgs #575125), which edits scripts/gen-randstruct-seed.sh, a
+          # file the L4T 5.15 kernel lacks. Add it unpatched so the patch
+          # applies; 5.15 never runs it. No-op when the file exists or on 5.19+.
           withRandstructSeedScript =
             jp:
             if !(jp ? overrideScope && jp ? kernel) then
@@ -263,11 +249,8 @@ in
     ];
   };
 
-  # colmena deploys as martin (PermitRootLogin = "no" in security.nix).
-  # The blanket `ALL NOPASSWD` that used to live here is gone: the
-  # fleet-wide per-command allowlist (modules/nixos/security/sudo.nix)
-  # applies. Set `my.security.sudo.unattendedDeploy = true` if colmena
-  # push deploys to this host must stay prompt-free.
+  # colmena deploys as martin under the fleet sudo allowlist; set
+  # `my.security.sudo.unattendedDeploy = true` for prompt-free pushes.
 
   users.users = {
     martin.openssh.authorizedKeys.keys = [
@@ -284,27 +267,11 @@ in
   # Local debug is text-mode TTY on HDMI (agetty on tty1); remote work is SSH.
   # Need a remote Wayland app occasionally? `waypipe` it from your workstation.
 
-  # Override headless.nix silent boot to keep console output visible.
-  # HDMI (tty0) is BLACK during initrd on Jetson — the Tegra display driver
-  # (nvidia-drm) only loads AFTER the LUKS unlock, so the passphrase prompt has
-  # no framebuffer to render on. The Tegra debug UART (ttyTCU0, micro-USB debug
-  # port) IS live from firmware, so list it LAST → it becomes the primary
-  # /dev/console: the initrd/LUKS prompt is then visible AND enterable over
-  # serial, while HDMI still shows everything once the system is up. Do NOT drop
-  # ttyTCU0 again (an HDMI-only console makes a stale-JWE unlock failure an
-  # invisible black-screen hang). See docs/ + the clevis-initrd setup.
-  # This mkForce replaces the WHOLE kernelParams list, so anything NixOS or a
-  # module would otherwise inject MUST be re-listed here or it is silently
-  # dropped:
-  #   - root=fstab       : systemd stage-1 mounts the tmpfs root via fstab;
-  #                        without it → gpt-auto-root timeout → emergency mode.
-  #   - systemd.machine_id: machine-id.nix's fleet-wide pin (my.machineId) —
-  #                        without it systemd regenerates a random id every
-  #                        boot ("Detected first boot" each time).
-  # console=ttyTCU0 stays LAST so it is the primary /dev/console for the LUKS
-  # prompt over the Tegra debug UART — do not reorder the console= entries.
-  # Keep the id this host has always had (pre-dates machine-id.nix's
-  # hostname-derived default).
+  # HDMI is black during initrd (nvidia-drm loads after LUKS unlock), so the
+  # debug UART ttyTCU0 must stay the LAST console= and thus /dev/console, or the
+  # unlock prompt is invisible. mkForce replaces the whole list, so re-list
+  # root=fstab (else gpt-auto-root timeout) and the machine-id pin.
+  # This host keeps the id it had before machine-id.nix's derived default.
   my.machineId = "9fef3c9be6eb4bf29456f7be28ec4d6d";
   boot.kernelParams = lib.mkForce [
     "root=fstab"

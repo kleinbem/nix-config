@@ -29,10 +29,8 @@ in
   security.auditd.enable = true;
   security.audit = {
     enable = true;
-    # Safety net for the next noisy rule: normal volume is a few records/s, so
-    # cap it well above that. Excess records are dropped with a printk notice
-    # instead of flooding journald, auditd and fluent-bit (2026-07-22 and
-    # 2026-10-28 freezes).
+    # Safety net for a noisy rule: normal volume is a few records/s. Excess
+    # records are dropped instead of flooding journald, auditd and fluent-bit.
     rateLimit = 1000;
     rules = [
 
@@ -44,26 +42,17 @@ in
       "-w /etc/sudoers.d -p wa -k identity"
 
       # --- System Operations ---
-      # The blanket `-S mount` and `-S setsockopt` forms these replace produced
-      # ~99.8% of all audit volume on this container host (57k mount + 35k
-      # setsockopt records/boot) and captured nothing actionable — 71% of the
-      # setsockopt events were fluent-bit's own socket churn. That flood fed the
-      # journal + fluent-bit pressure behind the 2026-07-22 freeze.
+      # Blanket `-S mount` / `-S setsockopt` were ~99.8% of audit volume and
+      # caught nothing useful, so both are narrowed.
 
-      # Mounts performed by a logged-in user (auid set), not the container /
-      # namespace plumbing (podman overlay mounts, systemd PrivateTmp) that runs
-      # with auid=unset. CIS-standard filter.
+      # Mounts by a logged-in user only; container and PrivateTmp mounts run
+      # with auid=unset (CIS-standard filter).
       "-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=unset -k mounts"
 
-      # Firewall changes = opening a netfilter netlink socket (AF_NETLINK=16,
-      # NETLINK_NETFILTER=12) — the mechanism nft / iptables-nft actually use to
-      # alter rules — NOT the blanket setsockopt() call every networked process
-      # makes. The firewall here is iptables-nft (`iptables` -> xtables-nft-multi,
-      # the nf_tables backend) even though networking.nftables.enable=false, so
-      # rule edits go over netlink — this is the correct signal and catches both
-      # the CLI and programmatic changes. It also records
-      # podman/fail2ban rule updates (genuine firewall changes); append
-      # `-F auid>=1000 -F auid!=unset` if you want operator-initiated only.
+      # Firewall changes: opening a netfilter netlink socket (AF_NETLINK=16,
+      # NETLINK_NETFILTER=12), which nft and iptables-nft both use. Also logs
+      # podman/fail2ban rule updates; add `-F auid>=1000 -F auid!=unset` for
+      # operator changes only.
       "-a always,exit -F arch=b64 -S socket -F a0=16 -F a2=12 -k nftables_changes"
 
       # --- Runtime Behavioral Monitoring (Worm & Malware Detection) ---
@@ -81,19 +70,13 @@ in
       "-a always,exit -F arch=b64 -S sethostname -S setdomainname -k sethostname"
 
       # 4. Kernel Module Loading / Rootkit Behavior
-      # Audited at the syscall level rather than by watching /sbin/{insmod,rmmod,
-      # modprobe}: those paths do not exist on NixOS (kmod lives in the Nix store),
-      # so the `-w` watches loaded with ENOENT ("No such file or directory") and
-      # aborted the ENTIRE ruleset — silently under nixos-rebuild (unit warn only),
-      # fatally under colmena (activation exit 4). init_module/delete_module catches
-      # the actual kernel load/unload regardless of which binary triggered it.
+      # Syscall-level, not `-w /sbin/modprobe` etc.: those paths don't exist on
+      # NixOS, and a watch on a missing path aborts the whole ruleset.
       "-a always,exit -F arch=b64 -S init_module -S delete_module -k kmod_change"
 
       # 5. Process Injection / Ptrace (Process Hollowing)
-      # Only the requests that attach to a process or write into it. The blanket
-      # `-S ptrace` logged every PTRACE_SYSCALL/GET_SYSCALL_INFO a tracer issues,
-      # several per traced syscall: one `strace -f` produced up to 11k records/s
-      # and froze nixos-nvme on 2026-10-28.
+      # Only requests that attach to or write into a process. Blanket `-S ptrace`
+      # logs several records per traced syscall; one `strace -f` froze the host.
       "-a always,exit -F arch=b64 -S ptrace -F a0=16 -k code_injection" # PTRACE_ATTACH
       "-a always,exit -F arch=b64 -S ptrace -F a0=16902 -k code_injection" # PTRACE_SEIZE
       "-a always,exit -F arch=b64 -S ptrace -F a0=4 -k code_injection" # PTRACE_POKETEXT
@@ -300,20 +283,9 @@ in
     ];
   };
 
-  # Fluent Bit: Lightweight log shipping to centralized Loki.
-  #
-  # Hardened after the 2026-07-22 freeze: with the Loki sink unreachable for
-  # days, the systemd input read the whole journal (including fluent-bit's own
-  # failure lines) and buffered unshippable chunks, producing 1M+ error lines
-  # and constant journald memory pressure. The guards below make an unreachable
-  # sink harmless:
-  #   - mem_buf_limit: bound the systemd input; apply backpressure instead of
-  #     growing RAM without limit when Loki is down.
-  #   - grep filter: drop fluent-bit's own unit so its errors are never
-  #     re-ingested and amplified (breaks the self-feeding loop).
-  #   - retry_limit: discard chunks after a few failed flushes rather than
-  #     hoarding them.
-  #   - log_level=error: stop the per-retry warn spam during a sink outage.
+  # Fluent Bit ships logs to Loki. mem_buf_limit, retry_limit, log_level=error
+  # and the grep filter on its own unit keep an unreachable Loki from
+  # growing RAM or feeding fluent-bit's errors back into the journal.
   services.fluent-bit = lib.mkForce {
     enable = true;
     settings = {

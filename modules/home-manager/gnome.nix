@@ -18,13 +18,8 @@
       package = pkgs.kdePackages.breeze;
     };
 
-    # Rofi app launcher, bound to <Super>r below. GNOME's Mutter doesn't
-    # implement the zwlr_layer_shell_v1 Wayland protocol (same protocol gap
-    # as the bitwarden.desktop clipboard workaround below), so rofi's native
-    # Wayland backend hard-aborts with "requires support for the layer shell
-    # protocol". Wrap the binary to unset WAYLAND_DISPLAY, forcing rofi onto
-    # its working xcb/XWayland backend (programs.xwayland.enable = true in
-    # nixos/desktop.nix) — confirmed live, this is not a compile-time toggle.
+    # Rofi on <Super>r. Mutter lacks zwlr_layer_shell_v1, so rofi's Wayland
+    # backend aborts; unsetting WAYLAND_DISPLAY puts it on XWayland.
     programs.rofi = {
       enable = true;
       package = pkgs.symlinkJoin {
@@ -44,10 +39,8 @@
         display-window = "Windows";
         drun-display-format = "{name}";
       };
-      # Catppuccin Mocha, hand-coded here since rofi has no native theme
-      # package — now the system-wide theme too (GTK/icons/cursor in
-      # nix-presets/desktop.nix, tiling-assistant hint below), so this no
-      # longer stands alone.
+      # Catppuccin Mocha by hand (no rofi theme package), matching the
+      # system theme in nix-presets/desktop.nix.
       theme =
         let
           inherit (config.lib.formats.rasi) mkLiteral;
@@ -186,29 +179,9 @@
 
       "org/gnome/shell" = {
         disable-user-extensions = false;
-        # GNOME-native workflow: stock top bar + overview, fast-autohide bottom
-        # dock (see extensions/dash-to-dock below) instead of a full bottom
-        # panel. Trimmed 24 → 18 extensions on 2026-09-10. Removed:
-        #   dash-to-panel  → dash-to-dock (autohide); top bar comes back natively
-        #   ding           → no desktop icons
-        #   logo-menu      → its launchers already exist as keybindings below
-        #   user-theme     → inert, no custom shell theme is shipped
-        #   quick-settings-tweaks → broadest shell patcher; media dup'd mediacontrols
-        #   flypie         → search-light (<Super>space) + rofi (<Super>r) are enough
-        # Removed 2026-09-11 (still installed upstream, but broken on this shell):
-        #   search-light   → packaged v42 only declares shell-version 48/49
-        #   mediacontrols  → packaged v47 only declares shell-version 46-49
-        #   both show State: OUT OF DATE on GNOME Shell 50.4 — re-add once nixpkgs
-        #   ships a version whose metadata.json lists "50".
-        # Removed 2026-09-11: weatheroclock — GNOME's weather backend
-        # (org/gnome/shell/weather) needs a location and location-services is
-        # off system-wide; libgweather's location DB also has no entry for
-        # Watergrasshill or any nearby town, only "Cork Airport" ~18km out.
-        # With no location it just spun forever next to the clock. Dropped
-        # rather than pinning an inexact/mislabeled location.
-        # Re-added 2026-09-11: arcmenu — wanted a top-bar app menu; verified
-        # shell-version 50 support (v73) before adding this time, unlike the
-        # search-light/mediacontrols mistake above.
+        # Stock top bar + overview with an autohide bottom dock. Check an
+        # extension's metadata.json lists the running shell version before
+        # adding it: search-light and mediacontrols don't support 50 yet.
         enabled-extensions = [
           "blur-my-shell@aunetx"
           "dash-to-dock@micxgx.gmail.com"
@@ -231,12 +204,8 @@
           "notification-timeout@chlumskyvaclav.gmail.com"
           "display-brightness-ddcutil@themightydeity.github.com"
         ];
-        # Explicit empty list: GNOME writes disabled UUIDs here whenever an
-        # extension errors out (or a user disables one via the Extensions app),
-        # and that key isn't cleared by anything else — it silently overrides
-        # enabled-extensions above and survives across home-manager switches.
-        # Declaring it empty makes every switch self-heal that state instead
-        # of a broken/manually-disabled extension staying stuck disabled.
+        # GNOME writes UUIDs here when an extension errors or is disabled, and
+        # this overrides enabled-extensions. Empty, so every switch resets it.
         disabled-extensions = [ ];
         favorite-apps = [
           "google-chrome-stable.desktop"
@@ -278,11 +247,8 @@
         sigma = 30;
       };
 
-      # Dock: bottom, plain autohide (not "intelligent" — hides regardless of
-      # window overlap) reserving no screen space while hidden. Tuned for a
-      # fast reaction: no pressure-barrier push needed, short show/hide delays,
-      # quick slide animation. hot-keys = false so Super+1..9 stay bound to
-      # workspace switching (wm/keybindings below), not dock-item activation.
+      # Bottom dock, plain autohide, tuned to react fast. hot-keys = false keeps
+      # Super+1..9 on workspace switching.
       "org/gnome/shell/extensions/dash-to-dock" = {
         dock-position = "BOTTOM";
         dock-fixed = false;
@@ -310,9 +276,7 @@
         hot-keys = false;
       };
 
-      # ArcMenu: centered top-bar app menu with a separate Activities button
-      # (stock top bar has neither, since dash-to-dock's autohide replaced
-      # dash-to-panel above) using the Pop!_OS-style "pop" menu layout.
+      # ArcMenu: centered top-bar app menu plus an Activities button.
       "org/gnome/shell/extensions/arcmenu" = {
         position-in-panel = "Center";
         show-activities-button = true;
@@ -339,8 +303,6 @@
         show-indicator = "always";
       };
 
-      # pano was removed from nixpkgs (upstream unmaintained, 2026-07); fall back
-      # to clipboard-indicator, which is still packaged.
       "org/gnome/shell/extensions/clipboard-indicator" = {
         toggle-menu = [ "<Super>v" ];
         clear-history = [ "<Super><Shift>v" ];
@@ -371,9 +333,7 @@
       "org/gnome/shell/extensions/tiling-assistant" = {
         enable-gradient = true;
         active-window-hint = 1; # Pulse hint
-        # Catppuccin Mocha "Blue" (#89b4fa) — matches the GTK/icon/cursor
-        # theme in nix-presets/desktop.nix and rofi's accent below, instead
-        # of GNOME's default blue (#3584e4).
+        # Catppuccin Mocha blue, matching the system theme and rofi.
         active-window-hint-color = "rgba(137, 180, 250, 0.5)";
       };
 
@@ -472,12 +432,7 @@
         ];
       };
 
-      # Renamed from "Containers" (2026-09-11): virt-manager (Categories:
-      # System;Emulator) and Connections (Categories: ...RemoteAccess;Network)
-      # checked out as VM/remote-access tools, not "Development" or
-      # "Productivity" — they sit closer to BoxBuddy/Pods than to code.desktop
-      # or Papers/SimpleScan. No shared category narrow enough to auto-match
-      # all four (BoxBuddy is bare "Utility"), so still hand-listed.
+      # Hand-listed: no category is narrow enough to match all four.
       "org/gnome/desktop/app-folders/folders/Virtualization" = {
         name = "Virtualization";
         apps = [
@@ -488,11 +443,7 @@
         ];
       };
 
-      # category-driven (2026-09-11): code.desktop already declares
-      # Categories=Utility;TextEditor;Development;IDE — "IDE" is narrow enough
-      # that nothing else installed matches it (Pods has "Development" too,
-      # which would've pulled it in), so this now auto-grows for any future
-      # IDE instead of needing a hand-added entry each time.
+      # "IDE", not "Development": Pods also carries Development.
       "org/gnome/desktop/app-folders/folders/Development" = {
         name = "Development";
         categories = [ "IDE" ];
@@ -509,28 +460,17 @@
       "org/gnome/desktop/app-folders/folders/Utilities" = {
         name = "Utilities";
         categories = [ "X-GNOME-Utilities" ];
-        # GNOME's factory app-folders default seeds this folder's own "apps"
-        # list (Decibels, Connections, Papers, font-viewer, Loupe — found live
-        # in dconf, never written by this file). folder-children ordering
-        # means Utilities is matched before Media below, so that stale list
-        # was silently stealing apps (e.g. Decibels) from Media's AudioVideo
-        # category match. Declare empty to override it, same self-healing
-        # pattern as disabled-extensions above.
+        # GNOME seeds a default "apps" list here, and Utilities matches before
+        # Media, so it steals apps like Decibels. Empty overrides it.
         apps = [ ];
       };
 
-      # Category-driven folders (2026-09-11): rather than hand-listing apps,
-      # match on freedesktop Categories. Only using categories narrow enough
-      # to stay meaningful — "Utility" and "Graphics" are far too promiscuous
-      # (most GNOME apps carry Utility as a secondary tag) and would swallow
-      # half the grid, including apps already pinned to the dock.
+      # Folders match narrow freedesktop categories only; "Utility" or
+      # "Graphics" would swallow half the grid.
       "org/gnome/desktop/app-folders/folders/FleetServices" = {
         name = "Fleet Services";
         categories = [ "WebBrowser" ];
-        # The ~30 self-hosted service PWA launchers (Attic, Authentik, Frigate,
-        # Home Assistant, n8n, Netdata, Paperless, Qdrant, Syncthing, etc.)
-        # all declare Categories=Network;WebBrowser. Exclude the actual
-        # browsers so Chrome doesn't get folded in alongside them.
+        # The service PWA launchers declare WebBrowser; exclude the real browsers.
         excluded-apps = [
           "google-chrome-stable.desktop"
           "google-chrome.desktop"
@@ -639,12 +579,9 @@
       };
     };
 
-    # GNOME's Mutter doesn't implement the zwlr_data_control_manager_v1 Wayland
-    # protocol, so bitwarden-desktop's clipboard.write silently fails and its
-    # X11 fallback then times out (github.com/bitwarden/clients/issues/13431).
-    # Shadow nixpkgs' bitwarden.desktop (same filename wins via the higher-
-    # priority ~/.local/share/applications) and drop NIXOS_OZONE_WL just for
-    # this launch, forcing Bitwarden onto its working plain-X11/XWayland path.
+    # Mutter lacks zwlr_data_control_manager_v1, so Bitwarden's clipboard
+    # fails on Wayland (bitwarden/clients#13431). Shadow its desktop file and
+    # drop NIXOS_OZONE_WL so it runs on XWayland.
     xdg.desktopEntries.bitwarden = {
       name = "Bitwarden";
       comment = pkgs.bitwarden-desktop.meta.description;

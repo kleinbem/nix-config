@@ -1,16 +1,10 @@
-# A MeshLLM node on a fleet host: services.mesh-llm from nix-packages
-# (NixOS/nixpkgs#571722 as written), with the fleet's choices on top. The
-# nodes form one unpublished mesh: the always-on orin-nano creates it and
-# prints a join token at its first start; a workstation joins with that
-# token from sops (`joinTokenSecret`) and serves its own models into the
-# mesh. Every node's local API (http://127.0.0.1:9337/v1, OpenAI-compatible)
-# routes to whichever node holds the model, so goose and friends talk to
-# localhost on each host.
+# A MeshLLM node (services.mesh-llm from nix-packages) with fleet defaults.
+# orin-nano creates the mesh; other nodes join with its token. Each node's
+# local API at 127.0.0.1:9337/v1 routes to whichever node holds the model.
 #
-# Bootstrap, once per mesh (the only manual step):
-#   journalctl -u mesh-llm on the creating node → the join token, into
-#   `sops kleinbem-secrets/nix/per-host/<joining host>.yaml` as mesh_llm_join,
-#   then set joinTokenSecret = "mesh_llm_join" on that host.
+# Joining, once per mesh: copy the token from `journalctl -u mesh-llm` on the
+# creating node into the joining host's per-host sops file as mesh_llm_join,
+# then set joinTokenSecret = "mesh_llm_join" there.
 {
   config,
   lib,
@@ -109,20 +103,14 @@ in
     systemd.services.mesh-llm.wantedBy = lib.mkIf (!cfg.autoStart) (lib.mkForce [ ]);
 
     # MeshLLM learns the GPU's CUDA architecture from nvidia-smi; without it on
-    # the service's PATH it rejects the CUDA runtime and serves on the CPU (the
-    # Orin did, with GPU load 0, until 2026-10-31). On a Jetson, nvidia-smi
-    # comes from l4t-nvml.
+    # the service's PATH it silently serves on the CPU. On a Jetson,
+    # nvidia-smi comes from l4t-nvml.
     systemd.services.mesh-llm.path = lib.optional (
       options.hardware ? nvidia-jetpack && config.hardware.nvidia-jetpack.enable
     ) pkgs.nvidia-jetpack.l4t-nvml;
 
-    # The fleet's hosts run a tmpfs root (persistence.nix), and /var is a
-    # few GB of RAM: the node's state directory holds its identity (which
-    # join tokens stay valid), its config and the model cache, so it lives
-    # on /nix/persist. Both hosts have room there; a dedicated data disk
-    # can come later. DynamicUser puts the directory under /var/lib/private
-    # (as tang's). Found the hard way on 2026-10-20: a 19 GB download into
-    # the tmpfs.
+    # /var is a small tmpfs, and the state dir holds the node identity and the
+    # model cache, so persist it. DynamicUser puts it under /var/lib/private.
     environment.persistence = lib.mkIf (options.environment ? persistence) {
       "/nix/persist".directories = [ "/var/lib/private/mesh-llm" ];
     };

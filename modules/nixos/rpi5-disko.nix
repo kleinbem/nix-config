@@ -1,16 +1,9 @@
 # rpi5-disko.nix — shared disko layout for RPi5 nodes on native NVMe (PCIe
 # HAT), single LUKS+btrfs volume, no on-disk swap.
 #
-# Extracted 2026-09-11 from hosts/{core-pi,hass-pi}/disko.nix, which were
-# byte-identical except the LUKS volume name — memory headroom on both hosts
-# is served by zram (core.nix, zramSwap memoryPercent=50) instead, since all
-# heavy builds happen in CI (GitHub Actions + Attic cache) and these boxes
-# only pull prebuilt closures. If disk swap is ever needed again it must
-# return as a *dedicated partition* (the "swap outside LUKS" rule rules out
-# a btrfs swapfile inside the LUKS volume).
-#
-# `luksName` is required (no default) — every consumer must pick its own, to
-# avoid two hosts silently sharing a LUKS volume name.
+# zram covers memory since these boxes only pull prebuilt closures. If disk
+# swap is ever needed it must be a dedicated partition: no swapfile inside LUKS.
+# `luksName` has no default so two hosts can't silently share a volume name.
 {
   device ? "/dev/nvme0n1",
   luksName,

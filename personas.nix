@@ -1,33 +1,19 @@
-# Personas manifest — PUBLIC layer.
+# Personas manifest, public layer: roles and operational data only.
+# Identity (name, email, bio...) stays private in the sops-encrypted
+# kleinbem-secrets/personas/contact.nix; lib/personas.nix joins the two and
+# shows "(private)" when it can't decrypt.
 #
-# This file contains role/authorisation/operational data only.
-# Personal identity (name, email, matrix-id, bio, location) lives in
-# the PRIVATE `kleinbem-secrets/personas/contact.nix` (sops-encrypted)
-# — kept out of the public repo for GDPR / privacy reasons (real human
-# collaborators) and authenticity reasons (AI personas).
-#
-# Schema joined at lib-evaluation time by `lib/personas.nix`. Without
-# decrypted contact data available, downstream views render with
-# "(private)" placeholders.
-#
-# Per-persona public fields:
-#
-#   kind          "human" | "agent" — determines provisioning rules.
+# Fields:
+#   kind          "human" | "agent"; decides provisioning.
 #   date-joined   ISO date.
-#   signing-key   Legacy/uniqueness-check label only — every persona's
-#                 actual signing key lives at the same `id_ed25519` key
-#                 inside kleinbem-secrets/personas/<name>.yaml regardless
-#                 of this field's value. lib/personas.nix's
-#                 assertUniqueSigningKeys is the only real consumer.
-#   tool          "human" for humans; AI tool name for agents.
-#   model         null for humans; specific LLM for agents.
-#   role-tags     Capability tags consumed by authorization policy.
-#                 Tags: founder, owner, operator, primary-driver,
-#                 peer-reviewer, ui-specialist, ci-runner,
-#                 experimental, trusted, can-touch-secrets,
-#                 can-deploy.
-#   active-hours  Operational window (used by scheduling). Not
-#                 considered personal data — coarse-grained.
+#   signing-key   Label for assertUniqueSigningKeys only; the real key is
+#                 always `id_ed25519` in kleinbem-secrets/personas/<name>.yaml.
+#   tool          "human", or the agent's AI tool.
+#   model         null for humans, the LLM for agents.
+#   role-tags     Authorization tags: founder, owner, operator, primary-driver,
+#                 peer-reviewer, ui-specialist, ci-runner, experimental,
+#                 trusted, can-touch-secrets, can-deploy.
+#   active-hours  Operational window for scheduling.
 
 {
   # ─── Human operator(s) ────────────────────────────────────────────

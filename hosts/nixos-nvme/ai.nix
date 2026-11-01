@@ -6,14 +6,9 @@
 }:
 
 {
-  # This workstation's MeshLLM node (Vulkan on the iGPU, 64 GB RAM): a
-  # mixture-of-experts coder, 30B of weights but 3B active per token, which is
-  # what makes a big model usable without a discrete GPU. It joins the mesh
-  # that orin-nano creates once the join token is in sops (see the module);
-  # until then it serves standalone. goose reaches it at 127.0.0.1:9337
-  # (users/martin/home.nix).
-  # Started by hand (`sudo systemctl start mesh-llm`): idle, the model's ~25 GB
-  # went to swap and left no room for builds (2026-10-25).
+  # MeshLLM on the iGPU (Vulkan): a MoE coder with 3B active params per token,
+  # usable without a discrete GPU. Started by hand (`sudo systemctl start
+  # mesh-llm`): idle, its ~25 GB goes to swap and starves builds.
   my.services.meshLlm = {
     enable = true;
     autoStart = false;
@@ -68,17 +63,8 @@
       };
     };
 
-    # NOT enabled — monitoring already lives on mac-mini (moved there
-    # 2026-08-04 for RAM headroom) and this exact option is ALSO declared
-    # `enable = false` in this host's own containers.nix (hosts/nixos-nvme/
-    # containers.nix:111) — a leftover duplicate stub from before ai.nix
-    # was split out. Flipping either copy to `true` without reconciling
-    # the other throws a conflicting-definition eval error (confirmed
-    # 2026-08-19), and even if forced, it'd stand up a second Grafana/
-    # Prometheus instance fighting mac-mini's for the same
-    # myInventory.network.nodes.monitoring.ip. Needs the duplicate
-    # removed (probably drop the containers.nix stub) before this can be
-    # touched again.
+    # Off: monitoring runs on mac-mini with the same inventory IP. Also set in
+    # containers.nix, so flipping only one copy is a conflicting-definition error.
     monitoring = {
       enable = false;
       ip = "${myInventory.network.nodes.monitoring.ip}/24";
@@ -191,22 +177,8 @@
     };
   };
 
-  # The rest of this host's container data dirs used to all get a blanket
-  # `0777 root root` here — a shortcut that both made several of them
-  # world-writable for no reason (litellm and the langfuse app container
-  # don't even write to their hostDataDir; playground's factory default of
-  # 0755 1000:100 already matches its container's uid=1000 user) and
-  # actively conflicted with correct rules the owning preset already
-  # declares (caddy's own `Z ... 0755 3000 3000`, monitoring's own
-  # `0755 1000 100` for its grafana subdir). comfyui/langflow now pin their
-  # podman containers to run as 1000:100 and get a matching tmpfiles rule
-  # in their own preset; langfuse-db's postgres data dir gets the real
-  # postgres uid/gid via dataDirOwner/dataDirGroup in langfuse.nix. The
-  # `/var/lib/images/ollama` rules referenced a host user ("ollama") that
-  # doesn't exist on this host — services.ollama isn't configured here,
-  # only the nspawn `my.containers.ollama` in containers.nix, whose own
-  # process runs as root and needs no dir override — so those two lines
-  # were simply broken and are dropped, not replaced.
+  # Only dirs no preset owns. Don't add blanket rules for other containers'
+  # data dirs: their presets set the right owner, and a rule here conflicts.
   systemd.tmpfiles.rules = [
     "d /var/lib/images/agent-team 0755 1000 100 - -"
     "d /var/lib/images/agent-team/workspace 0775 1000 100 - -"

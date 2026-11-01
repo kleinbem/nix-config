@@ -5,14 +5,9 @@
   ...
 }:
 
-# 3D printing (distinct from the CUPS paper printer in printing.nix).
-# Slicers + LAN-mode discovery for Bambu Lab hardware (A1 mini).
-#
-# LAN mode: the printer broadcasts itself over SSDP (UDP 1990/2021) and mDNS.
-# The slicer listens for those broadcasts to auto-discover the printer and to
-# send prints / stream status. MQTT-over-TLS (8883), FTPS (990) and the
-# chamber camera (6000) are outbound PC→printer connections, so they need no
-# inbound firewall rule — only the discovery listeners do.
+# 3D printing: slicers and LAN-mode discovery for the Bambu Lab A1 mini.
+# Only discovery (SSDP, mDNS) needs inbound ports; MQTT, FTPS and the camera
+# are outbound connections to the printer.
 
 let
   cfg = config.my.services.threeDPrinting;

@@ -74,21 +74,10 @@ in
 
     services.chrony = {
       enable = true;
-      # Allow chrony to step the clock on any large drift, not just the
-      # first 3 updates. Confirmed live on nasbook (no working RTC —
-      # "RTC driver could not be initialised", boots at ~2012): even with
-      # DNS/network converging within 15s, the "first 3" budget was
-      # already burned by failed sync attempts during the network's own
-      # early settling window, so the real first successful sync fell
-      # outside it and chrony fell back to slowly *slewing* a ~14-year
-      # offset — needing a manual `chronyc makestep` to actually fix.
-      # -1 removes the update-count limit entirely: any sync at any time
-      # that finds a >1s drift steps instead of slews.
-      #
-      # Note: NixOS automatically enables rtcfile and rtcautotrim (see
-      # services.chrony.enableRTCTrimming), which conflicts with `rtcsync`.
-      # chrony trims the RTC through /dev/rtc; persistentClock below covers
-      # hosts where that is missing or dead.
+      # Step on any drift over 1s, not just the first 3 updates: on hosts
+      # without a working RTC, failed early syncs use up that budget and
+      # chrony then slews a years-long offset.
+      # No `rtcsync`: NixOS enables rtcautotrim, which conflicts with it.
       extraConfig = ''
         makestep 1.0 -1
       '';

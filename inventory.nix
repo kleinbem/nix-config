@@ -5,7 +5,7 @@ let
   # unlock, so lib/tang.nix leaves it out of that host's binding.
   # thp = SHA-256 thumbprint of the server's signing key; clevis verifies the
   # advertisement against it, so binding needs no trust prompt and can't be
-  # redirected. Read from each server on 2026-10-17.
+  # redirected.
   tang = {
     nixos-nvme = {
       url = "http://10.0.0.5:7654";
@@ -52,17 +52,10 @@ in
         "desktop"
       ];
     };
-    # (LXC "brain" containers router-1/.3, router-2/.4, net-brain/.7 removed
-    # 2026-07-18 — never deployed; every planned tenant lives on the fleet.
-    # ap-upstairs keeps the lxc-host capability if a network-layer need
-    # ever materializes. .3/.4/.7 are free.)
-    # `board` selects the Ansible board group (openwrt-config group_vars/
-    # board_<board>.yml: interface names, Wi-Fi modes, port map) and the
-    # openwrt-builder profile family. Known boards: bpi-r4, orbi-rbr50,
-    # orbi-rbs50 (the Netgear Orbi v1 units, APs only, once the R4s route).
-    # Orbi topology tags: `mesh-gate` = the one unit wired to a BPI-R4 (the
-    # RBR50), `mesh-node` = free-standing satellites on the 802.11s backhaul
-    # (the three RBS50). Planned entries, add when flashed:
+    # `board` picks the Ansible group (openwrt-config group_vars/board_<board>.yml)
+    # and openwrt-builder profile: bpi-r4, orbi-rbr50, orbi-rbs50 (Orbi APs).
+    # Orbi tags: `mesh-gate` = the RBR50 wired to a BPI-R4, `mesh-node` = the
+    # RBS50 satellites on the 802.11s backhaul. Planned, add when flashed:
     #   ap-<location> = { ip = "10.0.0.3"; type = "openwrt"; board = "orbi-rbr50";
     #                     tags = [ "physical" "ap" "mesh-gate" ]; };
     #   ap-<location> = { ip = "10.0.0.4"; type = "openwrt"; board = "orbi-rbs50";
@@ -118,12 +111,6 @@ in
         "raspberry-pi"
         "home-assistant"
       ];
-      # Deployed and running (hosts/hass-pi/default.nix). Home Assistant was
-      # restored from the old HAOS backup on 2026-10-20 and is reachable at
-      # https://hass.kleinbem.dev (Caddy on core-pi) / http://10.0.0.21:8123.
-      # Currently hosts: home-assistant, openclaw (pnpm-deps hash issue keeps
-      # it here; see hosts/hass-pi/default.nix line 17-23). Other AI services
-      # moved to mac-mini 2026-08-05 (RAM and power constraints).
     };
     phone = {
       # NetBird names peers after the device hostname; meshGroups use this.
@@ -156,7 +143,7 @@ in
       ];
     };
     mac-mini = {
-      ip = "10.0.0.16"; # LAN IP — static (cutover from DHCP .70 confirmed 2026-08-03)
+      ip = "10.0.0.16"; # LAN IP, static
       netbirdIp = "100.117.247.175"; # Mesh IP (stable per enrollment)
       system = "x86_64-linux"; # Mid-2011 Mac Mini (Macmini5,x) — Intel, real 64-bit EFI
       deployType = "ssh";
@@ -168,16 +155,9 @@ in
   };
 
   # ─── NetBird mesh groups ────────────────────────────────────
-  # Membership for the NetBird control-plane groups managed by the
-  # `nix/infra/netbird` OpenTofu root (groups.tf). This is the single
-  # source of truth — the root reads it via the generated
-  # `nix/infra/inventory.json` (see iac/data.nix). Until 2026-09-07 these
-  # lists were duplicated as `variable ... { default = [...] }` blocks in
-  # groups.tf, drifting silently from the fleet.
-  #
-  # Names must exist in `hosts` above (iac/data.nix asserts this). Peers
-  # still self-register on the data plane (`netbird up`); this only drives
-  # which control-plane group each enrolled peer lands in.
+  # Source of truth for NetBird group membership (nix/infra/netbird groups.tf,
+  # via iac/data.nix). Names must exist in `hosts`. Peers still self-register;
+  # this only picks the group each lands in.
   meshGroups = {
     # Trusted personal machines — the only peers allowed to SSH infra and
     # use the buzz-relay route. Mirrors the `desktop`-tagged hosts.
@@ -203,11 +183,8 @@ in
 
   git = {
     name = "kleinbem";
-    # Stays on gmail until Phase 1 (Stalwart) provides a real kleinbem.dev
-    # mailbox and we verify it on the GitHub account — GitHub's "verified
-    # signature" rule checks the committer email against verified emails on
-    # the account. Switching this address before then breaks signed pushes
-    # to branch-protected repos.
+    # Must be a verified email on the GitHub account, or signed pushes to
+    # protected branches fail. Switch once a kleinbem.dev mailbox is verified.
     email = "martin.kleinberger@gmail.com";
   };
   hardware = {
@@ -250,16 +227,14 @@ in
       # App Containers
       dashboard = {
         ip = "10.85.48.103";
-        # homepage-dashboard (gethomepage/homepage) listens on 8082, not the
-        # old custom skin's plain nginx :80 — Caddy's reverse_proxy
-        # (nix-presets/containers/caddy/helpers.nix mkUpstream) reads this
-        # field directly, so a stale value here is a silent 502.
+        # homepage-dashboard's port. Caddy proxies to this field directly, so a
+        # wrong value is a silent 502.
         port = 8082;
         externalPort = 443; # Default HTTPS
         domain = "home.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         maintenance = false;
-        auth = false; # Gated at the edge by Cloudflare Access (terraform/cloudflare-access.tf); Authelia retired here
+        auth = false; # Gated at the edge by Cloudflare Access (terraform/cloudflare-access.tf)
         meta = {
           name = "Dashboard";
           category = "Infrastructure";
@@ -277,10 +252,8 @@ in
         # for the public binary cache (R2). Both names work until every
         # host and CI job uses the new one.
         extraDomains = [ "attic.kleinbem.dev" ];
-        # Mesh-only: every consumer (hosts, CI runners) reaches it over
-        # NetBird, and the tunnel path 413s on large NARs anyway. Off the
-        # public tunnel since 2026-10-17, after it served the secrets repo
-        # source to the internet. Pulls also need a token.
+        # Mesh-only: every consumer reaches it over NetBird, the tunnel 413s on
+        # large NARs, and the cache holds private sources. Pulls need a token.
         meta = {
           name = "Attic Binary Cache";
           category = "Infrastructure";
@@ -295,7 +268,7 @@ in
         domain = "ntfy.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         # No SSO: CI publishes the fleet-deploy signal with a plain curl and
-        # devices long-poll anonymously — Authelia would break both. Access
+        # devices long-poll anonymously; forward-auth would break both. Access
         # control is the unguessable topic name (sops: ntfy_deploy_topic),
         # and the only subscriber action is "start nixos-upgrade.service",
         # which pulls the CI-gated production tag anyway.
@@ -333,24 +306,10 @@ in
         domain = "n8n.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         mtls = true;
-        auth = true; # Authentik forward-auth for the UI — was Authelia until 2026-09-22
-        # Webhook endpoints are called by external services (GitHub, Stripe,
-        # etc.) that can't complete an interactive Authentik login — carved
-        # out of forward_auth at the Caddy layer (see caddy/helpers.nix).
-        # This was ALSO true under Authelia (its access_control had no
-        # path exclusion at all, blanket one_factor for *.kleinbem.dev) —
-        # not a new gap introduced by the Authentik migration, just never
-        # fixed until now.
-        #
-        # No network-layer auth on this path at all, deliberately — real
-        # security has to be n8n's OWN per-webhook Header Auth/HMAC
-        # signature verification (set per-workflow in n8n itself, not
-        # something Nix/Terraform can configure). Didn't add a Cloudflare
-        # WAF rate-limit rule here: the free plan's one rate-limit slot is
-        # already spent on Vaultwarden (cloudflare-waf.tf), and a guessed
-        # method/pattern restriction risks blocking real webhook payloads
-        # without knowing this fleet's actual workflows. Worth adding once
-        # the plan allows a second rule or the real traffic shape is known.
+        auth = true; # Authentik forward-auth for the UI
+        # Webhooks come from services that can't log in, so they skip
+        # forward-auth. Each workflow must verify its own Header Auth/HMAC.
+        # No WAF rate limit: the free plan's one slot is used by Vaultwarden.
         authExcludePaths = [
           "/webhook/*"
           "/webhook-test/*"
@@ -363,18 +322,14 @@ in
         };
       };
       code-server = {
-        # Corrected 2026-09-22: was "10.85.46.101", which never matched the
-        # actually-running container (confirmed live via `machinectl status
-        # code-server` on nixos-nvme, and a container-factory update pull
-        # did NOT converge it — nspawn addresses are assigned once at
-        # container creation, not re-applied on every closure activation).
-        # This is the container's real, live address.
+        # nspawn assigns the address at creation; changing it here doesn't
+        # move a running container.
         ip = "10.85.46.22";
         port = 4444;
         externalPort = 443;
         domain = "code.kleinbem.dev";
         meshOnly = true;
-        auth = true; # Mesh-only now — Cloudflare Access was its only gate; Authentik forward-auth replaces it (was Authelia until 2026-09-22)
+        auth = true; # Authentik forward-auth
         meta = {
           name = "Code Server";
           category = "Dev";
@@ -383,7 +338,7 @@ in
         };
       };
       open-webui = {
-        ip = "10.85.50.3"; # mac-mini (moved from hass-pi 2026-08-05)
+        ip = "10.85.50.3"; # mac-mini
         port = 8080;
         externalPort = 443;
         domain = "chat.kleinbem.dev";
@@ -471,7 +426,7 @@ in
         };
       };
       agent-zero = {
-        ip = "10.85.50.5"; # mac-mini (moved from hass-pi 2026-08-05)
+        ip = "10.85.50.5"; # mac-mini
         port = 50001;
         externalPort = 50001;
         mtls = true;
@@ -483,7 +438,7 @@ in
         };
       };
       hermes = {
-        ip = "10.85.50.7"; # mac-mini (moved from hass-pi 2026-08-05)
+        ip = "10.85.50.7"; # mac-mini
         meta = {
           name = "Hermes Agent";
           category = "AI Engineering";
@@ -494,14 +449,9 @@ in
       buzz = {
         ip = "10.85.46.131"; # nixos-nvme — Pis (hass-pi/core-pi) too tight on RAM for now
         port = 3000;
-        # Mesh-only TLS front (2026-10-23): Caddy on core-pi serves
-        # wss://buzz.kleinbem.dev with a Let's Encrypt certificate from the
-        # Cloudflare DNS-01 challenge (publicCert; token minted in
-        # nix/infra/r2-tokens/acme-dns.tf). Buzz 1.0 joins communities only
-        # over TLS and trusts only the public CA list, so `tls internal`
-        # isn't enough. The name resolves over NetBird only
-        # (nix/infra/netbird/dns.tf); no tunnel ingress (not `public`).
-        # /pair* goes to the pairing relay (buzz-pair-relay accepts any path).
+        # publicCert: Buzz joins only over TLS with a public CA, so `tls internal`
+        # won't do; Caddy gets a Let's Encrypt cert via DNS-01 while the name
+        # stays mesh-only. /pair* goes to the pairing relay.
         domain = "buzz.kleinbem.dev";
         meshOnly = true;
         externalPort = 443;
@@ -528,24 +478,13 @@ in
       };
       monitoring = {
         enabled = true;
-        ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
-        # Grafana's real listener, set via server.http_port in
-        # nix-presets/containers/monitoring.nix. A stale `externalPort =
-        # 3001` used to live here with nothing ever bound to it; the generic
-        # `service-launchers` desktop entry prefers externalPort over port
-        # when both exist, so it was silently pointing at a dead port.
-        port = 3000;
-        # Proxied through Caddy at grafana.kleinbem.dev (added 2026-09-19),
-        # public tunnel ingress, no Cloudflare Access double-gate (see
-        # nix/infra/cloudflare-access.tf's scope-decision comment).
+        ip = "10.85.50.2"; # mac-mini
+        port = 3000; # Grafana (server.http_port in nix-presets monitoring.nix)
         externalPort = 443;
         domain = "grafana.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
-        # auth = false: Grafana logs visitors in itself via Authentik OIDC
-        # (my.containers.monitoring.grafanaOidc on mac-mini, provider in
-        # nix/infra/authentik.tf) instead of sitting behind Caddy's
-        # forward_auth gate — avoids double-gating the same login. Was
-        # `auth = true` / Authelia until the 2026-09-22 migration.
+        # Grafana logs users in itself via Authentik OIDC; forward-auth on top
+        # would gate the same login twice.
         auth = false;
         meta = {
           name = "Monitoring";
@@ -556,22 +495,14 @@ in
       };
       alertmanager = {
         enabled = true;
-        # Runs inside the SAME monitoring container (containers/monitoring.nix
-        # enables prometheus.alertmanager in the same innerConfig as
-        # victoriametrics/grafana) — was pointing at 10.85.47.114 (nasbook's
-        # subnet), a stale/wrong value predating this move, not something
-        # that ever matched the container's real address. Fixed to match
-        # monitoring's own IP above.
-        ip = "10.85.50.2"; # mac-mini (moved from core-pi 2026-08-04)
+        # Runs inside the monitoring container, so same IP.
+        ip = "10.85.50.2"; # mac-mini
         port = 9093;
         externalPort = 9093;
-        # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
-        # *.kleinbem.dev hostname to match (bare IP:port never worked, see
-        # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
-        # code-server/frigate, not on the public Cloudflare tunnel.
+        # Forward-auth needs a real hostname; bare IP:port doesn't match.
         domain = "alertmanager.kleinbem.dev";
         meshOnly = true;
-        auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
+        auth = true; # Authentik forward-auth
         meta = {
           name = "Alertmanager";
           category = "Infrastructure";
@@ -611,9 +542,6 @@ in
           description = "Real-time per-second telemetry.";
         };
       };
-      # authelia removed 2026-09-22 — decommissioned, replaced by Authentik
-      # forward-auth (nix/infra/authentik.tf's fleet_forward_auth Provider).
-      # Freed: 10.85.48.123, authelia.kleinbem.dev.
       home-assistant = {
         ip = "10.85.49.10"; # Hass-Pi
         port = 8123;
@@ -630,12 +558,7 @@ in
       };
 
       cups = {
-        # Was 10.85.46.124 — a stale .46 (nixos-nvme's subnet) address that
-        # never matched where cups actually deploys (core-pi, 10.85.48.0/24).
-        # Same dual-IP/wrong-gateway bug as caddy/attic/crowdsec had — this
-        # was the one instance of it left deliberately unfixed until now.
-        # .123 was already freed (authelia's old slot, see comment below).
-        ip = "10.85.48.123";
+        ip = "10.85.48.123"; # core-pi
         port = 631;
         secure = true; # Uses https upstream
         meta = {
@@ -668,13 +591,10 @@ in
         ip = "10.85.47.127";
         port = 8384;
         externalPort = 8384;
-        # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
-        # *.kleinbem.dev hostname to match (bare IP:port never worked, see
-        # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
-        # code-server/frigate, not on the public Cloudflare tunnel.
+        # Forward-auth needs a real hostname; bare IP:port doesn't match.
         domain = "syncthing.kleinbem.dev";
         meshOnly = true;
-        auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
+        auth = true; # Authentik forward-auth
         meta = {
           name = "Syncthing (Nasbook)";
           category = "Infrastructure";
@@ -704,21 +624,15 @@ in
 
       # Services not currently proxied by Caddy but present
       frigate = {
-        # Corrected 2026-09-22: was "10.85.46.130", which never matched the
-        # actually-running container (confirmed live via `machinectl status
-        # frigate` on orin-nano). This is the container's real, live
-        # address. Note orin-nano's own cbr0 bridge reuses the same
-        # 10.85.46.0/24 range as nixos-nvme's — they're separate host-local
-        # L2 segments, not a shared subnet, so this is not a collision on
-        # the wire, only for anything (like a single fleet-wide netbird
-        # route or static LAN route) that tries to key purely off the /24.
+        # orin-nano's cbr0 reuses nixos-nvme's 10.85.46.0/24. Separate L2
+        # segments, but don't route fleet-wide by that /24 alone.
         ip = "10.85.46.39";
         # nginx from the NixOS frigate module; 5000 was never served.
         port = 80;
         externalPort = 443;
         domain = "frigate.kleinbem.dev";
         meshOnly = true;
-        auth = true; # Authentik forward-auth in front (was Authelia until 2026-09-22); mesh-only (NVR — never on the public tunnel)
+        auth = true; # Authentik forward-auth; an NVR never goes on the public tunnel
         meta = {
           name = "Frigate NVR";
           category = "Security";
@@ -739,13 +653,10 @@ in
         ip = "10.85.47.131"; # Moved to NASbook subnet
         port = 28981;
         externalPort = 28981;
-        # Added 2026-09-22 — forward_domain-mode forward-auth needs a real
-        # *.kleinbem.dev hostname to match (bare IP:port never worked, see
-        # nix/infra/netbird/dns.tf's mesh_only_fqdns). Mesh-only like
-        # code-server/frigate, not on the public Cloudflare tunnel.
+        # Forward-auth needs a real hostname; bare IP:port doesn't match.
         domain = "paperless.kleinbem.dev";
         meshOnly = true;
-        auth = true; # Authentik forward-auth (fleet_forward_auth Provider) — was Authelia until 2026-09-22
+        auth = true; # Authentik forward-auth
         meta = {
           name = "Paperless-ngx";
           category = "Documents";
@@ -754,7 +665,7 @@ in
         };
       };
       anythingllm = {
-        ip = "10.85.50.6"; # mac-mini (moved from hass-pi 2026-08-05)
+        ip = "10.85.50.6"; # mac-mini
         port = 3001;
         meta = {
           name = "AnythingLLM";
@@ -792,9 +703,8 @@ in
         };
       };
       # Self-hosted Bitwarden-compatible password vault for people + personas.
-      # core-pi slice (10.85.48.0/24); .135 free. NOT Authelia/Access-gated —
-      # forward-auth breaks Bitwarden apps, the CLI and browser extensions;
-      # Vaultwarden's own master-password + 2FA is the gate, /admin by token.
+      # No forward-auth: it breaks the Bitwarden apps, CLI and extensions.
+      # Vaultwarden's master password + 2FA is the gate, /admin by token.
       vaultwarden = {
         ip = "10.85.48.135";
         port = 8222;
@@ -809,13 +719,8 @@ in
           description = "Self-hosted password manager (people + personas).";
         };
       };
-      # kleinbem-auth removed 2026-09-21 — decommissioned, replaced by
-      # Authentik below. login.kleinbem.dev is free again; 10.85.48.140
-      # reused below by gatus.
-      # Public fleet status page, probing the other public endpoints in
-      # this file directly over HTTP (no Prometheus dependency). auth =
-      # false: the whole point is a status page visitors can check without
-      # signing in.
+      # Public status page probing the public endpoints here over HTTP.
+      # No auth: visitors check it without signing in.
       gatus = {
         ip = "10.85.48.140";
         port = 8080;
@@ -830,11 +735,8 @@ in
           description = "Fleet uptime / status page.";
         };
       };
-      # Shared IdP: replaces kleinbem-auth for kleinbem.dev visitor login and
-      # also serves persona OIDC / Matrix federation / sigstore (the original
-      # scope authentik.nix was built for) — one instance, multiple
-      # Applications configured inside Authentik itself.
-      # auth = false: this IS the sign-in surface — never Authelia-gated.
+      # Shared IdP: visitor login, persona OIDC, Matrix, sigstore.
+      # No auth: this is the sign-in surface itself.
       authentik = {
         ip = "10.85.48.142";
         port = 9000;
@@ -849,22 +751,14 @@ in
           description = "Shared identity provider (SSO, social login, persona OIDC).";
         };
       };
-      # Persona-fleet mail (Phase 1). One mailbox per persona at
-      # <name>@kleinbem.dev, created imperatively by persona-scaffold.sh.
-      # Runs on mac-mini (24/7 host) — .50 subnet. Not Caddy-proxied —
-      # SMTP/IMAP can't be Cloudflare-proxied; personas reach it directly
-      # on this IP over the mesh. http/8080 (JMAP + webadmin) is the only
-      # HTTP surface. See docs/PHASE1_STALWART_STATUS.md.
+      # Persona mail on mac-mini; persona-scaffold.sh creates the mailboxes.
+      # SMTP/IMAP can't go through Cloudflare, so personas reach this IP over
+      # the mesh directly.
       stalwart = {
         ip = "10.85.50.8";
         port = 8080;
-        # externalPort → the Caddy preset auto-generates a reverse-proxy
-        # vhost (mail.kleinbem.dev + stalwart.local → 10.85.50.8:8080,
-        # `tls internal`). This is the webadmin/JMAP HTTP surface only —
-        # SMTP/IMAP/submission stay on the container's own 25/143/587.
-        # Reachable via Caddy on the LAN/mesh; NOT added to Cloudflare DNS
-        # (a mail admin console shouldn't be on the public internet — do
-        # that explicitly + behind CF Access if ever wanted).
+        # Caddy proxies only the JMAP/webadmin HTTP surface, LAN/mesh only:
+        # a mail admin console stays off public DNS.
         externalPort = 443;
         domain = "mail.kleinbem.dev";
         meta = {

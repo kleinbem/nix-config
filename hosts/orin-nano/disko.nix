@@ -40,9 +40,8 @@
                     "fido2-device=auto"
                     "x-systemd.device-timeout=60s"
                   ];
-                  # tpm2-device=auto removed: this Jetson exposes no /dev/tpm0.
-                  # FIDO2 (YubiKey) is the interactive unlock method; Tang/clevis
-                  # handles silent auto-unlock over the network.
+                  # No tpm2-device: this Jetson has no /dev/tpm0. FIDO2 is the
+                  # interactive unlock, Tang/clevis the unattended one.
                 };
                 content = {
                   type = "lvm_pv";
@@ -68,20 +67,12 @@
                   content = {
                     type = "luks";
                     name = "orin_frigate_crypt";
-                    # The keyfile lives on /nix — i.e. INSIDE the clevis/Tang-unlocked
-                    # orin_crypt root, which is not mounted during initrd. So this
-                    # device cannot be unlocked in stage 1: initrdUnlock = false, and
-                    # the stage-2 crypttab entry that actually opens it is declared in
-                    # services.nix (disko emits nothing for the LUKS device itself when
-                    # initrdUnlock is false). Leaving this at its default (true) wires
-                    # an initrd luks.devices entry whose keyFile can never be read →
-                    # unattended boot stalls on a passphrase prompt.
+                    # The keyfile is on /nix, inside orin_crypt, which isn't mounted in
+                    # initrd. With initrdUnlock = true boot stalls on a passphrase
+                    # prompt; services.nix opens it via a stage-2 crypttab entry.
                     initrdUnlock = false;
                     settings = {
                       allowDiscards = true;
-                      # Unlock using a keyfile stored on the main encrypted root.
-                      # This avoids prompting for a password twice and fixes the TPM2 bug
-                      # (Jetson has no /dev/tpm0). See the stage-2 crypttab in services.nix.
                       keyFile = "/nix/persist/etc/crypt/frigate.key";
                     };
                     content = {

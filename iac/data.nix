@@ -1,41 +1,23 @@
-# Single source of truth → OpenTofu bridge.
-#
-# The `nix/infra` OpenTofu roots can't `import` Nix, so a handful of facts
-# that live canonically in this repo (personas.nix + private contact data,
-# inventory.nix) are projected to JSON here and consumed by those roots via
-# `jsondecode(file(...))`:
-#
-#   iac/data.nix ──► nix/infra/personas.json   (personas.tf, cloudflare-dns.tf)
-#              └───► nix/infra/inventory.json   (netbird/{inventory,groups}.tf)
-#
-# Regenerate the JSON with `nix/tools/gen-iac-data.sh` (was the ad-hoc
-# `export-personas.sh` + a hand-maintained duplicate of the peer lists).
-# The `iac-data` flake package builds both files; the `iac-data` flake check
-# forces the schema + referential-integrity assertions below, and
-# `nix/tools/check-iac-data.sh` guards the committed copies against drift.
+# Projects personas.nix and inventory.nix to JSON for the nix/infra OpenTofu
+# roots, which can't import Nix: nix/infra/personas.json and inventory.json.
+# Regenerate with `nix/tools/gen-iac-data.sh`; `nix/tools/check-iac-data.sh`
+# catches drift in the committed copies.
 {
   lib,
   inventory ? import ../inventory.nix,
   personas ? import ../personas.nix,
-  # kleinbem-secrets/personas/contact.nix — plain Nix (private repo, not sops;
-  # see that file's header). The flake passes
-  # `inputs.kleinbem-secrets + "/personas/contact.nix"`; empty = public-only eval
-  # (personas.json then lacks the PII fields, same as the old script's
-  # no-secrets fallback).
+  # kleinbem-secrets/personas/contact.nix (plain Nix in a private repo).
+  # Empty gives a public-only eval without the PII fields.
   contact ? { },
 }:
 let
-  # personas.json — byte-for-byte the old `export-personas.sh` merge:
-  # public role/auth layer ⊕ private contact layer, per persona. Consumers
-  # read `.email` (domain split → primary_domain) and, when wired,
-  # `.dkim_pubkey_b64`.
+  # Public persona layer merged with the private contact layer. Consumers
+  # read `.email` and `.dkim_pubkey_b64`.
   personasJson = lib.mapAttrs (name: p: p // (contact.${name} or { })) personas;
 
   hostNames = lib.attrNames inventory.hosts;
 
-  # NetBird mesh group membership. Canonical here (inventory.meshGroups);
-  # was duplicated as `variable ... { default = [...] }` in
-  # nix/infra/netbird/{groups,peers}.tf.
+  # NetBird mesh group membership (inventory.meshGroups).
   meshGroups = inventory.meshGroups or { };
   groupNames = lib.attrNames meshGroups;
 
