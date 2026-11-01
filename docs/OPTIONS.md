@@ -55,7 +55,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.backup`
 
-- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:285`
+- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:276`
 - **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
 - **Consumed by:** `host:container-factory`, `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/caido.nix`, `preset:nix-presets/containers/dev-db.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/forgejo.nix`, `preset:nix-presets/containers/home-assistant.nix`, `preset:nix-presets/containers/miniflux.nix`, `preset:nix-presets/containers/music-assistant.nix`, `preset:nix-presets/containers/n8n.nix`, `preset:nix-presets/containers/open-webui.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/qbittorrent.nix`, `preset:nix-presets/containers/stalwart.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
 
@@ -237,7 +237,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.llama-cpp`
 
-- **Declared:** `nix-presets/containers/llama-cpp.nix:24`
+- **Declared:** `nix-presets/containers/llama-cpp.nix:22`
 - **Sub-options:** `contextSize`, `enable`, `enableCuda`, `gpuLayers`, `ip`, `memoryLimit`, `modelPath`, `port`
 - **Consumed by:** `host:orin-nano`
 
@@ -395,7 +395,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop.sandboxedApps`
 
-- **Declared:** `nix-presets/nixosModules/sandboxed-apps.nix:22`
+- **Declared:** `nix-presets/nixosModules/sandboxed-apps.nix:20`
 - **Sub-options:** `apps`, `enable`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
