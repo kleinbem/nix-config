@@ -39,6 +39,7 @@
 ### hass-pi
 
 - 🏠 **Home Assistant** (`home-assistant`) `10.85.49.10:8123` → `hass.kleinbem.dev` — Smart Home Automation. _[src: nix-presets/containers/home-assistant.nix:14]_
+- 🎵 **Music Assistant** (`music-assistant`) `10.85.49.11` — Music library and multiroom players. _[src: nix-presets/containers/music-assistant.nix:14]_
 - 🐾 **OpenClaw** (`openclaw`) `10.85.49.112` — Dedicated agent framework. _[src: nix-presets/containers/openclaw.nix:14]_
 
 ### mac-mini
@@ -91,7 +92,6 @@
 - `langgraph` — LangGraph
 - `litellm` — LiteLLM Gateway _[src: nix-presets/containers/litellm.nix:13]_
 - `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:24]_
-- `music-assistant` _[src: nix-presets/containers/music-assistant.nix:14]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:15]_
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_

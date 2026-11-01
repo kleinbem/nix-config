@@ -28,6 +28,7 @@ in
     ./secrets.nix
     ./esphome-secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
+    inputs.nix-presets.nixosModules.music-assistant
     # openclaw stays here rather than on mac-mini: its pnpm-deps hash in
     # nix-openclaw mismatches on a from-scratch build, and this host runs an
     # already-cached build.
@@ -53,16 +54,25 @@ in
         chain prerouting {
           type nat hook prerouting priority dstnat; policy accept;
           iifname "end0" tcp dport 8123 dnat to 10.85.49.10:8123
+          # Music Assistant: web UI, stream port (players fetch audio from
+          # it) and Sendspin.
+          iifname "end0" tcp dport { 8095, 8097, 8927 } dnat to 10.85.49.11
         }
         chain postrouting {
           type nat hook postrouting priority srcnat; policy accept;
           ip daddr 10.85.49.10 tcp dport 8123 masquerade
+          ip daddr 10.85.49.11 tcp dport { 8095, 8097, 8927 } masquerade
         }
       '';
     };
     firewall = {
       backend = "nftables";
-      allowedTCPPorts = [ 8123 ]; # direct LAN access to HA — see forwardPorts note below
+      allowedTCPPorts = [
+        8123 # direct LAN access to HA — see forwardPorts note below
+        8095 # Music Assistant web UI
+        8097 # Music Assistant stream port
+        8927 # Music Assistant Sendspin
+      ];
       interfaces."end0".allowedTCPPorts = [ 7654 ]; # Tang
       # Only the container bridge may reach the host-side Matter server
       # websocket, the OTBR REST API and the Wyoming voice servers; Home
@@ -137,6 +147,13 @@ in
         hostDataDir = "/var/lib/openclaw";
         memoryLimit = "1G";
       };
+
+      music-assistant = {
+        enable = true;
+        ip = "${myInventory.network.nodes.music-assistant.ip}/24";
+        hostDataDir = "/var/lib/music-assistant";
+        mediaDir = "/var/lib/music";
+      };
     };
 
     # ─── Container auto-update (ADR 002) ────────────────────────
@@ -168,8 +185,13 @@ in
       "/var/lib/esphome"
       "/var/lib/private/matterjs-server"
       "/var/lib/wyoming"
+      # Own music files for Music Assistant (mediaDir above), copied in by
+      # Martin; world-readable so the container's DynamicUser can read them.
+      "/var/lib/music"
     ];
   };
+
+  systemd.tmpfiles.rules = [ "d /var/lib/music 0755 ${config.my.username} users -" ];
 
   # ─── Native Services (Replacing HassOS Add-ons) ─────────────
   services = {
