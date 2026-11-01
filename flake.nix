@@ -211,6 +211,7 @@
         ./modules/flake/colmena.nix
         ./modules/flake/nix-on-droid.nix
         ./modules/flake/iac-data.nix
+        ./modules/flake/holds-watch.nix
         ./modules/flake/agent-tools.nix
       ];
       systems = [

@@ -165,12 +165,31 @@ jobs:
       # derivation chain and a ready kleinbem/nix-holds-fleet entry), closed when an
       # update validates again. A broken package used to hold the whole
       # fleet's nixpkgs back for a week before anyone looked.
+      # Report only for now (2026-11): which packages nix-holds would hold
+      # for this update. The fleet's holds live in kleinbem/nix-holds-fleet,
+      # so the action can't check them here; the report goes into the
+      # validation issue below.
+      - name: What nix-holds would hold
+        id: holds
+        if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
+        continue-on-error: true
+        uses: kleinbem-dev/nix-holds/update@54679728f8bc738c07017fdf17116817a1a4db40 # main
+        with:
+          directory: nix-config
+          nix-args: --override-input kleinbem-secrets /tmp/dummy-secrets
+          systems: x86_64-linux aarch64-linux
+          build: "false"
+          # Hold on the lock this run started from: the open lock PR's
+          # (validated) when it continues that PR, else main's.
+          base: ${{ steps.lock-pr.outputs.head || 'main' }}
+
       - name: Report validation result
         if: always() && github.ref == 'refs/heads/main' && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           OUTCOME: ${{ steps.validate.outcome }}
+          HOLDS_REPORT: ${{ steps.holds.outputs.report || '(no report, see the run)' }}
           ISSUE_TITLE: "Lock update fails validation"
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -180,6 +199,10 @@ jobs:
             exit 0
           fi
           body="$(./nix-config/.github/scripts/lock-failure-report.sh "$RUNNER_TEMP/eval.log" /tmp/flake.lock.before)
+
+          What nix-holds would hold (report only):
+
+          $HOLDS_REPORT
 
           Run: $RUN_URL"
           if [[ -n $issue ]]; then
