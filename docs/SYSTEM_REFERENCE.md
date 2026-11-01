@@ -26,13 +26,13 @@
 ### core-pi
 
 - 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
-- 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:52]_
+- 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:28]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:20]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
-- 🔐 **Ente Auth API** (`ente`) `10.85.48.133:8080` → `2fa-api.kleinbem.dev` — E2E Encrypted 2FA Backend API. _[src: nix-presets/containers/ente.nix:24]_
-- 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:32]_
+- 🔐 **Ente Auth API** (`ente`) `10.85.48.133:8080` → `2fa-api.kleinbem.dev` — E2E Encrypted 2FA Backend API. _[src: nix-presets/containers/ente.nix:22]_
+- 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:26]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
 - 🔐 **Vaultwarden** (`vaultwarden`) `10.85.48.135:8222` → `vault.kleinbem.dev` — Self-hosted password manager (people + personas). _[src: nix-presets/containers/vaultwarden.nix:23]_
 
@@ -46,10 +46,10 @@
 - 🕵️ **Agent Zero** (`agent-zero`) `10.85.50.5:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
 - 🧠 **AnythingLLM** (`anythingllm`) `10.85.50.6:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
-- 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:20]_
+- 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:16]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:20]_
-- 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:218]_
-- 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:38]_
+- 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:169]_
+- 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:26]_
 
 ### nasbook
 
@@ -64,11 +64,11 @@
 ### nixos-nvme
 
 - 💾 **Restic Backup** (`backup`) `10.85.47.128` — Daily system backup container. _[src: nix-presets/containers/backup.nix:12]_
-- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` → `buzz.kleinbem.dev` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:60]_
+- 🐝 **Buzz** (`buzz`) `10.85.46.131:3000` → `buzz.kleinbem.dev` — Block/Nostr team chat + git + AI-agent workspace, self-hosted from source (no Docker). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/buzz.nix:41]_
 - 🛡️ **Caido Security** (`caido`) `10.85.46.133:8080` → `caido.kleinbem.dev` — Headless web security proxy & auditing daemon. _[src: nix-presets/containers/caido.nix:16]_
 - 💻 **Code Server** (`code-server`) `10.85.46.22:4444` → `code.kleinbem.dev` — VS Code IDE in a hardened core container. _[src: nix-presets/containers/code-server.nix:14]_
 - 🗄️ **Dev Database** (`dev-db`) `10.85.46.132:5432` — Shared PostgreSQL 17 & Redis instance for devshells. _[src: nix-presets/containers/dev-db.nix:16]_
-- 🪣 **Garage UI** (`garage-ui`) `10.85.46.134:8080` → `garage.kleinbem.dev` — Web dashboard for Garage S3: buckets, objects, keys, layout. _[src: nix-presets/containers/garage-ui.nix:109]_
+- 🪣 **Garage UI** (`garage-ui`) `10.85.46.134:8080` → `garage.kleinbem.dev` — Web dashboard for Garage S3: buckets, objects, keys, layout. _[src: nix-presets/containers/garage-ui.nix:103]_
 - 📊 **Netdata** (`netdata`) `10.85.46.122:19999` — Real-time per-second telemetry. _[src: nix-presets/containers/netdata.nix:13]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 
