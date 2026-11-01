@@ -70,7 +70,9 @@
   nixpkgs.overlays = [
     inputs.nix-packages.overlays.default
     # Packages held back from nixos-unstable while broken there; ours too.
-    (inputs.nix-holds-fleet.lib.mkOverlay { extraOverlays = [ inputs.nix-packages.overlays.default ]; })
+    (inputs.nix-detour-fleet.lib.mkOverlay {
+      extraOverlays = [ inputs.nix-packages.overlays.default ];
+    })
     (_final: prev: {
       stable = import inputs.nixpkgs-stable {
         inherit (prev.stdenv.hostPlatform) system;
@@ -80,7 +82,7 @@
       # -----------------------------------------------------------------------
       # Fixes for nixos-unstable regressions that need a change to the package.
       # A package that only needs another nixpkgs (stable, or the last commit
-      # where it worked) goes to kleinbem/nix-holds-fleet instead.
+      # where it worked) goes to kleinbem/nix-detour-fleet instead.
       # -----------------------------------------------------------------------
 
       # reuse: sphinxHook expands `$sphinxBuilders` as a string under

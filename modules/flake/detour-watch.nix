@@ -1,7 +1,7 @@
 # What nix-detour's update action checks on the daily lock update
 # (maintain.yml), per system: each host's installed packages (home-manager
 # users' too) and its toplevel, whose error trace names everything else.
-# A package that fails after the update gets held in kleinbem/nix-holds-fleet.
+# A package that fails after the update gets held in kleinbem/nix-detour-fleet.
 {
   inputs,
   self,
@@ -9,9 +9,7 @@
   ...
 }:
 let
-  # nix-holds-fleet's input was named nix-holds before the rename.
-  fleetInputs = inputs.nix-holds-fleet.inputs;
-  inherit ((fleetInputs.nix-detour or fleetInputs.nix-holds).lib) watch;
+  inherit (inputs.nix-detour-fleet.inputs.nix-detour.lib) watch;
   hosts = lib.filterAttrs (
     name: _: !(lib.hasPrefix "container-factory" name)
   ) self.nixosConfigurations;

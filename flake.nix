@@ -7,8 +7,8 @@
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";
     # Packages the fleet holds back from nixos-unstable while they're broken
     # there (modules/nixos/base.nix applies the overlay).
-    nix-holds-fleet = {
-      url = "github:kleinbem/nix-holds-fleet";
+    nix-detour-fleet = {
+      url = "github:kleinbem/nix-detour-fleet";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         nixpkgs-stable.follows = "nixpkgs-stable";
@@ -93,7 +93,7 @@
         nix-devshells.follows = "nix-devshells";
         nix-packages.follows = "nix-packages";
         nix-gantry.follows = "nix-gantry";
-        nix-holds-fleet.follows = "nix-holds-fleet";
+        nix-detour-fleet.follows = "nix-detour-fleet";
       };
     };
     nix-gantry = {
@@ -211,7 +211,7 @@
         ./modules/flake/colmena.nix
         ./modules/flake/nix-on-droid.nix
         ./modules/flake/iac-data.nix
-        ./modules/flake/holds-watch.nix
+        ./modules/flake/detour-watch.nix
         ./modules/flake/agent-tools.nix
       ];
       systems = [
