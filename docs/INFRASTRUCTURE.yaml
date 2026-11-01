@@ -90,6 +90,10 @@ repo_atlas:
     path: nix-config/
     url: git@github.com:kleinbem/nix-config.git
     role: Primary NixOS consumer flake. Owns hosts, users, system & HM modules, inventory, PKI, and docs.
+  nix-detour:
+    path: nix-detour/
+    url: git@github.com:kleinbem-dev/nix-detour.git
+    role: Supporting repository.
   nix-devshells:
     path: nix-devshells/
     url: git@github.com:kleinbem/nix-devshells.git
@@ -102,10 +106,6 @@ repo_atlas:
     path: nix-hardware/
     url: git@github.com:kleinbem/nix-hardware.git
     role: 'Custom hardware flakes: nixos-nvme (Intel Core), orin-nano (Jetson Tegra/CUDA), rpi5, lxc-guest.'
-  nix-holds:
-    path: nix-holds/
-    url: git@github.com:kleinbem-dev/nix-holds.git
-    role: Supporting repository.
   nix-holds-fleet:
     path: nix-holds-fleet/
     url: git@github.com:kleinbem/nix-holds-fleet.git
