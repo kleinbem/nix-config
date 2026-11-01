@@ -1619,6 +1619,28 @@
         "type": "github"
       }
     },
+    "nix-holds_3": {
+      "inputs": {
+        "nixpkgs": [
+          "nix-packages",
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": "nixpkgs-stable_2"
+      },
+      "locked": {
+        "lastModified": 1793491559,
+        "narHash": "sha256-B1MCtfvpa0vLJNVd0gmS1ZNwe8/Z7ekopvLjmCFbLMQ=",
+        "owner": "kleinbem-dev",
+        "repo": "nix-holds",
+        "rev": "e990c354631ac19d93e9d0100e330f71f895795b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem-dev",
+        "repo": "nix-holds",
+        "type": "github"
+      }
+    },
     "nix-index-database": {
       "inputs": {
         "nixpkgs": [
@@ -1728,17 +1750,18 @@
         "nix-devshells": [
           "nix-devshells"
         ],
+        "nix-holds": "nix-holds_3",
         "nixpkgs": [
           "nixpkgs"
         ],
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1793491731,
-        "narHash": "sha256-l7jQyN+C3M4vUJ9+Z5epZhTbJ34lxKqsAQ+VmwqU6zA=",
+        "lastModified": 1793493129,
+        "narHash": "sha256-9dwv48nqRD9aSl+5oFjJlf7iE3DVeZO12Z63UL0WiUE=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "7bec7735c586f60465b324dbe7018cddb7c63c9c",
+        "rev": "5b0b1937a2fb32dedbf896f26e6c4fe56c81143c",
         "type": "github"
       },
       "original": {
@@ -2323,6 +2346,22 @@
     },
     "nixpkgs-stable_2": {
       "locked": {
+        "lastModified": 1793015021,
+        "narHash": "sha256-Ee5BWo8sh3pGt70QUdRajnaginqFmWvrtdBc4gJzhks=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "718f670e845328e9c2cecdd832835712b2cbd065",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-stable_3": {
+      "locked": {
         "lastModified": 1793294725,
         "narHash": "sha256-loLMnbbS4KhmG2ln9EY6f0YMNCA273Yx02oWYQ9IMeE=",
         "owner": "NixOS",
@@ -2804,7 +2843,7 @@
         "nix-vscode-extensions": "nix-vscode-extensions_2",
         "nixpkgs": "nixpkgs_12",
         "nixpkgs-master": "nixpkgs-master_2",
-        "nixpkgs-stable": "nixpkgs-stable_2",
+        "nixpkgs-stable": "nixpkgs-stable_3",
         "nixvim": "nixvim",
         "nur": "nur",
         "sops-nix": "sops-nix",
