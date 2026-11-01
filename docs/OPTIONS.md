@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 76  
+**Declarations indexed:** 75  
 **Consumer files scanned:** 34
 
 ---
@@ -55,7 +55,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.backup`
 
-- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:297`
+- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:285`
 - **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
 - **Consumed by:** `host:container-factory`, `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/caido.nix`, `preset:nix-presets/containers/dev-db.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/forgejo.nix`, `preset:nix-presets/containers/home-assistant.nix`, `preset:nix-presets/containers/miniflux.nix`, `preset:nix-presets/containers/music-assistant.nix`, `preset:nix-presets/containers/n8n.nix`, `preset:nix-presets/containers/open-webui.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/qbittorrent.nix`, `preset:nix-presets/containers/stalwart.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
 
@@ -104,7 +104,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.authentik`
 
-- **Declared:** `nix-presets/containers/authentik.nix:52`
+- **Declared:** `nix-presets/containers/authentik.nix:28`
 - **Sub-options:** `bootstrapAdminPasswordFile`, `bootstrapApiTokenFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `postgresPasswordFile`, `secretKeyFile`
 - **Consumed by:** `host:core-pi`
 
@@ -116,7 +116,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.buzz`
 
-- **Declared:** `nix-presets/containers/buzz.nix:60`
+- **Declared:** `nix-presets/containers/buzz.nix:41`
 - **Sub-options:** `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `hostDataDir`, `ip`, `membership.members`, `membership.ownerPubkey`, `membership.require`, `memoryLimit`, `package`, `pairingRelayUrl`, `relayUrl`, `secretsFile`, `typesenseApiKeyFile`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -170,7 +170,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.ente`
 
-- **Declared:** `nix-presets/containers/ente.nix:24`
+- **Declared:** `nix-presets/containers/ente.nix:22`
 - **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`
 - **Consumed by:** `host:core-pi`
 
@@ -189,13 +189,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.garage-ui`
 
-- **Declared:** `nix-presets/containers/garage-ui.nix:109`
+- **Declared:** `nix-presets/containers/garage-ui.nix:103`
 - **Sub-options:** `adminPort`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `port`, `region`, `rootUrl`, `s3Port`, `secretsFile`, `tokenLogin`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.gatus`
 
-- **Declared:** `nix-presets/containers/gatus.nix:32`
+- **Declared:** `nix-presets/containers/gatus.nix:26`
 - **Sub-options:** `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:core-pi`
 
@@ -255,7 +255,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.monitoring`
 
-- **Declared:** `nix-presets/containers/monitoring.nix:20`
+- **Declared:** `nix-presets/containers/monitoring.nix:16`
 - **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.authConfigFile`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
 - **Default-enabled** (no hosts import the declaring file)
 - **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
@@ -314,12 +314,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `hostConsumptionDir`, `hostDataDir`, `ip`, `memoryLimit`, `passwordFile`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
 
-### `my.containers.persona-runtime`
-
-- **Declared:** `nix-presets/containers/persona-runtime.nix:213`
-- **Sub-options:** `autoStart`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `gitConfigFile`, `hostDataDir`, `ip`, `memoryLimit`, `personas`, `secretsEnvFile`, `signingKeyFile`
-- **Consumed by:** `host:mac-mini`
-
 ### `my.containers.playground`
 
 - **Declared:** `nix-presets/containers/playground.nix:14`
@@ -340,7 +334,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.stalwart`
 
-- **Declared:** `nix-presets/containers/stalwart.nix:38`
+- **Declared:** `nix-presets/containers/stalwart.nix:26`
 - **Sub-options:** `adminPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relaySecretFile`
 - **Consumed by:** `host:mac-mini`
 
