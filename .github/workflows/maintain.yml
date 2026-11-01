@@ -173,12 +173,15 @@ jobs:
         id: holds
         if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         continue-on-error: true
-        uses: kleinbem-dev/nix-holds/update@f06eb3ad2cfd58582c1aa2fd35834291fc9c7cab # main
+        uses: kleinbem-dev/nix-holds/update@54679728f8bc738c07017fdf17116817a1a4db40 # main
         with:
           directory: nix-config
           nix-args: --override-input kleinbem-secrets /tmp/dummy-secrets
           systems: x86_64-linux aarch64-linux
           build: "false"
+          # Hold on the lock this run started from: the open lock PR's
+          # (validated) when it continues that PR, else main's.
+          base: ${{ steps.lock-pr.outputs.head || 'main' }}
 
       - name: Report validation result
         if: always() && github.ref == 'refs/heads/main' && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
