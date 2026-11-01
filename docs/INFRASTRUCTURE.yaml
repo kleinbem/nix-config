@@ -94,6 +94,10 @@ repo_atlas:
     path: nix-detour/
     url: git@github.com:kleinbem-dev/nix-detour.git
     role: Supporting repository.
+  nix-detour-fleet:
+    path: nix-detour-fleet/
+    url: git@github.com:kleinbem/nix-detour-fleet.git
+    role: Supporting repository.
   nix-devshells:
     path: nix-devshells/
     url: git@github.com:kleinbem/nix-devshells.git
@@ -106,10 +110,6 @@ repo_atlas:
     path: nix-hardware/
     url: git@github.com:kleinbem/nix-hardware.git
     role: 'Custom hardware flakes: nixos-nvme (Intel Core), orin-nano (Jetson Tegra/CUDA), rpi5, lxc-guest.'
-  nix-holds-fleet:
-    path: nix-holds-fleet/
-    url: git@github.com:kleinbem/nix-holds-fleet.git
-    role: Supporting repository.
   nix-packages:
     path: nix-packages/
     url: git@github.com:kleinbem/nix-packages.git
