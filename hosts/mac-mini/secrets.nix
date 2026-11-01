@@ -27,8 +27,8 @@ let
   };
 
   # The personas/<name>.yaml key holding each tool's API key. Keep in sync
-  # with persona-runtime.nix's toolSpecs; a new persona only needs an entry
-  # in personas.nix with a tool listed here.
+  # with persona-runtime.nix's toolSpecs. A new persona also needs its
+  # personas/<name>.yaml and an invocablePersonaNames entry in default.nix.
   toolApiKeyField = {
     gemini-cli = "gemini_api_key";
     claude-code = "anthropic_api_key";

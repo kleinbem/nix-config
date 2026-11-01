@@ -1,7 +1,7 @@
 # Personas manifest, public layer: roles and operational data only.
-# Identity (name, email, bio...) stays private in the sops-encrypted
-# kleinbem-secrets/personas/contact.nix; lib/personas.nix joins the two and
-# shows "(private)" when it can't decrypt.
+# Identity (name, email, bio...) stays in kleinbem-secrets/personas/contact.nix
+# (plain Nix, imported directly); lib/personas.nix joins the two and shows
+# "(private)" when a caller passes no contact data.
 #
 # Fields:
 #   kind          "human" | "agent"; decides provisioning.

@@ -36,7 +36,7 @@ in
 
   # With mutableUsers=true, hashedPasswordFile only applies when a user is
   # first created, so sops password changes never land. Users without a
-  # declared password (root on headless hosts) get password login locked.
+  # declared password get password login locked.
   users.mutableUsers = false;
 
   time.timeZone = "Europe/Dublin";
