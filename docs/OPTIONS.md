@@ -71,7 +71,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.claudeCode`
 
-- **Declared:** `nix-config/modules/nixos/claude-code.nix:19`
+- **Declared:** `nix-config/modules/nixos/claude-code.nix:16`
 - **Sub-options:** `enable`, `settings`
 - **Consumed by:** `host:nixos-nvme`
 
@@ -354,7 +354,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.dataDisk`
 
-- **Declared:** `nix-config/modules/nixos/data-disk.nix:15`
+- **Declared:** `nix-config/modules/nixos/data-disk.nix:13`
 - **Sub-options:** `cryptName`, `crypttabExtraOpts`, `device`, `enable`, `keyFilePath`, `label`, `mountpoint`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
 
@@ -368,7 +368,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.comin`
 
-- **Declared:** `nix-config/modules/nixos/comin.nix:36`
+- **Declared:** `nix-config/modules/nixos/comin.nix:33`
 - **Sub-options:** `branch`, `buildTimeout`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 - **Explicit overrides:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
@@ -427,7 +427,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.hostSecrets`
 
-- **Declared:** `nix-config/modules/nixos/host-secrets.nix:13`
+- **Declared:** `nix-config/modules/nixos/host-secrets.nix:11`
 - **Sub-options:** `dir`, `initrdSshKey`
 - **Consumed by:** _(no opt-ins detected)_
 
