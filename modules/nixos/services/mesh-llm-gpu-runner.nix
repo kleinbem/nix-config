@@ -17,6 +17,7 @@ let
   # the window's own state (root only).
   buildWindowDir = "/run/mesh-llm-build-window";
   buildWindowState = "/run/mesh-llm-build-window-state";
+  runnerWorkDir = "/mnt/data/github-runner/mesh-llm-gpu";
 in
 {
   options.my.services.meshLlmGpuRunner.enable =
@@ -36,6 +37,11 @@ in
       replace = true;
       # A fresh registration and work directory for every job.
       ephemeral = true;
+      # On the SSD: the default (/run) is a 1.9 GB tmpfs that a nixpkgs
+      # checkout fills, and the node can't start while /run is full.
+      workDir = runnerWorkDir;
+      user = "mesh-llm-gpu-runner";
+      group = "mesh-llm-gpu-runner";
       # Besides the module's bash, coreutils, git and nix: the canary script's
       # tools, and nvidia-smi (l4t-nvml), from which MeshLLM learns the GPU's
       # CUDA architecture; without it the CUDA runtime is rejected.
@@ -73,7 +79,14 @@ in
     # come at any time. A fallback at 23:30 UTC starts the node if a job died
     # without writing `done`, unless a job is still running. Only a node the
     # window stopped is started again: one stopped by hand stays off.
-    users.groups.mesh-llm-build-window = { };
+    users = {
+      groups.mesh-llm-build-window = { };
+      users.mesh-llm-gpu-runner = {
+        isSystemUser = true;
+        group = "mesh-llm-gpu-runner";
+      };
+      groups.mesh-llm-gpu-runner = { };
+    };
     systemd = {
       tmpfiles.settings."10-mesh-llm-build-window" = {
         ${buildWindowDir}.d = {
@@ -155,6 +168,11 @@ in
         mode = "0755";
         user = "root";
         group = "root";
+      };
+      ${runnerWorkDir}.d = {
+        mode = "0700";
+        user = "mesh-llm-gpu-runner";
+        group = "mesh-llm-gpu-runner";
       };
     };
   };
