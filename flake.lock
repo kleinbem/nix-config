@@ -2807,6 +2807,26 @@
         "type": "github"
       }
     },
+    "revue": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793593777,
+        "narHash": "sha256-Lj9bes74H0imvvwmdbH3eFRKRdUBa16PA0ScZn5YKBw=",
+        "owner": "kleinbem-dev",
+        "repo": "revue",
+        "rev": "596d8d44e22748a5f9b76bfce9ff168ce39c4130",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem-dev",
+        "repo": "revue",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "claude-for-linux": "claude-for-linux",
@@ -2846,6 +2866,7 @@
         "nixpkgs-stable": "nixpkgs-stable_3",
         "nixvim": "nixvim",
         "nur": "nur",
+        "revue": "revue",
         "sops-nix": "sops-nix",
         "treefmt-nix": "treefmt-nix_8"
       }
