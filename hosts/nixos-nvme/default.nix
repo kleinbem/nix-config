@@ -40,6 +40,7 @@
     "${self}/modules/nixos/services/vault-anythingllm-sync.nix"
     ./monitors.nix
     ./herdr.nix
+    inputs.revue.nixosModules.default
   ];
 
   # Lets other fleet devices (orin-nano, phone) SSH in, e.g. to attach a remote
@@ -170,6 +171,11 @@
         };
     pcscd.enable = true;
     fprintd.enable = true;
+    revue = {
+      enable = true;
+      user = "martin";
+      listen = "0.0.0.0:8383";
+    };
   };
 
   # ── Memory-creep logger ───────────────────────────────────────────

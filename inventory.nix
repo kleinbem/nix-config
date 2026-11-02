@@ -781,6 +781,20 @@ in
           description = "Self-hosted Git forge with mirrors of the GitHub repos.";
         };
       };
+      revue = {
+        ip = "10.0.0.5"; # nixos-nvme LAN IP
+        port = 8383;
+        externalPort = 443;
+        domain = "revue.kleinbem.dev";
+        meshOnly = true;
+        auth = false; # Webhook requests authenticate via HMAC signatures
+        meta = {
+          name = "Revue AI Reviewer";
+          category = "Dev";
+          icon = "🤖";
+          description = "Nix-native AI PR review daemon for Forgejo & GitHub.";
+        };
+      };
       dev-db = {
         ip = "10.85.46.132"; # nixos-nvme bridge
         port = 5432;

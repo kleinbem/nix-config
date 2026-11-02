@@ -331,11 +331,10 @@ in
         adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
       };
 
-      # Off until nix/per-container/forgejo.yaml holds forgejo_admin_password
-      # and forgejo_oauth_client_secret (Authentik client from nix/infra
-      # authentik.tf). State is under /var/lib/images, which is persisted.
+      # State is under /var/lib/images, which is persisted.
+      # Bootstrap user created from nix/per-container/forgejo.yaml
       forgejo = {
-        enable = false;
+        enable = true;
         ip = "${myInventory.network.nodes.forgejo.ip}/24";
         domain = myInventory.network.nodes.forgejo.domain;
         memoryLimit = "1G";

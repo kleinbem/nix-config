@@ -118,10 +118,6 @@ repo_atlas:
     path: nix-presets/
     url: git@github.com:kleinbem/nix-presets.git
     role: 'Shared service and desktop bundles: 30+ container definitions, backup-engine, desktop, terminal, herdr.'
-  nix-revue:
-    path: nix-revue/
-    url: git@github.com:kleinbem-dev/nix-revue.git
-    role: Supporting repository.
   nix-templates:
     path: nix-templates/
     url: git@github.com:kleinbem/nix-templates.git
@@ -142,6 +138,10 @@ repo_atlas:
     path: openwrt-config/
     url: git@github.com:kleinbem/openwrt-config.git
     role: Runtime router configuration via Ansible (inventory.ini is generated from inventory.nix).
+  revue:
+    path: revue/
+    url: git@github.com:kleinbem-dev/revue.git
+    role: Supporting repository.
   skills:
     path: skills/
     url: git@github.com:kleinbem/skills.git
@@ -602,6 +602,7 @@ hosts:
     - agent-zero
     - anythingllm
     - discord
+    - forgejo
     - hermes
     - monitoring
     - oidc
@@ -1895,6 +1896,20 @@ services:
     upstream_preset: nix-presets/containers/qdrant.nix
     persistence_path: /var/lib/machines/qdrant
     description: Vector database for AI context.
+  revue:
+    name: Revue AI Reviewer
+    category: Dev
+    host: unassigned
+    ip: 10.0.0.5
+    port: 8383
+    external_port: 443
+    domain: revue.kleinbem.dev
+    public: false
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/revue
+    description: Nix-native AI PR review daemon for Forgejo & GitHub.
   stalwart:
     name: Stalwart Mail
     category: Infrastructure

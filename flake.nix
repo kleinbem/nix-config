@@ -107,6 +107,10 @@
         nix-devshells.follows = "nix-devshells";
       };
     };
+    revue = {
+      url = "github:kleinbem-dev/revue";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # Hermes Agent (Nous Research) CLI — for interactive use inside Herdr
     # panes on nixos-nvme (see nix-presets/herdr.nix). Follows nix-presets'

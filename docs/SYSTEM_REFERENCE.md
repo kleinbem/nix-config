@@ -46,6 +46,7 @@
 
 - 🕵️ **Agent Zero** (`agent-zero`) `10.85.50.5:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
 - 🧠 **AnythingLLM** (`anythingllm`) `10.85.50.6:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
+- 🌳 **Forgejo** (`forgejo`) `10.85.50.4:3000` → `git.kleinbem.dev` — Self-hosted Git forge with mirrors of the GitHub repos. _[src: nix-presets/containers/forgejo.nix:27]_
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:16]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:20]_
@@ -84,7 +85,6 @@
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:13]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `ente-web` — Ente Auth Web
-- `forgejo` — Forgejo _[src: nix-presets/containers/forgejo.nix:27]_
 - `garage` — Garage S3
 - `github-runner` — GitHub Runner _[src: nix-presets/containers/github-runner.nix:82]_
 - `langflow` — Langflow _[src: nix-presets/containers/langflow.nix:13]_
@@ -97,6 +97,7 @@
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
+- `revue` — Revue AI Reviewer
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
 - `syncthing-orin` — Syncthing (Orin)
 

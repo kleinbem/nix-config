@@ -52,9 +52,13 @@
       # Only specific ports are open over the tunnel.
       interfaces."wt0".allowedTCPPorts = [
         22 # SSH
+        8383 # nix-revue webhook listener over mesh
       ];
-      # Tang (LUKS auto-unlock for orin-nano) on the LAN/Wi-Fi interface only
-      interfaces."wlo1".allowedTCPPorts = [ 7654 ];
+      # Tang and nix-revue on the LAN/Wi-Fi interface
+      interfaces."wlo1".allowedTCPPorts = [
+        7654
+        8383
+      ];
       allowedTCPPortRanges = [
         {
           from = 1714;

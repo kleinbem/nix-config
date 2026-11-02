@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 99
+**Distinct imports:** 100
 
 ---
 
@@ -53,7 +53,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
-- **Other inputs:** `disko:disko`, `nix-gantry:updater`
+- **Other inputs:** `disko:disko`, `nix-gantry:updater`, `revue:default`
 - **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./herdr.nix`, `./monitors.nix`, `./network.nix`, `./secrets.nix`
 
 ### `orin-nano`
@@ -178,5 +178,6 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:stalwart` ← container-factory, mac-mini
 - `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
 - `nix-presets:vaultwarden` ← container-factory, core-pi
+- `revue:default` ← nixos-nvme
 - `user:dhirujaan` ← nixos-nvme
 - `user:martin` ← mac-mini, nixos-nvme, orin-nano
