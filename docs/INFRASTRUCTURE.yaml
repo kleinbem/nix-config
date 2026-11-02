@@ -118,6 +118,10 @@ repo_atlas:
     path: nix-presets/
     url: git@github.com:kleinbem/nix-presets.git
     role: 'Shared service and desktop bundles: 30+ container definitions, backup-engine, desktop, terminal, herdr.'
+  nix-revue:
+    path: nix-revue/
+    url: git@github.com:kleinbem-dev/nix-revue.git
+    role: Supporting repository.
   nix-templates:
     path: nix-templates/
     url: git@github.com:kleinbem/nix-templates.git
