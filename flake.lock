@@ -1793,14 +1793,15 @@
           "nixpkgs"
         ],
         "openclaw": "openclaw",
+        "revue": "revue",
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1793588187,
-        "narHash": "sha256-sD9FJ9JJYYBH2Oq/Q9eqsEfEEL7Q4sEE34vgUSjZSNA=",
+        "lastModified": 1793630583,
+        "narHash": "sha256-sMF3PmGoGGNvM4a4VzDbQYyerQnm7J0Zqd1ssOj0nRs=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "081a1d799fa2013c7cfb797675a9e38c88442791",
+        "rev": "54332bec10fac88d82c3a06e1d2942f0b202e1db",
         "type": "github"
       },
       "original": {
@@ -2810,6 +2811,27 @@
     "revue": {
       "inputs": {
         "nixpkgs": [
+          "nix-presets",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793623503,
+        "narHash": "sha256-RLUHtfPfyEfwS6D7I9adiRXrBxpvBlunn82lUXTtqyE=",
+        "owner": "kleinbem-dev",
+        "repo": "revue",
+        "rev": "87faa4b9cb1f53c26ba35b4cd1fc32bad8b26735",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem-dev",
+        "repo": "revue",
+        "type": "github"
+      }
+    },
+    "revue_2": {
+      "inputs": {
+        "nixpkgs": [
           "nixpkgs"
         ]
       },
@@ -2866,7 +2888,7 @@
         "nixpkgs-stable": "nixpkgs-stable_3",
         "nixvim": "nixvim",
         "nur": "nur",
-        "revue": "revue",
+        "revue": "revue_2",
         "sops-nix": "sops-nix",
         "treefmt-nix": "treefmt-nix_8"
       }
