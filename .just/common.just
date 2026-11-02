@@ -13,10 +13,11 @@ META := if trim_end_match(file_name(parent_directory(ROOT)), ".ws") == file_name
     absolute_path(ROOT / "../..")
 }
 
-# Sibling nix-* checkouts used as input overrides. Excluded: nix-toolbox and
-# *.ws dirs (not inputs, so nix warns), and nix-secrets* leftovers (a dot in the
+# Sibling nix-* checkouts used as input overrides. Excluded: nix-toolbox,
+# nix-detour (sub-input of nix-detour-fleet), nix-revue, and *.ws dirs
+# (not direct inputs, so nix warns), and nix-secrets* leftovers (a dot in the
 # name is parsed as an input attribute path and the eval errors out).
-SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -not -name '*.ws' -printf '%f\n' 2>/dev/null | xargs echo -n")
+SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -not -name 'nix-detour' -not -name 'nix-revue' -not -name '*.ws' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,
 # plus kleinbem-secrets explicitly since its directory name doesn't match

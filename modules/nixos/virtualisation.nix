@@ -61,7 +61,7 @@ in
       # Redirect Podman storage to disk (Prevent /var tmpfs exhaustion)
       containers = lib.mkIf cfg.podman.enable {
         enable = true;
-        storage.settings = {
+        storage.rootful.settings = {
           storage = {
             driver = "overlay";
             graphroot = "/var/lib/images/podman";

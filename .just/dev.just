@@ -27,7 +27,7 @@ attic-coverage host="$(hostname)":
     fi
     prefer_local=$(nix derivation show "${built[@]}" 2>/dev/null \
         | jq -r '(.derivations // .) | to_entries[] | select(.value.env.preferLocalBuild == "1" or .value.structuredAttrs.preferLocalBuild == true) | .key | sub(".*/"; "")')
-    assembly='^(nixos-system-.*|activate|dry-activate|etc|system-units|user-units|unit-.*|manifest(-for-users)?\.json|boot\.json|append-initrd-secrets)$'
+    assembly='^(nixos-system-.*|activate|dry-activate|etc|system-units|user-units|unit-.*|manifest(-for-users)?\.json|boot\.json|append-initrd-secrets|check-.*)$'
     heavy=()
     small=0
     for drv in "${built[@]}"; do
