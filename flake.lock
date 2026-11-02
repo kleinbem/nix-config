@@ -1796,11 +1796,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1793537482,
-        "narHash": "sha256-xPk1QRhKvDnnug4lPmfOQnZUhJPIXTtpVB9As8kQwEs=",
+        "lastModified": 1793588187,
+        "narHash": "sha256-sD9FJ9JJYYBH2Oq/Q9eqsEfEEL7Q4sEE34vgUSjZSNA=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "bffc0da7e09982c8f53f1f1a278e211af697cca6",
+        "rev": "081a1d799fa2013c7cfb797675a9e38c88442791",
         "type": "github"
       },
       "original": {
