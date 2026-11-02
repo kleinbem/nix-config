@@ -97,7 +97,7 @@
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
-- `revue` — Revue AI Reviewer
+- `revue` — Revue AI Reviewer _[src: nix-presets/containers/revue.nix:28]_
 - `standalone` _[src: nix-presets/containers/common.nix:3]_
 - `syncthing-orin` — Syncthing (Orin)
 
