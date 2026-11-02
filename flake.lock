@@ -1628,11 +1628,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1793612194,
-        "narHash": "sha256-QlDgbSNCcn+OphB39XmjnoWsmgtRW1dGsGdNrGiGP7w=",
+        "lastModified": 1793617735,
+        "narHash": "sha256-8pd+g19d/mSNRc7ebobbWiwCB+Omv+lThDM6aZfKZ8w=",
         "owner": "kleinbem",
         "repo": "nix-hardware",
-        "rev": "15657b5d3d683ab2cc5107b47553ed7a550fd6df",
+        "rev": "c818d64b033e61ea887e578609c34ce65ebe70f9",
         "type": "github"
       },
       "original": {
