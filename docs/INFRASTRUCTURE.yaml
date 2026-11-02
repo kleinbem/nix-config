@@ -1907,7 +1907,7 @@ services:
     public: false
     auth: None (Internal / Anonymous)
     mtls: false
-    upstream_preset: null
+    upstream_preset: nix-presets/containers/revue.nix
     persistence_path: /var/lib/machines/revue
     description: Nix-native AI PR review daemon for Forgejo & GitHub.
   stalwart:
