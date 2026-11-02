@@ -213,6 +213,11 @@ let
       # Baked into the closure: the OIDC login block only exists when set here.
       oidc.enable = true;
     };
+    revue = {
+      ip = ip 52;
+      hostDataDir = dataDir "revue";
+      secretsFile = "/run/secrets/factory-dummy";
+    };
     qbittorrent = {
       ip = "${myInventory.network.nodes.qbittorrent.ip}/24"; # nasbook
       hostDataDir = dataDir "qbittorrent";
@@ -285,6 +290,7 @@ in
     inputs.nix-presets.nixosModules.garage-ui
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
+    inputs.nix-presets.nixosModules.revue
     # dashboard-homer declares the same `my.containers.dashboard` option as
     # dashboard-homepage, so only one can be imported. Swap them to cache homer.
   ];

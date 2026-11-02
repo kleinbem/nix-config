@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 100
+**Distinct imports:** 101
 
 ---
 
@@ -15,7 +15,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `container-factory`
 
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:forgejo`, `nix-presets:frigate`, `nix-presets:garage-ui`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:music-assistant`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:forgejo`, `nix-presets:frigate`, `nix-presets:garage-ui`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:music-assistant`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:revue`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`
 - **Local:** `../../modules/nixos/options.nix`
 
 ### `core-pi`
@@ -174,6 +174,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:playground` ← container-factory
 - `nix-presets:qbittorrent` ← container-factory, nasbook
 - `nix-presets:qdrant` ← container-factory, nasbook
+- `nix-presets:revue` ← container-factory
 - `nix-presets:sandboxed-apps` ← mac-mini
 - `nix-presets:stalwart` ← container-factory, mac-mini
 - `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
