@@ -2814,11 +2814,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793593777,
-        "narHash": "sha256-Lj9bes74H0imvvwmdbH3eFRKRdUBa16PA0ScZn5YKBw=",
+        "lastModified": 1793610883,
+        "narHash": "sha256-5jKCIo5KEvODxsvvwlYE/y6voqWVnk+TBgTVh7ztK0k=",
         "owner": "kleinbem-dev",
         "repo": "revue",
-        "rev": "596d8d44e22748a5f9b76bfce9ff168ce39c4130",
+        "rev": "87be88368a747ac3d7478dfb965ee1b2fe59a6b0",
         "type": "github"
       },
       "original": {
