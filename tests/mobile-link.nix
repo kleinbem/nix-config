@@ -20,6 +20,7 @@ pkgs.testers.runNixOSTest {
       {
         _module.args = { inherit myInventory; };
         imports = [
+          ./base.nix
           inputs.nix-presets.nixosModules.caddy
         ];
 

@@ -12,17 +12,8 @@ pkgs.testers.runNixOSTest {
       _module.args = { inherit myInventory; };
 
       imports = [
+        ./base.nix
         inputs.nix-presets.nixosModules.caddy
-        # A submodule to define our missing options
-        (
-          { lib, ... }:
-          {
-            options.my.network.bridge = lib.mkOption {
-              type = lib.types.str;
-              default = "cbr0";
-            };
-          }
-        )
       ];
 
       # Backend service directly on the host for simplicity in testing

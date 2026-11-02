@@ -12,19 +12,9 @@ pkgs.testers.nixosTest {
       }:
       {
         imports = [
+          ./base.nix
           inputs.nix-presets.nixosModules.backup
         ];
-
-        options.my.network = {
-          bridge = lib.mkOption {
-            type = lib.types.str;
-            default = "br0";
-          };
-          hostAddress = lib.mkOption {
-            type = lib.types.str;
-            default = "10.85.46.1";
-          };
-        };
 
         config = {
           my.network.bridge = "br0";

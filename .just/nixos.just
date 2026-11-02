@@ -112,19 +112,37 @@ build-pkg pkg_name:
     @{{LOCK_CMD}} {{TIMER}} nix build .#{{pkg_name}} {{OVERRIDES}}
 
 [group("Development")]
-test-integration *args="":
-    @echo "🧪 Running ALL integration tests..."
-    @{{LOCK_CMD}} {{TIMER}} nix flake check . --system x86_64-linux {{OVERRIDES}} {{args}}
+test-integration name="all" *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{name}}" = "all" ]; then
+        echo "🧪 Running ALL NixOS integration tests..."
+        {{LOCK_CMD}} {{TIMER}} nix build --no-link -L \
+            .#checks.x86_64-linux.caddy-test \
+            .#checks.x86_64-linux.code-server-test \
+            .#checks.x86_64-linux.mobile-link-test \
+            .#checks.x86_64-linux.recovery-test \
+            {{OVERRIDES}} {{args}}
+    else
+        echo "🧪 Running TARGETED {{name}} integration test..."
+        {{LOCK_CMD}} {{TIMER}} nix build --no-link -L .#checks.x86_64-linux.{{name}}-test {{OVERRIDES}} {{args}}
+    fi
 
 [group("Development")]
 test-caddy *args="":
-    @echo "🧪 Running TARGETED Caddy integration test..."
-    @{{LOCK_CMD}} nix build .#checks.x86_64-linux.caddy-test {{OVERRIDES}} {{args}}
+    @just nixos::test-integration caddy {{args}}
+
+[group("Development")]
+test-code-server *args="":
+    @just nixos::test-integration code-server {{args}}
+
+[group("Development")]
+test-mobile-link *args="":
+    @just nixos::test-integration mobile-link {{args}}
 
 [group("Development")]
 test-recovery *args="":
-    @echo "🧪 Running Recovery & Restore integration test..."
-    @{{LOCK_CMD}} nix build .#checks.x86_64-linux.recovery-test {{OVERRIDES}} {{args}}
+    @just nixos::test-integration recovery {{args}}
 
 [group("Development")]
 test-vm *args="":

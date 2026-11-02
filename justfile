@@ -34,3 +34,7 @@ switch *args="":
 [group("Main")]
 apply *args="":
     @just dev::apply {{args}}
+
+[group("Main")]
+test name="all" *args="":
+    @just nixos::test-integration {{name}} {{args}}
