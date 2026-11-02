@@ -10,6 +10,7 @@
 
 ## 🖥️ Managed Hosts
 
+- **ap-attic** (`10.0.0.7`, openwrt) — physical, ap, mesh-node
 - **ap-upstairs** (`10.0.0.2`, openwrt) — physical, ap
 - **core-gateway** (`10.0.0.1`, openwrt) — physical, gateway, core
 - **core-pi** (`10.0.0.22`, aarch64-linux, ssh) — raspberry-pi, central
