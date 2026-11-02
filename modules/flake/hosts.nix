@@ -74,7 +74,7 @@ let
   # Containers to keep cached per arch beyond what's deployed — the escape
   # hatch for "I want to try X on some host this weekend" pre-warming.
   preWarm = {
-    x86_64-linux = [ ];
+    x86_64-linux = [ "revue" ];
     aarch64-linux = [ ];
   };
 in
