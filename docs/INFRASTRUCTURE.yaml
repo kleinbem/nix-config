@@ -602,6 +602,7 @@ hosts:
     - agent-zero
     - anythingllm
     - discord
+    - forgejo
     - hermes
     - monitoring
     - oidc
@@ -1895,6 +1896,20 @@ services:
     upstream_preset: nix-presets/containers/qdrant.nix
     persistence_path: /var/lib/machines/qdrant
     description: Vector database for AI context.
+  revue:
+    name: Revue AI Reviewer
+    category: Dev
+    host: unassigned
+    ip: 10.0.0.5
+    port: 8383
+    external_port: 443
+    domain: revue.kleinbem.dev
+    public: false
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/revue
+    description: Nix-native AI PR review daemon for Forgejo & GitHub.
   stalwart:
     name: Stalwart Mail
     category: Infrastructure
