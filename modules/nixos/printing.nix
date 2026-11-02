@@ -60,10 +60,12 @@ in
       ensurePrinters = [
         {
           name = "Ricoh_SP_220Nw";
-          deviceUri = "ipp://10.0.5.10:631/ipp/print";
+          # no-link: IPP/1.0 legacy compatibility mode forces atomic Print-Job; Ricoh SP 220Nw firmware rejects chunked IPP/2.0 Send-Document with client-error-not-possible
+          deviceUri = "ipp://10.0.5.10:631/ipp/print?version=1.0";
           model = "ricoh/RICOH-SP-220Nw.ppd";
           ppdOptions = {
             PageSize = "A4";
+            ColorModel = "Gray";
           };
         }
       ];
