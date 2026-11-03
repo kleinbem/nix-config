@@ -1758,11 +1758,11 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1793698799,
-        "narHash": "sha256-qnD2gE6J81yus/vPiU2Loi8DnteAIzSVC9GE37ZLf/I=",
+        "lastModified": 1793747163,
+        "narHash": "sha256-+wJtnvy1ebyHBhLNOvh9MfCRJ/2x4uolgoj1ED1iIOE=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "79a8b8d4795341be0c50f994168f0b3ff95f73f8",
+        "rev": "68058943b40d6cb4e317c6415d9e2b7db7cb3b7e",
         "type": "github"
       },
       "original": {
