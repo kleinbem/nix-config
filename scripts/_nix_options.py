@@ -110,12 +110,27 @@ def strip_comments_and_strings(src: str) -> str:
         if c == "'" and i + 1 < n and src[i + 1] == "'":
             out.append("  ")
             i += 2
-            while i < n - 1 and not (src[i] == "'" and src[i + 1] == "'"):
+            while i < n - 1:
+                if src[i] == "'" and src[i + 1] == "'":
+                    if i + 2 < n:
+                        if src[i + 2] in ("$", "'"):
+                            out.append("   ")
+                            i += 3
+                            continue
+                        if src[i + 2] == "\\":
+                            # ''\ escapes the following character in Nix
+                            if i + 3 < n:
+                                out.append("   \n" if src[i + 3] == "\n" else "    ")
+                                i += 4
+                            else:
+                                out.append("   ")
+                                i += 3
+                            continue
+                    out.append("  ")
+                    i += 2
+                    break
                 out.append("\n" if src[i] == "\n" else " ")
                 i += 1
-            if i < n:
-                out.append("  ")
-                i += 2
             continue
         if c == '"':
             out.append(" ")
@@ -476,10 +491,10 @@ def iter_nix_files(root: Path):
 
 def _normalize_rel(path: Path) -> Path:
     try:
-        return path.relative_to(REPO)
+        return Path("nix-config") / path.relative_to(NIX_CONFIG)
     except ValueError:
         try:
-            return Path("nix-config") / path.relative_to(NIX_CONFIG)
+            return path.relative_to(REPO)
         except ValueError:
             return path
 

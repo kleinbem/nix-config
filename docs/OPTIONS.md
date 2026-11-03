@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 76  
+**Declarations indexed:** 79  
 **Consumer files scanned:** 35
 
 ---
@@ -55,11 +55,17 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.backup`
 
-- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:276`
+- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:277`
 - **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
 - **Consumed by:** `host:container-factory`, `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/caido.nix`, `preset:nix-presets/containers/dev-db.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/forgejo.nix`, `preset:nix-presets/containers/home-assistant.nix`, `preset:nix-presets/containers/miniflux.nix`, `preset:nix-presets/containers/music-assistant.nix`, `preset:nix-presets/containers/n8n.nix`, `preset:nix-presets/containers/open-webui.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/qbittorrent.nix`, `preset:nix-presets/containers/revue.nix`, `preset:nix-presets/containers/stalwart.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`
 
 ## `my.boot`
+
+### `my.boot.clevis-initrd`
+
+- **Declared:** `nix-config/modules/nixos/clevis-initrd.nix:64`
+- **Sub-options:** `enable`, `fallbackMessage`, `hostIp`, `luksDevice`, `networkInterface`, `secretFile`
+- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.boot.initrd-fan`
 
@@ -199,6 +205,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:core-pi`
 
+### `my.containers.github-runner`
+
+- **Declared:** `nix-presets/containers/github-runner.nix:82`
+- **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `runners`, `secretsFile`
+- **Consumed by:** `host:nixos-nvme`
+
 ### `my.containers.hermes`
 
 - **Declared:** `nix-presets/containers/hermes.nix:14`
@@ -314,6 +326,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Sub-options:** `enable`, `hostConsumptionDir`, `hostDataDir`, `ip`, `memoryLimit`, `passwordFile`
 - **Consumed by:** `host:nasbook`, `host:nixos-nvme`
 
+### `my.containers.persona-runtime`
+
+- **Declared:** `nix-presets/containers/persona-runtime.nix:169`
+- **Sub-options:** `autoStart`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `gitConfigFile`, `hostDataDir`, `ip`, `memoryLimit`, `personas`, `secretsEnvFile`, `signingKeyFile`
+- **Consumed by:** `host:mac-mini`
+
 ### `my.containers.playground`
 
 - **Declared:** `nix-presets/containers/playground.nix:14`
@@ -417,7 +435,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.heartbeat`
 
-- **Declared:** `nix-config/modules/nixos/heartbeat.nix:46`
+- **Declared:** `nix-config/modules/nixos/heartbeat.nix:53`
 - **Sub-options:** `baseUrl`, `checks`, `enable`
 - **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
