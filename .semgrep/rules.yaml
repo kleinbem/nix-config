@@ -2,12 +2,12 @@ rules:
   - id: no-options-in-hosts
     paths:
       include:
-        - "hosts/**/*.nix"
-        - "users/**/*.nix"
+        - "/hosts/**/*.nix"
+        - "/users/**/*.nix"
     languages:
       - generic
     patterns:
-      - pattern-regex: '^\s*options\.[a-zA-Z0-9_.-]+\s*='
+      - pattern-regex: '(?:\boptions\.[a-zA-Z0-9_.-]+\s*=\s*(?:\{|(?:lib\.)?mkOption\b)|\boptions\s*=\s*\{)'
     message: "Conventions violation: Hosts and users must only set options, never declare them (declare in modules/ or presets instead)."
     severity: ERROR
 
@@ -16,9 +16,8 @@ rules:
       include:
         - "flake.lock"
     languages:
-      - json
+      - generic
     patterns:
-      - pattern: |
-          "url": "file://$..."
+      - pattern-regex: '"url"\s*:\s*"file://[^"]*"'
     message: "flake.lock pins local file:// inputs, causing non-reproducible evaluation."
     severity: ERROR
