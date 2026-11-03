@@ -30,4 +30,5 @@ All ground-truth docs regenerate via `just maintenance::sync-agent` (run from re
 - Group attribute sets: never repeat `my.x.y` prefixes — use `my = { x.y = …; };`.
 - After changing modules, regenerate the options index: `just maintenance::sync-agent`.
 - Before pushing to `main`, run `just dev::preflight` (formatting, CI's `pre-commit-check`, host evaluation). A red check stops CI from building and caching, so every device then builds locally.
+- Never use closing keywords before external links: never write `fix: Owner/repo#123` or `closes: ...` in comments, commit messages, or PR bodies (GitHub auto-closes the upstream issue/PR on merge). Use `upstream: Owner/repo#123` or `tracking: Owner/repo#123` instead.
 - Commit in your own jj workspace (`just jj::ws-new nix-config <name>` from a conductor), not in the primary checkout another session may be using.

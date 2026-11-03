@@ -93,6 +93,7 @@
       "**Deploy paths**: GitHub Actions builds and tags production in nix-config; hosts pull via comin or the auto-upgrade timer; colmena push and just dev::apply are the manual paths. github-config applies Terraform via GitHub Actions; nix/infra roots are applied locally with tofu.",
       "**Protected targets**: the six fleet hosts (nixos-nvme, orin-nano, core-pi, hass-pi, nasbook, mac-mini), the router, anything named prod/production, and the IaC scopes Cloudflare DNS/Access, NetBird policies/routes/setup-keys, Garage keys/buckets, github-secrets.tf.",
       "**Org CLIs**: jj, just, nix, nixos-rebuild, nix-instantiate, nixfmt, deadnix, statix, tofu, colmena, comin, garage, sops, age, machinectl, gh, direnv.",
+      "**External issue links**: Never use closing keywords (fix, fixes, close, closes, resolves) before an external repository issue/PR link (e.g. fix: NixOS/nixpkgs#123). GitHub auto-closes upstream PRs on merge. Always write upstream: Owner/repo#123 or tracking: Owner/repo#123.",
       "**Routine commands**: just status-all / diff-all / remote-status / remote-prs / remote-ci, jj log / diff / status, nix eval of host toplevels, gh pr and gh run queries, run from anywhere in the workspace."
     ]
   }
