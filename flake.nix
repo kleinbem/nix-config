@@ -196,6 +196,7 @@
       inputs.home-manager.follows = "home-manager";
     };
 
+    # Tracking upstream nixpkgs packaging in NixOS/nixpkgs#537215.
     claude-for-linux = {
       url = "github:heytcass/claude-desktop-linux-flake";
       inputs.nixpkgs.follows = "nixpkgs";
