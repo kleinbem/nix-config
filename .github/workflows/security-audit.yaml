@@ -32,6 +32,7 @@ jobs:
 
       - name: Realize nixos-nvme closure (local store / cache)
         run: |
+          # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
           nix build .#nixosConfigurations.nixos-nvme.config.system.build.toplevel \
             --impure --keep-going -L $NIX_OVERRIDES --out-link result
 

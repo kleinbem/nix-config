@@ -155,6 +155,7 @@ jobs:
           for entry in "x86_64-linux:container-factory" "aarch64-linux:container-factory-aarch64"; do
             sys="${entry%%:*}"; factory="${entry##*:}"
             echo "::group::manifest $sys ($factory)"
+            # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
             nix eval --json \
               ".#nixosConfigurations.$factory.config.containers" \
               --apply 'cs: builtins.mapAttrs (n: c: c.path) cs' \

@@ -48,6 +48,7 @@ jobs:
       - name: "Run VM test: ${{ matrix.test }}"
         run: |
           set -o pipefail
+          # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
           nix build --no-link --print-build-logs \
             $NIX_OVERRIDES \
             ".#checks.x86_64-linux.${{ matrix.test }}"
