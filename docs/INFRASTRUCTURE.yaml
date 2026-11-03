@@ -2020,7 +2020,8 @@ modules_system:
   clevis-initrd.nix:
     file: nix-config/modules/nixos/clevis-initrd.nix
     purpose: Clevis NBDE network-bound disk encryption unlock during initrd stage via Tang servers.
-    declared_options: []
+    declared_options:
+    - my.boot.clevis-initrd
   colmena-version-metadata.nix:
     file: nix-config/modules/nixos/colmena-version-metadata.nix
     purpose: NixOS system module.
@@ -2067,7 +2068,8 @@ modules_system:
   heartbeat.nix:
     file: nix-config/modules/nixos/heartbeat.nix
     purpose: NixOS system module.
-    declared_options: []
+    declared_options:
+    - my.heartbeat
   host-secrets.nix:
     file: nix-config/modules/nixos/host-secrets.nix
     purpose: NixOS system module.
