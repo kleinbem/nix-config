@@ -60,6 +60,15 @@
               nixfmt.enable = true;
               statix.enable = true;
               deadnix.enable = true;
+              semgrep = {
+                enable = true;
+                package = inputs.nixpkgs-stable.legacyPackages.${system}.semgrep;
+                entry = "env SSL_CERT_FILE=${
+                  inputs.nixpkgs.legacyPackages.${system}.cacert
+                }/etc/ssl/certs/ca-bundle.crt SEMGREP_ENABLE_VERSION_CHECK=0 ${
+                  inputs.nixpkgs-stable.legacyPackages.${system}.semgrep
+                }/bin/semgrep scan --config .semgrep/ --metrics=off --disable-version-check --error";
+              };
             };
           };
 
