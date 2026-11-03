@@ -13,11 +13,10 @@ Boards (ESPHome ≥ 2026.8 has first-class support for all of this):
 | file | hardware | ESPHome display model |
 |------|----------|-----------------------|
 | `smart-86-box.yaml` | Waveshare ESP32-P4 Smart 86 Box (4" 720×720 DSI touch, ESP32-C6 Wi-Fi, RJ45, RS485, 2 relays, mic/speaker) | `WAVESHARE-P4-86-PANEL` |
-| `hmi-8in.yaml` | Waveshare ESP32-P4-WIFI6 8" HMI (800×1280 DSI 10-point touch, dual mic, speaker) | `WAVESHARE-8-DSI-TOUCH-A` |
 
-Pins in `hmi-8in.yaml` come from Waveshare's own examples
-(waveshareteam/ESP32-P4-WIFI6-Touch-LCD-X); the `# verify` ones in
-`smart-86-box.yaml` are still from Espressif's reference design.
+The `# verify` pins in `smart-86-box.yaml` are still from Espressif's reference
+design. The HMI 8" panel needs ESPHome `dev` and is built on the workstation:
+see `../esphome-dev/hmi-8in/`.
 First flash over USB from the `esphome` devshell
 (`nix develop ../nix-devshells#esphome`, board shows up as /dev/ttyACM0);
 everything after that is OTA from the dashboard.

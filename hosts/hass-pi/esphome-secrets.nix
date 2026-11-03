@@ -21,6 +21,9 @@ let
     api_key_hmi_8in_1 = "esphome_api_key_hmi_8in_1";
     api_key_smart_86_box_1 = "esphome_api_key_smart_86_box_1";
     ota_password = "esphome_ota_password";
+    # The panels' guest Wi-Fi QR code (the Orbi's guest network).
+    wifi_guest_ssid = "esphome_wifi_guest_ssid";
+    wifi_guest_password = "esphome_wifi_guest_password";
   };
 
   secrets = {
