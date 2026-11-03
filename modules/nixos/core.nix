@@ -60,8 +60,12 @@ in
     };
   };
   nix = {
+    channel.enable = false;
+    nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
+      use-xdg-base-directories = true;
+      warn-dirty = false;
       experimental-features = [
         "nix-command"
         "flakes"
