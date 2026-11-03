@@ -112,10 +112,20 @@ def strip_comments_and_strings(src: str) -> str:
             i += 2
             while i < n - 1:
                 if src[i] == "'" and src[i + 1] == "'":
-                    if i + 2 < n and src[i + 2] in ("$", "'", "\\"):
-                        out.append("   ")
-                        i += 3
-                        continue
+                    if i + 2 < n:
+                        if src[i + 2] in ("$", "'"):
+                            out.append("   ")
+                            i += 3
+                            continue
+                        if src[i + 2] == "\\":
+                            # ''\ escapes the following character in Nix
+                            if i + 3 < n:
+                                out.append("   \n" if src[i + 3] == "\n" else "    ")
+                                i += 4
+                            else:
+                                out.append("   ")
+                                i += 3
+                            continue
                     out.append("  ")
                     i += 2
                     break

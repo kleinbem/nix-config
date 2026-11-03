@@ -56,6 +56,11 @@ def test_strip_escaped_interpolation_does_not_terminate_indented_string():
     assert "after = 1;" in out
 
 
+def test_strip_escaped_backslash_quote_does_not_terminate_indented_string():
+    out = strip_comments_and_strings("a = ''a''\\''b''; my.demo.enable = true;")
+    assert "my.demo.enable = true;" in out
+
+
 def test_strip_escaped_quote_does_not_terminate_string_prematurely():
     out = strip_comments_and_strings(r'"esc \"quoted\" still in" after')
     # Content inside the string is gone; `after` (outside) survives.
