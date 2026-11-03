@@ -29,6 +29,7 @@ in
     ./esphome-secrets.nix
     inputs.nix-presets.nixosModules.home-assistant
     inputs.nix-presets.nixosModules.music-assistant
+    inputs.nix-presets.nixosModules.photo-frame
     # openclaw stays here rather than on mac-mini: its pnpm-deps hash in
     # nix-openclaw mismatches on a from-scratch build, and this host runs an
     # already-cached build.
@@ -129,6 +130,11 @@ in
     };
 
     services.tang.enable = true;
+    # Random photos for the ESPHome panels' slideshow.
+    services.photo-frame = {
+      enable = true;
+      openFirewallOn = [ "end0" ];
+    };
     # Backups: nix-presets' backup-engine, fleet wiring in
     # modules/nixos/backup.nix. home-assistant and tang register their own
     # items. Secrets: backup_r2_rclone_config (nix/per-host/hass-pi.yaml),
@@ -193,6 +199,13 @@ in
       # read them. impermanence creates the folder, so it sets the owner.
       {
         directory = "/var/lib/music";
+        user = config.my.username;
+        group = "users";
+        mode = "0755";
+      }
+      # Photos for the panels' slideshow (my.services.photo-frame).
+      {
+        directory = "/var/lib/photos";
         user = config.my.username;
         group = "users";
         mode = "0755";
