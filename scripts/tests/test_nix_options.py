@@ -49,6 +49,13 @@ def test_strip_removes_indented_string_content():
     assert "hunter2" not in out
 
 
+def test_strip_escaped_interpolation_does_not_terminate_indented_string():
+    out = strip_comments_and_strings("a = '' cred = ''${FOO:-bar} ''; after = 1;")
+    assert "FOO" not in out
+    assert "bar" not in out
+    assert "after = 1;" in out
+
+
 def test_strip_escaped_quote_does_not_terminate_string_prematurely():
     out = strip_comments_and_strings(r'"esc \"quoted\" still in" after')
     # Content inside the string is gone; `after` (outside) survives.
