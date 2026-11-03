@@ -196,10 +196,9 @@
       inputs.home-manager.follows = "home-manager";
     };
 
-    # Pinned to last commit before the 1.1.3770 DMG bump, whose VM-start
-    # regex patch fails on the new upstream. Builds Claude Desktop v1.1.3189.
     claude-for-linux = {
-      url = "github:heytcass/claude-for-linux/954e956";
+      url = "github:heytcass/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
   };
