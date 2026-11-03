@@ -60,12 +60,11 @@ in
       ensurePrinters = [
         {
           name = "Ricoh_SP_220Nw";
-          # no-link: IPP/1.0 legacy compatibility mode forces atomic Print-Job; Ricoh SP 220Nw firmware rejects chunked IPP/2.0 Send-Document with client-error-not-possible
-          deviceUri = "ipp://10.0.5.10:631/ipp/print?version=1.0";
+          # no-link: ricoh-sp220 backend wrapper strips PageSize/ColorModel which Ricoh firmware rejects on Validate-Job, and enforces IPP/1.0 atomic Print-Job
+          deviceUri = "ricoh-sp220://10.0.5.10:631/ipp/print?version=1.0";
           model = "ricoh/RICOH-SP-220Nw.ppd";
           ppdOptions = {
-            PageSize = "A4";
-            ColorModel = "Gray";
+            print-color-mode = "monochrome";
           };
         }
       ];
