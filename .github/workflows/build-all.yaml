@@ -105,6 +105,7 @@ jobs:
           # Excluded: VM tests (vm-tests.yaml runs them) and host-* checks
           # (hosts are targeted explicitly below; nixos-nvme has build-nvme.yaml).
           SYSTEM="${{ matrix.system }}"
+          # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
           mapfile -t CI_CHECKS < <(nix eval ".#checks.$SYSTEM" \
               --apply builtins.attrNames --json $NIX_OVERRIDES \
             | jq -r '.[] | select(test("(caddy|code-server|mobile-link|recovery)-test|^host-") | not)')
@@ -165,6 +166,7 @@ jobs:
           rc=0
           for t in "${TARGETS[@]}"; do
             echo "::group::nix-fast-build $t"
+            # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
             nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" --flake "$t" $NIX_OVERRIDES || rc=1
             echo "::endgroup::"
           done
@@ -297,6 +299,7 @@ jobs:
             FACTORY="container-factory-aarch64"
           fi
           echo "FACTORY=$FACTORY" >> "$GITHUB_ENV"
+          # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
           nix eval --raw \
             ".#nixosConfigurations.$FACTORY.config.system.build.toplevel.drvPath" \
             $NIX_OVERRIDES
@@ -343,6 +346,7 @@ jobs:
             "--attic-cache" "system"
           )
           # $FACTORY is exported by the blocking eval step above.
+          # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
           mapfile -t CONTAINERS < <(nix eval \
               ".#nixosConfigurations.$FACTORY.config.containers" \
               --apply builtins.attrNames --json $NIX_OVERRIDES \
@@ -357,6 +361,7 @@ jobs:
           failed=()
           for c in "${CONTAINERS[@]}"; do
             echo "::group::nix-fast-build container: $c"
+            # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
             nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
               --flake ".#nixosConfigurations.$FACTORY.config.containers.\"$c\".path" $NIX_OVERRIDES \
               || failed+=("$c")
@@ -398,12 +403,14 @@ jobs:
         if: always() && (steps.factory-build.outcome == 'failure' || steps.orin-build.outcome == 'failure')
         continue-on-error: true
         run: |
-          echo "## ⚠️ Best-Effort Builds Failed" >> $GITHUB_STEP_SUMMARY
-          echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. What did build was pushed to the cache; the failed derivations and everything above them will be built locally:" >> $GITHUB_STEP_SUMMARY
-          [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`" >> $GITHUB_STEP_SUMMARY
-          [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The failing derivations are listed per step above; their logs are in the matching \`FAILED <drv>\` groups of the step output." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## ⚠️ Best-Effort Builds Failed"
+            echo "The overall CI run is green so that fleet promotion isn't blocked, but some heavy from-source builds failed. What did build was pushed to the cache; the failed derivations and everything above them will be built locally:"
+            [ "${{ steps.factory-build.outcome }}" = "failure" ] && echo "- \`container-factory\`"
+            [ "${{ steps.orin-build.outcome }}" = "failure" ] && echo "- \`orin-nano\` toplevel"
+            echo ""
+            echo "The failing derivations are listed per step above; their logs are in the matching \`FAILED <drv>\` groups of the step output."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Update Commit Statuses for best-effort builds
         if: always() && steps.cache.outputs.push_cache == 'true'

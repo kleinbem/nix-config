@@ -101,6 +101,7 @@ jobs:
           fi
           if [ -n "$REQUESTED" ]; then
             inputs=""
+            # shellcheck disable=SC2086 # REQUESTED is a space-separated list of inputs
             for i in $REQUESTED; do
               if grep -qx -- "$i" <<<"$all"; then
                 inputs="$inputs $i"
@@ -113,6 +114,7 @@ jobs:
             inputs=$(tr '\n' ' ' <<<"$all")
           fi
           echo "Updating inputs: $inputs"
+          # shellcheck disable=SC2086 # inputs is a space-separated list of inputs
           nix flake update $inputs
 
       - name: Validate flake (eval-only — blocks a bad lock from landing)
