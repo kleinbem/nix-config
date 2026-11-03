@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 76  
+**Declarations indexed:** 75  
 **Consumer files scanned:** 35
 
 ---
@@ -412,14 +412,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/rpi-direct-boot.nix:12`
 - **Sub-options:** `enable`
 - **Consumed by:** _(no opt-ins detected)_
-
-## `my.heartbeat`
-
-### `my.heartbeat`
-
-- **Declared:** `nix-config/modules/nixos/heartbeat.nix:46`
-- **Sub-options:** `baseUrl`, `checks`, `enable`
-- **Consumed by:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
 ## `my.herdr-remote-client`
 

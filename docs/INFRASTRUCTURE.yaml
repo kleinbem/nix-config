@@ -38,6 +38,10 @@ repo_atlas:
     path: aur-packages/
     url: git@github.com:kleinbem/aur-packages.git
     role: Supporting repository.
+  cadre:
+    path: cadre/
+    url: git@github.com:kleinbem-dev/cadre.git
+    role: Supporting repository.
   chrome-open-in-app:
     path: chrome-open-in-app/
     url: git@github.com:kleinbem/chrome-open-in-app.git
@@ -70,10 +74,6 @@ repo_atlas:
     path: kleinbem-site/
     url: git@github.com:kleinbem/kleinbem-site.git
     role: kleinbem.dev personal portfolio website.
-  mesh-agents:
-    path: mesh-agents/
-    url: git@github.com:kleinbem/mesh-agents.git
-    role: Supporting repository.
   mesh-llm-ci:
     path: mesh-llm-ci/
     url: git@github.com:kleinbem/mesh-llm-ci.git
@@ -2067,8 +2067,7 @@ modules_system:
   heartbeat.nix:
     file: nix-config/modules/nixos/heartbeat.nix
     purpose: NixOS system module.
-    declared_options:
-    - my.heartbeat
+    declared_options: []
   host-secrets.nix:
     file: nix-config/modules/nixos/host-secrets.nix
     purpose: NixOS system module.
