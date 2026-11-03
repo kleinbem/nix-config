@@ -74,11 +74,35 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      PrivateNetwork = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
       ReadWritePaths = [ pkiDir ];
       NoNewPrivileges = true;
+
+      # STIG / Hardening baseline
+      CapabilityBoundingSet = "";
+      DevicePolicy = "closed";
+      LockPersonality = true;
+      MemoryDenyWriteExecute = true;
+      PrivateDevices = true;
+      ProtectClock = true;
+      ProtectControlGroups = true;
+      ProtectHostname = true;
+      ProtectKernelLogs = true;
+      ProtectKernelModules = true;
+      ProtectKernelTunables = true;
+      ProtectProc = "invisible";
+      RestrictAddressFamilies = [ "AF_UNIX" ];
+      RestrictNamespaces = true;
+      RestrictRealtime = true;
+      RestrictSUIDSGID = true;
+      SystemCallArchitectures = "native";
+      SystemCallFilter = [
+        "@system-service"
+        "~@privileged"
+      ];
     };
 
     path = [ pkgs.openssl ];

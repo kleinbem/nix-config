@@ -18,7 +18,14 @@ let
 
   pingAlive = pkgs.writeShellScript "heartbeat-alive" ''
     set -u
-    key=$(${pkgs.coreutils}/bin/tr -d '[:space:]' < ${keyFile}) || exit 0
+    cred="''${CREDENTIALS_DIRECTORY:-}/ping_key"
+    if [ -f "$cred" ]; then
+      key=$(${pkgs.coreutils}/bin/tr -d '[:space:]' < "$cred") || exit 0
+    elif [ -f "${keyFile}" ]; then
+      key=$(${pkgs.coreutils}/bin/tr -d '[:space:]' < "${keyFile}") || exit 0
+    else
+      exit 0
+    fi
     [ -n "$key" ] || exit 0
     exec ${pkgs.curl}/bin/curl -fsS -m 10 --retry 3 -o /dev/null "${cfg.baseUrl}/$key/${host}-alive"
   '';
@@ -86,9 +93,48 @@ in
       systemd.services.heartbeat-alive = {
         description = "External alive ping (healthchecks.io)";
         wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-        serviceConfig.Type = "oneshot";
-        serviceConfig.ExecStart = pingAlive;
+        after = [
+          "network-online.target"
+          "sops-install-secrets.service"
+        ];
+        unitConfig.ConditionPathExists = keyFile;
+        serviceConfig = {
+          Type = "oneshot";
+          DynamicUser = true;
+          LoadCredential = "ping_key:${keyFile}";
+          ExecStart = pingAlive;
+
+          # STIG / Hardening baseline
+          CapabilityBoundingSet = "";
+          DevicePolicy = "closed";
+          LockPersonality = true;
+          MemoryDenyWriteExecute = true;
+          NoNewPrivileges = true;
+          PrivateDevices = true;
+          PrivateTmp = true;
+          ProtectClock = true;
+          ProtectControlGroups = true;
+          ProtectHome = true;
+          ProtectHostname = true;
+          ProtectKernelLogs = true;
+          ProtectKernelModules = true;
+          ProtectKernelTunables = true;
+          ProtectProc = "invisible";
+          ProtectSystem = "strict";
+          RestrictAddressFamilies = [
+            "AF_INET"
+            "AF_INET6"
+            "AF_UNIX"
+          ];
+          RestrictNamespaces = true;
+          RestrictRealtime = true;
+          RestrictSUIDSGID = true;
+          SystemCallArchitectures = "native";
+          SystemCallFilter = [
+            "@system-service"
+            "~@privileged"
+          ];
+        };
       };
       systemd.timers.heartbeat-alive = {
         wantedBy = [ "timers.target" ];
