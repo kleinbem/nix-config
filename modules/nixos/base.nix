@@ -85,18 +85,6 @@
       # where it worked) goes to kleinbem/nix-detour-fleet instead.
       # -----------------------------------------------------------------------
 
-      # reuse: sphinxHook expands `$sphinxBuilders` as a string under
-      # structured attrs, so only html runs and the `man` output is never
-      # produced; amberol needs reuse to build. Drop once NixOS/nixpkgs#573479
-      # reaches nixos-unstable.
-      reuse = prev.python3Packages.toPythonApplication (
-        prev.python3Packages.reuse.overrideAttrs (old: {
-          # keep out/doc/dist (the python builder adds dist itself)
-          outputs = prev.lib.remove "man" old.outputs;
-          sphinxBuilders = [ "html" ];
-        })
-      );
-
       # flashrom 1.8.0's cmocka test suite fails on aarch64
       # (`write_chip_bad_status_test`), which breaks raspberrypi-eeprom →
       # rpi-eeprom-update.service → the whole core-pi/hass-pi toplevel.
