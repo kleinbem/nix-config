@@ -489,7 +489,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/nixosModules/photo-frame/default.nix:19`
 - **Sub-options:** `enable`, `openFirewallOn`, `photoDir`, `port`, `supplementaryGroups`
-- **Consumed by:** _(no opt-ins detected)_
+- **Consumed by:** `host:hass-pi`
 
 ### `my.services.printing`
 

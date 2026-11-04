@@ -402,6 +402,7 @@ hosts:
     - '[local] ./esphome-secrets.nix'
     - '[preset] nix-presets:home-assistant'
     - '[preset] nix-presets:music-assistant'
+    - '[preset] nix-presets:photo-frame'
     - '[preset] nix-presets:openclaw'
     - '[preset] nix-presets:herdr-remote-client'
     enabled_subsystems:
@@ -448,6 +449,9 @@ hosts:
       - enable
       - serverIp
       services:
+      - photo-frame
+      - photo-frame.enable
+      - photo-frame.openFirewallOn
       - tang.enable
     containers_hosted:
     - home-assistant
