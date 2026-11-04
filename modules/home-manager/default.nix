@@ -6,6 +6,7 @@
     ./dev.nix
     ./ai-agents.nix
     inputs.nix-presets.homeManagerModules.desktop
+    inputs.cadre.homeManagerModules.default
     ./security.nix
     ./pentesting.nix
     ./vscode.nix

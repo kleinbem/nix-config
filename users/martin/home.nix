@@ -415,6 +415,14 @@ in
     };
   };
 
+  # Private AI teammates on local inference (Goose, Berd, Buzz)
+  services.cadre = {
+    enable = true;
+    desktop.enable = true;
+    backend = "mesh";
+    autoStart = false;
+  };
+
   # Silencing evaluation warnings from newer Home Manager
   # (Using null adopts the new default behavior)
   gtk.gtk4.theme = null;

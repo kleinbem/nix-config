@@ -111,6 +111,16 @@
       url = "github:kleinbem-dev/revue";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    cadre = {
+      url = "github:kleinbem-dev/cadre";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        nix-packages.follows = "nix-packages";
+        home-manager.follows = "home-manager";
+        treefmt-nix.follows = "treefmt-nix";
+        flake-parts.follows = "flake-parts";
+      };
+    };
 
     # Hermes Agent (Nous Research) CLI — for interactive use inside Herdr
     # panes on nixos-nvme (see nix-presets/herdr.nix). Follows nix-presets'
