@@ -200,20 +200,22 @@ in
 
   systemd = {
     # IMAGE STATE STORAGE
+    # Data dirs: "-" creates them as root 0755 but leaves existing ones alone; an
+    # explicit owner/mode resets them on every switch, under the running services.
     tmpfiles.rules = [
       "d /var/lib/images 0755 root root - -"
-      "d /var/lib/images/loki 0755 root root - -"
-      "d /var/lib/images/monitoring 0755 root root - -"
-      "d /var/lib/images/qdrant 0755 root root - -"
-      "d /var/lib/images/syncthing 0755 root root - -"
-      "d /var/lib/images/miniflux 0755 root root - -"
+      "d /var/lib/images/loki - - - - -"
+      "d /var/lib/images/monitoring - - - - -"
+      "d /var/lib/images/qdrant - - - - -"
+      "d /var/lib/images/syncthing - - - - -"
+      "d /var/lib/images/miniflux - - - - -"
       "d /mnt/data/Archive 0755 martin users - -"
       "d /mnt/data/Archive/Inbox 0755 martin users - -"
       "d /mnt/data/Archive/Paperless 0755 root root - -"
       # agent-team's bind-mount sources; the container won't start without them.
-      "d /var/lib/images/agent-team 0755 root root - -"
-      "d /var/lib/images/agent-team/workspace 0755 root root - -"
-      "d /var/lib/images/agent-team/state 0755 root root - -"
+      "d /var/lib/images/agent-team - - - - -"
+      "d /var/lib/images/agent-team/workspace - - - - -"
+      "d /var/lib/images/agent-team/state - - - - -"
     ];
   };
 
