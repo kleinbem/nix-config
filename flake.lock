@@ -1,5 +1,37 @@
 {
   "nodes": {
+    "cadre": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "home-manager": [
+          "home-manager"
+        ],
+        "nix-packages": [
+          "nix-packages"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793744087,
+        "narHash": "sha256-AwwANPZsIKEom32yVObAp+LOK8O8gEW+5gZ29Wrloa4=",
+        "owner": "kleinbem-dev",
+        "repo": "cadre",
+        "rev": "6bce960f96de51a9aed2e017a51027e7f7454ad9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem-dev",
+        "repo": "cadre",
+        "type": "github"
+      }
+    },
     "claude-for-linux": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -2836,6 +2868,7 @@
     },
     "root": {
       "inputs": {
+        "cadre": "cadre",
         "claude-for-linux": "claude-for-linux",
         "colmena": "colmena",
         "comin": "comin",
