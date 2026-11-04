@@ -201,6 +201,9 @@ in
     settings.Manager = {
       DefaultStartLimitIntervalSec = "15m";
       DefaultStartLimitBurst = 5;
+      # Hardware watchdog: a hang the kernel can't see (no panic, no log) now
+      # reboots instead of sitting dead until someone notices.
+      RuntimeWatchdogSec = lib.mkDefault "60s";
     };
     user.settings.Manager = {
       DefaultStartLimitIntervalSec = "15m";
