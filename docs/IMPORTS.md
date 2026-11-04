@@ -1,0 +1,185 @@
+# Host Import Graph
+
+> **Auto-generated** by `nix-config/scripts/generate-imports-index.py`. Do not edit by hand.
+>
+> Regenerate with `just maintenance::sync-agent`.
+
+Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
+
+**Hosts indexed:** 10  
+**Distinct imports:** 102
+
+---
+
+## Per host
+
+### `container-factory`
+
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:forgejo`, `nix-presets:frigate`, `nix-presets:garage-ui`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:music-assistant`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:revue`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`
+- **Local:** `../../modules/nixos/options.nix`
+
+### `core-pi`
+
+- **Modules:** `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`
+- **Presets:** `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:ente`, `nix-presets:gatus`, `nix-presets:herdr-remote-client`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
+- **Other inputs:** `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
+- **Local:** `./secrets.nix`
+
+### `hass-pi`
+
+- **Modules:** `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`
+- **Presets:** `nix-presets:herdr-remote-client`, `nix-presets:home-assistant`, `nix-presets:music-assistant`, `nix-presets:openclaw`, `nix-presets:photo-frame`
+- **Other inputs:** `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
+- **Local:** `./esphome-secrets.nix`, `./secrets.nix`
+
+### `mac-mini`
+
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:forgejo`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:sandboxed-apps`, `nix-presets:stalwart`
+- **Users:** `user:martin`
+- **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
+- **Local:** `./disko.nix`, `./secrets.nix`
+
+### `nasbook`
+
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:syncthing`
+- **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
+- **Local:** `./data-disk.nix`, `./disko.nix`, `./secrets.nix`
+
+### `nixos-nvme`
+
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/containers/langgraph.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/vault-anythingllm-sync.nix`, `modules/nixos/workstation.nix`
+- **Presets:** `nix-presets:all`
+- **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
+- **Users:** `user:dhirujaan`, `user:martin`
+- **Other inputs:** `disko:disko`, `nix-gantry:updater`, `revue:default`
+- **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./herdr.nix`, `./monitors.nix`, `./network.nix`, `./secrets.nix`
+
+### `orin-nano`
+
+- **Modules:** `modules/nixos/ai-hardening.nix`, `modules/nixos/ananicy.nix`, `modules/nixos/audit.nix`, `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/initrd-fan.nix`, `modules/nixos/kernel.nix`, `modules/nixos/persistence.nix`, `modules/nixos/scripts.nix`, `modules/nixos/security/hardening.nix`, `modules/nixos/users.nix`
+- **Presets:** `nix-presets:attic-push`, `nix-presets:frigate`, `nix-presets:herdr-remote-client`, `nix-presets:llama-cpp`, `nix-presets:monitoring-node`, `nix-presets:ollama`, `nix-presets:syncthing`
+- **Hardware:** `nix-hardware:orin-nano`
+- **Users:** `user:martin`
+- **Other inputs:** `disko:disko`, `nix-gantry:updater`
+- **Local:** `./disko.nix`, `./hardware.nix`, `./network.nix`, `./secrets.nix`, `./services.nix`
+
+### `orin-nano-bootstrap`
+
+- **Hardware:** `nix-hardware:orin-nano`
+- **Other inputs:** `disko:disko`
+- **Local:** `./disko.nix`
+
+### `phone`
+
+- **Modules:** `modules/nix-on-droid/dashboard.nix`
+
+### `tablet`
+
+- **Modules:** `modules/nix-on-droid/dashboard.nix`
+
+## Reverse index — import → hosts
+
+- `../../modules/nixos/options.nix` ← container-factory
+- `./ai.nix` ← nixos-nvme
+- `./containers.nix` ← nixos-nvme
+- `./data-disk.nix` ← nasbook
+- `./disko.nix` ← mac-mini, nasbook, orin-nano, orin-nano-bootstrap
+- `./esphome-secrets.nix` ← hass-pi
+- `./garage.nix` ← nixos-nvme
+- `./hardware-boot.nix` ← nixos-nvme
+- `./hardware.nix` ← orin-nano
+- `./herdr.nix` ← nixos-nvme
+- `./monitors.nix` ← nixos-nvme
+- `./network.nix` ← nixos-nvme, orin-nano
+- `./secrets.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
+- `./services.nix` ← orin-nano
+- `disko:disko` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
+- `modules/nix-on-droid/dashboard.nix` ← phone, tablet
+- `modules/nixos/ai-hardening.nix` ← orin-nano
+- `modules/nixos/ananicy.nix` ← orin-nano
+- `modules/nixos/apps.nix` ← nixos-nvme
+- `modules/nixos/audit.nix` ← orin-nano
+- `modules/nixos/base.nix` ← mac-mini, nasbook, orin-nano
+- `modules/nixos/clevis-initrd.nix` ← mac-mini, nasbook, orin-nano
+- `modules/nixos/containers/langgraph.nix` ← nixos-nvme
+- `modules/nixos/data-disk.nix` ← nasbook, nixos-nvme
+- `modules/nixos/default.nix` ← nixos-nvme
+- `modules/nixos/desktop.nix` ← mac-mini
+- `modules/nixos/disko.nix` ← nixos-nvme
+- `modules/nixos/firejail.nix` ← mac-mini
+- `modules/nixos/headless.nix` ← mac-mini, nasbook, orin-nano
+- `modules/nixos/hosts.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
+- `modules/nixos/initrd-fan.nix` ← orin-nano
+- `modules/nixos/kernel.nix` ← orin-nano
+- `modules/nixos/persistence.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
+- `modules/nixos/pull-deploy-node.nix` ← mac-mini, nasbook
+- `modules/nixos/rpi5-disko.nix` ← core-pi, hass-pi
+- `modules/nixos/rpi5-node.nix` ← core-pi, hass-pi
+- `modules/nixos/scripts.nix` ← orin-nano
+- `modules/nixos/security/hardening.nix` ← orin-nano
+- `modules/nixos/services/cloudflare-tunnel.nix` ← core-pi
+- `modules/nixos/services/vault-anythingllm-sync.nix` ← nixos-nvme
+- `modules/nixos/users.nix` ← orin-nano
+- `modules/nixos/workstation.nix` ← nixos-nvme
+- `nix-gantry:host` ← core-pi, hass-pi, mac-mini, nasbook
+- `nix-gantry:host-persistence` ← core-pi, hass-pi, mac-mini, nasbook
+- `nix-gantry:updater` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
+- `nix-hardware:intel-compute` ← nixos-nvme
+- `nix-hardware:nixos-nvme` ← nixos-nvme
+- `nix-hardware:orin-nano` ← orin-nano, orin-nano-bootstrap
+- `nix-presets:agent-team` ← container-factory, nasbook
+- `nix-presets:agent-zero` ← container-factory, mac-mini
+- `nix-presets:all` ← nixos-nvme
+- `nix-presets:anythingllm` ← container-factory, mac-mini
+- `nix-presets:attic` ← container-factory, core-pi
+- `nix-presets:attic-push` ← orin-nano
+- `nix-presets:authentik` ← container-factory, core-pi
+- `nix-presets:backup` ← container-factory, nasbook
+- `nix-presets:buzz` ← container-factory
+- `nix-presets:caddy` ← container-factory, core-pi
+- `nix-presets:caido` ← container-factory
+- `nix-presets:code-server` ← container-factory
+- `nix-presets:comfyui` ← container-factory
+- `nix-presets:crowdsec` ← container-factory, core-pi
+- `nix-presets:cups` ← container-factory, core-pi
+- `nix-presets:dashboard-homepage` ← container-factory, core-pi
+- `nix-presets:dev-db` ← container-factory
+- `nix-presets:ente` ← container-factory, core-pi
+- `nix-presets:forgejo` ← container-factory, mac-mini
+- `nix-presets:frigate` ← container-factory, orin-nano
+- `nix-presets:garage-ui` ← container-factory
+- `nix-presets:gatus` ← container-factory, core-pi
+- `nix-presets:herdr-remote-client` ← core-pi, hass-pi, mac-mini, nasbook, orin-nano
+- `nix-presets:hermes` ← container-factory, mac-mini
+- `nix-presets:home-assistant` ← container-factory, hass-pi
+- `nix-presets:langflow` ← container-factory
+- `nix-presets:langfuse` ← container-factory
+- `nix-presets:litellm` ← container-factory
+- `nix-presets:llama-cpp` ← container-factory, orin-nano
+- `nix-presets:loki` ← container-factory, nasbook
+- `nix-presets:miniflux` ← container-factory, nasbook
+- `nix-presets:monitoring` ← container-factory, mac-mini, nasbook
+- `nix-presets:monitoring-node` ← mac-mini, nasbook, orin-nano
+- `nix-presets:music-assistant` ← container-factory, hass-pi
+- `nix-presets:n8n` ← container-factory
+- `nix-presets:netdata` ← container-factory
+- `nix-presets:ntfy` ← container-factory, core-pi
+- `nix-presets:ollama` ← container-factory, orin-nano
+- `nix-presets:open-webui` ← container-factory, mac-mini
+- `nix-presets:openclaw` ← container-factory, hass-pi
+- `nix-presets:paperless` ← container-factory, nasbook
+- `nix-presets:persona-runtime` ← mac-mini
+- `nix-presets:photo-frame` ← hass-pi
+- `nix-presets:playground` ← container-factory
+- `nix-presets:qbittorrent` ← container-factory, nasbook
+- `nix-presets:qdrant` ← container-factory, nasbook
+- `nix-presets:revue` ← container-factory
+- `nix-presets:sandboxed-apps` ← mac-mini
+- `nix-presets:stalwart` ← container-factory, mac-mini
+- `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
+- `nix-presets:vaultwarden` ← container-factory, core-pi
+- `revue:default` ← nixos-nvme
+- `user:dhirujaan` ← nixos-nvme
+- `user:martin` ← mac-mini, nixos-nvme, orin-nano
