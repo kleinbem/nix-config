@@ -266,34 +266,36 @@
   };
 
   # IMAGE STATE STORAGE
+  # Data dirs: "-" creates them as root 0755 but leaves existing ones alone; an
+  # explicit owner/mode resets them on every switch, under the running services.
   systemd.tmpfiles.rules = [
     "d /var/lib/machines 0755 root root - -"
     "d /var/lib/machines/n8n 0755 root root - -"
     "d /var/lib/images 0755 root root - -" # Create parent, non-recursive
-    "d /var/lib/images/n8n 0755 root root - -"
+    "d /var/lib/images/n8n - - - - -"
     "d /var/lib/images/playground 0755 martin users - -" # Ensure you own your playground
     # No caddy line: caddy/default.nix owns that dir (uid 3000).
-    "d /var/lib/images/loki 0755 root root - -"
-    "d /var/lib/images/crowdsec 0755 root root - -"
-    "d /var/lib/images/monitoring 0755 root root - -"
-    "d /var/lib/images/monitoring/db 0755 root root - -"
+    "d /var/lib/images/loki - - - - -"
+    "d /var/lib/images/crowdsec - - - - -"
+    "d /var/lib/images/monitoring - - - - -"
+    "d /var/lib/images/monitoring/db - - - - -"
     # No monitoring/grafana line: monitoring.nix owns it (1000:100).
-    "d /var/lib/images/qdrant 0755 root root - -"
-    "d /var/lib/images/open-webui 0755 root root - -"
+    "d /var/lib/images/qdrant - - - - -"
+    "d /var/lib/images/open-webui - - - - -"
     "d /var/lib/images/lmstudio 0750 martin users - -"
-    "d /var/lib/images/netdata 0755 root root - -"
-    "d /var/lib/images/netdata/cache 0755 root root - -"
-    "d /var/lib/images/netdata/lib 0755 root root - -"
-    "d /var/lib/images/langfuse 0755 root root - -"
-    "d /var/lib/images/langgraph 0755 root root - -"
+    "d /var/lib/images/netdata - - - - -"
+    "d /var/lib/images/netdata/cache - - - - -"
+    "d /var/lib/images/netdata/lib - - - - -"
+    "d /var/lib/images/langfuse - - - - -"
+    "d /var/lib/images/langgraph - - - - -"
     # No langfuse/db line: postgres needs uid 71, set in langfuse.nix.
-    "d /var/lib/images/buzz 0755 root root - -"
-    "d /var/lib/images/buzz/postgresql 0755 root root - -"
-    "d /var/lib/images/buzz/redis 0755 root root - -"
-    "d /var/lib/images/buzz/typesense 0755 root root - -"
-    "d /var/lib/images/buzz/garage 0755 root root - -"
-    "d /var/lib/images/buzz/relay 0755 root root - -"
-    "d /var/lib/images/syncthing 0755 root root - -"
+    "d /var/lib/images/buzz - - - - -"
+    "d /var/lib/images/buzz/postgresql - - - - -"
+    "d /var/lib/images/buzz/redis - - - - -"
+    "d /var/lib/images/buzz/typesense - - - - -"
+    "d /var/lib/images/buzz/garage - - - - -"
+    "d /var/lib/images/buzz/relay - - - - -"
+    "d /var/lib/images/syncthing - - - - -"
   ];
 
 }
