@@ -1,0 +1,15 @@
+# Trivy Ignore File - Centralized security exceptions for NixOS Host and Containers
+# Format: CVE-ID or Vulnerability-ID per line. Optional comments with #
+
+# --- Infrastructure Exceptions (Accepted Risks) ---
+
+# Example: Known stale advisories in nixos-unstable that are already in the pipeline
+# CVE-202X-XXXX 
+
+# --- Container Exceptions ---
+# linux-libc-dev vulnerabilities in build containers (often headers only, non-exploitable at runtime)
+CVE-2024-35870
+CVE-2024-53179
+CVE-2025-37899
+CVE-2025-38118
+CVE-2026-23112
