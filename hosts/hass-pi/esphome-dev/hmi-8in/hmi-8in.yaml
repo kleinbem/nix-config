@@ -232,6 +232,13 @@ speaker:
 
 # Audio sources: HTTP for Home Assistant (TTS, sounds, media URLs) and
 # Sendspin for Music Assistant, which plays in sync with its other speakers.
+# Only requested codecs are built in: FLAC for Home Assistant, MP3 for the
+# radio buttons.
+audio:
+  codecs:
+    flac:
+    mp3:
+
 media_source:
   - platform: audio_http
     id: src_http_announce
@@ -270,8 +277,21 @@ media_player:
       sources:
         - src_http_media
         - src_sendspin
+    announcement_volume: 70%
     on_state:
       - script.execute: np_mode
+      - script.execute: radio_idle
+    on_volume:
+      - lvgl.slider.update:
+          id: sl_vol
+          value: !lambda return id(panel_media).volume * 100;
+      - if:
+          condition:
+            lambda: return id(np_local);
+          then:
+            - lvgl.slider.update:
+                id: sl_np_vol
+                value: !lambda return id(panel_media).volume * 100;
 
 micro_wake_word:
   # +6 dB digital; 4x clipped normal speech (peaks already near 0 dB).
@@ -383,6 +403,9 @@ image:
             - lvgl.widget.hide: lbl_np_nocover
     on_error:
       - lvgl.widget.hide: img_cover
+      - lvgl.label.update:
+          id: lbl_np_nocover
+          text: "\U000F038A"
       - lvgl.widget.show: lbl_np_nocover
 
 font:
@@ -393,12 +416,15 @@ font:
   - file: "gfonts://Roboto@300"
     id: font_big
     size: 72
+    glyphsets: [GF_Latin_Core] # é, ö, ü in titles and station names
   - file: "gfonts://Roboto"
     id: font_mid
     size: 36
+    glyphsets: [GF_Latin_Core] # é, ö, ü in titles and station names
   - file: "gfonts://Roboto"
     id: font_small
     size: 26
+    glyphsets: [GF_Latin_Core] # é, ö, ü in titles and station names
   - file: "gfonts://Roboto"
     id: font_pin
     size: 64
@@ -409,7 +435,7 @@ font:
       url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
     id: font_icon
     size: 64
-    glyphs: "󰒮󰐎󰒭󰎊󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂"
+    glyphs: "󰐹󰒮󰐎󰒭󰎊󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂"
   - file:
       type: web
       url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
@@ -418,6 +444,26 @@ font:
     glyphs: "󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰤠󰅤"
 
 number:
+  # Volume of voice answers and announcements while no music plays.
+  - platform: template
+    id: voice_volume
+    name: Voice volume
+    icon: mdi:account-voice
+    entity_category: config
+    unit_of_measurement: "%"
+    optimistic: true
+    restore_value: true
+    initial_value: 70
+    min_value: 0
+    max_value: 100
+    step: 5
+    on_value:
+      - speaker_source.set_announcement_volume:
+          id: panel_media
+          volume: !lambda return x / 100.0f;
+      - lvgl.slider.update:
+          id: sl_voice
+          value: !lambda return x;
   # Noise that wakes the screen, as the mic's RMS level in dB.
   - platform: template
     id: wake_noise
@@ -481,6 +527,10 @@ globals:
   - id: ss_has_art
     type: bool
     initial_value: "false"
+  # Station started from the Media tab's radio buttons.
+  - id: radio_name
+    type: std::string
+    restore_value: false
   - id: pin
     type: std::string
     restore_value: false
@@ -552,6 +602,30 @@ script:
       - lvgl.page.show: main_page
   # Media tab. np_mode decides whose playback to show, np_refresh draws the
   # text, the cover scripts pick the artwork source.
+  - id: radio_play
+    mode: restart
+    parameters:
+      station: string
+      url: string
+    then:
+      - lambda: id(radio_name) = station;
+      - media_player.play_media:
+          id: panel_media
+          media_url: !lambda return url;
+      - lambda: id(np_local) = false;
+      - script.execute: np_mode
+  # Anything else played after a station (HA, Sendspin) must not keep its name;
+  # switching stations passes through idle only briefly.
+  - id: radio_idle
+    mode: restart
+    then:
+      - delay: 3s
+      - if:
+          condition:
+            lambda: return id(panel_media).state == media_player::MEDIA_PLAYER_STATE_IDLE && !id(radio_name).empty();
+          then:
+            - lambda: id(radio_name).clear();
+            - script.execute: np_mode
   - id: np_mode
     mode: queued
     then:
@@ -559,10 +633,15 @@ script:
           auto st = id(panel_media).state;
           bool local = (st == media_player::MEDIA_PLAYER_STATE_PLAYING ||
                         st == media_player::MEDIA_PLAYER_STATE_PAUSED) &&
-                       !id(ss_title).state.empty();
+                       (!id(ss_title).state.empty() || !id(radio_name).empty());
           if (local == id(np_local)) return;
           id(np_local) = local;
-          if (local) id(np_local_cover).execute(); else id(np_ha_cover).execute();
+          if (local) {
+            lv_slider_set_value(id(sl_np_vol), id(panel_media).volume * 100, LV_ANIM_OFF);
+            id(np_local_cover).execute();
+          } else {
+            id(np_ha_cover).execute();
+          }
       - script.execute: np_refresh
   - id: np_refresh
     mode: queued
@@ -570,14 +649,14 @@ script:
       - lvgl.label.update:
           id: lbl_np_title
           text: !lambda |-
-            if (id(np_local)) return id(ss_title).state;
+            if (id(np_local)) return id(radio_name).empty() ? id(ss_title).state : id(radio_name);
             if (id(np_player).state.rfind("media_player.", 0) != 0 || id(np_title).state == "-")
               return std::string("Nothing playing");
             return id(np_title).state;
       - lvgl.label.update:
           id: lbl_np_artist
           text: !lambda |-
-            if (id(np_local)) return id(ss_artist).state;
+            if (id(np_local)) return id(radio_name).empty() ? id(ss_artist).state : std::string("Radio");
             if (id(np_player).state.rfind("media_player.", 0) != 0 || id(np_artist).state == "-")
               return std::string("");
             return id(np_artist).state;
@@ -592,7 +671,8 @@ script:
     then:
       - lambda: |-
           float d = id(ss_duration).state, p = id(ss_progress).state;
-          if (!id(np_local) || std::isnan(d) || d <= 0) {
+          // Live radio has no length; a Sendspin track's duration may linger.
+          if (!id(np_local) || !id(radio_name).empty() || std::isnan(d) || d <= 0) {
             lv_obj_add_flag(id(bar_np_progress), LV_OBJ_FLAG_HIDDEN);
             return;
           }
@@ -603,7 +683,7 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(np_local) && id(ss_has_art);
+            lambda: return id(np_local) && id(ss_has_art) && id(radio_name).empty();
           then:
             - lvgl.image.update:
                 id: img_cover
@@ -616,6 +696,9 @@ script:
                   lambda: return id(np_local);
                 then:
                   - lvgl.widget.hide: img_cover
+                  - lvgl.label.update:
+                      id: lbl_np_nocover
+                      text: !lambda 'return std::string(id(radio_name).empty() ? "\U000F038A" : "\U000F0439");'
                   - lvgl.widget.show: lbl_np_nocover
   - id: np_ha_cover
     then:
@@ -632,6 +715,9 @@ script:
                   lambda: return !id(np_local);
                 then:
                   - lvgl.widget.hide: img_cover
+                  - lvgl.label.update:
+                      id: lbl_np_nocover
+                      text: "\U000F038A"
                   - lvgl.widget.show: lbl_np_nocover
   # The buttons switch at once; if Home Assistant has not confirmed the new
   # state 2.5s later, they go back to what it reports.
@@ -755,6 +841,7 @@ text_sensor:
     type: title
     internal: true
     on_value:
+      - lambda: if (!x.empty()) id(radio_name).clear();
       - script.execute: np_mode
   - platform: sendspin
     id: ss_artist
@@ -779,6 +866,13 @@ text_sensor:
     mac_address:
       id: info_mac
       name: MAC address
+    bssid:
+      id: info_bssid
+      name: Wi-Fi access point
+      entity_category: diagnostic
+    power_save_mode:
+      id: info_psm
+      internal: true
     scan_results:
       id: wifi_scan
       internal: true
@@ -1715,6 +1809,159 @@ lvgl:
                                   data:
                                     entity_id: !lambda return id(np_player).state;
                                     volume_level: !lambda return str_sprintf("%.2f", x / 100.0f);
+                  # Stations from Music Assistant's radio favourites that stream MP3.
+                  - button:
+                      x: 40
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "Mirchi"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "Radio Mirchi Hindi"
+                            url: "https://eu8.fastcast4u.com/proxy/clyedupq/stream"
+                  - button:
+                      x: 192
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "Bollywood"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "Hits Of Bollywood"
+                            url: "http://stream.zeno.fm/8ty8szwpwfeuv"
+                  - button:
+                      x: 344
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "RTÉ 1"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "RTÉ Radio 1"
+                            url: "http://icecast.rte.ie/radio1"
+                  - button:
+                      x: 496
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "Today FM"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "Today FM"
+                            url: "https://stream.audioxi.com/TD"
+                  - button:
+                      x: 648
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "Bayern 3"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "Bayern 3"
+                            url: "https://dispatcher.rndfnk.com/br/br3/live/mp3/mid"
+                  - button:
+                      x: 800
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "1LIVE"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "1LIVE"
+                            url: "http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3"
+                  - button:
+                      x: 952
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "Ö3"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "Hitradio Ö3"
+                            url: "https://orf-live.ors-shoutcast.at/oe3-q2a"
+                  - button:
+                      x: 1104
+                      y: 580
+                      width: 140
+                      height: 90
+                      radius: 20
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_small
+                            text_color: 0xE6EAEE
+                            text: "FM4"
+                      on_click:
+                        - script.execute:
+                            id: radio_play
+                            station: "FM4"
+                            url: "https://orf-live.ors-shoutcast.at/fm4-q2a"
               - id: tile_alarm
                 name: "Alarm"
                 widgets:
@@ -2073,7 +2320,7 @@ lvgl:
                               id: sl_vol
                               x: 60
                               y: 620
-                              width: 1100
+                              width: 520
                               height: 40
                               min_value: 0
                               max_value: 100
@@ -2086,6 +2333,28 @@ lvgl:
                                 - media_player.volume_set:
                                     id: panel_media
                                     volume: !lambda return x / 100.0f;
+                          - label:
+                              x: 640
+                              y: 560
+                              styles: muted
+                              text: "Voice volume"
+                          - slider:
+                              id: sl_voice
+                              x: 640
+                              y: 620
+                              width: 520
+                              height: 40
+                              min_value: 0
+                              max_value: 100
+                              bg_color: 0x1E242B
+                              indicator:
+                                bg_color: 0x81C784
+                              knob:
+                                bg_color: 0xE6EAEE
+                              on_release:
+                                - number.set:
+                                    id: voice_volume
+                                    value: !lambda return x;
               - id: tile_wifi
                 name: "Wi-Fi"
                 widgets:
@@ -2257,13 +2526,47 @@ interval:
                         auto t = id(ha_time).now();
                         float c = id(ha_weather_temp).state;
                         return t.strftime("%H:%M") + (std::isnan(c) ? std::string("") : str_sprintf("   %.0f°", c));
+  # The Orbi can lose its forwarding entry for the panel: wired hosts (Home
+  # Assistant) can't reach it while Wi-Fi clients still can, and rejoining the
+  # same AP doesn't help. Steering a reconnect to another AP does.
+  # no-link: Netgear Orbi firmware has no public bug tracker.
+  - interval: 1min
+    then:
+      - if:
+          condition:
+            lambda: |-
+              static uint8_t lost = 0;
+              static std::vector<wifi::bssid_t> lowered;
+              auto *w = wifi::global_wifi_component;
+              if (api::global_api_server->is_connected(true)) {
+                for (auto &b : lowered) w->set_sta_priority(b, 0);
+                lowered.clear();
+                lost = 0;
+                return false;
+              }
+              if (!w->is_connected()) {
+                lost = 0;
+                return false;
+              }
+              if (++lost < 10) return false;
+              lost = 0;
+              auto b = w->wifi_bssid();
+              ESP_LOGW("heal", "No Home Assistant for 10 min, reconnecting away from %02X:%02X:%02X:%02X:%02X:%02X",
+                       b[0], b[1], b[2], b[3], b[4], b[5]);
+              w->set_sta_priority(b, -10);
+              if (std::find(lowered.begin(), lowered.end(), b) == lowered.end()) lowered.push_back(b);
+              return true;
+          then:
+            - wifi.disable:
+            - delay: 2s
+            - wifi.enable:
   - interval: 5s
     then:
       - lambda: |-
           std::string t;
           float rssi = id(info_rssi).state;
           if (!std::isnan(rssi) && rssi < -75) t += "\U000F0920 ";
-          if (!api::global_api_server->is_connected()) t += "\U000F0164";
+          if (!api::global_api_server->is_connected(true)) t += "\U000F0164";
           static std::string last = "-";
           if (t != last) {
             last = t;
@@ -2293,6 +2596,8 @@ interval:
                        (esp32_ble::global_ble->is_failed() ? "not running (C6 firmware does not answer)" : "running") + "\n";
                   t += "Wi-Fi:  " + id(wifi_ssid_now).state + ", " + num(id(info_rssi), "%.0f dBm") + ", IP " +
                        id(wifi_ip_now).state + ", MAC " + id(info_mac).state + "\n";
+                  t += "Access point:  " + id(info_bssid).state + ",  power save " + id(info_psm).state +
+                       ",  Home Assistant " + (api::global_api_server->is_connected(true) ? "connected" : "not connected") + "\n";
                   t += str_sprintf("Uptime:  %ud %02uh %02um", up / 86400, (up / 3600) % 24, (up / 60) % 60) +
                        ",  last reset: " + id(info_reset).state + "\n";
                   t += "Memory free:  heap " + num(id(info_heap), "%.0f B") + ",  PSRAM " + num(id(info_psram), "%.0f B") +
