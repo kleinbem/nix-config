@@ -1,0 +1,321 @@
+name: "Promote → production"
+
+# Pull-based fleet deploy: hosts follow `production` (comin the branch,
+# autoUpgrade the tag). After a green build-all this moves both to that SHA;
+# a failed build-all leaves hosts on the last good revision.
+
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers] both jobs require event == push from this repo
+    workflows: ["Build & Cache All (Fast)"]
+    branches: [main]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Override SHA to promote (default: latest main)"
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # Pull-deploy hosts must never compile on-device, but build-all's cache push
+  # can be partial. This job proves from a clean store, with the substituters a
+  # device trusts, that every deployed closure is fetchable; if anything
+  # "will be built", production doesn't move.
+  verify-cache:
+    name: "Verify closures are fully cached"
+    # Runner arch doesn't matter: `nix build --dry-run` only queries
+    # substituters, so it classifies paths of either arch correctly.
+    runs-on: ubuntu-24.04-arm
+    # `branches: [main]` matches the head branch name, which a fork PR can
+    # also call main: only promote runs from pushes to this repo.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    steps:
+      - name: Checkout promotion-candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Check the exact commit build-all built, not whatever main is now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Nix fleet setup (pull-only)
+        # Wires up NetBird + Attic as a SUBSTITUTER with the pull token and
+        # sets NIX_OVERRIDES to the same
+        # github: sibling refs build-all used — so the closure we evaluate here
+        # matches the one that was cached.
+        uses: ./.github/actions/nix-fleet-setup
+        with:
+          # Ephemeral key only: runner peers land in ci-runners (cache-only
+          # policy) and auto-expire after the run.
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
+          attic-token: ${{ secrets.ATTIC_PULL_TOKEN }}
+          free-disk-space: 'false'
+
+      # Lock-honesty gate: $NIX_OVERRIDES floats siblings to main, but devices
+      # resolve only the committed lock, so a stale flake.lock can pass every
+      # overridden check and still fail on-device. Evaluating without overrides
+      # pulls the private kleinbem-secrets input, which needs a github.com token
+      # (devices use github_read_all_token via core.nix); mint one from the App.
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Without this the token is scoped to nix-config only and the
+          # kleinbem-secrets fetch still 404s.
+          repositories: |
+            kleinbem-secrets
+
+      - name: Assert committed flake.lock evaluates (no overrides)
+        env:
+          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
+        run: |
+          set -euo pipefail
+          # Every host with my.deploy.autoUpgrade.enable — these are the ones
+          # that resolve flake inputs strictly via the committed lock, with
+          # no override, when they pull the `production` ref themselves.
+          HOSTS=(nixos-nvme orin-nano core-pi hass-pi nasbook mac-mini)
+          fail=0
+          for h in "${HOSTS[@]}"; do
+            echo "::group::honest eval $h"
+            target=".#nixosConfigurations.$h.config.system.build.toplevel.drvPath"
+            if ! out="$(nix eval --json "$target" 2>&1)"; then
+              echo "$out"
+              echo "::error::$h: fails to evaluate against the COMMITTED flake.lock (no overrides) — this is what a real device would hit. Blocking promotion."
+              fail=1
+            else
+              echo "✅ $h: evaluates cleanly against the committed lock."
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      - name: Assert no deployed host would build
+        env:
+          # Same App token as the eval gate: the device closure includes the
+          # private kleinbem-secrets input.
+          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
+        run: |
+          set -euo pipefail
+          # Pull-deploy hosts with requireCache deploy with max-jobs 0, so a cache
+          # miss fails their upgrade. Mirrors build-all's committed-lock step;
+          # nixos-nvme and orin-nano are left out (they may build locally).
+          # No $NIX_OVERRIDES: this must be the exact closure the device evaluates.
+          HOSTS=(hass-pi core-pi mac-mini nasbook)
+          fail=0
+          for h in "${HOSTS[@]}"; do
+            echo "::group::dry-run $h"
+            target=".#nixosConfigurations.$h.config.system.build.toplevel"
+            # Same flags as a device. always-allow-substitutes matters: nixpkgs
+            # marks system-path, etc and writeText* `allowSubstitutes = false`,
+            # and without it Nix reports cached paths as "will be built".
+            if ! out="$(nix build --dry-run --max-jobs 0 \
+                  --option always-allow-substitutes true "$target" 2>&1)"; then
+              echo "$out"
+              echo "::error::$h: dry-run failed — cannot verify cache, refusing to promote."
+              fail=1
+              echo "::endgroup::"
+              continue
+            fi
+            echo "$out" | grep -vE '^(evaluation warning|warning):' || true
+            if echo "$out" | grep -qE 'will be built|do.?n.?t know how to build'; then
+              echo "::error::$h closure is NOT fully cached — the device's --max-jobs 0 upgrade would fail. Blocking promotion."
+              fail=1
+            else
+              echo "✅ $h: fully cached (fetch-only)."
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      # Container manifest for the eval-free container-updater on the hosts:
+      # built from the promoted SHA, and a container whose closure isn't fully
+      # cached is dropped (devices keep the previous one). Best-effort: it must
+      # never block host promotion.
+      - name: Generate container manifest
+        id: manifest
+        continue-on-error: true
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          echo '{}' > /tmp/systems.json
+          EMPTY=$(mktemp -d)
+          for entry in "x86_64-linux:container-factory" "aarch64-linux:container-factory-aarch64"; do
+            sys="${entry%%:*}"; factory="${entry##*:}"
+            echo "::group::manifest $sys ($factory)"
+            # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
+            nix eval --json \
+              ".#nixosConfigurations.$factory.config.containers" \
+              --apply 'cs: builtins.mapAttrs (n: c: c.path) cs' \
+              $NIX_OVERRIDES > "/tmp/paths-$sys.json"
+            # Dry-run each closure into an empty chroot store: "don't know how to
+            # build" is a miss (a literal path has no recipe). The chroot store
+            # avoids the daemon, which crashed on `nix build --dry-run <path>`
+            # (no-link: not reported upstream yet);
+            # `nix path-info -r` doesn't work here, it only reads the local store.
+            echo '{}' > "/tmp/ok-$sys.json"
+            for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
+              path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
+              out="$(nix-store --store "local?root=$EMPTY" -r --dry-run "$path" --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
+              if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
+                echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
+                echo "$out"
+              else
+                jq --arg n "$name" --arg p "$path" '. + {($n): $p}' "/tmp/ok-$sys.json" > /tmp/ok.tmp && mv /tmp/ok.tmp "/tmp/ok-$sys.json"
+              fi
+            done
+            jq --arg s "$sys" --slurpfile m "/tmp/ok-$sys.json" '. + {($s): $m[0]}' /tmp/systems.json > /tmp/systems.tmp && mv /tmp/systems.tmp /tmp/systems.json
+            echo "::endgroup::"
+          done
+          jq -n --arg rev "$SHA" --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --slurpfile s /tmp/systems.json \
+            '{rev: $rev, generated: $date, systems: $s[0]}' > /tmp/manifest.json
+          jq . /tmp/manifest.json
+
+      - name: Upload manifest artifact
+        if: steps.manifest.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: container-manifest
+          path: /tmp/manifest.json
+
+  promote:
+    name: "Move production tag → main"
+    runs-on: ubuntu-latest
+    # Only promote once the closure-completeness gate passes. `needs` makes this
+    # job skip if verify-cache fails — hosts stay on the last good revision.
+    needs: verify-cache
+    # workflow_run fires regardless of conclusion; gate to success only.
+    # workflow_dispatch always runs.
+    # `branches: [main]` matches the head branch name, which a fork PR can
+    # also call main: only promote runs from pushes to this repo.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    steps:
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Determine target SHA
+        id: target
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_SHA" ]; then
+            SHA="$INPUT_SHA"
+            echo "Using dispatch-input SHA: $SHA"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            SHA="$RUN_SHA"
+            echo "Using build-all head SHA: $SHA"
+          else
+            SHA=$(gh api repos/${{ github.repository }}/git/refs/heads/main --jq '.object.sha')
+            echo "Using current main SHA: $SHA"
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Move production tag
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          SHA="${{ steps.target.outputs.sha }}"
+          # Force-move so the tag advances even after a force-push to main.
+          gh api -X PATCH \
+            "repos/${{ github.repository }}/git/refs/tags/production" \
+            -f sha="$SHA" \
+            -F force=true
+          echo "✅ production → $SHA"
+          # comin hosts (my.deploy.comin) follow a production BRANCH: comin
+          # tracks branches, not tags, and only ever moves to a descendant of
+          # what it last deployed. Advance it alongside the tag; the tag goes
+          # once every host runs comin.
+          if gh api "repos/${{ github.repository }}/git/ref/heads/production" >/dev/null 2>&1; then
+            gh api -X PATCH \
+              "repos/${{ github.repository }}/git/refs/heads/production" \
+              -f sha="$SHA" \
+              -F force=true
+          else
+            gh api -X POST \
+              "repos/${{ github.repository }}/git/refs" \
+              -f ref="refs/heads/production" \
+              -f sha="$SHA"
+          fi
+          echo "✅ production branch → $SHA"
+          {
+            echo "## 🚀 Promoted to production"
+            echo ""
+            echo "- **SHA**: \`$SHA\`"
+            echo "- **Trigger**: ${{ github.event_name }}"
+            echo ""
+            echo "Hosts running \`my.deploy.comin\` switch within a minute; \`my.deploy.autoUpgrade\` hosts on their next cycle (default 04:00 ±30min)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Advisory: hosts on my.deploy.autoUpgrade.ntfy upgrade now instead of at
+      # the nightly timer, which stays the catch-up path. The secret topic name
+      # is the access control; subscribers ignore the message content.
+      - name: Notify fleet via ntfy (best-effort)
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_DEPLOY_TOPIC }}
+          # Bearer token for the authenticated ntfy server; empty while the
+          # server is still open (nix/infra github-secrets.tf NTFY_CI_TOKEN).
+          NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_DEPLOY_TOPIC secret not set — fleet picks this up on the nightly timer."
+            exit 0
+          fi
+          curl -fsS --max-time 15 \
+            ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
+            -H "Title: production promoted" \
+            -H "Tags: rocket" \
+            -d "production → ${{ steps.target.outputs.sha }}" \
+            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
+          echo "📣 Fleet notified via ntfy — subscribed hosts upgrade now." >> "$GITHUB_STEP_SUMMARY"
+
+      # Rolling release asset read by my.services.container-updater. If the
+      # manifest step failed, the previous asset stays and containers hold.
+      - name: Download manifest artifact
+        id: dl-manifest
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: container-manifest
+          path: /tmp
+
+      - name: Publish container manifest
+        if: steps.dl-manifest.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh release view container-manifest --repo "${{ github.repository }}" >/dev/null 2>&1 || \
+            gh release create container-manifest --repo "${{ github.repository }}" \
+              --title "Container manifest (rolling)" \
+              --notes "Rolling manifest consumed by my.services.container-updater. Regenerated on every production promotion." \
+              --latest=false
+          gh release upload container-manifest /tmp/manifest.json --clobber --repo "${{ github.repository }}"
+          echo "📦 container manifest published for $(jq -r .rev /tmp/manifest.json)" >> "$GITHUB_STEP_SUMMARY"

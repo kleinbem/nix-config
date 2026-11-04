@@ -1,0 +1,309 @@
+name: Maintain Flake
+on:
+  workflow_dispatch:
+    inputs:
+      inputs:
+        description: "Flake inputs to update, space-separated (empty: all except kleinbem-secrets)"
+        required: false
+        default: ""
+  # Sibling repos ask for a bump of their own input once their main is green
+  # (dispatch-lock-bump.yaml in each). client_payload.inputs carries the same
+  # list as the manual trigger, client_payload.sha the sibling commit.
+  repository_dispatch:
+    types: [lock-bump]
+  schedule:
+    - cron: '0 3 * * *'  # daily at 03:00 UTC
+
+# Dispatches arrive in bursts (several sibling merges in a row). Queue them:
+# GitHub keeps only the newest pending run, so a burst collapses into one
+# more run after the current one, and two runs never race on the lock branch.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write  # re-queue this workflow when the lock PR moved
+    steps:
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout nix-config
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: nix-config
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Set up Nix
+        uses: kleinbem/actions/nix-setup@7ec628296d5194e6e10031706387b992a10a1638 # v1.0.1
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Start from the open lock PR, if any
+        id: lock-pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          cd nix-config
+          head="$(gh pr list --head update-flake-lock --base main --state open \
+            --json headRefOid --jq '.[0].headRefOid // empty')"
+          if [ -n "$head" ]; then
+            # A PR that changed flake.lock on main since the lock PR branched
+            # off leaves it conflicting, and every commit on top of it would
+            # too: start from main then, as without an open PR.
+            base="$(gh api "repos/${{ github.repository }}/compare/main...$head" --jq .merge_base_commit.sha)"
+            git fetch --depth 1 origin "$base"
+            # The working tree is still main's.
+            if ! git show "$base:flake.lock" | cmp -s - flake.lock; then
+              echo "flake.lock changed on main since the lock PR at $head branched off, starting from main"
+              head=""
+            fi
+          fi
+          if [ -n "$head" ]; then
+            # Extend the pending bump instead of resetting it to main: a
+            # nightly nixpkgs bump still in CI would otherwise be thrown away
+            # by a sibling's one-input request.
+            git fetch --depth 1 origin "$head"
+            git checkout "$head" -- flake.lock
+            echo "starting from the open lock PR at $head"
+          else
+            echo "no open lock PR, starting from main"
+          fi
+          cp flake.lock /tmp/flake.lock.before
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+
+      - name: Update flake inputs (requested ones, else all but kleinbem-secrets)
+        env:
+          # Manual run or sibling dispatch; validated against the flake below,
+          # so a typo or a foreign name fails here instead of in `nix`.
+          REQUESTED: ${{ github.event.inputs.inputs || github.event.client_payload.inputs }}
+        run: |
+          set -euo pipefail
+          cd nix-config
+          # kleinbem-secrets is updated by hand and private (CI has no token
+          # for it, so fetching would 404). Every other input is discovered.
+          all=$(nix flake metadata --json | jq -r '
+            .locks.nodes.root.inputs
+            | keys[]
+            | select(. != "kleinbem-secrets")
+          ')
+          if [ -z "$all" ]; then
+            echo "::error::Could not discover flake inputs — refusing to run unbounded \`nix flake update\`."
+            exit 1
+          fi
+          if [ -n "$REQUESTED" ]; then
+            inputs=""
+            # shellcheck disable=SC2086 # REQUESTED is a space-separated list of inputs
+            for i in $REQUESTED; do
+              if grep -qx -- "$i" <<<"$all"; then
+                inputs="$inputs $i"
+              else
+                echo "::error::'$i' is not a flake input of nix-config (have: $(tr '\n' ' ' <<<"$all"))"
+                exit 1
+              fi
+            done
+          else
+            inputs=$(tr '\n' ' ' <<<"$all")
+          fi
+          echo "Updating inputs: $inputs"
+          # shellcheck disable=SC2086 # inputs is a space-separated list of inputs
+          nix flake update $inputs
+
+      - name: Validate flake (eval-only — blocks a bad lock from landing)
+        id: validate
+        # Not `nix flake check --no-build`: devenv's task runner comes via IFD,
+        # which --no-build refuses to realize. Evaluating every check and
+        # devShell drvPath covers most of it (host-* toplevels included), but
+        # not the container-factory configs or non-x86_64 devShells.
+        run: |
+          # kleinbem-secrets is private and CI has no PAT in nix access-tokens, so
+          # substitute the shared dummy stub (see .github/scripts/).
+          ./nix-config/.github/scripts/setup-dummy-secrets.sh
+          cd nix-config
+          # On a failure, evaluate once more with --show-trace into the log the
+          # report step below reads (the derivation chain down to the error).
+          eval_drv() {
+            echo "eval $1"
+            if ! nix eval "$1" --override-input kleinbem-secrets /tmp/dummy-secrets > /dev/null; then
+              echo "FAILED $1" > "$RUNNER_TEMP/eval.log"
+              nix eval "$1" --show-trace --override-input kleinbem-secrets /tmp/dummy-secrets \
+                >> "$RUNNER_TEMP/eval.log" 2>&1 || true
+              return 1
+            fi
+          }
+          attr_names() {
+            nix eval "$1" --apply builtins.attrNames --json \
+              --override-input kleinbem-secrets /tmp/dummy-secrets | jq -r '.[]'
+          }
+          for system in x86_64-linux aarch64-linux; do
+            for check in $(attr_names ".#checks.$system"); do
+              # host-phone (nix-on-droid) can never eval purely: upstream pins
+              # its cross-compiled proot-static as a raw /nix/store string,
+              # which types.package coerces via builtins.storePath — rejected
+              # in pure eval (nix-on-droid requires --impure + its cachix).
+              [ "$check" = "host-phone" ] && continue
+              eval_drv ".#checks.$system.\"$check\".drvPath"
+            done
+          done
+          for shell in $(attr_names ".#devShells.x86_64-linux"); do
+            eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
+          done
+
+      # Report only: which packages nix-detour would hold for this update,
+      # checked against kleinbem/nix-detour-fleet; the report goes into the
+      # validation issue.
+      - name: What nix-detour would hold
+        id: holds
+        if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
+        continue-on-error: true
+        uses: kleinbem-dev/nix-detour/update@b1bad90a62b55305a6a545b56de7bc2cb8392c42 # v0.3.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          directory: nix-config
+          # The holds are in nix-detour-fleet: checked through this input.
+          holds-repo: kleinbem/nix-detour-fleet
+          holds-input: nix-detour-fleet
+          nix-args: --override-input kleinbem-secrets /tmp/dummy-secrets
+          systems: x86_64-linux aarch64-linux
+          build: "false"
+          # Hold on the lock this run started from: the open lock PR's
+          # (validated) when it continues that PR, else main's.
+          base: ${{ steps.lock-pr.outputs.head || 'main' }}
+
+      # One issue for a nightly update that fails validation: opened or
+      # commented with the error (for a broken package, a ready
+      # nix-detour-fleet entry), closed when an update validates again.
+      - name: Report validation result
+        if: always() && github.ref == 'refs/heads/main' && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          OUTCOME: ${{ steps.validate.outcome }}
+          HOLDS_REPORT: ${{ steps.holds.outputs.report || '(no report, see the run)' }}
+          ISSUE_TITLE: "Lock update fails validation"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          issue="$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number --jq '.[0].number // empty')"
+          if [[ $OUTCOME == success ]]; then
+            [[ -z $issue ]] || gh issue close "$issue" --comment "Validates again: $RUN_URL"
+            exit 0
+          fi
+          body="$(./nix-config/.github/scripts/lock-failure-report.sh "$RUNNER_TEMP/eval.log" /tmp/flake.lock.before)
+
+          What nix-detour would hold (report only):
+
+          $HOLDS_REPORT
+
+          Run: $RUN_URL"
+          if [[ -n $issue ]]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
+
+      - name: Create Pull Request
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # Only for re-queueing this workflow (see below).
+          DISPATCH_TOKEN: ${{ github.token }}
+        run: |
+          cd nix-config
+          if cmp -s flake.lock /tmp/flake.lock.before; then
+            echo "flake.lock unchanged — nothing to commit."
+            exit 0
+          fi
+
+          BRANCH_NAME="update-flake-lock"
+          REPO="${{ github.repository }}"
+          BASE_SHA="${{ steps.lock-pr.outputs.head }}"
+
+          # Reset (or create) the branch to point at current main, then commit
+          # via GraphQL createCommitOnBranch — GitHub signs these commits
+          # automatically ("Verified", committer=GitHub), satisfying the
+          # required_signatures ruleset without any key material in CI.
+          if [ -n "$BASE_SHA" ]; then
+            # Validation takes minutes, and the lock PR can merge (deleting its
+            # branch), close or move meanwhile. If it landed as-is, main now
+            # carries the lock this run started from, so commit on top of main.
+            # Anything else: re-queue a full update, which starts afresh.
+            open_head="$(gh pr list --head "$BRANCH_NAME" --base main --state open \
+              --json headRefOid --jq '.[0].headRefOid // empty')"
+            if [ "$open_head" != "$BASE_SHA" ]; then
+              main_sha=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+              git fetch --depth 1 origin "$main_sha"
+              if git show "$main_sha:flake.lock" | cmp -s - /tmp/flake.lock.before; then
+                echo "the lock PR at $BASE_SHA landed during validation, committing on main"
+                BASE_SHA=""
+              else
+                echo "::warning::the lock PR moved away from $BASE_SHA during validation, re-queueing a full update"
+                GH_TOKEN="$DISPATCH_TOKEN" gh workflow run maintain.yml --ref main
+                exit 0
+              fi
+            fi
+          fi
+          if [ -n "$BASE_SHA" ]; then
+            echo "extending the open lock PR at $BASE_SHA"
+          else
+            BASE_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+            # This run updated the lock it checked out. If a PR changed
+            # flake.lock on main since then, committing ours would revert it
+            # (#285 undid #284's kleinbem-secrets bump): start afresh instead.
+            git fetch --depth 1 origin "$BASE_SHA"
+            if ! git show "$BASE_SHA:flake.lock" | cmp -s - /tmp/flake.lock.before; then
+              echo "::warning::flake.lock changed on main during validation, re-queueing a full update"
+              GH_TOKEN="$DISPATCH_TOKEN" gh workflow run maintain.yml --ref main
+              exit 0
+            fi
+            if gh api "repos/$REPO/git/ref/heads/$BRANCH_NAME" >/dev/null 2>&1; then
+              gh api -X PATCH "repos/$REPO/git/refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" -F force=true >/dev/null
+            else
+              gh api "repos/$REPO/git/refs" -f ref="refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" >/dev/null
+            fi
+          fi
+
+          jq -n \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH_NAME" \
+            --arg sha "$BASE_SHA" \
+            --arg content "$(base64 -w0 flake.lock)" \
+            --arg query 'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            '{query: $query, variables: {input: {
+                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
+                message: {headline: "chore: update flake.lock (auto)"},
+                expectedHeadOid: $sha,
+                fileChanges: {additions: [{path: "flake.lock", contents: $content}]}
+            }}}' | gh api graphql --input -
+
+          # Resetting the branch makes it identical to main for an instant, and
+          # GitHub sometimes closes the open PR for it right then (zero-diff
+          # detection) before the new commit lands. Reopen it instead of leaving
+          # the bump stranded on the branch with every error swallowed.
+          PR_JSON=$(gh pr list --head "$BRANCH_NAME" --state all --limit 1 --json number,state --jq '.[0] // empty')
+          PR_NUMBER=$(jq -r '.number // empty' <<<"$PR_JSON")
+          PR_STATE=$(jq -r '.state // empty' <<<"$PR_JSON")
+          if [ "$PR_STATE" = "CLOSED" ]; then
+            echo "PR #$PR_NUMBER was closed by the branch reset — reopening it."
+            gh pr reopen "$PR_NUMBER"
+          elif [ "$PR_STATE" != "OPEN" ]; then
+            gh pr create \
+              --title "chore: update flake.lock" \
+              --body "Automated lockfile update. Check re-validates the new inputs on this PR; auto-merge is enabled and lands this once it's green." \
+              --head "$BRANCH_NAME" \
+              --base main
+          fi
+
+          gh pr merge "$BRANCH_NAME" --auto --squash || true
+
+          # Fail the run if the bump is not on its way: an open PR with auto-merge
+          # armed, or already merged.
+          gh pr view "$BRANCH_NAME" --json state,autoMergeRequest \
+            --jq 'if .state == "MERGED" or (.state == "OPEN" and .autoMergeRequest != null) then "lock bump PR: \(.state), auto-merge armed" else error("no open PR with auto-merge for the lock bump (state: \(.state))") end'
