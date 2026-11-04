@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 101
+**Distinct imports:** 102
 
 ---
 
@@ -28,7 +28,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `hass-pi`
 
 - **Modules:** `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`
-- **Presets:** `nix-presets:herdr-remote-client`, `nix-presets:home-assistant`, `nix-presets:music-assistant`, `nix-presets:openclaw`
+- **Presets:** `nix-presets:herdr-remote-client`, `nix-presets:home-assistant`, `nix-presets:music-assistant`, `nix-presets:openclaw`, `nix-presets:photo-frame`
 - **Other inputs:** `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
 - **Local:** `./esphome-secrets.nix`, `./secrets.nix`
 
@@ -171,6 +171,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:openclaw` ← container-factory, hass-pi
 - `nix-presets:paperless` ← container-factory, nasbook
 - `nix-presets:persona-runtime` ← mac-mini
+- `nix-presets:photo-frame` ← hass-pi
 - `nix-presets:playground` ← container-factory
 - `nix-presets:qbittorrent` ← container-factory, nasbook
 - `nix-presets:qdrant` ← container-factory, nasbook
