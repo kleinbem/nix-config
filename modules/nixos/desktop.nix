@@ -38,7 +38,7 @@ in
     (lib.mkIf cfg.gnome.enable {
       # Insecure re-acks, gated to desktop hosts. electron: bitwarden-desktop's
       # pinned Electron. firefox-esr-140: Zotero's runtime; drop when Zotero 11
-      # moves to ESR 153.
+      # moves to ESR 153. no-link: upstream Zotero 11 release packaging.
       nixpkgs.config.allowInsecurePredicate =
         pkg:
         builtins.elem (lib.getName pkg) [
