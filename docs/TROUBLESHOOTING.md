@@ -400,11 +400,10 @@ ls -la /run/secrets/<name>
 age-plugin-yubikey --list                     # YubiKey identities
 age-keygen -y ~/.config/sops/age/keys.txt     # public key of a software key
 
-# Check the recipients (in kleinbem-secrets)
+# Check the recipients and test decryption without printing anything
+cd ~/Develop/github.com/kleinbem/kleinbem-secrets
 grep -A5 "<host>" .sops.yaml
-
-# Test decryption without printing anything
-sops -d kleinbem-secrets/nix/shared.yaml >/dev/null && echo ok
+sops -d nix/shared.yaml >/dev/null && echo ok
 ```
 
 **Solutions:**

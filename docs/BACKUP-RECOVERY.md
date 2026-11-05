@@ -6,7 +6,7 @@ Every NixOS host runs the backup engine from nix-presets (`nixosModules/backup-e
 
 Modules and presets register their own data under `my.backup.items.<name>`; hosts add extra items (see nasbook). Each item has a tier:
 
-- **secure**: small, critical data. Every run builds one tarball, encrypts it with age to both YubiKeys (`keys.age.yubikey-primary`, `yubikey-backup`), and uploads `<host>-<timestamp>.tar.gz.age` to `<remote>/secure/<host>/`. Daily at 02:30.
+- **secure**: small, critical data. Every run builds one tarball, encrypts it with age to both YubiKeys (`keys.age.yubikey-primary`, `keys.age.yubikey-backup`), and uploads `<host>-<timestamp>.tar.gz.age` to `<remote>/secure/<host>/`. Daily at 02:30.
 - **bulk**: large data, one restic repo per destination at `<remote>/restic/<host>`. Daily at 03:15.
 
 Items can also list `sqlite` files (copied with `.backup`), `postgres` clusters (`pg_dumpall`) or a `command` whose output is stored. Databases are dumped, never copied live.
@@ -56,7 +56,15 @@ sudo restic-bulk-r2 restore latest --target <restore-dir> --include <path>
 
 ## Rebuilding a host
 
-1. Install from the flake with the host's install recipe (`just deployment::pi-install-usb`, `nasbook-install-usb`, `mac-mini-install-usb`, `orin-install-usb`).
+1. Install from the flake with the host's install recipe. They wipe the target disk:
+
+   ```bash
+   just deployment::pi-install-usb <host> [device]     # core-pi, hass-pi; device defaults to /dev/sdc
+   just deployment::nasbook-install-usb <device>
+   just deployment::mac-mini-install-usb <device>
+   just deployment::orin-install-usb [device]          # defaults to /dev/sdb
+   ```
+
 2. If the host got a new SSH host key, its age key changed: update its anchor in `kleinbem-secrets/.sops.yaml`, run `sops updatekeys` on every file that recipient matches (`nix/per-host/<host>.yaml`, `nix/shared.yaml`, any `nix/per-container/*.yaml` it uses), and check the recipients in the file metadata.
 3. Restore the data from the secure bundle or restic, then deploy.
 

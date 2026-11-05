@@ -25,7 +25,7 @@ container. Everything below is declarative unless marked **state**.
 
 ## Updating
 
-Nothing to do by hand. nixpkgs → lock bot (03:00 UTC) → build-all → promote-production publishes the container manifest → hass-pi pulls at 03:13 local. A failed x86 build-all leg blocks the manifest for every system. The host itself deploys through comin (`production` branch), which does **not** refresh containers.
+Nothing to do by hand. nixpkgs → lock bot (03:00 UTC) → build-all → promote-production publishes the container manifest → hass-pi's `update-containers` timer (nix-gantry) pulls it at 03:00 plus a random delay of up to 30 min. A failed x86 build-all leg blocks the manifest for every system. The host itself deploys through comin (`production` branch), which does **not** refresh containers.
 
 Component deps are baked into the image: adding an integration means adding it to `extraComponents` in the preset (HA Core on NixOS cannot pip-install). Custom components come from `pkgs.home-assistant-custom-components` (alarmo, auth_oidc, ha_mcp_tools), lovelace cards from `pkgs.home-assistant-custom-lovelace-modules` (button-card at `/local/nixos-lovelace-modules/`). No HACS.
 

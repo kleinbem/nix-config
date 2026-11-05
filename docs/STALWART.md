@@ -21,6 +21,27 @@ The admin secret is per-container (not per-host) so the mail server can move hos
 
 `automation` has the `admin` role because it creates principals. A custom Stalwart role with only the principal permissions would be narrower; that isn't set up.
 
+The API calls below run curl on mac-mini (the container ships none) and pass credentials as a curl config on stdin, so no password lands in a command line or shell history.
+
+## Create the automation account
+
+Once per server, before the first `personas::add`. Needs the fallback-admin plaintext from Bitwarden.
+
+```bash
+cd ~/Develop/github.com/kleinbem/kleinbem-secrets
+read -rsp 'Stalwart admin password: ' ADMIN_PW; echo
+AUTOMATION_PW=$(openssl rand -base64 32)
+jq -rn --arg auth "admin:$ADMIN_PW" --arg pw "$AUTOMATION_PW" '
+  "user = \($auth | tojson)",
+  "data = \({type: "individual", name: "automation", description: "persona-scaffold.sh service account",
+            quota: 0, emails: [], secrets: [$pw], roles: ["admin"]} | tojson | tojson)"' \
+  | ssh mac-mini 'curl -sS --fail-with-body -K - -H "Content-Type: application/json" \
+      -X POST http://10.85.50.8:8080/api/principal' \
+  && sops --set "[\"stalwart_automation_password\"] \"$AUTOMATION_PW\"" nix/per-container/stalwart.yaml
+```
+
+sops only runs if the server accepted the principal. Commit the sops change in kleinbem-secrets.
+
 ## Add a mailbox
 
 ```bash
@@ -33,27 +54,33 @@ just personas::add <persona>
 
 **Fallback admin:** new password into Bitwarden, then put its `mkpasswd -m sha-512` hash into `stalwart_admin_password_hash` (`sops kleinbem-secrets/nix/per-container/stalwart.yaml`), merge, and let mac-mini deploy. Add a line to `kleinbem-secrets/ROTATIONS.md`.
 
-**Automation or a mailbox:** the create call only works once, so update the existing principal's secret on the server and in sops together:
+**Automation or a mailbox:** the create call only works once, so change the existing principal's password on the server, then in sops:
 
 ```bash
+read -rsp 'Stalwart admin password: ' ADMIN_PW; echo
 NEW_PW=$(openssl rand -base64 32)
-jq -n --arg pw "$NEW_PW" '[{action:"set", field:"secrets", value:[$pw]}]' \
-  | ssh mac-mini 'curl -sS -u admin:<BITWARDEN_PLAINTEXT> -H "Content-Type: application/json" \
-      -X PATCH http://10.85.50.8:8080/api/principal/<name> --data-binary @-'
+jq -rn --arg auth "admin:$ADMIN_PW" --arg pw "$NEW_PW" '
+  "user = \($auth | tojson)",
+  "data = \([{action: "addItem", field: "secrets", value: $pw}] | tojson | tojson)"' \
+  | ssh mac-mini 'curl -sS --fail-with-body -K - -H "Content-Type: application/json" \
+      -X PATCH http://10.85.50.8:8080/api/principal/<name>' \
+  && echo "accepted"
 ```
 
-Then store `NEW_PW` under the matching key: `stalwart_automation_password` in `nix/per-container/stalwart.yaml`, or `mailbox_password` in `personas/<persona>.yaml`.
+`addItem` with a plain password replaces only the password; `set` on `secrets` would also drop the principal's app passwords and OTP secret. Only after `accepted`, store `NEW_PW` under the matching key: `stalwart_automation_password` in `nix/per-container/stalwart.yaml`, or `mailbox_password` in `personas/<persona>.yaml`.
 
 ## Verify
 
 ```bash
 ssh mac-mini 'machinectl status stalwart; journalctl -u container@stalwart -n 30'
 
-# list mailboxes (run on mac-mini; the container ships no curl)
-ssh mac-mini "curl -sS -u automation:\$PW 'http://10.85.50.8:8080/api/principal?types=individual'"
+# list mailboxes as automation
+sops -d --extract '["stalwart_automation_password"]' ~/Develop/github.com/kleinbem/kleinbem-secrets/nix/per-container/stalwart.yaml \
+  | jq -Rr '"user = \("automation:" + . | tojson)"' \
+  | ssh mac-mini "curl -sS --fail-with-body -K - 'http://10.85.50.8:8080/api/principal?types=individual'"
 ```
 
-`PW` is `sops -d --extract '["stalwart_automation_password"]' kleinbem-secrets/nix/per-container/stalwart.yaml`. A commit as a persona checks the identity end to end: `just as <persona> save-all "chore: mail smoke test"` from `nix/`.
+A commit as a persona checks the identity end to end: `just as <persona> save-all "chore: mail smoke test"` from `nix/`.
 
 ## Bitwarden entry
 

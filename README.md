@@ -40,7 +40,7 @@ just apply              # pull, verify, switch this machine (dev::apply)
 just switch             # switch from the local tree
 just dev::preflight     # formatting, pre-commit-check, host eval: run before pushing
 just dev::check-hosts   # nix flake check over all hosts
-just dev::impact        # which hosts a change touches
+just dev::impact <file> # which hosts a change to that file touches
 just dev::sync-agent    # regenerate the docs in docs/
 just nixos::test-vm     # boot nixos-nvme in a VM
 just deployment::deploy <host>   # emergency deploy over SSH

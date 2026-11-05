@@ -17,7 +17,7 @@ Hosts deploy themselves from the `production` branch. Nothing pushes over SSH in
 ```bash
 just dev::preflight     # formatting, pre-commit-check, nixos-nvme eval
 just dev::check-hosts   # nix flake check over every host
-just dev::impact        # which hosts the change touches
+just dev::impact <file> # which hosts a change to that file touches
 ```
 
 ## Canary one host

@@ -208,13 +208,12 @@ Service/container access (environment variable or file path)
 
 ```
 YubiKey (SSH FIDO2)
-    ├─ Used for: git signing, deployments
+    ├─ Used for: git signing
     └─ Location: with user (personal device)
 
-age private key (~/.config/sops/age/keys.txt)
-    ├─ Used for: local sops decryption
-    ├─ Location: on each device
-    └─ Backup: encrypted USB drive (annual)
+YubiKey age identities (primary + backup, age-plugin-yubikey)
+    ├─ Used for: editing secrets with sops
+    └─ The master keys: no software copy exists
 
 SSH host keys
     ├─ Used for: decrypt at activation time
@@ -228,44 +227,35 @@ SSH host keys
 ### Local Development
 
 ```
-Edit config
+Edit config (in a jj workspace)
     ↓
-`nix eval` (syntax check)
+`just dev::preflight` (format, pre-commit-check, nixos-nvme eval)
     ↓
-`nixos-rebuild build` (build locally)
-    ↓
-Test on workstation (if applicable)
-    ↓
-Review with `jj diff`
+`just dev::check-hosts` (evaluate every host)
     ↓
 `jj describe` (create commit, signs via YubiKey)
 ```
 
-### Push to GitHub
+### Land on main
 
 ```
-`jj git push` (pushes to GitHub)
+`jj git push` + PR (auto-merge)
     ↓
-GitHub branch: main (requires signed commits)
+main (signed commits, required checks)
     ↓
-CI runs (if workflows configured)
+build-all builds every host and pushes to Attic
     ↓
-Ready for deployment
+promote-production moves `production` once the closures are cached
 ```
 
 ### Device Deployment
 
-```
-Phase 1: Edge Testing (orin-nano)
-    ↓
-Phase 2: Non-Critical (nasbook, hass-pi)
-    ↓
-Phase 3: Production (core-pi, mac-mini)
-    ↓
-Phase 4: Gateway (core-gateway, ap-upstairs)
-    ↓
-Rollback ready (at each phase)
-```
+- **comin** hosts poll `production`, check the signature and switch.
+- **nixos-nvme** upgrades nightly (autoUpgrade), or by hand with `just dev::apply`.
+- **Canary:** a `testing-<host>` branch on top of `production` deploys to that host only.
+- **Rollback:** revert in a PR, or pick the previous generation on the host.
+
+core-gateway and the APs run OpenWrt and deploy through openwrt-config. Details: DEPLOYMENT-STRATEGY.md.
 
 ---
 
@@ -511,7 +501,7 @@ CI audit-versions detects drift
 1. Add to inventory.nix (this repo)
 2. Create hosts/<device>/ directory
 3. Follow DEVICE-TIERS.md template
-4. Deploy: Phase 1 → Phase 2 → Phase 3 → Phase 4
+4. Install from USB (just deployment::*-install-usb, see BACKUP-RECOVERY.md), then comin takes over
 5. Update device roster (DEVICE-TIERS.md status matrix)
 ```
 
@@ -520,18 +510,18 @@ CI audit-versions detects drift
 ```
 1. Create in nix-presets (if reusable) or nix-config (if one-off)
 2. Define sops.secrets (if needed)
-3. Test locally: nixos-rebuild build
-4. Deploy to edge device first (orin-nano)
-5. Roll out per DEPLOYMENT-STRATEGY.md
+3. Check: just dev::check-hosts
+4. Optional canary: a testing-<host> branch on one host
+5. Land it; hosts deploy it from production (DEPLOYMENT-STRATEGY.md)
 ```
 
 ### Rotating Secrets
 
 ```
-1. Edit sops file: sops hosts/<device>/secrets.yaml
-2. Change value
-3. Commit: jj describe -m "chore: rotate X credentials"
-4. Deploy immediately: nixos-rebuild switch
+1. In kleinbem-secrets: sops nix/per-host/<host>.yaml (or shared.yaml, per-container/<name>.yaml)
+2. Land the change in kleinbem-secrets
+3. In nix-config: nix flake update kleinbem-secrets, land it in a PR
+4. Hosts deploy it from production
 5. Verify in logs that new credentials work
 ```
 

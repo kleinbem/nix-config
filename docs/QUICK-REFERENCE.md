@@ -333,9 +333,10 @@ ssh <device> "systemctl list-failed"
 
 ```bash
 # 1. Follow the DEVICE-TIERS.md template, create hosts/<device-name>/
-# 2. Health check
-./tools/fleet-health-check.sh <device-name>
+# 2. Evaluate every host, the new one included
+just dev::check-hosts
 # 3. Install from USB (e.g. just deployment::pi-install-usb <host>), then comin takes over
+ssh <device-name> comin status
 ```
 
 ### Rotate Credentials

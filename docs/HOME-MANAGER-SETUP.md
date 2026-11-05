@@ -8,7 +8,7 @@ User environments are Home Manager modules, built as part of the NixOS system. A
 |---|---|
 | `users/<user>/home.nix` | The user's HM config (martin, dhirujaan). `home-phone.nix` / `home-tablet.nix` are the nix-on-droid variants. |
 | `users/<user>/nixos.nix` | System side: the account, groups, password hash. |
-| `modules/home-manager/default.nix` | Shared bundle every user imports: dev, ai-agents, security, pentesting, vscode, nixvim, secrets, syncthing, service-launchers, android, plus HM modules from nix-presets and cadre. |
+| `modules/home-manager/default.nix` | Shared bundle, imported by martin's `home.nix` (dhirujaan's imports nothing): dev, ai-agents, security, pentesting, vscode, nixvim, secrets, syncthing, service-launchers, android, plus HM modules from nix-presets and cadre. |
 | `modules/home-manager/gnome.nix` | GNOME settings, imported separately by users on a GNOME host. |
 
 Hosts attach users in their own file, e.g. `hosts/nixos-nvme/default.nix`:
