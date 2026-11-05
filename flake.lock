@@ -1529,11 +1529,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1793837861,
-        "narHash": "sha256-mLF9Kzfr115+WHfK9BKjDHw7uBVmGYuzsYOSHyMqMEc=",
+        "lastModified": 1793845936,
+        "narHash": "sha256-144gxwLI/ns+XnJ8WN/1ypJF6iySQDfWltP9rfLlRmE=",
         "owner": "kleinbem",
         "repo": "nix-devshells",
-        "rev": "3cb6a0de0fa2bf34fb9b98cc4929e75400550e40",
+        "rev": "4670af960271f2f0c374984b163ecf2364c04eba",
         "type": "github"
       },
       "original": {
