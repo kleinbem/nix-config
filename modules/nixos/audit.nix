@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  options,
   lib,
   myInventory,
   secretFile ? null,
@@ -26,6 +27,10 @@ let
       lib.filter (lib.hasPrefix "--forward-journal=") (c.extraFlags or [ ])
     )
   ) (lib.attrValues config.containers);
+
+  # Journal cursors, so a fluent-bit restart resumes instead of skipping what
+  # was logged while it was down. read_from_tail still applies on first start.
+  fluentStateDir = "/var/lib/fluent-bit";
 in
 {
   sops.secrets = {
@@ -328,6 +333,7 @@ in
             name = "systemd";
             tag = "systemd_journal";
             read_from_tail = "on";
+            db = "${fluentStateDir}/journal.db";
             strip_underscores = "on";
             mem_buf_limit = "32M";
           }
@@ -337,6 +343,7 @@ in
           inherit path;
           tag = "container_journal";
           read_from_tail = "on";
+          db = "${fluentStateDir}/container-${baseNameOf (lib.removeSuffix "/" path)}.db";
           strip_underscores = "on";
           mem_buf_limit = "8M";
         }) forwardedJournals;
@@ -406,6 +413,12 @@ in
         ];
       };
     };
+  };
+
+  # DynamicUser: the state dir lives under /var/lib/private, and /var is tmpfs.
+  systemd.services.fluent-bit.serviceConfig.StateDirectory = "fluent-bit";
+  environment.persistence = lib.mkIf (options.environment ? persistence) {
+    "/nix/persist".directories = [ "/var/lib/private/fluent-bit" ];
   };
 
   # Ensure fluent-bit can read the systemd journal and audit logs
