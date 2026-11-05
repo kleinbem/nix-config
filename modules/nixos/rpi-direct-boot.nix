@@ -36,10 +36,9 @@ in
         pkgs.coreutils
       ];
 
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
+      # No RemainAfterExit: an active (exited) unit ignores later path
+      # triggers, so a second switch in the same boot would not sync.
+      serviceConfig.Type = "oneshot";
 
       script = ''
                 ESP="/boot"
