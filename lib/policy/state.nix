@@ -12,8 +12,6 @@ let
     "nixos-nvme:/var/lib/btrfs" = "btrfs-scrub status files only";
     "nixos-nvme:/var/lib/dnsmasq" = "ai-hardening.nix's DNS forwarder; no DHCP leases";
     "orin-nano:/var/lib/github-runner/mesh-llm-gpu" = "ephemeral runner, registers again for every job";
-    # tracking: kleinbem/nix-config#596 (needs a copy on the host first)
-    "hass-pi:/var/lib/thread" = "not yet: otbr's Thread dataset";
   };
 
   stateDirsOf =
