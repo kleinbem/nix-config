@@ -83,7 +83,12 @@ pc_cache_preflight() {
     return 0
   fi
   echo "🔍 Pre-flight: verifying Attic cache coverage for $host..."
-  output=$(nix build --no-link --dry-run ".#nixosConfigurations.$host.config.system.build.toplevel" "$@" 2>&1) || true
+  # A failed dry run lists nothing, which would read as "fully cached".
+  if ! output=$(nix build --no-link --dry-run ".#nixosConfigurations.$host.config.system.build.toplevel" "$@" 2>&1); then
+    echo "❌ Dry run failed for $host; can't check the cache:"
+    echo "$output" | tail -n 20 | sed 's/^/  /'
+    exit 1
+  fi
   build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
   # Config-assembly leaves (etc, activate, units, generated config files) build
   # locally in seconds whenever they miss the cache, e.g. because of real

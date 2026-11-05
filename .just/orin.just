@@ -34,14 +34,8 @@ test-mesh path=".":
     #!/usr/bin/env bash
     set -euo pipefail
     echo "🔨 Testing mesh-llm on-device (cores=2)..."
-    stopped=0
-    trap '[ "$stopped" -eq 1 ] && sudo systemctl start mesh-llm' EXIT
-    if systemctl is-active --quiet mesh-llm; then
-      echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."
-      # Flag first: a failed or interrupted stop still restarts it on exit.
-      stopped=1
-      sudo systemctl stop mesh-llm
-    fi
+    source "{{source_directory()}}/lib/mesh-build-window.sh"
+    mesh_window_open
     cargo test --manifest-path "{{path}}/Cargo.toml" -j 2
 
 # Run a manual Nix package build on-device with memory-safe concurrency (2 cores),
@@ -51,14 +45,8 @@ build-mesh flake="github:kleinbem/nixpkgs#mesh-llm":
     #!/usr/bin/env bash
     set -euo pipefail
     echo "🏗️ Building {{flake}} on-device (cores=2)..."
-    stopped=0
-    trap '[ "$stopped" -eq 1 ] && sudo systemctl start mesh-llm' EXIT
-    if systemctl is-active --quiet mesh-llm; then
-      echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."
-      # Flag first: a failed or interrupted stop still restarts it on exit.
-      stopped=1
-      sudo systemctl stop mesh-llm
-    fi
+    source "{{source_directory()}}/lib/mesh-build-window.sh"
+    mesh_window_open
     nix build -L --keep-going --max-jobs 1 --cores 2 --no-link "{{flake}}"
 
 # ─── Remote recipes (run from the dev workstation via SSH) ────────
