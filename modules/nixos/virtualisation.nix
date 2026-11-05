@@ -2,11 +2,26 @@
   pkgs,
   lib,
   config,
+  myInventory,
   ...
 }:
 
 let
   cfg = config.my.virtualisation;
+
+  # LAN sources allowed to open connections into this host's containers:
+  # every inventory host on 10.0.0.0/24, plus planned APs not in inventory yet.
+  lanSources = lib.unique (
+    lib.filter (lib.hasPrefix "10.0.0.") (
+      lib.mapAttrsToList (_: h: h.physicalIp or h.ip or "") myInventory.hosts
+    )
+    ++ [
+      "10.0.0.3"
+      "10.0.0.4"
+      "10.0.0.6"
+      "10.0.0.7"
+    ]
+  );
 in
 {
   options.my.virtualisation = {
@@ -115,7 +130,7 @@ in
           # Container Bridge
           iifname "${config.my.network.bridge}" oifname "${config.my.network.externalInterface}" accept
           iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ct state { established, related } accept
-          iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ip saddr { 10.0.0.5, 10.0.0.22, 10.0.0.15, 10.0.0.21, 10.0.0.30, 10.0.0.1, 10.0.0.2, 10.0.0.3, 10.0.0.4, 10.0.0.7, 10.0.0.6 } accept
+          iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ip saddr { ${lib.concatStringsSep ", " lanSources} } accept
         ''
         + lib.optionalString cfg.libvirtd.enable ''
 
@@ -142,14 +157,6 @@ in
 
       # Consolidated services
       services = {
-        # HOTFIX: The virt-secret-init-encryption service uses /usr/bin/sh
-        virt-secret-init-encryption = lib.mkIf cfg.libvirtd.enable {
-          serviceConfig.ExecStart = [
-            ""
-            "${pkgs.bash}/bin/sh -c 'umask 0077 && (${pkgs.coreutils}/bin/dd if=/dev/random status=none bs=32 count=1 | ${config.systemd.package}/bin/systemd-creds encrypt --name=secrets-encryption-key - /var/lib/libvirt/secrets/secrets-encryption-key)'"
-          ];
-        };
-
         # Ensure the Podman network exists and provides the physical bridge for ALL containers
         podman-network-cbr0 = lib.mkIf cfg.podman.enable {
           description = "Ensure Podman cbr0 network exists";
