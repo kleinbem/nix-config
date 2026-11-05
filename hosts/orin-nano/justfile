@@ -1,16 +1,17 @@
 # Orin Nano Local Management
-import '../../../.just/orin.just'
+import '../../.just/orin.just'
 
 # --- Local Shortcuts ---
+# The fleet modules (dev::, nixos::) live in the repo-root justfile.
 
 [group("Local")]
 apply:
-    @just maintenance::apply
+    @just --justfile "{{justfile_directory()}}/../../justfile" dev::apply
 
 [group("Local")]
 test:
-    @just nixos::test
+    @just --justfile "{{justfile_directory()}}/../../justfile" nixos::test
 
 [group("Local")]
 edit:
-    @$EDITOR default.nix
+    @$EDITOR "{{justfile_directory()}}/default.nix"

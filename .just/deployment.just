@@ -138,12 +138,15 @@ deploy-orin:
 [group("Provisioning")]
 [confirm("💿 Re-install full orin-nano config onto the bootstrapped Orin? Builds natively on the device (no cross-compilation). This reformats the SSD.")]
 [doc("Requires bootstrap running and SSH key working. Builds aarch64 closure on the Orin itself, reformats disk with full LUKS+LVM+impermanence layout. LUKS passphrase is prompted interactively.")]
-orin-promote host="root@orin-nano-bootstrap.local":
+orin-promote host="root@orin-nano-bootstrap.local" frigate_key="":
     @echo "🔨 Building and installing full orin-nano config (native aarch64 build on the Orin)..."
     @echo "   LUKS passphrase will be prompted interactively."
+    # disko formats the Frigate SSD with this keyfile, so the installer needs it
+    # before disko runs (the backed-up key, or a new one for a fresh SSD).
     nix run github:nix-community/nixos-anywhere -- \
         --flake .#orin-nano \
         --build-on-remote \
+        {{ if frigate_key != "" { "--disk-encryption-keys /nix/persist/etc/crypt/frigate.key " + quote(frigate_key) } else { "" } }} \
         --phases kexec,disko,install,reboot \
         {{host}}
 

@@ -33,6 +33,8 @@ in
     # openclaw stays here rather than on mac-mini: its pnpm-deps hash in
     # nix-openclaw mismatches on a from-scratch build, and this host runs an
     # already-cached build.
+    # no-link: openclaw/nix-openclaw#94 closed in 2026-05 and no open report
+    # exists; recheck a from-scratch build on the next nix-openclaw bump.
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
@@ -272,7 +274,9 @@ in
 
     # Voice Pipeline
     wyoming = {
-      openwakeword.enable = false; # broken upstream right now
+      # pyopen-wakeword's vendored libtensorflowlite segfaults on aarch64.
+      # upstream: NixOS/nixpkgs#518379 (marked broken on aarch64-linux; no segfault report upstream yet)
+      openwakeword.enable = false;
       piper.servers."piper" = {
         enable = true;
         uri = "tcp://0.0.0.0:10200";
@@ -309,9 +313,10 @@ in
     services.otbr-agent.unitConfig.ConditionPathExists =
       config.services.openthread-border-router.radio.device;
 
-    # ESPHome 2026.8 removed `esphome dashboard`, which the NixOS module still
-    # runs; use esphome-device-builder instead (same port and flags). esphome
-    # itself stays on PATH for firmware builds.
+    # The module runs esphome-device-builder itself now (NixOS/nixpkgs#550245),
+    # but also starts its remote-build server on 0.0.0.0:6055. This ExecStart
+    # keeps the dashboard only. esphome stays on PATH for firmware builds.
+    # no-link: upstream works as designed; the override is a local choice.
     services.esphome = {
       path = [ pkgs.esphome-device-builder ];
       # Link the device configs in ./esphome into the state dir so this repo

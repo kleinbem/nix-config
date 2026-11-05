@@ -168,8 +168,6 @@ in
       };
 
       qdrant = {
-        # Upstream nixos-unstable rustc/LLVM stdarch drift (rust-lang/rust#111137).
-        # Kept active via the fleet's transparent nixpkgs-stable circuit-breaker fallback.
         enable = true;
         ip = "${myInventory.network.nodes.qdrant.ip}/24";
         hostDataDir = "/var/lib/images/qdrant";

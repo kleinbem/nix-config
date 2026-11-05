@@ -93,11 +93,29 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = [
-        "${pkgs.coreutils}/bin/mkdir -p /mnt/data/garage/meta /mnt/data/garage/data"
-        "${pkgs.coreutils}/bin/chown -R garage:garage /mnt/data/garage"
-      ];
     };
+    # $d is root:garage 0750: garage can traverse but not plant symlinks this root script
+    # follows. chown -R (-h, no dereference) walks every object, so it runs
+    # once per garage uid:gid recorded in the stamp; otherwise only meta/data.
+    script = ''
+      d=/mnt/data/garage
+      for p in "$d" "$d/meta" "$d/data"; do
+        if [ -L "$p" ]; then
+          echo "refusing: $p is a symlink" >&2
+          exit 1
+        fi
+      done
+      mkdir -p "$d/meta" "$d/data"
+      chown root:garage "$d"
+      chmod 0750 "$d"
+      ids="$(id -u garage):$(id -g garage)"
+      if [ "$(cat "$d/.chown-recursive-done" 2>/dev/null)" != "$ids" ]; then
+        chown -R -h garage:garage "$d/meta" "$d/data"
+        rm -f "$d/.chown-recursive-done"
+        echo "$ids" > "$d/.chown-recursive-done"
+      fi
+      chown -h garage:garage "$d/meta" "$d/data"
+    '';
   };
 
   # Run garage as the static garage user (the module defaults to DynamicUser = a

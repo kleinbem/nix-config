@@ -41,11 +41,13 @@ let
     pub
     // c
     // {
+      # Fail closed: a persona without a state entry counts as retired, so it
+      # never lands in allowed_signers. assertComplete rejects it outright.
       state =
         state.${name} or {
-          status = "active";
+          status = "retired";
           status-since = pub.date-joined or "1970-01-01";
-          status-note = "(state file missing entry; treating as active)";
+          status-note = "(state file missing entry; treated as retired)";
           return-date = null;
           leave-type = null;
           backup = null;
@@ -55,6 +57,8 @@ let
 
   # `true` when called with real contact data; `false` when public-only.
   contactAvailable = contact != { };
+  # Per persona: contact data can be loaded yet lack an entry for this one.
+  hasContact = name: contact ? ${name};
 
   # --- Queries ---
 
@@ -63,10 +67,10 @@ let
     let
       p = all.${name};
     in
-    if contactAvailable then
+    if hasContact name then
       "${p.full-name} <${p.email}>"
     else
-      throw "lib/personas.nix: author() requires contact data — see this file's header comment for how to decrypt kleinbem-secrets/personas/contact.nix";
+      throw "lib/personas.nix: author() needs contact data for '${name}' — see this file's header comment for how to decrypt kleinbem-secrets/personas/contact.nix";
 
   byTag = tag: lib.filterAttrs (_: p: lib.elem tag (p.role-tags or [ ])) publicData;
 
@@ -154,7 +158,7 @@ let
         name: p:
         let
           key = personaPubkeys.${name} or null;
-          id = if contactAvailable then p.email else "${name}@local";
+          id = if hasContact name then p.email else "${name}@local";
         in
         lib.optionalString (key != null && key != "") "${id} ${key}"
       ) eligible;
@@ -202,7 +206,8 @@ let
           statusOk = lib.elem s.status validStatuses;
           leaveOk = s.status != "on-leave" || lib.elem (s.leave-type or "") validLeaveTypes;
         in
-        lib.assertMsg (
+        lib.assertMsg (state ? ${name}) "persona '${name}' has no entry in personas-state.nix"
+        && lib.assertMsg (
           missing == [ ]
         ) "persona '${name}' missing state field(s): ${lib.concatStringsSep ", " missing}"
         && lib.assertMsg statusOk "persona '${name}' has invalid status: ${s.status}"
@@ -350,6 +355,7 @@ in
     assertValid
     teamMarkdown
     contactAvailable
+    hasContact
     names
     all
     ;

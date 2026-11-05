@@ -32,13 +32,14 @@ let
       exit 0
     fi
 
+    # A fresh profile (Chrome never run) has no ~/.pki or NSS db yet.
+    mkdir -p "${config.home.homeDirectory}/.pki"
+
     if ! cmp -s "$tmp" "${localCert}" 2>/dev/null; then
       cp "$tmp" "${localCert}"
       echo "Caddy internal root CA updated from core-pi"
     fi
 
-    # A fresh profile (Chrome never run) has no NSS db yet.
-    mkdir -p "${config.home.homeDirectory}/.pki"
     if [ ! -f "${config.home.homeDirectory}/.pki/nssdb/cert9.db" ]; then
       ${pkgs.nss.tools}/bin/certutil -N -d "${nssdb}" --empty-password
     fi

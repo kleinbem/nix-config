@@ -58,9 +58,9 @@
       address = "10.0.0.1";
       interface = "enP8p1s0";
     };
-    # The JetPack 6 vendor kernel lacks CONFIG_NFT_CT, CONFIG_NFT_REDIR and
-    # CONFIG_NFT_FIB_IPV4, so nftables can't load conntrack or redirect rules.
-    # Legacy iptables is fully supported.
+    # JetPack 6's defconfig left out NFT_CT, NFT_REDIR and NFT_FIB_*. The kernel
+    # builds them since kleinbem/nix-hardware#71, but nftables stays off (legacy
+    # iptables) until it is tested on the device. no-link: vendor defconfig.
     nftables.enable = false;
     nat = {
       enable = true;

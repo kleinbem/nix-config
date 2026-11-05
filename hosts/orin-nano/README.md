@@ -1,97 +1,131 @@
-# Orin Nano Plus — NixOS Installation
+# Orin Nano Plus: NixOS installation
 
-## Prerequisites
+> **Warning: every install recipe below except `orin-update-usb` wipes the target SSD.** Check the
+> device argument with `lsblk` first. The recipes ask for confirmation, but
+> they do not know which disk you meant.
 
-- Orin Nano booting **any Linux with SSH** (stock JetPack Ubuntu works)
-- Your workstation with this Nix config repo
+> **Back up the Frigate SSD key first.** The second SSD's LUKS keyfile,
+> `/nix/persist/etc/crypt/frigate.key`, lives only on the main SSD (it is not
+> in sops). Wiping the main SSD without a copy leaves the Frigate recordings
+> unreadable. Copy it off the Orin before any reinstall of the main SSD:
+>
+> ```bash
+> (umask 077; ssh orin-nano sudo cat /nix/persist/etc/crypt/frigate.key > frigate.key.new \
+>   && [ -s frigate.key.new ] && mv frigate.key.new frigate.key || rm -f frigate.key.new)
+> ```
+>
+> Keep the copy somewhere encrypted (e.g. a Bitwarden attachment), not as a
+> plain file. Path A keeps the Frigate SSD: put the key back on the Orin after
+> the first boot, then reboot:
+>
+> ```bash
+> ssh orin-nano 'sudo install -D -m 0400 /dev/stdin /nix/persist/etc/crypt/frigate.key' < frigate.key
+> ```
+>
+> Path B reformats it and needs a key during install (see below). Delete the
+> local copy afterwards (`shred -u frigate.key`).
 
-## Installation
+## Install
 
-### 1. First boot with stock JetPack
+Two ways, both run from the nix-config repo root on the workstation. Recipes
+live in [`.just/deployment.just`](../../.just/deployment.just).
 
-Power on the Orin Nano with the SSD installed. Complete the initial JetPack Ubuntu setup, then note its IP:
+### A. SSD in a USB reader (preferred)
 
-```bash
-# On the Orin Nano:
-ip addr
-```
-
-### 2. Enable SSH & copy your key
-
-```bash
-# On the Orin Nano (if SSH isn't running):
-sudo systemctl start ssh
-
-# From your workstation:
-ssh-copy-id root@<orin-ip>
-```
-
-### 3. Install NixOS 🚀
-
-```bash
-# From the workspace root:
-just orin-install root@<orin-ip>
-```
-
-`nixos-anywhere` will SSH in, kexec into a temporary NixOS installer, partition the SSD natively via `disko.nix`, copy the NixOS closure, install the bootloader, and reboot into NixOS.
-
-### 4. First boot — NetBird setup
-
-After NixOS boots, connect via the **local network** (SSH is open on LAN for the first boot only until NetBird is set up):
+Put the Orin's SSD in a USB-NVMe enclosure on the workstation:
 
 ```bash
-ssh martin@<orin-ip>
-
-# Authenticate NetBird:
-sudo netbird up --setup-key <your-setup-key>
-
-# Verify:
-sudo netbird status
+lsblk                                   # find the SSD, e.g. /dev/sdb
+just deployment::orin-install-usb /dev/sdb
 ```
 
-Once NetBird is authenticated, SSH is **locked down to NetBird only** (interface `wt0`) — no more LAN exposure. Note that this system uses a **stateless root**; however, your NetBird identity and LUKS keys are persisted in `/nix/persist`.
+The device is a positional argument (`device=/dev/sdb` after the recipe name
+would be passed literally). This wipes that SSD only (it runs disko with
+`secondDiskDevice = null`, so the Frigate SSD is untouched), partitions it with
+[`disko.nix`](./disko.nix), builds the closure, installs systemd-boot to the
+ESP, adds the new host age key to sops and binds LUKS to Tang. Then:
 
-### 5. Seal TPM2
+1. Commit and push the re-encrypted secrets in kleinbem-secrets, then bump
+   the `kleinbem-secrets` input in nix-config (`nix flake update
+   kleinbem-secrets`) and commit `flake.lock`: `deploy-orin` builds from the
+   pinned revision.
+2. Put the SSD back in the Orin, connect ethernet and boot.
+3. Run `just deployment::deploy-orin` once. The installed closure predates the
+   sops re-encryption, so runtime secrets (NetBird setup key included) don't
+   decrypt until this first deploy.
+
+`just deployment::orin-update-usb /dev/sdb` reinstalls onto an already
+provisioned SSD without wiping it.
+
+### B. Bootstrap image, then promote over SSH
 
 ```bash
-# From your workstation (over Tailscale now):
-just orin-seal
+just deployment::orin-install-bootstrap /dev/sdb   # wipes /dev/sdb
+# boot the Orin from that SSD; root SSH by key only
+just deployment::orin-promote root@orin-nano-bootstrap.local frigate.key   # wipes BOTH Orin SSDs
 ```
 
-### 6. Future updates
+`orin-promote` runs nixos-anywhere against `root@orin-nano-bootstrap.local` and
+builds natively on the Orin. Its disko phase uses the full orin-nano config,
+which also declares the second SSD (`/dev/nvme1n1`), so it **reformats the
+Frigate SSD too**: back up `/mnt/data/frigate` first if the recordings matter.
+disko formats it with `/nix/persist/etc/crypt/frigate.key`, which doesn't
+exist in the installer, so pass a keyfile as the second argument (the backup,
+or `(umask 077; head -c 64 /dev/urandom > frigate.key)` for a new one); it is
+copied in with nixos-anywhere's `--disk-encryption-keys`. nixos-anywhere
+doesn't verify the installer's SSH host key (no-link: no upstream report yet; tracked in kleinbem/nix-config#582), so run this only on the
+home LAN, after comparing `ssh-keyscan orin-nano-bootstrap.local | ssh-keygen -lf -`
+with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the Orin's console. After the first boot,
+install the same file at that path as in path A.
 
-```bash
-# Deploy config changes (over Tailscale):
-just deploy-orin
+`orin-promote-nokexec` skips the RAM boot, so it needs a target disk that
+isn't in use. The bootstrap system runs from the very SSD it would format, so
+it is not a fallback for this path; use path A instead.
+
+## After the first boot
+
+- **NetBird** joins on its own (`netbird-autojoin`, setup key from sops) once
+  the first `deploy-orin` has run. Check with `sudo netbird status`.
+- **FIDO2 unlock** is not enrolled by the installer (it only binds Tang).
+  Enrol both YubiKeys once, on the Orin:
+  `sudo systemd-cryptenroll --fido2-device=auto /dev/disk/by-partlabel/disk-main-luks`
+  (run it twice, once per key).
+- **Later updates** arrive through comin pull-deploy. The Orin still builds
+  its kernel/L4T closure on the device, so there is no cache requirement and
+  the build timeout is 12 h.
+
+## Disk layout
+
+Defined in [`disko.nix`](./disko.nix). `/` and `/var` are tmpfs
+(impermanence); state that must survive a reboot lives under `/nix/persist`.
+
+```
+Main SSD (GPT)
+├── ESP   (1G, vfat)              → /boot (systemd-boot)
+├── swap  (16G, random key)
+└── LUKS  (rest)                  → orin_crypt
+    └── LVM vg_orin
+        ├── nix    (128G, ext4)   → /nix
+        ├── models (256G, ext4)   → /mnt/models
+        └── data   (rest, btrfs)  → /mnt/data
+
+Second SSD (GPT)
+└── LUKS (keyfile on /nix/persist) → orin_frigate_crypt
+    └── ext4                       → /mnt/data/frigate (Frigate recordings)
 ```
 
-## Disk Layout
+The second disk is unlocked in stage 2 by crypttab (see `services.nix`): its
+keyfile is inside `orin_crypt`, which initrd hasn't mounted yet.
 
-Defined in [`disko.nix`](./disko.nix):
+## Security model
 
-```
-SSD (GPT)
-├── ESP   (1G, vfat)        → /boot
-└── LUKS  (remaining)       → orin_crypt
-    └── LVM (vg_orin)
-        ├── root (128G, ext4)   → /
-        └── data (rest, btrfs)  → /mnt/data
-```
-
-## Security Model
-
-- **SSH**: Key-only auth (YubiKey), restricted to `tailscale0` interface
-- **Disk**: LUKS encryption with TPM2 auto-unlock
-- **Network**: All management traffic over Tailscale (WireGuard)
-- **Updates**: Deployed from workstation via `nixos-rebuild` over Tailscale SSH
-
-## How nixos-anywhere Works
-
-The stock JetPack Ubuntu is just a **stepping stone** — `nixos-anywhere` completely replaces it. Under the hood:
-
-1. SSHs into the running Linux
-2. Kexec boots a temporary NixOS installer in RAM
-3. Runs `disko` **natively** on the device (no QEMU cross-arch issues)
-4. Copies the NixOS system closure
-5. Installs the extlinux bootloader
-6. Reboots into NixOS
+- **Disk unlock**: the Jetson has no TPM, so there is no TPM sealing
+  (`orin-seal` is inert). Tang/clevis unlocks `orin_crypt` unattended when a
+  Tang server on the LAN answers. Otherwise type the passphrase, at the
+  console or over initrd SSH on port 2222, or plug an enrolled YubiKey
+  (FIDO2, see above) into the Orin itself; SSH doesn't forward the token.
+- **SSH**: key-only (YubiKey/FIDO2). Port 22 is open on NetBird (`wt0`) and
+  also on the LAN interface (`enP8p1s0`), which keeps it reachable when
+  NetBird is down.
+- **Bootloader**: systemd-boot, capped at 10 entries. extlinux is off.
+- **Firewall**: iptables-legacy (see `network.nix`).

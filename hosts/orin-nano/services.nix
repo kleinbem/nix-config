@@ -68,7 +68,8 @@
           lib.subtractLists excludeFromUpdater allEnabled;
       };
     };
-    security.ai-hardening.enable = false; # Orin Nano runs no airlocked AI webapps; ai-airlock requires CONFIG_NFT_REDIR which JP6 lacks
+    # Off because the Orin runs no airlocked AI webapps.
+    security.ai-hardening.enable = false;
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";
 

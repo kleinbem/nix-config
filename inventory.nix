@@ -413,7 +413,10 @@ in
         };
       };
       openclaw = {
-        ip = "10.85.49.112"; # Hass-Pi (kept here — pnpm-deps hash mismatch against its pinned upstream flake blocks a fresh build elsewhere, see hosts/hass-pi/default.nix)
+        # Hass-Pi (kept here: pnpm-deps hash mismatch against its pinned upstream
+        # flake blocks a fresh build elsewhere, see hosts/hass-pi/default.nix).
+        # no-link: openclaw/nix-openclaw#94 closed in 2026-05; recheck on the next bump.
+        ip = "10.85.49.112";
         meta = {
           name = "OpenClaw";
           category = "AI Engineering";
