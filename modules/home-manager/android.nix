@@ -119,7 +119,7 @@ let
         echo "Installation complete!"
       else
         echo "Treating '$target' as package ID. Fetching via apkeep..."
-        local cache_dir="/tmp/apkeep_cache"
+        local cache_dir="''${XDG_CACHE_HOME:-$HOME/.cache}/apkeep"
         mkdir -p "$cache_dir"
         
         if ${pkgs.apkeep}/bin/apkeep -d f-droid -a "$target" "$cache_dir" 2>/dev/null; then
@@ -263,7 +263,7 @@ let
         echo "Installation complete!"
       else
         echo "Treating '$target' as package ID. Fetching via apkeep..."
-        local cache_dir="/tmp/apkeep_cache"
+        local cache_dir="''${XDG_CACHE_HOME:-$HOME/.cache}/apkeep"
         mkdir -p "$cache_dir"
 
         if ${pkgs.apkeep}/bin/apkeep -d f-droid -a "$target" "$cache_dir" 2>/dev/null; then
