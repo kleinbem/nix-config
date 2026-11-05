@@ -1,8 +1,9 @@
 # `os system::*` — system configuration management.
 
-# Roll back to the previous system generation.
+# Roll back to the previous saved generation. Profile-based, so it also
+# works after `nh os test`, when the running system is no generation.
 rollback:
-    nh os rollback
+    sudo nixos-rebuild switch --rollback
 
 # Show generation history.
 history:

@@ -125,13 +125,17 @@ garage-ui-token:
     f=nix/per-container/garage-ui.yaml
     cd "{{ META }}/kleinbem-secrets"
     umask 077
-    # Mint under a temporary name and swap only once sops has it, so a failed
-    # run keeps the old token and leaves no plaintext behind.
-    sudo garage admin-token delete --yes "$NAME-new" >/dev/null 2>&1 || true
+    # Tokens go by ID: garage allows duplicate names, and `info <name>` then
+    # fails. The old ones are deleted only once sops holds the new one, so any
+    # failed or repeated run leaves sops with a live token.
+    ids() { sudo garage admin-token list | awk -v n="$NAME" 'NR > 1 && $3 == n { print $1 }'; }
+    old=$(ids)
+    new_id=""
     stored=0
-    trap 'rm -f "$f.new"; [ "$stored" = 1 ] || sudo garage admin-token delete --yes "$NAME-new" >/dev/null 2>&1 || true' EXIT
-    TOKEN=$(sudo garage admin-token create -q --scope "$SCOPE" "$NAME-new")
-    [ -n "$TOKEN" ] || { echo "❌ garage returned an empty token; nothing written" >&2; exit 1; }
+    trap 'rm -f "$f.new"; [ "$stored" = 1 ] || [ -z "$new_id" ] || sudo garage admin-token delete --yes "$new_id" >/dev/null 2>&1 || true' EXIT
+    TOKEN=$(sudo garage admin-token create -q --scope "$SCOPE" "$NAME")
+    new_id=${TOKEN%%.*}
+    [ -n "$new_id" ] && [ "$new_id" != "$TOKEN" ] || { echo "❌ unexpected token format from garage; nothing written" >&2; exit 1; }
     if [ -f "$f" ]; then
         printf '%s' "$TOKEN" | jq -Rs . | sops set --value-stdin "$f" '["garage_ui_admin_token"]'
     else
@@ -142,10 +146,9 @@ garage-ui-token:
     fi
     stored=1
     unset TOKEN
-    if sudo garage admin-token info "$NAME" >/dev/null 2>&1; then
-        echo "♻️  Replacing the existing $NAME token..."
-        sudo garage admin-token delete --yes "$NAME" >/dev/null
-    fi
-    sudo garage admin-token rename "$NAME-new" "$NAME" >/dev/null
+    for id in $old; do
+        echo "♻️  Deleting the previous $NAME token $id..."
+        sudo garage admin-token delete --yes "$id" >/dev/null
+    done
     echo "✅ Read-only token stored in kleinbem-secrets/nix/per-container/garage-ui.yaml"
     echo "   Commit kleinbem-secrets, then: just dev::apply"

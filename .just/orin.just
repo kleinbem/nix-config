@@ -38,8 +38,9 @@ test-mesh path=".":
     trap '[ "$stopped" -eq 1 ] && sudo systemctl start mesh-llm' EXIT
     if systemctl is-active --quiet mesh-llm; then
       echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."
-      sudo systemctl stop mesh-llm
+      # Flag first: a failed or interrupted stop still restarts it on exit.
       stopped=1
+      sudo systemctl stop mesh-llm
     fi
     cargo test --manifest-path "{{path}}/Cargo.toml" -j 2
 
@@ -54,8 +55,9 @@ build-mesh flake="github:kleinbem/nixpkgs#mesh-llm":
     trap '[ "$stopped" -eq 1 ] && sudo systemctl start mesh-llm' EXIT
     if systemctl is-active --quiet mesh-llm; then
       echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."
-      sudo systemctl stop mesh-llm
+      # Flag first: a failed or interrupted stop still restarts it on exit.
       stopped=1
+      sudo systemctl stop mesh-llm
     fi
     nix build -L --keep-going --max-jobs 1 --cores 2 --no-link "{{flake}}"
 
