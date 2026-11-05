@@ -50,7 +50,7 @@ deploy host:
         echo "🔍 Checking boot medium for {{host}}..."
         # We check /nix because / is tmpfs due to impermanence. A failed probe
         # must abort, not read as "booted from the SSD".
-        if ! devs=$(env SSH_AUTH_SOCK="" ssh -o ConnectTimeout=5 "{{host}}" "lsblk -s -n -o NAME \$(findmnt -n -o SOURCE /nix)"); then
+        if ! devs=$(env SSH_AUTH_SOCK="" ssh -o ConnectTimeout=5 "{{host}}" "src=\$(findmnt -n -o SOURCE /nix) && [ -n \"\$src\" ] && lsblk -s -n -o NAME \"\$src\""); then
             echo "❌ ERROR: could not read the boot medium of {{host}} over ssh; not deploying."
             exit 1
         fi

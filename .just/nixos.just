@@ -156,7 +156,7 @@ verify-caddy:
     ip=$(nix eval --raw --impure --expr '(import ./inventory.nix).network.nodes.caddy.ip')
     echo "🔍 Verifying Caddy Gateway at $ip..."
     for i in {1..5}; do
-        if curl -k -s -o /dev/null --max-time 5 "https://$ip"; then
+        if curl -k -sf -o /dev/null --max-time 5 "https://$ip"; then
             echo "✅ Caddy is responsive"
             exit 0
         fi

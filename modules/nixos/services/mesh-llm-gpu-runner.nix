@@ -131,8 +131,10 @@ in
           script = ''
             rm -f ${buildWindowDir}/done
             # A manual build (.just/lib/mesh-build-window.sh) holds this lock
-            # and restarts the node itself when it ends.
-            if ! flock -n -x ${buildWindowDir}/manual.lock true; then
+            # and restarts the node itself when it ends. Held through the
+            # restart, so a new manual build waits and then stops it again.
+            exec 9>${buildWindowDir}/manual.lock
+            if ! flock -n -x 9; then
               echo "manual build still running; it restarts mesh-llm"
               exit 0
             fi
