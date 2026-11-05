@@ -61,6 +61,7 @@ in
           # out-of-tree modules, and v4l2loopback's own modules.alias collides
           # with the kernel's in aggregateModules. The aggregator runs depmod
           # anyway, so skip it here. A no-op once the package passes DEPMOD.
+          # no-link: not reported upstream yet (no nixpkgs issue or PR found).
           withoutDepmod =
             if lib.any (lib.hasPrefix "DEPMOD=") (v4l2loopback.makeFlags or [ ]) then
               v4l2loopback

@@ -67,9 +67,10 @@ let
 
   # Every agent we must put on PATH: the default plus any explicit extras.
   wantedAgents = lib.unique ([ cfg.defaultAgent ] ++ cfg.installAgents);
+  wantsGoose = builtins.elem "goose" wantedAgents;
   agentPackages =
     lib.filter (p: p != null) (map (name: agents.${name}.package) wantedAgents)
-    ++ lib.optionals (builtins.elem "goose" wantedAgents) cfg.goose.extraPackages;
+    ++ lib.optionals wantsGoose cfg.goose.extraPackages;
 
   # Every skill in the kleinbem/skills repo (a Claude Code plugin marketplace:
   # plugins/<plugin>/skills/<skill>/SKILL.md), fanned out to every agent below.
@@ -87,7 +88,12 @@ let
       let
         dir = "${skillsRepo}/plugins/${plugin}/skills";
       in
-      lib.mapAttrs (skill: _: "${dir}/${skill}") (builtins.readDir dir)
+      # A plugin may ship only hooks or commands, without skills/.
+      lib.optionalAttrs (builtins.pathExists dir) (
+        lib.mapAttrs (skill: _: "${dir}/${skill}") (
+          lib.filterAttrs (_: type: type == "directory") (builtins.readDir dir)
+        )
+      )
     ) (builtins.readDir "${skillsRepo}/plugins")
     // lib.mapAttrs (skill: _: "${haSkillsRepo}/skills/${skill}") (
       lib.filterAttrs (_: type: type == "directory") (builtins.readDir "${haSkillsRepo}/skills")
@@ -316,7 +322,7 @@ in
     # Same merge for goose's config.yaml (YAML, so yq instead of jq).
     modules.ai-agents.goose.finalSettings = gooseFinalSettings;
 
-    home.activation.gooseSettings = lib.mkIf (gooseFinalSettings != { }) (
+    home.activation.gooseSettings = lib.mkIf (wantsGoose && gooseFinalSettings != { }) (
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         settingsPath="${config.home.homeDirectory}/.config/goose/config.yaml"
         declared=${pkgs.writeText "goose-config.yaml" (builtins.toJSON gooseFinalSettings)}

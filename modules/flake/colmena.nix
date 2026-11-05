@@ -4,8 +4,8 @@ let
   hostMeta = myInventory.hosts;
 in
 {
-  # Direct flake evaluation (colmena >= 0.5.0-pre). The old getFlake evaluator
-  # broke Attic substitution with mismatched version labels (colmena#162).
+  # Direct flake evaluation: the getFlake evaluator breaks Attic substitution
+  # with mismatched version labels (nix-community/colmena#162).
   flake.colmenaHive = inputs.colmena.lib.makeHive self.colmena;
 
   flake.colmena = {

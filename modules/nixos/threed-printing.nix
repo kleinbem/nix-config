@@ -29,7 +29,7 @@ in
       stable.freecad # Stock cached variant pinned to stable
 
       # 3D Utilities, Viewers & Mesh Repair
-      # f3d # Fast terminal/GUI 3D file viewer (disabled: upstream vtk-9.5.2 PEGTL build failure)
+      f3d # Fast terminal/GUI 3D file viewer
       meshlab # Advanced mesh processing, polygon reduction & manifold repair
       assimp # Command-line 3D format converter (STEP <-> STL <-> OBJ <-> GLTF)
     ];

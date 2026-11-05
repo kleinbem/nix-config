@@ -786,7 +786,7 @@ hosts:
     - '[module] modules/nixos/persistence.nix'
     - '[local] ./secrets.nix'
     - '[module] modules/nixos/apps.nix'
-    - '[module] modules/nixos/disko.nix'
+    - '[local] ./disko.nix'
     - '[module] modules/nixos/data-disk.nix'
     - '[other] disko:disko'
     - '[local] ./ai.nix'
@@ -2048,10 +2048,6 @@ modules_system:
     purpose: Desktop environments (GNOME, Wayland/Hyprland), display manager.
     declared_options:
     - my.desktop
-  disko.nix:
-    file: nix-config/modules/nixos/disko.nix
-    purpose: Disko configuration for NVMe/Btrfs workstations.
-    declared_options: []
   firejail.nix:
     file: nix-config/modules/nixos/firejail.nix
     purpose: NixOS system module.
@@ -2192,9 +2188,6 @@ modules_user:
     nixvim.nix:
       file: nix-config/modules/home-manager/nixvim.nix
       purpose: Declarative Neovim configuration.
-    pentesting.nix:
-      file: nix-config/modules/home-manager/pentesting.nix
-      purpose: Home-Manager user module.
     secrets.nix:
       file: nix-config/modules/home-manager/secrets.nix
       purpose: Home-Manager user module.

@@ -8,7 +8,6 @@
     inputs.nix-presets.homeManagerModules.desktop
     inputs.cadre.homeManagerModules.default
     ./security.nix
-    ./pentesting.nix
     ./vscode.nix
     ./nixvim.nix
     ./secrets.nix
