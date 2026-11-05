@@ -21,7 +21,14 @@ let
       grep -qE 'sign_and_send_pubkey.*(invalid format|agent refused operation)' "$errfile"
     }
 
-    "$real_ssh" "$@" 2> >(tee "$errfile" >&2)
+    # A pipeline (not 2> >(tee ...)) so tee has finished writing before
+    # is_glitch reads the file; fd 3 keeps ssh's stdout out of the pipe.
+    run_ssh() {
+      { "$real_ssh" "$@" 2>&1 1>&3 3>&- | tee "$errfile" >&2; } 3>&1
+      return "''${PIPESTATUS[0]}"
+    }
+
+    run_ssh "$@"
     status=$?
 
     # Tier 1: a genuine USB hiccup.
@@ -30,7 +37,7 @@ let
       "$usbreset" "$yubikey_id" >/dev/null 2>&1 || true
       sleep 1
       : >"$errfile"
-      "$real_ssh" "$@" 2> >(tee "$errfile" >&2)
+      run_ssh "$@"
       status=$?
     fi
 
@@ -40,6 +47,7 @@ let
       echo "ssh: still glitching after USB reset — restarting ssh-agent and retrying once more..." >&2
       systemctl --user restart ssh-agent.service 2>/dev/null || true
       sleep 1
+      rm -f "$errfile" # exec skips the EXIT trap
       exec "$real_ssh" "$@"
     fi
 

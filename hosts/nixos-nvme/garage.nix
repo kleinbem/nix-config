@@ -95,7 +95,8 @@ in
       RemainAfterExit = true;
       ExecStart = [
         "${pkgs.coreutils}/bin/mkdir -p /mnt/data/garage/meta /mnt/data/garage/data"
-        "${pkgs.coreutils}/bin/chown -R garage:garage /mnt/data/garage"
+        # Not -R: that walks every stored object on each start.
+        "${pkgs.coreutils}/bin/chown garage:garage /mnt/data/garage /mnt/data/garage/meta /mnt/data/garage/data"
       ];
     };
   };

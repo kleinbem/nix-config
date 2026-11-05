@@ -14,7 +14,7 @@
   system.stateVersion = "24.05";
 
   # ─── Terminal & Shell ─────────────────────────────────────────
-  terminal.font = "${pkgs.fira-code}/share/fonts/opentype/FiraCode-Regular.otf";
+  terminal.font = "${pkgs.fira-code}/share/fonts/truetype/FiraCode-VF.ttf";
 
   user.shell = "${pkgs.zsh}/bin/zsh";
 
