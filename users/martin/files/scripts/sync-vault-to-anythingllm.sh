@@ -20,14 +20,24 @@ if [ ! -f "$API_KEY_FILE" ]; then
   echo "anythingllm-vault-sync: no API key at $API_KEY_FILE yet (bootstrap not done) — skipping" >&2
   exit 0
 fi
-API_KEY=$(cat "$API_KEY_FILE")
+
+# Header from a 0600 file, so the token isn't in curl's argv.
+hdr=$(umask 077 && mktemp -p "${XDG_RUNTIME_DIR:-/tmp}")
+trap 'rm -f "$hdr"' EXIT
+printf 'Authorization: Bearer %s\n' "$(cat "$API_KEY_FILE")" >"$hdr"
+auth=(-H "@$hdr")
 
 mkdir -p "$(dirname "$STATE_FILE")"
 [ -f "$STATE_FILE" ] || echo '{}' >"$STATE_FILE"
 state=$(cat "$STATE_FILE")
 new_state="$state"
 
-auth=(-H "Authorization: Bearer ${API_KEY}")
+# Saved after every change and atomically: an interrupted run would otherwise
+# forget its uploads and duplicate them next time.
+save_state() {
+  printf '%s\n' "$new_state" >"$STATE_FILE.tmp"
+  mv "$STATE_FILE.tmp" "$STATE_FILE"
+}
 
 remove_document() {
   local location="$1"
@@ -73,6 +83,7 @@ while IFS= read -r -d '' f; do
   fi
   new_state=$(jq --arg k "$rel" --arg loc "$loc" --arg mt "$mtime" \
     '.[$k] = {location: $loc, mtime: ($mt | tonumber)}' <<<"$new_state")
+  save_state
 done < <(find "$VAULT_PATH" -type f -name '*.md' \
   ! -path '*/.obsidian/*' ! -path '*/.trash/*' ! -name '*sync-conflict*' \
   -print0)
@@ -83,9 +94,9 @@ while IFS= read -r rel; do
     loc=$(jq -r --arg k "$rel" '.[$k].location' <<<"$state")
     remove_document "$loc"
     new_state=$(jq --arg k "$rel" 'del(.[$k])' <<<"$new_state")
+    save_state
     removed=$((removed + 1))
   fi
 done < <(jq -r 'keys[]' <<<"$state")
 
-echo "$new_state" >"$STATE_FILE"
 echo "anythingllm-vault-sync: +${added} ~${updated} -${removed}"

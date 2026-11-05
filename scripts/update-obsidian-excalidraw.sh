@@ -36,32 +36,28 @@ log "Updating $CURRENT → $LATEST"
 sed -i "s#excalidraw-plugin/releases/download/${CURRENT}/#excalidraw-plugin/releases/download/${LATEST}/#g" "$PKG"
 
 # ── 3. Prefetch + patch each asset's hash ────────────────────────────────────
-# Replace the Nth occurrence (1-indexed) of `sha256 = "..."` in $PKG.
+# Set the `sha256 = "..."` that follows this asset's `url = "..."` line, so
+# other fetchurls in $PKG can't shift which hash gets patched.
 set_hash() {
-  local n="$1" value="$2"
-  python3 - "$PKG" "$n" "$value" <<'PY'
+  local url="$1" value="$2"
+  python3 - "$PKG" "$url" "$value" <<'PY'
 import sys, re
-path, n, value = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+path, url, value = sys.argv[1:4]
 text = open(path).read()
-pattern = r'sha256 = "[^"]*"'
-matches = list(re.finditer(pattern, text))
-if len(matches) < n:
-    print(f"ERROR: only {len(matches)} sha256= lines found, wanted index {n}", file=sys.stderr)
-    sys.exit(1)
-m = matches[n - 1]
-open(path, 'w').write(text[:m.start()] + f'sha256 = "{value}"' + text[m.end():])
+m = re.search(r'url = "' + re.escape(url) + r'";\s*sha256 = "[^"]*"', text)
+if not m:
+    sys.exit(f"ERROR: no url+sha256 pair for {url} in {path}")
+h = re.search(r'sha256 = "[^"]*"', m.group(0))
+start, end = m.start() + h.start(), m.start() + h.end()
+open(path, 'w').write(text[:start] + f'sha256 = "{value}"' + text[end:])
 PY
 }
 
-# Order must match the 3 fetchurl blocks' appearance in $PKG (main.js,
-# manifest.json, styles.css) — same order they're written in home.nix.
-FILES=(main.js manifest.json styles.css)
-for i in "${!FILES[@]}"; do
-  f="${FILES[$i]}"
+for f in main.js manifest.json styles.css; do
   url="https://github.com/${REPO_SLUG}/releases/download/${LATEST}/${f}"
   log "  hash $f ..."
   hash=$(nix-prefetch-url --type sha256 "$url")
-  set_hash "$((i + 1))" "$hash"
+  set_hash "$url" "$hash"
 done
 
 log "Done. obsidian-excalidraw-plugin $LATEST ready."

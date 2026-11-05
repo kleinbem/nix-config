@@ -27,7 +27,9 @@
   # Lightweight Sway Configuration
   wayland.windowManager.sway = {
     enable = true;
-    checkConfig = false; # Disable check to avoid fontconfig issues in the build sandbox
+    # Off: the config check hits fontconfig issues in the build sandbox.
+    # no-link: no upstream issue for the fontconfig failure (closest: nix-community/home-manager#5311).
+    checkConfig = false;
     config = {
       modifier = "Mod4";
       terminal = "alacritty";

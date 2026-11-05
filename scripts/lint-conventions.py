@@ -23,19 +23,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _nix_options import (
-    REPO,
+    MODULE_DIRS,
+    NIX_CONFIG,
     any_options_decls_in_file,
     iter_nix_files,
     relpath,
 )
 
-HOST_DIR = REPO / "nix-config/hosts"
-USER_DIR = REPO / "nix-config/users"
-
-MODULE_DIRS = [
-    REPO / "nix-config/modules/nixos",
-    REPO / "nix-config/modules/home-manager",
-    REPO / "nix-presets",
+# NIX_CONFIG is this checkout, so a jj workspace lints itself, not the primary.
+HOST_DIR = NIX_CONFIG / "hosts"
+USER_DIR = NIX_CONFIG / "users"
+REQUIRED_DIRS = [
+    HOST_DIR,
+    USER_DIR,
+    NIX_CONFIG / "modules/nixos",
+    NIX_CONFIG / "modules/home-manager",
 ]
 
 # First-party option namespaces (top-level segment of `options.X.…`)
@@ -73,6 +75,11 @@ UPSTREAM = {
 
 def main(argv: list[str]) -> int:
     strict = "--strict" in argv
+    missing = [d for d in REQUIRED_DIRS if not d.is_dir()]
+    if missing:
+        for d in missing:
+            print(f"❌ {d}: missing, nothing to lint", file=sys.stderr)
+        return 2
     errors: list[str] = []
     warnings: list[str] = []
 

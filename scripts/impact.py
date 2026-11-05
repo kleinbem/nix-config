@@ -3,7 +3,7 @@
 
 Usage:
   scripts/impact.py path/to/file.nix [more files…]
-  scripts/impact.py --git              # use git's modified/untracked files
+  scripts/impact.py --git              # changed files (jj since main, else git status)
 
 For each path, prints which hosts / users / presets are downstream consumers.
 
@@ -20,7 +20,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _nix_options import (
     CONSUMER_DIRS,
+    NIX_CONFIG,
     REPO,
+    _normalize_rel,
     consumer_label,
     consumer_paths_in_file,
     declarations_in_file,
@@ -28,39 +30,75 @@ from _nix_options import (
     relpath,
 )
 
+# Repos whose changes this script can classify; nix-config is this checkout
+# (a jj workspace when run from one), the rest are siblings in the fleet root.
+SCAN_REPOS = [NIX_CONFIG] + [
+    REPO / n
+    for n in (
+        "nix-presets",
+        "nix-hardware",
+        "nix-packages",
+        "nix-devshells",
+        "nix-templates",
+    )
+]
 
-def git_changed_files() -> list[Path]:
-    """All files that git status reports as modified, added, or untracked
-    across every nested git repo this script can see from REPO. Submodules
-    are searched independently because their porcelain output is relative to
-    the submodule root."""
-    paths: list[Path] = []
-    # Outer repo
-    repos = [REPO]
-    # Detect submodules via .gitmodules
-    gitmodules = REPO / ".gitmodules"
-    if gitmodules.exists():
-        for line in gitmodules.read_text().splitlines():
-            line = line.strip()
-            if line.startswith("path ="):
-                sub = REPO / line.split("=", 1)[1].strip()
-                if sub.exists():
-                    repos.append(sub)
-    for r in repos:
+
+def _changed_in_repo(r: Path) -> list[str] | None:
+    """Changed paths relative to r, or None if r isn't a jj/git repo.
+    jj first: workspaces have no .git, and jj shows everything since main."""
+    if (r / ".jj").is_dir():
         try:
             out = subprocess.check_output(
-                ["git", "status", "--porcelain"], cwd=r, text=True
+                [
+                    "jj",
+                    "diff",
+                    "--name-only",
+                    "--from",
+                    "fork_point(trunk() | @)",
+                    "--to",
+                    "@",
+                ],
+                cwd=r,
+                text=True,
+                stderr=subprocess.DEVNULL,
+            )
+            return out.splitlines()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+    if (r / ".git").exists():
+        try:
+            out = subprocess.check_output(
+                ["git", "status", "--porcelain", "-z", "-uall"], cwd=r, text=True
             )
         except (subprocess.CalledProcessError, FileNotFoundError):
-            continue
-        for line in out.splitlines():
-            if len(line) < 4:
+            return None
+        files: list[str] = []
+        entries = out.split("\0")
+        i = 0
+        while i < len(entries):
+            e = entries[i]
+            i += 1
+            if len(e) < 4:
                 continue
-            # Format: "XY path" or "XY path -> path"
-            rest = line[3:]
-            if "->" in rest:
-                rest = rest.split("->", 1)[1].strip()
-            p = (r / rest.strip()).resolve()
+            files.append(e[3:])
+            if e[0] in "RC":  # -z puts the rename source in the next entry
+                i += 1
+        return files
+    return None
+
+
+def git_changed_files() -> list[Path]:
+    """Changed .nix files in nix-config and the sibling nix repos."""
+    paths: list[Path] = []
+    for r in SCAN_REPOS:
+        names = _changed_in_repo(r)
+        if names is None:
+            if r == NIX_CONFIG:
+                print(f"⚠️  {r}: neither a jj nor a git repo", file=sys.stderr)
+            continue
+        for name in names:
+            p = (r / name).resolve()
             if p.suffix == ".nix" and p.exists():
                 paths.append(p)
     return paths
@@ -68,9 +106,8 @@ def git_changed_files() -> list[Path]:
 
 def classify(path: Path) -> str:
     """Return a short tag describing what kind of file this is."""
-    try:
-        rel = path.resolve().relative_to(REPO)
-    except ValueError:
+    rel = _normalize_rel(path.resolve())
+    if rel.is_absolute():
         return "external"
     parts = rel.parts
     if parts[:2] == ("nix-config", "hosts"):
@@ -79,19 +116,13 @@ def classify(path: Path) -> str:
         return "user"
     if parts[:2] == ("nix-config", "modules"):
         return "module"
-    if parts[0] == "nix-presets":
-        return "preset"
-    if parts[0] == "nix-hardware":
-        return "hardware"
-    if parts[0] == "nix-packages":
-        return "package"
-    if parts[0] == "nix-devshells":
-        return "devshell"
-    if parts[0] == "nix-secrets":
-        return "secrets"
-    if parts[0] == "nix-templates":
-        return "template"
-    return "other"
+    return {
+        "nix-presets": "preset",
+        "nix-hardware": "hardware",
+        "nix-packages": "package",
+        "nix-devshells": "devshell",
+        "nix-templates": "template",
+    }.get(parts[0], "other")
 
 
 def host_consumers_of_namespaces(namespaces: set[str]) -> dict[str, set[str]]:
@@ -112,7 +143,7 @@ def host_consumers_of_namespaces(namespaces: set[str]) -> dict[str, set[str]]:
 
 def hosts_importing_user(user_name: str) -> list[str]:
     """Find hosts that import this user's nixos module."""
-    hosts_dir = REPO / "nix-config/hosts"
+    hosts_dir = NIX_CONFIG / "hosts"
     needle = f"users/{user_name}/"
     hits = []
     for f in iter_nix_files(hosts_dir):
@@ -121,7 +152,7 @@ def hosts_importing_user(user_name: str) -> list[str]:
         except OSError:
             continue
         if needle in text:
-            hits.append(f.parent.name)
+            hits.append(f.relative_to(hosts_dir).parts[0])
     return sorted(set(hits))
 
 
@@ -136,7 +167,7 @@ def hosts_importing_preset(preset_label: str) -> list[str]:
     stem = Path(rel).stem
     if stem == "default":
         stem = Path(rel).parent.name
-    hosts_dir = REPO / "nix-config/hosts"
+    hosts_dir = NIX_CONFIG / "hosts"
     needle = f"nixosModules.{stem}"
     hits = []
     for f in iter_nix_files(hosts_dir):
@@ -145,7 +176,7 @@ def hosts_importing_preset(preset_label: str) -> list[str]:
         except OSError:
             continue
         if needle in text:
-            hits.append(f.parent.name)
+            hits.append(f.relative_to(hosts_dir).parts[0])
     return sorted(set(hits))
 
 
@@ -179,11 +210,11 @@ def report_for_path(path: Path) -> list[str]:
                 lines.append(f"   ↳ imported as preset by hosts: {', '.join(hosts)}")
     elif kind == "host":
         # Host edits affect only that host
-        parts = path.resolve().relative_to(REPO).parts
+        parts = _normalize_rel(path.resolve()).parts
         if len(parts) >= 3:
             lines.append(f"   ↳ affects host: {parts[2]}")
     elif kind == "user":
-        parts = path.resolve().relative_to(REPO).parts
+        parts = _normalize_rel(path.resolve()).parts
         if len(parts) >= 3:
             user = parts[2]
             hosts = hosts_importing_user(user)
@@ -196,10 +227,6 @@ def report_for_path(path: Path) -> list[str]:
     elif kind == "hardware":
         lines.append(
             "   ↳ check which host imports this hardware module via nix-hardware"
-        )
-    elif kind == "secrets":
-        lines.append(
-            "   ↳ secrets change — every host using sops will see it on next switch"
         )
     else:
         lines.append(
@@ -217,7 +244,7 @@ def main(argv: list[str]) -> int:
     if argv[0] == "--git":
         paths = git_changed_files()
         if not paths:
-            print("No changed .nix files in any tracked git repo.")
+            print("No changed .nix files in nix-config or the sibling nix repos.")
             return 0
     else:
         paths = []

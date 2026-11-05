@@ -27,15 +27,15 @@ FAIL_COUNT=0
 WARN_COUNT=0
 
 check_pass() {
-  ((PASS_COUNT++))
+  PASS_COUNT=$((PASS_COUNT + 1))
   log_pass "$@"
 }
 check_fail() {
-  ((FAIL_COUNT++))
+  FAIL_COUNT=$((FAIL_COUNT + 1))
   log_fail "$@"
 }
 check_warn() {
-  ((WARN_COUNT++))
+  WARN_COUNT=$((WARN_COUNT + 1))
   log_warn "$@"
 }
 
@@ -85,7 +85,7 @@ check_inventory() {
       log_info "Found: $device"
     else
       check_warn "Missing or misspelled: $device"
-      ((missing++))
+      missing=$((missing + 1))
     fi
   done
 
@@ -110,11 +110,11 @@ check_device() {
     check_pass "$device is reachable"
 
     # SSH test
-    if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "martin@$ip" "echo ok" &>/dev/null 2>&1; then
+    if ssh -o BatchMode=yes -o ConnectTimeout=5 "martin@$ip" "echo ok" &>/dev/null 2>&1; then
       check_pass "$device: SSH accessible"
 
       # NixOS version check
-      if ssh -o ConnectTimeout=5 "martin@$ip" "nixos-version" &>/dev/null 2>&1; then
+      if ssh -o BatchMode=yes -o ConnectTimeout=5 "martin@$ip" "nixos-version" &>/dev/null 2>&1; then
         check_pass "$device: NixOS accessible"
       else
         check_warn "$device: NixOS version check failed"

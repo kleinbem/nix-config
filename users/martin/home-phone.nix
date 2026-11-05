@@ -31,8 +31,8 @@
       enable = true;
       settings = {
         user = {
-          name = "Martin";
-          email = "your@email.com";
+          name = "Martin Kleinberger";
+          email = "martin.kleinberger@gmail.com";
         };
       };
     };

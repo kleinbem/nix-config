@@ -27,7 +27,9 @@ fi
 LARGE_FILES=$(find "$VAULT_PATH" -type f -size +50M | wc -l)
 if [ "$LARGE_FILES" -gt 0 ]; then
   echo "📦 Found $LARGE_FILES large attachments (>50MB):"
-  find "$VAULT_PATH" -type f -size +50M -exec ls -lh {} \; | awk '{print "   - " $9 " (" $5 ")"}'
+  # du's tab separator keeps paths with spaces whole (ls | awk split them).
+  find "$VAULT_PATH" -type f -size +50M -exec du -h --apparent-size {} + |
+    while IFS=$'\t' read -r size path; do echo "   - $path ($size)"; done
 else
   echo "✅ No unusually large attachments found."
 fi

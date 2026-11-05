@@ -9,11 +9,13 @@ from pathlib import Path
 
 from _nix_options import (
     _classify_import,
+    any_options_decls_in_file,
     consumer_paths_in_file,
     declarations_in_file,
     extract_imports_in_file,
     extract_paths_from_block,
     find_matching_brace,
+    host_container_map,
     strip_comments_and_strings,
 )
 
@@ -324,3 +326,49 @@ def test_extract_imports_ignores_inner_attrset_imports(tmp_path: Path):
     labels = [e.label for e in entries]
     assert "./real.nix" in labels
     assert "./should-not-show.nix" not in labels
+
+
+# ---------------------------------------------------------------------------
+# any_options_decls_in_file, MY_DOT_RE, host_container_map
+# ---------------------------------------------------------------------------
+
+
+def test_any_options_decls_finds_mkoption_form(tmp_path: Path):
+    f = tmp_path / "m.nix"
+    f.write_text(
+        "{ lib, ... }: {\n"
+        "  options.systemd.coredump.settings = lib.mkOption { };\n"
+        "  options.my.foo = { };\n"
+        "}\n"
+    )
+    assert [p for p, _ in any_options_decls_in_file(f)] == [
+        "systemd.coredump.settings",
+        "my.foo",
+    ]
+
+
+def test_consumer_paths_ignores_comparisons(tmp_path: Path):
+    f = tmp_path / "h.nix"
+    f.write_text('{ x = if my.role == "server" then 1 else 2; my.a.enable = true; }\n')
+    assert consumer_paths_in_file(f) == {"my.a.enable"}
+
+
+def test_host_container_map_skips_nested_option_blocks(tmp_path: Path):
+    host = tmp_path / "hosts" / "h1"
+    host.mkdir(parents=True)
+    (host / "containers.nix").write_text(
+        "{\n"
+        "  my.containers = {\n"
+        "    forgejo = {\n"
+        "      enable = true;\n"
+        "      oidc = {\n"
+        "        enable = true;\n"
+        "      };\n"
+        "    };\n"
+        "    monitoring.enable = false;\n"
+        "  };\n"
+        "}\n"
+    )
+    assert host_container_map(tmp_path) == {
+        "h1": {"forgejo": True, "monitoring": False}
+    }

@@ -46,21 +46,39 @@ ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=$(openssl genrsa -traditional 4096 2>/dev
 export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
 atticadm=$(nix build --no-link --print-out-paths nixpkgs#attic-server)/bin/atticadm
 
-mint() { "$atticadm" -f "$tmp/server.toml" make-token --validity 1y "$@"; }
-put() { # put <file> <key>; value on stdin
-  tr -d '\n' | jq -Rs . | sops set --value-stdin "$S/$1" "[\"$2\"]"
+mint() {
+  local t
+  t=$("$atticadm" -f "$tmp/server.toml" make-token --validity 1y "$@" | tr -d '\n') || return 1
+  [ -n "$t" ] || {
+    echo "atticadm returned no token for: $*" >&2
+    return 1
+  }
+  printf '%s' "$t"
+}
+put() { # put <file> <key> <value>
+  printf '%s' "$3" | jq -Rs . | sops set --value-stdin "$S/$1" "[\"$2\"]"
   echo "   ✓ $2 → $1"
 }
 
-echo "🔑 New signing key generated; writing it and the new tokens to sops (YubiKey prompts follow)..."
-printf '%s' "$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64" | put nix/per-host/core-pi.yaml attic_server_token_rs256
-mint --sub fleet-pull --pull system | put nix/shared.yaml attic_pull_token
-mint --sub orin-nano --pull system --push system | put nix/per-host/orin-nano.yaml attic_push_token
-mint --sub nixos-nvme --pull system --push system | put nix/per-host/nixos-nvme.yaml attic_push_token
-mint --sub github-ci --pull system --push system | put infra/terraform.yaml attic_ci_push_token
-mint --sub github-ci-pull --pull system | put infra/terraform.yaml attic_ci_pull_token
-mint --sub admin --pull '*' --push '*' --delete '*' --create-cache '*' --configure-cache '*' \
-  --configure-cache-retention '*' --destroy-cache '*' | put nix/per-host/nixos-nvme.yaml attic_admin_token
+# Mint everything before writing anything, so a failed mint leaves sops untouched.
+echo "🔑 New signing key generated; minting tokens..."
+pull=$(mint --sub fleet-pull --pull system)
+orin=$(mint --sub orin-nano --pull system --push system)
+nvme=$(mint --sub nixos-nvme --pull system --push system)
+ci_push=$(mint --sub github-ci --pull system --push system)
+ci_pull=$(mint --sub github-ci-pull --pull system)
+admin=$(mint --sub admin --pull '*' --push '*' --delete '*' --create-cache '*' --configure-cache '*' \
+  --configure-cache-retention '*' --destroy-cache '*')
+
+echo "📝 Writing the signing key and tokens to sops (YubiKey prompts follow)..."
+put nix/per-host/core-pi.yaml attic_server_token_rs256 "$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64"
+put nix/shared.yaml attic_pull_token "$pull"
+put nix/per-host/orin-nano.yaml attic_push_token "$orin"
+put nix/per-host/nixos-nvme.yaml attic_push_token "$nvme"
+put infra/terraform.yaml attic_ci_push_token "$ci_push"
+put infra/terraform.yaml attic_ci_pull_token "$ci_pull"
+put nix/per-host/nixos-nvme.yaml attic_admin_token "$admin"
+unset pull orin nvme ci_push ci_pull admin
 unset ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
 
 cat <<'NEXT'

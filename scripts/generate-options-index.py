@@ -70,13 +70,6 @@ def main() -> int:
     # rpi5-node.nix style bundles in this repo).
     module_to_hosts: dict[Path, set[str]] = defaultdict(set)
     if HOSTS_DIR.exists():
-        # Map: every module file → modules that import it (one level up)
-        importers: dict[str, set[Path]] = defaultdict(set)
-        for mdir in MODULE_DIRS:
-            for f in iter_nix_files(mdir):
-                for e in extract_imports_in_file(f):
-                    if e.kind in ("module", "local"):
-                        importers[e.label.lstrip("./")].add(f)
         # Resolve each host's transitive import set
         for host_dir in sorted(p for p in HOSTS_DIR.iterdir() if p.is_dir()):
             entry = host_dir / "default.nix"
