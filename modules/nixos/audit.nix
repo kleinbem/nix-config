@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  options,
   lib,
   myInventory,
   secretFile ? null,
@@ -17,6 +18,19 @@ let
     && builtins.pathExists sharedSops
     && lib.hasInfix "\nntfy_alert_token:" ("\n" + builtins.readFile sharedSops);
   alertTokenPath = "/run/secrets/ntfy_alert_token";
+
+  # Container journals nix-gantry forwards to the host, one directory each. Read
+  # from the real nspawn flags: an input whose directory never appears fails.
+  forwardedJournals = lib.concatMap (
+    c:
+    map (lib.removePrefix "--forward-journal=") (
+      lib.filter (lib.hasPrefix "--forward-journal=") (c.extraFlags or [ ])
+    )
+  ) (lib.attrValues config.containers);
+
+  # Journal cursors, so a fluent-bit restart resumes instead of skipping what
+  # was logged while it was down. read_from_tail still applies on first start.
+  fluentStateDir = "/var/lib/fluent-bit";
 in
 {
   sops.secrets = {
@@ -94,14 +108,21 @@ in
   # ==========================================
   # VULNERABILITY SCANS (VULNIX & TRIVY)
   # ==========================================
-  environment.systemPackages = [
-    # pkgs.vulnix # Deprecated in favor of unified Trivy auditing
-    pkgs.trivy # Podman/Docker Images + NixOS Host FS
-    pkgs.gitleaks # Secret scanning
-    pkgs.ntfy-sh # Remote notifications
-    pkgs.libnotify # Desktop notifications (notify-send)
-    pkgs.lynis # Security auditing
-  ];
+  environment = {
+    systemPackages = [
+      # pkgs.vulnix # Deprecated in favor of unified Trivy auditing
+      pkgs.trivy # Podman/Docker Images + NixOS Host FS
+      pkgs.gitleaks # Secret scanning
+      pkgs.ntfy-sh # Remote notifications
+      pkgs.libnotify # Desktop notifications (notify-send)
+      pkgs.lynis # Security auditing
+    ];
+  }
+  # fluent-bit's journal cursors. optionalAttrs, not mkIf: a definition of an
+  # undeclared option fails even under mkIf false (hosts without impermanence).
+  // lib.optionalAttrs (options.environment ? persistence) {
+    persistence."/nix/persist".directories = [ "/var/lib/private/fluent-bit" ];
+  };
 
   systemd = {
     # Centralized Notification Script (Template)
@@ -319,10 +340,20 @@ in
             name = "systemd";
             tag = "systemd_journal";
             read_from_tail = "on";
+            db = "${fluentStateDir}/journal.db";
             strip_underscores = "on";
             mem_buf_limit = "32M";
           }
-        ];
+        ]
+        ++ map (path: {
+          name = "systemd";
+          inherit path;
+          tag = "container_journal";
+          read_from_tail = "on";
+          db = "${fluentStateDir}/container-${baseNameOf (lib.removeSuffix "/" path)}.db";
+          strip_underscores = "on";
+          mem_buf_limit = "8M";
+        }) forwardedJournals;
         filters = [
           {
             # Break the self-feeding loop: never ship fluent-bit's own logs, so
@@ -374,10 +405,26 @@ in
             # Dynamic labels for systemd units in newer Loki plugin
             label_keys = "$SYSTEMD_UNIT";
           }
+          {
+            name = "loki";
+            match = "container_journal";
+            host = lokiHost;
+            port = 3100;
+            retry_limit = "5";
+            # HOSTNAME is the container's own hostname from its journal entries.
+            labels = "job=container-journal, host=${config.networking.hostName}, container=$HOSTNAME";
+            line_format = "json";
+            remove_keys = "SYSLOG_IDENTIFIER,CMDLINE";
+            label_keys = "$SYSTEMD_UNIT";
+          }
         ];
       };
     };
   };
+
+  # DynamicUser: the state dir lives under /var/lib/private, and /var is tmpfs
+  # (persisted with environment.systemPackages above).
+  systemd.services.fluent-bit.serviceConfig.StateDirectory = "fluent-bit";
 
   # Ensure fluent-bit can read the systemd journal and audit logs
   users.groups.systemd-journal.members = [ "fluent-bit" ];
