@@ -3,7 +3,7 @@
 
 Pulls data from:
   - nix-config/inventory.nix (hosts + network.nodes)
-  - meta-workspace flake.lock (closure pins)
+  - nix-config/flake.lock (closure pins)
   - nix-config/hosts/<host>/*.nix (which containers each host enables)
   - nix-presets/containers/*.nix (source pointers for service definitions)
   - .agent/decisions/*.md (open ADRs)
@@ -75,9 +75,9 @@ def load_inventory(nix_config: Path) -> dict[str, Any]:
     return out
 
 
-def load_closure_pins(meta: Path) -> dict[str, str]:
-    """Read the meta-workspace flake.lock and extract the most-important pins."""
-    lockfile = meta / "flake.lock"
+def load_closure_pins(nix_config: Path) -> dict[str, str]:
+    """Read nix-config's flake.lock and extract the most-important pins."""
+    lockfile = nix_config / "flake.lock"
     if not lockfile.exists():
         return {}
     try:
@@ -85,20 +85,33 @@ def load_closure_pins(meta: Path) -> dict[str, str]:
     except json.JSONDecodeError:
         return {}
     nodes = data.get("nodes", {})
+    root_inputs = nodes.get(data.get("root", "root"), {}).get("inputs", {})
+
+    def resolve(ref: Any) -> str | None:
+        # A string names a node; a list is a `follows` path from the root.
+        if isinstance(ref, str):
+            return ref
+        node = data.get("root", "root")
+        for step in ref or []:
+            node = resolve(nodes.get(node, {}).get("inputs", {}).get(step))
+            if node is None:
+                return None
+        return node
+
     pins: dict[str, str] = {}
     for name in (
         "nixpkgs",
         "home-manager",
         "sops-nix",
         "devenv",
-        "nix-config",
         "nix-packages",
         "nix-hardware",
         "nix-presets",
         "nix-devshells",
+        "nix-gantry",
     ):
-        n = nodes.get(name, {})
-        rev = n.get("locked", {}).get("rev")
+        node = resolve(root_inputs.get(name))
+        rev = nodes.get(node, {}).get("locked", {}).get("rev") if node else None
         if rev:
             pins[name] = rev[:8]
     return pins
@@ -454,7 +467,7 @@ def main() -> int:
     print("  🔍 Loading inventory…", flush=True)
     inv = load_inventory(nix_config)
     print("  📌 Resolving closure pins…", flush=True)
-    pins = load_closure_pins(meta)
+    pins = load_closure_pins(nix_config)
     print("  🗺️  Mapping containers to hosts…", flush=True)
     host_map = host_container_map(nix_config)
     print("  🔗 Locating service source files…", flush=True)

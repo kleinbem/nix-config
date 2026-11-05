@@ -36,20 +36,20 @@ ssh martin@10.0.0.30     # nasbook
 nix eval '.#nixosConfigurations.nixos-nvme.config.system.nixos.version'
 
 # Build locally (no activation)
-nixos-rebuild build
+just nixos::build
 
 # Dry-run (see what would change)
-nixos-rebuild dry-activate
+just nixos::dry-run
 
 # Activate (apply changes)
-nixos-rebuild switch
+just switch
 ```
 
 ### Review Changes
 
 ```bash
 # See diffs before committing
-jj diff HEAD~1
+jj diff -r @-
 
 # See recent commits
 jj log -n 10
@@ -101,82 +101,39 @@ just jj::push-all            # Push all to GitHub
 
 ## Device Deployment
 
-### Dry-run (Check What Changes)
+Hosts deploy themselves: a merge to `main` builds, Promote moves `production`, and comin (or autoUpgrade on nixos-nvme) switches. See [DEPLOYMENT-STRATEGY.md](DEPLOYMENT-STRATEGY.md).
 
 ```bash
-nixos-rebuild dry-activate -h 10.0.0.15  # orin-nano
-
-# Check if it would work
-systemctl status                          # On device, after activation
-```
-
-### Deploy to Device
-
-```bash
-# Basic deploy
-nixos-rebuild switch -h 10.0.0.15        # orin-nano
-
-# With specific config
-nix run '.#config-machines.orin-nano'    # If available
-
-# Fallback to cache (don't rebuild locally)
-nixos-rebuild switch -h 10.0.0.15 --fallback
+just apply                          # this machine: pull, verify, switch
+just deployment::deploy orin-nano   # emergency push over SSH (colmena)
+ssh orin-nano comin status          # what a comin host has deployed
 ```
 
 ### Rollback After Bad Deploy
 
 ```bash
-# From the device (via SSH)
-nixos-rebuild switch --rollback
-
-# Or from your machine
-ssh 10.0.0.15 "nixos-rebuild switch --rollback"
+ssh <host> sudo nixos-rebuild switch --rollback   # local only, until the next production head
+jj revert -r <bad> -o @                           # then land it as a PR
 ```
 
 ---
 
 ## Secrets Management
 
-### View Encrypted Secrets
+Secrets live in the kleinbem-secrets repo (`nix/per-host/<host>.yaml`, `nix/shared.yaml`, `nix/per-container/<container>.yaml`). Run these from there.
 
 ```bash
-# Show (decrypted) content
-sops -d hosts/core-pi/secrets.yaml
+# Edit (decrypts in the editor, re-encrypts on save; YubiKey touch)
+sops nix/per-host/core-pi.yaml
 
-# Show specific key
-sops -d hosts/core-pi/secrets.yaml | grep api_key
+# Check a file decrypts, without printing it
+sops -d nix/per-host/core-pi.yaml >/dev/null && echo ok
 
-# Without decrypting (file metadata)
-file hosts/core-pi/secrets.yaml
+# Which keys are in a file (names only)
+sops -d nix/per-host/core-pi.yaml | yq 'keys'
 ```
 
-### Edit Secrets
-
-```bash
-# Edit interactively (auto-decrypt/re-encrypt on save)
-sops hosts/core-pi/secrets.yaml
-
-# Add new key
-# 1. Open file: sops hosts/core-pi/secrets.yaml
-# 2. Add: new_secret: "value"
-# 3. Save (auto-encrypted)
-# 4. Commit: jj describe -m "chore: add secret"
-```
-
-### Rotate Credentials
-
-```bash
-# 1. Edit
-sops hosts/core-pi/secrets.yaml
-
-# 2. Change value (e.g., database_password)
-
-# 3. Commit
-jj describe -m "chore: rotate core-pi credentials"
-
-# 4. Deploy immediately
-nixos-rebuild switch -h 10.0.0.22
-```
+To rotate a credential: change the value with `sops`, land the kleinbem-secrets change, then the nix-config lock bump; hosts pick it up on their next deploy. See [SECRETS-MANAGEMENT.md](SECRETS-MANAGEMENT.md).
 
 ---
 
@@ -244,11 +201,8 @@ sops updatekeys hosts/*/secrets.yaml
 # Is Attic running?
 curl https://cache.kleinbem.dev/nix-cache-info
 
-# What's in the cache?
-nix flake info
-
-# Force rebuild (don't use cache)
-nixos-rebuild build --no-substitute
+# Build without substituting from caches
+nixos-rebuild build --option substitute false
 ```
 
 ### Refresh Flake Inputs
@@ -378,50 +332,25 @@ ssh <device> "systemctl list-failed"
 ### Add a New Device
 
 ```bash
-# 1. Follow DEVICE-TIERS.md template
-# 2. Create hosts/<device-name>/
-# 3. Run health check
-./tools/fleet-health-check.sh <device-name>
-# 4. Deploy
-nixos-rebuild switch -h 10.0.0.XX
-```
-
-### Deploy to All Devices (Phased)
-
-```bash
-# Phase 1: Edge testing
-nixos-rebuild switch -h 10.0.0.15  # orin-nano
-
-# Phase 2: Non-critical
-nixos-rebuild switch -h 10.0.0.30  # nasbook
-
-# Phase 3: Production
-nixos-rebuild switch -h 10.0.0.22  # core-pi
-nixos-rebuild switch -h 10.0.0.16  # mac-mini
-
-# Phase 4: Gateway
-# (OpenWrt - different workflow)
+# 1. Follow the DEVICE-TIERS.md template, create hosts/<device-name>/
+# 2. Evaluate every host, the new one included
+just dev::check-hosts
+# 3. Install from USB (e.g. just deployment::pi-install-usb <host>), then comin takes over
+ssh <device-name> comin status
 ```
 
 ### Rotate Credentials
 
 ```bash
-sops hosts/<device>/secrets.yaml
-# Edit values
-jj describe -m "chore: rotate credentials"
-jj git push
-nixos-rebuild switch -h 10.0.0.XX
+cd ../kleinbem-secrets && sops nix/per-host/<host>.yaml
+# land the change, then the nix-config lock bump; hosts deploy it themselves
 ```
 
 ### Emergency Rollback
 
 ```bash
-# Revert bad commit
-jj revert <commit-hash>
-jj git push
-
-# Roll back device to previous generation
-ssh <device> "nixos-rebuild switch --rollback"
+jj revert -r <bad> -o @                           # land as a PR
+ssh <host> sudo nixos-rebuild switch --rollback   # immediate, local only
 ```
 
 ---
@@ -440,13 +369,8 @@ alias ssh-mini='ssh martin@10.0.0.16'
 alias ssh-jetson='ssh martin@10.0.0.15'
 
 # NixOS rebuild
-alias rebuild='nixos-rebuild switch'
-alias rebuild-dry='nixos-rebuild dry-activate'
-alias rebuild-rollback='nixos-rebuild switch --rollback'
-
-# Secrets
-alias secrets-edit='sops hosts/core-pi/secrets.yaml'
-alias secrets-view='sops -d hosts/core-pi/secrets.yaml'
+alias rebuild='just apply'
+alias rebuild-rollback='sudo nixos-rebuild switch --rollback'
 ```
 
 ---
@@ -458,9 +382,4 @@ If something is broken and you're stuck:
 2. Run `./tools/fleet-health-check.sh` (system state)
 3. Check `journalctl` on affected device
 4. Review recent commits (`jj log -n 5`)
-5. Rollback if needed (`jj revert <hash>`)
-
----
-
-**Last Updated:** 2026-08-17  
-**For details:** See related documentation linked above
+5. Roll back if needed (`jj revert -r <bad> -o @`, landed as a PR)

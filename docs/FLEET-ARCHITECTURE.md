@@ -1,8 +1,5 @@
 # Fleet Architecture Overview
 
-**Status:** Complete reference to the kleinbem fleet structure  
-**Updated:** 2026-08-17
-
 High-level architecture and integration guide for the entire kleinbem infrastructure fleet.
 
 ---
@@ -10,7 +7,7 @@ High-level architecture and integration guide for the entire kleinbem infrastruc
 ## The Fleet at a Glance
 
 ```
-                       kleinbem Fleet (2026-08-17)
+                            kleinbem Fleet
                       ══════════════════════════════
 
 CONDUCTOR REPOS (Meta-orchestrators)
@@ -29,14 +26,11 @@ NIXOS REPOS (Real work happens here)
 
 OPENWRT REPOS
 ├─ openwrt-builder         (OpenWrt firmware: BPI-R4 release)
-├─ openwrt-config          (Runtime config: Ansible playbooks)
-└─ openwrt-secrets         (OpenWrt encrypted secrets)
+└─ openwrt-config          (Runtime config: Ansible playbooks)
 
 META REPOS
 ├─ github-config           (Terraform: org settings, rulesets)
-├─ kleinbem-site           (Astro site: kleinbem.dev)
-└─ nix-secrets (legacy)    (Superseded by kleinbem-secrets)
-    openwrt-secrets        (Superseded by kleinbem-secrets)
+└─ kleinbem-site           (Astro site: kleinbem.dev)
 ```
 
 ---
@@ -157,7 +151,7 @@ Internal Services
 All Devices
     ↓
 Tier-Specific Base
-├─ Workstation (base.nix → workstation.nix)
+├─ Workstation (workstation.nix + modules/nixos/default.nix → workstation-bundle.nix)
 ├─ Edge Hub (rpi5-node.nix → base.nix + headless.nix)
 ├─ Edge Node (base.nix + headless.nix + role-specific)
 └─ Mobile (minimal: nix + ca-certs)
@@ -171,10 +165,10 @@ Device-Specific Customization
 Shared Modules
 ├─ base.nix               (users, ssh, security)
 ├─ networking.nix        (interfaces, firewall)
-├─ hardening.nix         (selinux, apparmor, audit)
+├─ security/            (hardening, apparmor, audit, usbguard, clamav)
 ├─ persistence.nix       (impermanence setup)
 ├─ clevis-initrd.nix     (encrypted boot)
-├─ container-host.nix    (container networking, auto-update)
+├─ nix-gantry host.nix   (container networking, auto-update; separate flake)
 ├─ desktop.nix           (GNOME, GUI apps)
 ├─ audio.nix             (pipewire, ALSA)
 ├─ dev.nix               (development tools)
@@ -203,7 +197,7 @@ sops YAML file (human-readable encrypted format)
     ↓
 Git commit (encrypted file safe to push)
     ↓
-NixOS evaluation (decrypt via age key)
+NixOS activation (sops-install-secrets decrypts with the host's age key)
     ↓
 /run/secrets/* (ephemeral, cleaned on reboot)
     ↓
@@ -214,13 +208,12 @@ Service/container access (environment variable or file path)
 
 ```
 YubiKey (SSH FIDO2)
-    ├─ Used for: git signing, deployments
+    ├─ Used for: git signing
     └─ Location: with user (personal device)
 
-age private key (~/.config/sops/age/keys.txt)
-    ├─ Used for: local sops decryption
-    ├─ Location: on each device
-    └─ Backup: encrypted USB drive (annual)
+YubiKey age identities (primary + backup, age-plugin-yubikey)
+    ├─ Used for: editing secrets with sops
+    └─ The master keys: no software copy exists
 
 SSH host keys
     ├─ Used for: decrypt at activation time
@@ -234,44 +227,36 @@ SSH host keys
 ### Local Development
 
 ```
-Edit config
+Edit config (in a jj workspace)
     ↓
-`nix eval` (syntax check)
+`just dev::preflight` (format, pre-commit-check, nixos-nvme eval)
     ↓
-`nixos-rebuild build` (build locally)
-    ↓
-Test on workstation (if applicable)
-    ↓
-Review with `jj diff`
+`just dev::check-hosts` (evaluate every host)
     ↓
 `jj describe` (create commit, signs via YubiKey)
 ```
 
-### Push to GitHub
+### Land on main
 
 ```
-`jj git push` (pushes to GitHub)
+`jj git push` + PR (auto-merge)
     ↓
-GitHub branch: main (requires signed commits)
+main (signed commits, required checks)
     ↓
-CI runs (if workflows configured)
+build-all builds the hosts and pushes to Attic
+(nixos-nvme in build-nvme, orin-nano best-effort)
     ↓
-Ready for deployment
+promote-production moves `production` once the closures are cached
 ```
 
 ### Device Deployment
 
-```
-Phase 1: Edge Testing (orin-nano)
-    ↓
-Phase 2: Non-Critical (nasbook, hass-pi)
-    ↓
-Phase 3: Production (core-pi, mac-mini)
-    ↓
-Phase 4: Gateway (core-gateway, ap-upstairs)
-    ↓
-Rollback ready (at each phase)
-```
+- **comin** hosts poll `production`, check the signature and switch.
+- **nixos-nvme** upgrades nightly (autoUpgrade), or by hand with `just dev::apply`.
+- **Canary (comin hosts):** a signed `testing-<host>` branch on top of `production` deploys to that host only (comin rejects unsigned heads). nixos-nvme has none: test there with `just dev::apply`.
+- **Rollback:** revert in a PR, or pick the previous generation on the host.
+
+core-gateway and the APs run OpenWrt and deploy through openwrt-config. Details: DEPLOYMENT-STRATEGY.md.
 
 ---
 
@@ -299,7 +284,7 @@ core-pi (Edge Hub)
 
 mac-mini (Desktop + Monitoring)
 ├─ GNOME Remote Desktop (GUI access)
-├─ monitoring (Prometheus exporter + Grafana) [moved from core-pi 2026-08-05]
+├─ monitoring (Prometheus exporter + Grafana)
 ├─ persona-runtime (AI agents, multi-user)
 ├─ Open WebUI (LLM chat interface)
 └─ + containers for monitoring/obs
@@ -413,11 +398,9 @@ home-manager/default.nix (aggregator, like nixos/default.nix)
 
 ## Monitoring & Observability
 
-### Current Setup (as of 2026-08-17)
+### Current Setup
 
 ```
-Moved from core-pi to mac-mini (2026-08-05 due to RAM pressure)
-
 Monitoring Container (mac-mini)
     ├─ Prometheus (metrics collection)
     ├─ Grafana (visualization)
@@ -519,7 +502,7 @@ CI audit-versions detects drift
 1. Add to inventory.nix (this repo)
 2. Create hosts/<device>/ directory
 3. Follow DEVICE-TIERS.md template
-4. Deploy: Phase 1 → Phase 2 → Phase 3 → Phase 4
+4. Install from USB (just deployment::*-install-usb, see BACKUP-RECOVERY.md), then comin takes over
 5. Update device roster (DEVICE-TIERS.md status matrix)
 ```
 
@@ -528,18 +511,18 @@ CI audit-versions detects drift
 ```
 1. Create in nix-presets (if reusable) or nix-config (if one-off)
 2. Define sops.secrets (if needed)
-3. Test locally: nixos-rebuild build
-4. Deploy to edge device first (orin-nano)
-5. Roll out per DEPLOYMENT-STRATEGY.md
+3. Check: just dev::check-hosts
+4. Optional canary: a signed testing-<host> branch on one host
+5. Land it; hosts deploy it from production (DEPLOYMENT-STRATEGY.md)
 ```
 
 ### Rotating Secrets
 
 ```
-1. Edit sops file: sops hosts/<device>/secrets.yaml
-2. Change value
-3. Commit: jj describe -m "chore: rotate X credentials"
-4. Deploy immediately: nixos-rebuild switch
+1. In kleinbem-secrets: sops nix/per-host/<host>.yaml (or shared.yaml, per-container/<name>.yaml)
+2. Land the change in kleinbem-secrets
+3. In nix-config: nix flake update kleinbem-secrets, land it in a PR
+4. Hosts deploy it from production
 5. Verify in logs that new credentials work
 ```
 
@@ -570,7 +553,7 @@ CI audit-versions detects drift
 
 ```
 1. Boot to previous generation (automatic on failure)
-2. Or: jj revert <bad-commit> + nixos-rebuild switch
+2. Or: `jj revert -r <bad> -o @`, landed as a PR; hosts deploy it from production
 3. Rollback procedure documented in DEPLOYMENT-STRATEGY.md
 ```
 
@@ -594,15 +577,10 @@ CI audit-versions detects drift
 
 1. **Jj-first VCS** — All commits signed, auditable history
 2. **Declarative infrastructure** — NixOS + Terraform for all config
-3. **Phased deployment** — Edge → non-critical → production → gateway
+3. **Pull deployment** — hosts deploy signed `production` heads after CI caches them
 4. **Secrets encrypted at rest** — sops + age, decrypted only at activation
 5. **Cache-first builds** — Attic for fast deployments
 6. **Self-healing rollback** — Previous generation always available
 7. **Cross-repo coordination** — repos.nix as single source of truth
 8. **Documented operations** — Procedures for all common tasks
 
----
-
-**Last Updated:** 2026-08-17  
-**Status:** Complete overview of fleet structure  
-**Audience:** All fleet members, new maintainers, operators

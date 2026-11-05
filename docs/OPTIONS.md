@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `nix-config/scripts/generate-options-index.py`. Do not edit by hand.
 >
-> Regenerate with `just maintenance::sync-agent`.
+> Regenerate with `just dev::sync-agent`.
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 

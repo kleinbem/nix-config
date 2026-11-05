@@ -1,35 +1,7 @@
-# Project Roadmap 🗺️
+# Open items
 
-## Security Enhancements
-
-- [x] **Secure Boot**: Implement `lanzaboote` to cryptographically sign the NixOS kernel and bootloader.
-- [x] **YubiKey LUKS**: Bind disk encryption directly to YubiKey (Slot 2) for "Touch to Decrypt" boot.
-
-## Architecture
-
-- [ ] **Image-Based Deployment**: Transition from `nixos-rebuild switch` to atomic Image deployment (UKI / `systemd-repart`).
-  - *Goal*: Truly immutable system state where every boot is a fresh image.
-- [ ] **Disko Verification**:
-  - [ ] Run `nix run github:nix-community/disko -- --mode test ./modules/nixos/disko-config.nix` in a VM to verify partition logic.
-  - [ ] Test "Dormant Recovery" plan (format blank disk -> install from flake).
-- [ ] **Impermanence ("Erase Your Darlings")**:
-  - [ ] Move root `/` to tmpfs (RAM).
-  - [ ] Persist only `/nix` and `/persist` via `environment.persistence`.
-  - [ ] **State to Persist**:
-    - [x] Neovim Config (`~/.config/nvim`) - *Critical* (Imperative Git Clone).
-    - [x] Secrets (`/etc/ssh/ssh_host_*`, `~/.config/sops/age/keys.txt`).
-    - [x] Network (`/etc/NetworkManager/system-connections`, `/var/lib/bluetooth`).
-    - [ ] Browsers (`~/.config/google-chrome`).
-    - [x] AI Tools & History (`~/.gemini`, `~/.fabric`, `~/.config/claude-code`, `/var/lib/ollama`).
-- [ ] **Maintenance**:
-  - [ ] Enable `system.autoUpgrade` for unattended security patches.
-  - [ ] Verify `rclone` restore workflow (Simulate data loss).
-  - [ ] **Ollama**: Manually run `ollama pull llama3.1:70b-instruct-q4_K_M` (Removed from config to unblock deploy).
-  - [ ] **Infrastructure**:
-    - [x] **Evaluative Isolation**: Moved pentesting & AI dev tools to isolated DevShells (`just pentest`, `just ai-dev`).
-    - [x] **Fixed `just` OVERRIDES**: ROOT variable in `common.just` was resolving incorrectly, causing all builds to use stale GitHub locks.
-    - [ ] Verify Caddy certificates and dashboard access in Firefox.
-    - [ ] Monitor Nixpkgs for Wireshark hash fix; re-add to pentest shell once resolved.
-- [ ] **Advanced User Management**:
-  - [ ] **Migrate to `systemd-homed`**: Encrypt user home directory with YubiKey/FIDO2. (Solves "Keyring Login" issue).
-  - [ ] **Facial Authentication (`howdy`)**: Evaluate when officially packaged. (Wait for Nixpkgs support).
+- [ ] **Image-based deployment**: atomic images (UKI / `systemd-repart`) instead of `switch`, so every boot is a fresh image.
+- [ ] **Fresh-install drill**: install nixos-nvme from the flake onto a blank disk in a VM (`system.build.vmWithDisko`) to check the partition layout and the recovery path.
+- [ ] **Restore drill**: restore one host's secure bundle and a restic snapshot from R2 (see [docs/BACKUP-RECOVERY.md](docs/BACKUP-RECOVERY.md)).
+- [ ] **systemd-homed**: encrypt the home directory with the YubiKey (FIDO2), which would also fix the keyring login.
+- [ ] **Face login**: evaluate `howdy`, now packaged in nixpkgs.

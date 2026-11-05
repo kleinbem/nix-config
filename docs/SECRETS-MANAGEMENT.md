@@ -1,15 +1,12 @@
 # Secrets Management Best Practices
 
-**Status:** Secrets encryption via sops + age
-**Updated:** 2026-09-11
-
 Guide to managing secrets securely in the kleinbem fleet using sops, age, and NixOS.
 
 ---
 
 ## Overview
 
-The kleinbem fleet uses **sops-nix** for encrypted secrets management. Secrets do **not** live in this repo — they live in the sibling **`kleinbem-secrets`** repo, consumed here through the `nix-secrets` flake input (the input keeps its old name; it's pinned at `kleinbem-secrets` — see `flake.nix`):
+The kleinbem fleet uses **sops-nix** for encrypted secrets management. Secrets do **not** live in this repo — they live in the sibling **`kleinbem-secrets`** repo, consumed here through the `kleinbem-secrets` flake input. Reference a file with `secretFile "<path>"` (`lib/secret-file.nix`), which copies only that one file into the store:
 
 - **Encryption:** age (YubiKey-backed for Martin's own key, ssh-derived or TPM-bound per NixOS host)
 - **Integration:** sops (human-editable encrypted YAML)
@@ -18,8 +15,8 @@ The kleinbem fleet uses **sops-nix** for encrypted secrets management. Secrets d
 
 ```
 plaintext secret → age encryption → sops file (kleinbem-secrets) → git commit → deploy
-                                     ↑
-                              nix eval + activation (sops-install-secrets)
+                                                                                  ↓
+                                     activation (sops-install-secrets) → /run/secrets
 ```
 
 ---
@@ -37,8 +34,8 @@ sops nix/shared.yaml
 # Edit a per-host file
 sops nix/per-host/core-pi.yaml
 
-# View a specific secret
-sops -d nix/shared.yaml | grep vaultwarden_admin_token
+# Print one secret (only when you need the value)
+sops -d --extract '["vaultwarden_admin_token"]' nix/shared.yaml
 ```
 
 ### 2. Add a New Secret
@@ -58,7 +55,7 @@ sops nix/shared.yaml
 # hosts/<device>/secrets.nix
 sops.secrets.my_new_secret = { };  # inherits defaultSopsFile (nix/shared.yaml)
 # or, for a per-host/per-container file:
-sops.secrets.my_new_secret.sopsFile = "${inputs.nix-secrets}/nix/per-host/<device>.yaml";
+sops.secrets.my_new_secret.sopsFile = secretFile "nix/per-host/<device>.yaml";
 ```
 
 ```nix
@@ -159,7 +156,7 @@ systemd.services.my_app = {
 };
 ```
 
-**Benefit:** If app is compromised, attacker can't read arbitrary files
+**Benefit:** `PrivateTmp`/`ProtectHome` hide `/tmp` and `/home` from the service, and a non-root user limits what a compromised app can touch.
 
 ### ✅ DO: Rotate Credentials Regularly
 
@@ -228,14 +225,12 @@ git commit -m "chore: add secret"
 cd ~/Develop/github.com/kleinbem/kleinbem-secrets
 sops nix/per-host/core-pi.yaml
 # Add: database_password: "super-secure-password-here"
-# (nasbook has no nix/per-host/ file yet — this example uses core-pi,
-# which does; create nasbook.yaml the same way once it needs one)
 just save-all "feat: add core-pi Postgres password" kleinbem-secrets && just push-all kleinbem-secrets
 ```
 
 ```nix
 # nix-config/hosts/core-pi/secrets.nix
-sops.secrets.database_password.sopsFile = "${inputs.nix-secrets}/nix/per-host/core-pi.yaml";
+sops.secrets.database_password.sopsFile = secretFile "nix/per-host/core-pi.yaml";
 ```
 
 ```nix
@@ -386,10 +381,6 @@ cd ~/Develop/github.com/kleinbem/nix && just apply
 - [ ] Edited the right file (`shared.yaml` vs `per-host/` vs `per-container/`)
 - [ ] `kleinbem-secrets/.sops.yaml` has the right recipients for that path
 - [ ] NixOS config references `config.sops.secrets.<name>.path`, never the raw value
-- [ ] Test decryption: `sops -d <file>.yaml`
+- [ ] Test decryption: `sops -d <file>.yaml >/dev/null && echo ok`
 - [ ] Review the diff before committing: `jj diff` (in `kleinbem-secrets`)
 
----
-
-**Last Updated:** 2026-09-11
-**Status:** In active use, proven secure

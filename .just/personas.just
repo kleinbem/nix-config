@@ -58,7 +58,7 @@ add name:
     @./scripts/persona-scaffold.sh {{name}}
 
 # SES isn't targeted while nix/infra/aws-ses.tf.disabled has no AWS creds;
-# see docs/PHASE1_STALWART_STATUS.md.
+# see docs/STALWART.md.
 #
 # Apply only the mail DNS records in nix/infra (via nix/tools/tf-apply.sh)
 [group("Personas")]
