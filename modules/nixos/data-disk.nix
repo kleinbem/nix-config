@@ -91,13 +91,10 @@ in
       };
     };
 
+    # The generator orders the unit after the keyfile's mount (WantsMountsFor).
     environment.etc.crypttab = lib.mkIf (cfg.stage2KeyFile != null) {
       text = "${cfg.cryptName} /dev/disk/by-partlabel/disk-data-luks_data ${cfg.stage2KeyFile} ${
-        lib.concatStringsSep "," (
-          [ "luks" ]
-          ++ cfg.crypttabExtraOpts
-          ++ [ "x-systemd.requires-mounts-for=${dirOf cfg.stage2KeyFile}" ]
-        )
+        lib.concatStringsSep "," ([ "luks" ] ++ cfg.crypttabExtraOpts)
       }\n";
     };
   };
