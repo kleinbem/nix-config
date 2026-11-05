@@ -235,6 +235,9 @@ in
           "10.85.50.1" # mac-mini itself (my.network.hostAddress above)
         ];
         githubMetrics.enable = false;
+        # GF_SECURITY_SECRET_KEY, once grafana_secret_key is in sops (secrets.nix).
+        grafanaEnvFile =
+          if config.sops.templates ? "grafana.env" then config.sops.templates."grafana.env".path else null;
         # Grafana logs in via Authentik OIDC itself rather than Caddy's
         # forward_auth, so inventory.nix's monitoring node keeps auth = false.
         grafanaOidc = {
