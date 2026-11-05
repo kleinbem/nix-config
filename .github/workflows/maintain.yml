@@ -164,6 +164,22 @@ jobs:
             eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
           done
 
+      # A stale hash only shows when the fetch is built (no Attic here, so
+      # our own and unfree packages' sources are fetched each time). Only
+      # where nixpkgs moves: a sibling's one-input bump only evaluates.
+      - name: Choose what nix-detour builds
+        id: build-mode
+        # Also after a failed validation, like the nix-detour step.
+        if: always()
+        env:
+          REQUESTED: ${{ github.event.inputs.inputs || github.event.client_payload.inputs }}
+        run: |
+          if [[ -z $REQUESTED || " $REQUESTED " == *" nixpkgs "* ]]; then
+            echo "build=fetches" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Report only: which packages nix-detour would hold for this update,
       # checked against kleinbem/nix-detour-fleet; the report goes into the
       # validation issue.
@@ -180,10 +196,7 @@ jobs:
           holds-input: nix-detour-fleet
           nix-args: --override-input kleinbem-secrets /tmp/dummy-secrets
           systems: x86_64-linux aarch64-linux
-          # A stale hash only shows when the fetch is built (no Attic here, so
-          # our own and unfree packages' sources are fetched each time). Only
-          # where nixpkgs moves: a sibling's one-input bump only evaluates.
-          build: ${{ (!(github.event.inputs.inputs || github.event.client_payload.inputs) || contains(github.event.inputs.inputs || github.event.client_payload.inputs, 'nixpkgs')) && 'fetches' || 'false' }}
+          build: ${{ steps.build-mode.outputs.build }}
           # Hold on the lock this run started from: the open lock PR's
           # (validated) when it continues that PR, else main's.
           base: ${{ steps.lock-pr.outputs.head || 'main' }}
@@ -201,6 +214,7 @@ jobs:
           OUTCOME: ${{ steps.validate.outcome }}
           HOLDS_REPORT: ${{ steps.holds.outputs.report || '(no report, see the run)' }}
           HOLDS_OUTCOME: ${{ steps.holds.outcome }}
+          BUILD_MODE: ${{ steps.build-mode.outputs.build }}
           ISSUE_TITLE: "Lock update fails validation"
           BUILD_ISSUE_TITLE: "Lock update breaks package builds"
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -212,7 +226,8 @@ jobs:
             [[ $HOLDS_OUTCOME == success ]] || exit 0
             issue="$(gh issue list --state open --search "in:title \"$BUILD_ISSUE_TITLE\"" --json number --jq '.[0].number // empty')"
             if [[ $HOLDS_REPORT == "Nothing fails." ]]; then
-              [[ -z $issue ]] || gh issue close "$issue" --comment "Nothing fails any more: $RUN_URL"
+              # Only a run that built the fetches shows the builds work again.
+              [[ -z $issue || $BUILD_MODE != fetches ]] || gh issue close "$issue" --comment "Nothing fails any more: $RUN_URL"
               exit 0
             fi
             body="This lock update evaluates, but nix-detour found packages that don't build with it (report only, the update still goes out):
@@ -222,9 +237,10 @@ jobs:
           Run: $RUN_URL"
             if [[ -z $issue ]]; then
               gh issue create --title "$BUILD_ISSUE_TITLE" --body "$body"
-            # The same report again (several updates a day) adds nothing.
-            elif ! gh issue view "$issue" --json body,comments --jq '.body, .comments[].body' | grep -qF -- "$(head -n 3 <<<"$HOLDS_REPORT" | tail -n 1)"; then
-              gh issue comment "$issue" --body "$body"
+            else
+              # The same report as the latest one (several updates a day) adds nothing.
+              latest=$(gh issue view "$issue" --json body,comments --jq '(.comments | last | .body) // .body')
+              [[ $latest == *"$HOLDS_REPORT"* ]] || gh issue comment "$issue" --body "$body"
             fi
             exit 0
           fi
