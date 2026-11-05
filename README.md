@@ -1,85 +1,49 @@
-# ❄️ AI-Augmented NixOS Configuration
+# nix-config
 
-![NixOS](https://img.shields.io/badge/NixOS-Unstable-blue.svg?style=for-the-badge&logo=nixos&logoColor=white)
 ![CI](https://github.com/kleinbem/nix-config/actions/workflows/ci.yml/badge.svg)
-![COSMIC](https://img.shields.io/badge/Desktop-COSMIC-purple.svg?style=for-the-badge)
-![AI](https://img.shields.io/badge/AI-Ready-green.svg?style=for-the-badge)
 
-A modular, highly-opinionated NixOS configuration built for **AI-assisted development**, **security**, and **performance**.
+NixOS configuration for the kleinbem fleet: hosts, users, system modules and the inventory. Service presets, hardware, packages and devshells come from the sibling `nix-*` repos; secrets from kleinbem-secrets.
 
-## ✨ Features
+## Hosts
 
-* **🤖 AI-First Workflow**: `Ollama` (70B models), `Aider`, and `Fabric` (AI-Augmented Hacking pattern engine).
-* **🚀 Modern Desktop**: Bleeding-edge **COSMIC DE** with tiling support.
-* **🕵️‍♂️ Security Research**: Full Bug Bounty stack (`Burp`, `Nuclei`, `Nmap`, `Zap`) defined in `security.nix`.
-* **🔒 Secure by Design**:
-  * **Secrets**: Managed via `sops-nix` (encrypted with Age/YubiKey).
-  * **Sandboxing**: Critical apps (Chrome, Obsidian) are isolated using `nixpak`.
-* **⚡ High Performance**: Tuned kernel parameters, massive ZRAM swap, and Intel compute drivers.
-* **🛠️ Developer Experience**: `nix-ld` for binary compatibility, `starship` prompt, and `direnv`.
+| Host | Role |
+|---|---|
+| nixos-nvme | GNOME workstation |
+| mac-mini | Always-on services (monitoring, mail, Forgejo, AI) |
+| core-pi | Edge hub: Caddy, Attic, Authentik, Vaultwarden |
+| hass-pi | Home Assistant |
+| nasbook | NAS, documents, backups |
+| orin-nano | Jetson edge AI and cameras |
+| phone, tablet | nix-on-droid |
+| container-factory | Builds the standalone container images |
 
-## 📂 Structure
+`inventory.nix` is the source of truth for hosts and addresses; `docs/INFRASTRUCTURE.yaml` has the generated full picture.
 
-This repository follows a modular "common + host" pattern:
+## Layout
 
-```tree
-.
-├── 📂 modules/          # Shared configuration components
-│   ├── nixos/           # System-level modules (Core, Desktop, Hardware)
-│   │   ├── nixpak/      # Sandboxing configurations
-│   │   └── security.nix # ClamAV & System Security
-│   └── home-manager/    # User-level modules (Shell, Dev, Desktop)
-├── 📂 hosts/            # Machine-specific configurations
-│   └── nixos-nvme/      # Primary workstation
-└── 📄 flake.nix         # Entry point
+```text
+hosts/<name>/            per-machine config
+users/<name>/            Home Manager (home.nix) and account (nixos.nix)
+modules/nixos/           system modules, all under my.* (security/ has ClamAV, USBGuard, sudo, ssh)
+modules/home-manager/    user modules
+modules/flake/           flake-parts: hosts, checks, colmena, images
+inventory.nix            hosts, networks, container addresses
+docs/                    guides and generated references
 ```
 
-## 🚀 Quick Start
+## Commands
 
-This project uses `just` as a command runner.
-
-### 1. Enter the Dev Shell
-
-Get all tools (`sops`, `statix`, `deadnix`, `aider`) instantly:
+`just` lists everything. The common ones:
 
 ```bash
-nix develop
-# OR
-just dev
+just apply              # pull, verify, switch this machine (dev::apply)
+just switch             # switch from the local tree
+just dev::preflight     # formatting, pre-commit-check, host eval: run before pushing
+just dev::check-hosts   # nix flake check over all hosts
+just dev::impact        # which hosts a change touches
+just dev::sync-agent    # regenerate the docs in docs/
+just nixos::test-vm     # boot nixos-nvme in a VM
+just deployment::deploy <host>   # emergency deploy over SSH
 ```
 
-### 2. Verify Changes
-
-Run linting and tests before applying:
-
-```bash
-just lint      # Runs statix & deadnix
-just test      # Builds VM to test configuration
-```
-
-### 3. Deploy
-
-Apply the configuration to your running system:
-
-```bash
-just switch
-```
-
-### 4. AI Assistance
-
-Launch the AI Architect (Aider) to edit your config:
-
-```bash
-just architect
-```
-
-### 5. Security Checks
-
-Manually trigger the incremental antivirus scan:
-
-```bash
-sudo systemctl start clamav-smart-scan
-```
-
----
-*Maintained by [Martin Kleinberger](https://github.com/kleinbem)*
+Hosts normally deploy themselves from the `production` branch; see [docs/DEPLOYMENT-STRATEGY.md](docs/DEPLOYMENT-STRATEGY.md). All docs: [docs/README.md](docs/README.md).

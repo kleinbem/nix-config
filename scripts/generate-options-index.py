@@ -3,7 +3,7 @@
 `my.*` option, its declaration site, sub-options, and consuming hosts.
 
 Used by AI editors as a single-document blast-radius lookup before changing
-a module. Regenerated via `just maintenance::sync-agent`.
+a module. Regenerated via `just dev::sync-agent`.
 
 Static analysis only. See _nix_options.py for the shared parser.
 """
@@ -124,7 +124,7 @@ def main() -> int:
         "> **Auto-generated** by `nix-config/scripts/generate-options-index.py`. Do not edit by hand."
     )
     lines.append(">")
-    lines.append("> Regenerate with `just maintenance::sync-agent`.")
+    lines.append("> Regenerate with `just dev::sync-agent`.")
     lines.append("")
     lines.append(
         "Use this index to find (1) where an option is declared and (2) which "

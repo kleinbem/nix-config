@@ -16,10 +16,10 @@ Everything else should live in a module, preset, or the inventory — not inline
 1. Add the host to `../inventory.nix` (single source of truth).
 2. Create `<name>/default.nix` with the import skeleton (copy from a similar host).
 3. Wire hardware: add a module under `../../nix-hardware/` if the device isn't already supported.
-4. Add the host to `flake.nix` under `nixosConfigurations` (in `nix-config/flake.nix`).
+4. Add the host to `nixosConfigurations` in `modules/flake/hosts.nix`.
 5. Pick presets / modules to opt in. Grep `../docs/OPTIONS.md` for available `my.*` options.
 6. Add SSH keys via `keys.nix` if the host needs to be deployable.
-7. Run `just maintenance::sync-agent` and `just maintenance::check-hosts`.
+7. Run `just dev::sync-agent` and `just dev::check-hosts`.
 
 ## Existing hosts
 

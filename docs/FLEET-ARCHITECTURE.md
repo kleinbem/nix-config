@@ -1,8 +1,5 @@
 # Fleet Architecture Overview
 
-**Status:** Complete reference to the kleinbem fleet structure  
-**Updated:** 2026-08-17
-
 High-level architecture and integration guide for the entire kleinbem infrastructure fleet.
 
 ---
@@ -10,7 +7,7 @@ High-level architecture and integration guide for the entire kleinbem infrastruc
 ## The Fleet at a Glance
 
 ```
-                       kleinbem Fleet (2026-08-17)
+                            kleinbem Fleet
                       ══════════════════════════════
 
 CONDUCTOR REPOS (Meta-orchestrators)
@@ -29,14 +26,11 @@ NIXOS REPOS (Real work happens here)
 
 OPENWRT REPOS
 ├─ openwrt-builder         (OpenWrt firmware: BPI-R4 release)
-├─ openwrt-config          (Runtime config: Ansible playbooks)
-└─ openwrt-secrets         (OpenWrt encrypted secrets)
+└─ openwrt-config          (Runtime config: Ansible playbooks)
 
 META REPOS
 ├─ github-config           (Terraform: org settings, rulesets)
-├─ kleinbem-site           (Astro site: kleinbem.dev)
-└─ nix-secrets (legacy)    (Superseded by kleinbem-secrets)
-    openwrt-secrets        (Superseded by kleinbem-secrets)
+└─ kleinbem-site           (Astro site: kleinbem.dev)
 ```
 
 ---
@@ -157,7 +151,7 @@ Internal Services
 All Devices
     ↓
 Tier-Specific Base
-├─ Workstation (base.nix → workstation.nix)
+├─ Workstation (workstation.nix + modules/nixos/default.nix → workstation-bundle.nix)
 ├─ Edge Hub (rpi5-node.nix → base.nix + headless.nix)
 ├─ Edge Node (base.nix + headless.nix + role-specific)
 └─ Mobile (minimal: nix + ca-certs)
@@ -171,10 +165,10 @@ Device-Specific Customization
 Shared Modules
 ├─ base.nix               (users, ssh, security)
 ├─ networking.nix        (interfaces, firewall)
-├─ hardening.nix         (selinux, apparmor, audit)
+├─ security/            (hardening, apparmor, audit, usbguard, clamav)
 ├─ persistence.nix       (impermanence setup)
 ├─ clevis-initrd.nix     (encrypted boot)
-├─ container-host.nix    (container networking, auto-update)
+├─ nix-gantry host.nix   (container networking, auto-update; separate flake)
 ├─ desktop.nix           (GNOME, GUI apps)
 ├─ audio.nix             (pipewire, ALSA)
 ├─ dev.nix               (development tools)
@@ -203,7 +197,7 @@ sops YAML file (human-readable encrypted format)
     ↓
 Git commit (encrypted file safe to push)
     ↓
-NixOS evaluation (decrypt via age key)
+NixOS activation (sops-install-secrets decrypts with the host's age key)
     ↓
 /run/secrets/* (ephemeral, cleaned on reboot)
     ↓
@@ -299,7 +293,7 @@ core-pi (Edge Hub)
 
 mac-mini (Desktop + Monitoring)
 ├─ GNOME Remote Desktop (GUI access)
-├─ monitoring (Prometheus exporter + Grafana) [moved from core-pi 2026-08-05]
+├─ monitoring (Prometheus exporter + Grafana)
 ├─ persona-runtime (AI agents, multi-user)
 ├─ Open WebUI (LLM chat interface)
 └─ + containers for monitoring/obs
@@ -413,11 +407,9 @@ home-manager/default.nix (aggregator, like nixos/default.nix)
 
 ## Monitoring & Observability
 
-### Current Setup (as of 2026-08-17)
+### Current Setup
 
 ```
-Moved from core-pi to mac-mini (2026-08-05 due to RAM pressure)
-
 Monitoring Container (mac-mini)
     ├─ Prometheus (metrics collection)
     ├─ Grafana (visualization)
@@ -570,7 +562,7 @@ CI audit-versions detects drift
 
 ```
 1. Boot to previous generation (automatic on failure)
-2. Or: jj revert <bad-commit> + nixos-rebuild switch
+2. Or: `jj revert -r <bad> -o @`, landed as a PR; hosts deploy it from production
 3. Rollback procedure documented in DEPLOYMENT-STRATEGY.md
 ```
 
@@ -594,15 +586,10 @@ CI audit-versions detects drift
 
 1. **Jj-first VCS** — All commits signed, auditable history
 2. **Declarative infrastructure** — NixOS + Terraform for all config
-3. **Phased deployment** — Edge → non-critical → production → gateway
+3. **Pull deployment** — hosts deploy signed `production` heads after CI caches them
 4. **Secrets encrypted at rest** — sops + age, decrypted only at activation
 5. **Cache-first builds** — Attic for fast deployments
 6. **Self-healing rollback** — Previous generation always available
 7. **Cross-repo coordination** — repos.nix as single source of truth
 8. **Documented operations** — Procedures for all common tasks
 
----
-
-**Last Updated:** 2026-08-17  
-**Status:** Complete overview of fleet structure  
-**Audience:** All fleet members, new maintainers, operators

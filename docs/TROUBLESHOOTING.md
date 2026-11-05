@@ -1,8 +1,5 @@
 # Fleet Troubleshooting & Diagnostics Guide
 
-**Status:** Troubleshooting guide for common kleinbem fleet issues  
-**Updated:** 2026-08-17
-
 Quick reference for diagnosing and resolving issues in the kleinbem NixOS infrastructure.
 
 ---
@@ -222,14 +219,9 @@ ls -la /var/lib/images/<container>/
 
 **Solutions:**
 
-1. **Container not in persistence config:**
-   ```nix
-   environment.persistence."/nix/persist" = {
-     directories = [
-       "/var/lib/images/<container>"  # ADD THIS
-     ];
-   };
-   ```
+1. **Data dir not persisted:**
+   - With `my.container-host.enablePersistence = true`, nix-gantry persists each container's `hostDataDir` itself. Don't add it to `environment.persistence` again: impermanence fails on duplicates.
+   - On hosts without `my.container-host`, add the directory to the host's persistence list.
 
 2. **Container-updater is resetting state:**
    - Add to `excludeFromUpdater` if it's critical
@@ -404,16 +396,15 @@ nft list ruleset | grep forward
 # Check sops file exists
 ls -la /run/secrets/<name>
 
-# Verify age/gpg key is available
-age-keygen -l ~/.config/sops/age/keys.txt
-gpg --list-secret-keys
+# Verify your age identity is available
+age-plugin-yubikey --list                     # YubiKey identities
+age-keygen -y ~/.config/sops/age/keys.txt     # public key of a software key
 
-# Check sops.yaml configuration
-cat .sops.yaml
+# Check the recipients (in kleinbem-secrets)
 grep -A5 "<host>" .sops.yaml
 
-# Test decryption manually
-sops -d nix-secrets/nix/shared.yaml | head -5
+# Test decryption without printing anything
+sops -d kleinbem-secrets/nix/shared.yaml >/dev/null && echo ok
 ```
 
 **Solutions:**
@@ -423,12 +414,12 @@ sops -d nix-secrets/nix/shared.yaml | head -5
    - Check permissions: `chmod 600 ~/.config/sops/age/keys.txt`
 
 2. **YubiKey required but unavailable:**
-   - Check if age-plugin-yubikey is being used
-   - Use fallback SSH key for CI
+   - Plug in either YubiKey (primary or backup); both are recipients on every file
+   - CI never decrypts: it builds against dummy secrets (`.github/scripts/setup-dummy-secrets.sh`)
 
 3. **Secret not in file:**
    - Verify secret exists in sops file
-   - Add it: `sops nix-secrets/nix/shared.yaml` → add key
+   - Add it: `sops kleinbem-secrets/nix/shared.yaml` → add key
 
 ---
 
@@ -546,7 +537,7 @@ curl http://10.85.48.106:9090/targets  # Prometheus IP
 3. **Check related docs:**
    - DEVICE-TIERS.md — Device roles & requirements
    - MODULE-ORGANIZATION.md — Module patterns
-   - CONTAINER-HOST-SETUP.md — Container troubleshooting
+   - CONTAINER-HOST-SETUP.md — where the container host module lives
    - CI-HARDENING-RECOMMENDATIONS.md — CI/automation issues
 
 4. **Create minimal reproduction:**
@@ -581,11 +572,7 @@ Environment:
 
 - **Architecture:** DEVICE-TIERS.md, MODULE-ORGANIZATION.md
 - **Containers:** CONTAINER-HOST-SETUP.md
-- **Secrets:** (in progress, see TODO)
+- **Secrets:** SECRETS-MANAGEMENT.md
+- **Backups:** BACKUP-RECOVERY.md
 - **CI/CD:** kleinbem/docs/MAINTENANCE-AUTOMATION.md
-- **Audit:** (scratchpad) FLEET-INFRA-AUDIT.md
 
----
-
-**Last Updated:** 2026-08-17  
-**Status:** Active (add new issues as discovered)

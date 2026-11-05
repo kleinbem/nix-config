@@ -161,12 +161,12 @@ if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
     ' >"$WORK/principal.json"
   # Dedicated `automation` principal, not the human fallback-admin (whose
   # password stays out of sops). Created once by hand: see
-  # docs/PHASE1_STALWART_STATUS.md "Automation principal bootstrap".
+  # docs/STALWART.md.
   AUTOMATION_PASSWORD="$(sops -d --extract '["stalwart_automation_password"]' \
     "$SECRETS_REPO/nix/per-container/stalwart.yaml")"
   if [[ -z $AUTOMATION_PASSWORD ]]; then
     echo "  ⚠️  stalwart_automation_password not in kleinbem-secrets — skipping mailbox creation." >&2
-    echo "     See docs/PHASE1_STALWART_STATUS.md 'Automation principal bootstrap' — one-time setup." >&2
+    echo "     See docs/STALWART.md." >&2
   else
     # stderr stays visible: otherwise a connection failure shows only as "000".
     # The password is base64, so it's safe inside these single quotes.

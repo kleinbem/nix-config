@@ -318,7 +318,7 @@ in
         });
       };
 
-      # Persona mail server (docs/PHASE1_STALWART_STATUS.md). Admin secret is
+      # Persona mail server (docs/STALWART.md). Admin secret is
       # per-container since the personas are fleet-wide. Mailboxes come from
       # scripts/persona-scaffold.sh, not Nix. No relay: direct delivery only,
       # external mail needs one.

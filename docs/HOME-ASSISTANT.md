@@ -3,8 +3,8 @@
 Home Assistant Core runs as a standalone NixOS container on hass-pi (Raspberry
 Pi 5), built centrally by container-factory and pulled nightly by the
 container updater (ADR-002, see CONTAINER-HOST-SETUP.md). The old Home
-Assistant OS install was retired on 2026-10-20; its last backup was restored
-into this container. Everything below is declarative unless marked **state**.
+Assistant OS install is retired; its last backup was restored into this
+container. Everything below is declarative unless marked **state**.
 
 ## Where things are
 
@@ -25,7 +25,7 @@ into this container. Everything below is declarative unless marked **state**.
 
 ## Updating
 
-Nothing to do by hand. nixpkgs → lock bot (03:00 UTC) → build-all → promote-production publishes the container manifest → hass-pi pulls at 03:13 local. A failed x86 build-all leg blocks the manifest for every system. The host itself auto-upgrades at 04:29 local (`nixos-upgrade`), which does **not** refresh containers.
+Nothing to do by hand. nixpkgs → lock bot (03:00 UTC) → build-all → promote-production publishes the container manifest → hass-pi pulls at 03:13 local. A failed x86 build-all leg blocks the manifest for every system. The host itself deploys through comin (`production` branch), which does **not** refresh containers.
 
 Component deps are baked into the image: adding an integration means adding it to `extraComponents` in the preset (HA Core on NixOS cannot pip-install). Custom components come from `pkgs.home-assistant-custom-components` (alarmo, auth_oidc, ha_mcp_tools), lovelace cards from `pkgs.home-assistant-custom-lovelace-modules` (button-card at `/local/nixos-lovelace-modules/`). No HACS.
 

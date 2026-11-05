@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `nix-config/scripts/generate-imports-index.py`. Do not edit by hand.
 >
-> Regenerate with `just maintenance::sync-agent`.
+> Regenerate with `just dev::sync-agent`.
 
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 

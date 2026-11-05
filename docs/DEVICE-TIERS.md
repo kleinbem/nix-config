@@ -46,12 +46,11 @@ imports = [
 **Recommended:**
 ```nix
 "${self}/modules/nixos/workstation.nix"        # Desktop environment, GNOME, etc.
-"${self}/modules/nixos/hardening.nix"          # Security profiles
+"${self}/modules/nixos/security"               # Hardening, sudo, ssh, usbguard
 "${self}/users/martin/nixos.nix"               # User config
 ```
 
 **Optional (as needed):**
-- `modules/nixos/containers.nix` — For application containers
 - `modules/nixos/apps.nix` — Desktop applications
 - `modules/nixos/printing.nix` — CUPS support
 - `modules/nixos/audio.nix` — Audio subsystem
@@ -215,7 +214,9 @@ my = {
 
 ## Configuration Checklist
 
-### Every Device Must Have:
+### Every NixOS host must have:
+
+Mobile devices (phone, tablet) are nix-on-droid: they only need an inventory entry and `hosts/<device>/default.nix`.
 
 - [ ] **Inventory entry** in `../inventory.nix`
   - `system` (x86_64-linux or aarch64-linux)
@@ -226,7 +227,7 @@ my = {
 - [ ] **Host directory** in `./hosts/<device-name>/`
   - `default.nix` (entry point, imports)
   - `secrets.nix` (even if minimal)
-  - `disko.nix` (disk layout, not hardware-configuration.nix)
+  - a disko layout (not hardware-configuration.nix): its own `disko.nix`, or a shared one (`modules/nixos/rpi5-disko.nix` for core-pi and hass-pi, `modules/nixos/disko.nix` for nixos-nvme)
   - Optional: `network.nix`, `services.nix`, `hardware.nix`
 
 - [ ] **Disk setup** via disko (not generated hardware-configuration.nix)
@@ -270,6 +271,7 @@ Use this when adding a new device:
   self,
   myInventory,
   config,
+  secretFile,
   ...
 }:
 let
@@ -277,26 +279,27 @@ let
 in
 {
   imports = [
-    # 1. Select tier bundle
-    # For Workstation:
-    "${self}/modules/nixos/workstation.nix"
-    
-    # For Edge Hub:
-    "${self}/modules/nixos/rpi5-node.nix"
-    
-    # For Edge Node (manual composition):
-    "${self}/modules/nixos/base.nix"
-    "${self}/modules/nixos/headless.nix"
-    "${self}/modules/nixos/hosts.nix"
-    
+    # 1. Select ONE tier bundle, leave the others commented out
+    # Workstation:
+    # "${self}/modules/nixos/workstation.nix"
+    # "${self}/modules/nixos/default.nix"     # pulls in workstation-bundle.nix
+    # Edge Hub:
+    # "${self}/modules/nixos/rpi5-node.nix"
+    # Edge Node (manual composition):
+    # "${self}/modules/nixos/base.nix"
+    # "${self}/modules/nixos/headless.nix"
+    # "${self}/modules/nixos/hosts.nix"
+
     # 2. Device-specific setup
     inputs.disko.nixosModules.disko
     ./disko.nix
-    "./secrets.nix"
-    
+    ./secrets.nix
+
     # 3. Tier-specific optional modules
-    # "${self}/modules/nixos/ai-hardening.nix"     # AI nodes
-    # "${self}/modules/nixos/services/container-updater.nix"  # Container hosts
+    # "${self}/modules/nixos/ai-hardening.nix"              # AI nodes
+    # inputs.nix-gantry.nixosModules.host                    # container hosts,
+    # inputs.nix-gantry.nixosModules.host-persistence        #   see CONTAINER-HOST-SETUP.md
+    # inputs.nix-gantry.nixosModules.updater
   ];
 
   networking.hostName = "<device-name>";
@@ -312,7 +315,7 @@ in
       enable = true;
       luksDevice = "<device_crypt>";
       hostIp = "<10.0.0.XX>";
-      secretFile = "${inputs.nix-secrets}/initrd/<device>.jwe";
+      secretFile = secretFile "initrd/cryptroot_<device>.jwe";
     };
     
     services.tang.enable = true;
@@ -326,26 +329,13 @@ in
 
 ## Deployment Strategy
 
-### Local Deployment (nixos-nvme, phone)
-- Configuration changes build + activate locally
-- No network deployment needed
-- Use: `sudo nixos-rebuild switch`
-
-### SSH Deployment (everything else)
-- Configuration pushed to device via SSH
-- Built on device or substituted from cache
-- Use: `just in <repo> nixos::deploy-<device>`
-- Requires cache reachability for large devices
+Every NixOS host deploys itself from the `production` branch (comin; autoUpgrade on nixos-nvme). `just deployment::deploy <host>` is the SSH emergency path. See [DEPLOYMENT-STRATEGY.md](DEPLOYMENT-STRATEGY.md).
 
 ### Bootstrap (new device)
-1. Create `hosts/<device-name>/` directory
-2. Write `default.nix`, `disko.nix`, `secrets.nix`
-3. Boot NixOS installer on device
-4. Run `nixos-generate-config --show-hardware-config` (to understand hardware)
-5. Use disko to partition: `disko-mount ./disko.nix`
-6. Checkout nix-config repo at the Mount point
-7. `sudo nixos-install --flake .#<device-name>`
-8. Reboot, verify
+1. Create `hosts/<device-name>/` with `default.nix`, a disko layout and `secrets.nix`, and add it to `inventory.nix` and `modules/flake/hosts.nix`.
+2. Install from USB with the matching recipe (`just deployment::pi-install-usb <host>`, `nasbook-install-usb`, `mac-mini-install-usb`, `orin-install-usb`), or `sudo nixos-install --flake .#<device-name>` from an installer.
+3. Add the host's age key to `kleinbem-secrets/.sops.yaml` and run `sops updatekeys` on its files.
+4. Reboot, verify SSH, services and Tang unlock.
 
 ---
 
@@ -376,11 +366,8 @@ in
 
 ## References
 
-- **Tier bundles:** `modules/nixos/rpi5-node.nix` (Edge Hub), `modules/nixos/workstation.nix` (Workstation)
+- **Tier bundles:** `modules/nixos/rpi5-node.nix` (Edge Hub), `modules/nixos/workstation.nix` + `modules/nixos/default.nix` → `workstation-bundle.nix` (Workstation)
 - **Base module:** `modules/nixos/base.nix` (required by all)
 - **Inventory:** `inventory.nix` (master device registry)
 - **Disko examples:** `modules/nixos/rpi5-disko.nix` (shared by core-pi + hass-pi), `hosts/orin-nano/disko.nix`, `hosts/mac-mini/disko.nix`
 
----
-
-**Last Updated:** 2026-09-11
