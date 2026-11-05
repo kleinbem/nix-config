@@ -11,6 +11,9 @@ substitutions:
   ha_url: http://10.0.0.21:8123
   # hass-pi's photo-frame service (my.services.photo-frame).
   photo_url: http://10.0.0.21:8099/random.jpg?w=1280&h=800
+  # Gatus on core-pi, through its public name: the panel's LAN has no route
+  # to the container subnets. pageSize=1 keeps only each endpoint's last check.
+  gatus_url: https://status.kleinbem.dev/api/v1/endpoints/statuses?page=1&pageSize=1
 
 esphome:
   name: ${name}
@@ -20,6 +23,7 @@ esphome:
     - stations.h
     - weather.h
     - lights.h
+    - infra.h
   on_boot:
     priority: -100
     then:
@@ -1108,6 +1112,45 @@ script:
       - script.execute: wake_stop
       - lambda: id(snooze_end) = millis() + 9 * 60000u;
       - script.execute: clock_show
+  - id: inf_fetch
+    then:
+      - if:
+          condition: wifi.connected
+          then:
+            - http_request.get:
+                url: ${gatus_url}
+                capture_response: true
+                max_response_buffer_size: 32kB
+                on_response:
+                  then:
+                    - lambda: |-
+                        uint32_t tab = lv_obj_get_index(id(tile_infra));
+                        if (response->status_code != 200 || !infra::parse(body)) {
+                          ESP_LOGW("infra", "Gatus answered %d", response->status_code);
+                          infra::stale(id(inf_grid), id(inf_head), id(tv), tab,
+                                       "Status page not readable (HTTP " + to_string(response->status_code) + ")");
+                          return;
+                        }
+                        infra::render(id(inf_grid), id(font_mid)->get_lv_font(), id(font_small)->get_lv_font());
+                        infra::mark_tab(id(tv), tab);
+                        int n = infra::services.size(), d = infra::count(infra::DOWN), u = infra::count(infra::UNKNOWN);
+                        ESP_LOGI("infra", "%d services, %d down, %d unknown", n, d, u);
+                        std::string h = d ? to_string(d) + " of " + to_string(n) + " down"
+                                      : u ? to_string(n - u) + " of " + to_string(n) + " up"
+                                          : "All " + to_string(n) + " up";
+                        auto t = id(ha_time).now();
+                        if (t.is_valid()) h += "   ·   updated " + t.strftime("%H:%M");
+                        lv_label_set_text(id(inf_head), h.c_str());
+                        lv_obj_set_style_text_color(id(inf_head), lv_color_hex(d ? infra::RED : u ? infra::MUTED : infra::GREEN), 0);
+                on_error:
+                  - lambda: |-
+                      ESP_LOGW("infra", "Gatus not reachable");
+                      infra::stale(id(inf_grid), id(inf_head), id(tv), lv_obj_get_index(id(tile_infra)),
+                                   "Status page not reachable");
+          else:
+            - lambda: |-
+                infra::stale(id(inf_grid), id(inf_head), id(tv), lv_obj_get_index(id(tile_infra)),
+                             "No Wi-Fi, status unknown");
   # Daily forecast from Home Assistant's weather.get_forecasts.
   - id: fc_fetch
     then:
@@ -3880,6 +3923,32 @@ lvgl:
                               code: !lambda return id(pin);
                         - lambda: id(pin).clear();
                         - script.execute: pin_show
+              - id: tile_infra
+                name: "Infra"
+                widgets:
+                  - label:
+                      id: inf_head
+                      x: 40
+                      y: 20
+                      text_font: font_mid
+                      text_color: 0x8A949E
+                      text: "Checking status.kleinbem.dev ..."
+                  - obj:
+                      id: inf_grid
+                      x: 20
+                      y: 80
+                      width: 1240
+                      height: 610
+                      bg_opa: TRANSP
+                      border_width: 0
+                      pad_all: 0
+                      # The tiles are created by infra::render.
+                      layout:
+                        type: FLEX
+                        flex_flow: ROW_WRAP
+                        pad_row: 16
+                        pad_column: 16
+                      widgets: []
               - id: tile_guest
                 name: "Guest"
                 widgets:
@@ -4050,6 +4119,9 @@ lvgl:
               - script.execute: photo_stop
 
 interval:
+  - interval: 1min
+    then:
+      - script.execute: inf_fetch
   - interval: 30min
     then:
       - script.execute: fc_fetch
