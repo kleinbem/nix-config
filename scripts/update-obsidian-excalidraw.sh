@@ -36,6 +36,7 @@ log "Updating $CURRENT → $LATEST"
 # (new URLs, old hashes) would look up to date to the next run.
 WORK=$(mktemp "$PKG.XXXXXX")
 trap 'rm -f "$WORK"' EXIT
+ORIG_SUM=$(sha256sum <"$PKG")
 cp -p "$PKG" "$WORK"
 
 # ── 2. Bump the version segment in all 3 URLs ────────────────────────────────
@@ -66,6 +67,8 @@ for f in main.js manifest.json styles.css; do
   hash=$(nix-prefetch-url --type sha256 "$url")
   set_hash "$url" "$hash"
 done
+# An edit to $PKG during the prefetch would be lost by the mv.
+[[ $(sha256sum <"$PKG") == "$ORIG_SUM" ]] || err "$PKG changed during the update; rerun"
 mv "$WORK" "$PKG"
 
 log "Done. obsidian-excalidraw-plugin $LATEST ready."

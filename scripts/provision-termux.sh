@@ -104,12 +104,17 @@ chmod 600 ~/.ssh/fleet.conf
 touch ~/.ssh/config
 # Resolved, so a symlinked config keeps its link and the target is updated.
 ssh_config="$(readlink -f ~/.ssh/config)"
+if [ ! -r "$ssh_config" ]; then
+  echo "❌ can't read $ssh_config; left it untouched" >&2
+  exit 1
+fi
 # Include goes first: after a Host/Match line it would only apply there.
+# That also makes fleet.conf win over the user's entries for its aliases.
 include_re='^[[:space:]]*Include[[:space:]]+fleet[.]conf[[:space:]]*$'
 if ! awk -v re="$include_re" '/^[[:space:]]*(Host|Match)([[:space:]]|$)/ { exit } $0 ~ re { f = 1; exit } END { exit !f }' "$ssh_config"; then
   {
     echo 'Include fleet.conf'
-    grep -vE "$include_re" "$ssh_config" || true
+    grep -vE "$include_re" "$ssh_config" || [ $? -eq 1 ] # 1 = no other lines
   } >"$ssh_config.new"
   mv "$ssh_config.new" "$ssh_config"
 fi

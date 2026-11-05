@@ -389,3 +389,31 @@ def test_host_container_map_reads_one_line_form(tmp_path: Path):
         "}\n"
     )
     assert host_container_map(tmp_path) == {"h1": {"n8n": True, "attic": False}}
+
+
+def test_host_container_map_ignores_braces_in_comments_and_strings(tmp_path: Path):
+    host = tmp_path / "hosts" / "h1"
+    host.mkdir(parents=True)
+    (host / "containers.nix").write_text(
+        "{\n"
+        "  my.containers = {\n"
+        "    # closes early: }\n"
+        '    forgejo = { enable = true; motd = "}"; };\n'
+        "    n8n.enable = true;\n"
+        "  };\n"
+        "}\n"
+    )
+    assert host_container_map(tmp_path) == {"h1": {"forgejo": True, "n8n": True}}
+
+
+def test_host_container_map_reads_fully_qualified_enable(tmp_path: Path):
+    host = tmp_path / "hosts" / "h1"
+    host.mkdir(parents=True)
+    (host / "default.nix").write_text(
+        "{\n"
+        "  my.containers.n8n.enable = true;\n"
+        "  my.containers.ente.enable = lib.mkForce false;\n"
+        "  services.foo.enable = true;\n"
+        "}\n"
+    )
+    assert host_container_map(tmp_path) == {"h1": {"n8n": True, "ente": False}}

@@ -484,10 +484,12 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
     """Grep-heuristic: which containers are enabled on which host.
 
     Walks nix-config/hosts/<host>/*.nix looking for lines like:
+        my.containers.n8n.enable = true;
         n8n.enable = true;
         n8n = { enable = true; ... };
         n8n.enable = lib.mkForce true;
-    directly inside a `my.containers = {...}` or `containers = {...}` block.
+    (all but the first directly inside a `my.containers = {...}` or
+    `containers = {...}` block).
 
     Only the block's direct children name a container, and only an `enable`
     directly inside such a child counts for it, so nested option blocks
@@ -506,8 +508,9 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
         host_state: dict[str, bool] = {}
         for nix_file in sorted(host_dir.rglob("*.nix")):
             try:
-                lines = nix_file.read_text(
-                    encoding="utf-8", errors="replace"
+                # Stripped, so braces in comments or strings don't shift depth.
+                lines = strip_comments_and_strings(
+                    nix_file.read_text(encoding="utf-8", errors="replace")
                 ).splitlines()
             except OSError:
                 continue
@@ -518,6 +521,15 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
                 line = raw.strip()
                 # Track when we enter a my.containers or containers block
                 if not in_containers:
+                    # Fully qualified: my.containers.n8n.enable = true;
+                    m = re.match(
+                        r"(?:my\.)?containers\.([a-z][a-z0-9-]*)\.enable\s*=\s*"
+                        r"(lib\.mkForce\s+)?(true|false)\b",
+                        line,
+                    )
+                    if m:
+                        host_state[m.group(1)] = m.group(3) == "true"
+                        continue
                     if re.search(r"\b(my\.containers|containers)\s*=\s*\{", line):
                         in_containers = True
                         depth = line.count("{") - line.count("}")

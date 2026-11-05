@@ -33,9 +33,11 @@ SECRETS_REPO="$META_ROOT/kleinbem-secrets"
 PERSONA_YAML="$SECRETS_REPO/personas/$NAME.yaml"
 
 WORK="$(mktemp -d /dev/shm/persona-scaffold-XXXXXX)"
+KEYS_TMP=""
 cleanup() {
   find "$WORK" -type f -exec shred -u {} \; 2>/dev/null || true
   rm -rf "$WORK"
+  [[ -z $KEYS_TMP ]] || rm -f "$KEYS_TMP"
 }
 trap cleanup EXIT
 
@@ -125,6 +127,8 @@ else
   if grep -Eq "^[[:space:]]*\"?$NAME\"? = \"\";" "$KEYS_NIX"; then
     sed -i -E "s|^([[:space:]]*\"?$NAME\"?) = \"\";|\1 = \"$PUBKEY\";|" "$KEYS_NIX"
   else
+    # Temp file next to keys.nix, renamed only once complete.
+    KEYS_TMP="$(mktemp "$KEYS_NIX.XXXXXX")"
     NAME="$NAME" PUBKEY="$PUBKEY" awk '
       { print }
       /^[[:space:]]*personas = \{/ && !done {
@@ -132,8 +136,9 @@ else
         printf "%s  %s = \"%s\";\n", substr($0, 1, RLENGTH), ENVIRON["NAME"], ENVIRON["PUBKEY"]
         done = 1
       }
-    ' "$KEYS_NIX" >"$WORK/keys.nix"
-    cat "$WORK/keys.nix" >"$KEYS_NIX"
+    ' "$KEYS_NIX" >"$KEYS_TMP"
+    chmod --reference="$KEYS_NIX" "$KEYS_TMP"
+    mv "$KEYS_TMP" "$KEYS_NIX"
   fi
   if ! grep -Fq -e "$NAME = \"$PUBKEY\";" -e "\"$NAME\" = \"$PUBKEY\";" "$KEYS_NIX"; then
     echo "❌ couldn't add $NAME to $KEYS_NIX — add it by hand" >&2
