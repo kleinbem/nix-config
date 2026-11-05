@@ -94,8 +94,9 @@ let
     "${sw}/machinectl status *"
     "${sw}/machinectl list"
     # Regex, not `shell * <cmd>`: a glob `*` also matches `root@.host /bin/sh -c '…; :'`,
-    # a root shell on the host. ${machine} can't start with `.`.
-    "${sw}/machinectl ^shell ${machine} ${sw}/(ip addr|ip route|cat /etc/hosts|cat /etc/resolv[.]conf|systemctl status ${unit})$"
+    # a root shell on the host. ${machine} can't start with `.`. --no-pager: in
+    # the PTY a pager runs as container root, and less's `!` is a shell.
+    "${sw}/machinectl ^shell ${machine} ${sw}/(ip addr|ip route|cat /etc/hosts|cat /etc/resolv[.]conf|systemctl status --no-pager ${unit})$"
     "${sw}/apparmor_status"
     # Viewing flags only: a `*` here would also pass --vacuum-*, --rotate
     # or --flush, which delete or move logs as root.
