@@ -605,11 +605,9 @@ hosts:
     containers_hosted:
     - agent-zero
     - anythingllm
-    - discord
     - forgejo
     - hermes
     - monitoring
-    - oidc
     - open-webui
     - persona-runtime
     - stalwart
@@ -1056,11 +1054,8 @@ hosts:
     - code-server
     - dev-db
     - garage-ui
-    - monitoring
     - netdata
-    - oidc
     - syncthing
-    - tls
     secrets_consumed:
     - buzz_typesense_api_key
     - garage_rpc_secret
