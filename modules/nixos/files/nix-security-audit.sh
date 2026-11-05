@@ -35,6 +35,9 @@ REPORT_HOST="$REPORT_DIR/security-report-host.txt"
 REPORT_CONT="$REPORT_DIR/security-report-containers.txt"
 REPORT_SECRETS="$REPORT_DIR/security-report-secrets.json"
 REPORT_LYNIS="$REPORT_DIR/lynis-report.txt"
+# A failed scan leaves this line in its report; the alert checks match it.
+SCAN_FAILED="SCAN-FAILED"
+ALERT_PATTERN="Total: [1-9]|HIGH:|CRITICAL:|$SCAN_FAILED"
 TRIVY_IGNORE="${TRIVY_IGNORE:-/etc/nixos/nix-config/modules/nixos/.trivyignore}"
 WORKSPACE_PATH="/home/martin/Develop/github.com/kleinbem/nix"
 
@@ -57,7 +60,8 @@ scan_host() {
     --severity HIGH,CRITICAL \
     --ignorefile "$TRIVY_IGNORE" \
     --scanners vuln \
-    --format table >>"$REPORT_HOST" 2>&1 || true
+    --format table >>"$REPORT_HOST" 2>&1 ||
+    echo "$SCAN_FAILED: trivy host scan exited $?" >>"$REPORT_HOST"
 }
 
 scan_containers() {
@@ -77,7 +81,8 @@ scan_containers() {
         trivy image "$img" \
           --severity HIGH,CRITICAL \
           --ignorefile "$TRIVY_IGNORE" \
-          --format table >>"$REPORT_CONT" 2>&1 || true
+          --format table >>"$REPORT_CONT" 2>&1 ||
+          echo "$SCAN_FAILED: trivy image scan of $img exited $?" >>"$REPORT_CONT"
       done
     else
       log_warn "No Podman images found."
@@ -95,7 +100,8 @@ scan_containers() {
     --severity HIGH,CRITICAL \
     --ignorefile "$TRIVY_IGNORE" \
     --scanners vuln \
-    --format table >>"$REPORT_CONT" 2>&1 || true
+    --format table >>"$REPORT_CONT" 2>&1 ||
+    echo "$SCAN_FAILED: trivy volume scan exited $?" >>"$REPORT_CONT"
 }
 
 scan_secrets() {
@@ -120,13 +126,13 @@ scan_lynis() {
 notify_if_needed() {
   # Check if this is running as a service
   if ! [ -t 1 ]; then
-    if [ -s "$REPORT_HOST" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$REPORT_HOST"; then
+    if [ -s "$REPORT_HOST" ] && grep -E "$ALERT_PATTERN" "$REPORT_HOST"; then
       local ESCAPED_HOST
       ESCAPED_HOST=$(systemd-escape "Security-Risks-Detected|Host-vulnerabilities-found|$REPORT_HOST")
       systemctl start "security-notify@$ESCAPED_HOST.service" || true
     fi
 
-    if [ -s "$REPORT_CONT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$REPORT_CONT"; then
+    if [ -s "$REPORT_CONT" ] && grep -E "$ALERT_PATTERN" "$REPORT_CONT"; then
       local ESCAPED_CONT
       ESCAPED_CONT=$(systemd-escape "Container-Vulnerabilities-Found|Risks-detected-in-Podman|$REPORT_CONT")
       systemctl start "security-notify@$ESCAPED_CONT.service" || true
@@ -181,6 +187,11 @@ show_full_logs() {
 # --- Main ---
 
 MODE="${1:-all}"
+
+# vuln-scan and container-scan share the Trivy cache and the container
+# report, so runs take turns.
+exec 9>"$REPORT_DIR/.audit.lock"
+flock 9
 
 case "$MODE" in
 "host") scan_host ;;

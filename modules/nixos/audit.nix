@@ -232,8 +232,8 @@ in
 
           # Determine status
           STATUS="Healthy"
-          if ( [ -s "$HOST_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$HOST_REPORT" ) || \
-             ( [ -s "$CONT_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$CONT_REPORT" ); then
+          if ( [ -s "$HOST_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:|SCAN-FAILED" "$HOST_REPORT" ) || \
+             ( [ -s "$CONT_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:|SCAN-FAILED" "$CONT_REPORT" ); then
             STATUS="Issues-Detected"
           fi
 
@@ -301,8 +301,9 @@ in
     };
 
     # Reports are readable by root and fluent-bit only (security-audit group).
+    # setgid, so files gitleaks recreates keep the group.
     tmpfiles.rules = [
-      "d /var/log/security-audit 0750 root security-audit - -"
+      "d /var/log/security-audit 2750 root security-audit - -"
       "f /var/log/security-audit/security-report-host.txt 0640 root security-audit - -"
       "f /var/log/security-audit/security-report-containers.txt 0640 root security-audit - -"
       "f /var/log/security-audit/security-report-secrets.json 0640 root security-audit - -"

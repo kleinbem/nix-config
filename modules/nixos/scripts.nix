@@ -85,6 +85,7 @@
           coreutils
           gnugrep
           trivy
+          util-linux # flock
           gitleaks
           lynis
           systemd
