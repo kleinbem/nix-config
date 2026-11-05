@@ -140,11 +140,12 @@ in
         };
       };
 
+    # Default mode 0400: ntfy, caddy and atticd read their env file as root via
+    # EnvironmentFile=; cloudflared gets its credentials through LoadCredential.
     templates = {
       # Bind-mounted into the ntfy container as /run/secrets/ntfy.env and
       # loaded as its EnvironmentFile (my.containers.ntfy.secretsFile).
       "ntfy.env" = lib.mkIf hasNtfyAuth {
-        mode = "0444";
         content = ''
           NTFY_AUTH_USERS=${config.sops.placeholder.ntfy_auth_users}
           NTFY_AUTH_ACCESS=${config.sops.placeholder.ntfy_auth_access}
@@ -154,19 +155,16 @@ in
       # Bind-mounted into the caddy container as /run/secrets/caddy.env
       # (my.containers.caddy.secretsFile).
       "caddy.env" = lib.mkIf acmeDns {
-        mode = "0444";
         content = ''
           CLOUDFLARE_API_TOKEN=${config.sops.placeholder.caddy_acme_cloudflare_token}
         '';
       };
       "attic.env" = {
-        mode = "0444";
         content = ''
           ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64="${config.sops.placeholder.attic_server_token_rs256}"
         '';
       };
       "cloudflare-tunnel-credentials.json" = {
-        mode = "0444";
         content = ''
           {
             "AccountTag": "${config.sops.placeholder.cloudflare_account_id}",
