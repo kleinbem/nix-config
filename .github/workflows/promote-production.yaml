@@ -249,6 +249,8 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Moves the production tag and branch, publishes the manifest release.
+          permission-contents: write
 
       - name: Move production tag
         env:

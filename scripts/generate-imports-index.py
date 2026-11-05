@@ -22,7 +22,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _nix_options import (
     NIX_CONFIG,
-    REPO,
     extract_imports_in_file,
     relpath,
 )

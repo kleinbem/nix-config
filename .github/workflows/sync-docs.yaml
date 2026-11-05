@@ -14,6 +14,8 @@ on:
       - 'docs/**'
   workflow_dispatch:
 
+permissions: {}
+
 concurrency:
   group: sync-docs-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: true
@@ -23,6 +25,9 @@ jobs:
     # Same-repo PRs only: the app token must not push to fork branches.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    # The sibling checkouts; everything that writes uses the App token.
+    permissions:
+      contents: read
     steps:
       - name: Mint GitHub App installation token
         id: app-token
@@ -30,6 +35,9 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Commits the docs to the PR branch, or opens and arms the docs PR.
+          permission-contents: write
+          permission-pull-requests: write
 
       # The generators read the workspace layout: nix-config next to
       # kleinbem (repos.nix) and nix-presets. No other sibling is needed.
@@ -38,14 +46,17 @@ jobs:
           path: nix-config
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: kleinbem/kleinbem
           path: kleinbem
+          persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: kleinbem/nix-presets
           path: nix-presets
+          persist-credentials: false
 
       - name: Set up Nix
         uses: kleinbem/actions/nix-setup@7ec628296d5194e6e10031706387b992a10a1638 # v1.0.1
