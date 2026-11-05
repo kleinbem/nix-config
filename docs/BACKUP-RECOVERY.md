@@ -6,7 +6,7 @@ Every NixOS host runs the backup engine from nix-presets (`nixosModules/backup-e
 
 Modules and presets register their own data under `my.backup.items.<name>`; hosts add extra items (see nasbook). Each item has a tier:
 
-- **secure**: small, critical data. Every run builds one tarball, encrypts it with age to both YubiKeys (`keys.age.yubikey-primary`, `keys.age.yubikey-backup`), and uploads `<host>-<timestamp>.tar.gz.age` to `<remote>/secure/<host>/`. Daily at 02:30.
+- **secure**: small, critical data. Every run builds one tarball, encrypts it with age to both YubiKeys (`keys.age.yubikey-primary`, `keys.age.yubikey-backup`), and uploads `<host>-<timestamp>.tar.gz.age` to `<remote>/secure/<host>/`. Daily at 02:30. If an item's dump fails or a path is missing, the rest still uploads as `<host>-<timestamp>-partial.tar.gz.age` and the job fails; a full restore takes the newest bundle without `-partial`.
 - **bulk**: large data, one restic repo per destination at `<remote>/restic/<host>`. Daily at 03:15.
 
 Items can also list `sqlite` files (copied with `.backup`), `postgres` clusters (`pg_dumpall`) or a `command` whose output is stored. Databases are dumped, never copied live.

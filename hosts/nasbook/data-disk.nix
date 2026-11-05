@@ -1,6 +1,6 @@
 # nasbook bulk-storage data disk — QNAP TBS-453A's second SSD bay.
-# LUKS + btrfs at /mnt/data via my.dataDisk. No FIDO2 on this host, so it
-# unlocks from a keyfile in initrd, generated on nasbook (my.hostSecrets).
+# LUKS + btrfs at /mnt/data via my.dataDisk. No FIDO2 on this host: it opens
+# in stage 2 from a keyfile on the Tang-unlocked root, like orin's Frigate SSD.
 { config, ... }:
 {
   my.dataDisk = {
@@ -12,15 +12,16 @@
       "x-systemd.device-timeout=60s"
       "nofail"
     ];
-    keyFilePath = "/etc/nasbook-data.key";
+    # Host-local, root-only (my.hostSecrets); sops copy via access::data-key-backup.
+    stage2KeyFile = "${config.my.hostSecrets.dir}/nasbook-data.key";
   };
 
-  # Generated on nasbook (my.hostSecrets), never a store path.
-  boot.initrd.secrets."/etc/nasbook-data.key" = "${config.my.hostSecrets.dir}/nasbook-data.key";
-
-  # Same requirement disko.nix already documents for /nix and /nix/persist:
-  # environment.persistence (impermanence) asserts every filesystem backing
-  # a persisted path has neededForBoot — containers bind-mount paths under
-  # /mnt/data (paperless, backup targets), so it's part of that chain too.
-  fileSystems."/mnt/data".neededForBoot = true;
+  # nofail lets boot go on without the disk; these must not start on the
+  # empty /mnt directory of the tmpfs root instead.
+  systemd.services = {
+    "container@paperless".unitConfig.RequiresMountsFor = [ "/mnt/data" ];
+    "container@qbittorrent".unitConfig.RequiresMountsFor = [ "/mnt/data" ];
+    restic-backups-bulk-gdrive.unitConfig.RequiresMountsFor = [ "/mnt/data" ];
+    restic-backups-bulk-r2.unitConfig.RequiresMountsFor = [ "/mnt/data" ];
+  };
 }

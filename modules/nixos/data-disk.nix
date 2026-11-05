@@ -1,6 +1,6 @@
 # Declarative LUKS+btrfs data disk at a fixed mountpoint. nixos-nvme unlocks
-# it with FIDO2 in initrd; nasbook has no FIDO2 and uses an initrd keyfile
-# (hosts/nasbook/data-disk.nix).
+# it with FIDO2 in initrd; nasbook has no FIDO2 and opens it in stage 2 from
+# a keyfile on the encrypted root (stage2KeyFile).
 {
   config,
   lib,
@@ -41,14 +41,16 @@ in
       example = [ "fido2-device=auto" ];
       description = "Additional options passed to crypttab/initrd for LUKS unlock.";
     };
-    # For hosts without FIDO2: a path embedded via boot.initrd.secrets (sops
-    # isn't available in initrd). Sets boot.initrd.luks.devices' keyFile, not
-    # disko's deprecated top-level one.
-    keyFilePath = lib.mkOption {
+    # Never an initrd secret: the initrd sits on the unencrypted ESP.
+    stage2KeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      example = "/etc/secrets/initrd/data-disk.key";
-      description = "Path to an initrd-embedded keyfile for non-interactive LUKS unlock.";
+      example = "/nix/persist/etc/crypt/data.key";
+      description = ''
+        Keyfile on the already-unlocked root. When set, the disk is opened in
+        stage 2 through /etc/crypttab instead of in the initrd, so it must not
+        be neededForBoot.
+      '';
     };
   };
 
@@ -66,9 +68,9 @@ in
             settings = {
               allowDiscards = true;
               inherit (cfg) crypttabExtraOpts;
-            }
-            // (lib.optionalAttrs (cfg.keyFilePath != null) { keyFile = cfg.keyFilePath; });
-            initrdUnlock = true;
+            };
+            # With false disko emits no unlock at all; the crypttab entry below does it.
+            initrdUnlock = cfg.stage2KeyFile == null;
             content = {
               type = "btrfs";
               extraArgs = [
@@ -87,6 +89,16 @@ in
           };
         };
       };
+    };
+
+    environment.etc.crypttab = lib.mkIf (cfg.stage2KeyFile != null) {
+      text = "${cfg.cryptName} /dev/disk/by-partlabel/disk-data-luks_data ${cfg.stage2KeyFile} ${
+        lib.concatStringsSep "," (
+          [ "luks" ]
+          ++ cfg.crypttabExtraOpts
+          ++ [ "x-systemd.requires-mounts-for=${dirOf cfg.stage2KeyFile}" ]
+        )
+      }\n";
     };
   };
 }

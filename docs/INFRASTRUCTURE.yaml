@@ -722,7 +722,7 @@ hosts:
       - crypttabExtraOpts
       - device
       - enable
-      - keyFilePath
+      - stage2KeyFile
       deploy:
       - autoUpgrade.enable
       - comin
