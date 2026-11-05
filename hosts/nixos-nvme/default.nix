@@ -26,7 +26,7 @@
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"
-    "${self}/modules/nixos/disko.nix"
+    ./disko.nix
     "${self}/modules/nixos/data-disk.nix"
     inputs.disko.nixosModules.disko
     ./ai.nix
