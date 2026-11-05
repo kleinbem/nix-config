@@ -60,65 +60,68 @@ host-keygen host:
       chmod 0600 "$d/ssh_host_ed25519_key"; \
       cat "$d/ssh_host_ed25519_key.pub"'
 
-# Step 1 of moving nasbook's data-disk key out of kleinbem-secrets: create a
-# new random key on nasbook and add it to the LUKS header next to the old one
-# (the old one is still in nasbook's store from the repo copy). Deploy, reboot,
-# confirm /mnt/data unlocks, then run nasbook-data-drop-old-key.
-[group("Access")]
-[doc("nasbook: add a new host-local data-disk LUKS key (old key stays until nasbook-data-drop-old-key).")]
-nasbook-data-rekey:
-    @just access::_on_host nasbook '\
-      set -eu; new=/nix/persist/secrets/nasbook-data.key; \
-      dev=$(cryptsetup status nasbook_data_crypt | sed -n "s/^ *device: *//p"); \
-      old=$(ls -1 /nix/store/*-source/initrd/data_luks_key_nasbook 2>/dev/null | head -n 1); \
-      [ -n "$dev" ] && [ -n "$old" ] || { echo "data disk not open or old key not found" >&2; exit 1; }; \
-      install -d -m 0700 /nix/persist/secrets; \
-      if [ ! -f "$new" ]; then (umask 077; head -c 64 /dev/urandom > "$new"); fi; \
-      cryptsetup luksAddKey --key-file "$old" "$dev" "$new" 2>/dev/null || cryptsetup open --test-passphrase --key-file "$new" "$dev"; \
-      cryptsetup open --test-passphrase --key-file "$new" "$dev" && echo "new key works on $dev"'
+# Stage-2 keyfile per host: "<path> <sops key>".
+[private]
+_data-key host:
+    #!/usr/bin/env bash
+    case "{{host}}" in
+      nasbook) echo /nix/persist/secrets/nasbook-data.key nasbook_data_luks_key ;;
+      orin-nano) echo /nix/persist/etc/crypt/frigate.key orin_frigate_luks_key ;;
+      *) echo "no data-disk keyfile known for {{host}}" >&2; exit 1 ;;
+    esac
 
+# Data disks opened in stage 2 from a host-local keyfile have no other key
+# slot. Keep an encrypted copy in kleinbem-secrets (nix/per-host/<host>.yaml,
+# base64); data-key-restore puts it back after a reinstall. Nix never reads
+# it. The plaintext only travels through the SSH pipe into sops.
 [group("Access")]
-[doc("nasbook: remove the old (leaked) data-disk key from the LUKS header. Run only after a reboot unlocked /mnt/data with the new key.")]
-nasbook-data-drop-old-key:
-    @just access::_on_host nasbook '\
-      set -eu; new=/nix/persist/secrets/nasbook-data.key; \
-      dev=$(cryptsetup status nasbook_data_crypt | sed -n "s/^ *device: *//p"); \
-      old=$(ls -1 /nix/store/*-source/initrd/data_luks_key_nasbook 2>/dev/null | head -n 1); \
-      cryptsetup open --test-passphrase --key-file "$new" "$dev" || { echo "new key does not open $dev; refusing" >&2; exit 1; }; \
-      cryptsetup luksRemoveKey --key-file "$old" "$dev"; \
-      cryptsetup luksDump "$dev" | grep -E "^ *[0-9]+: luks2" '
-
-# nasbook's data disk has a single key slot: the host-local keyfile. Keep an
-# encrypted copy in kleinbem-secrets (nix/per-host/nasbook.yaml,
-# nasbook_data_luks_key, base64) so a reinstall can restore it with
-#   sops -d --extract '["nasbook_data_luks_key"]' nix/per-host/nasbook.yaml | base64 -d
-# Nix never reads it. The plaintext only travels through the SSH pipe into sops.
-[group("Access")]
-[doc("Back up nasbook's data-disk key into kleinbem-secrets, sops-encrypted (sudo on nasbook, YubiKey for sops).")]
-nasbook-data-backup:
+[doc("Back up <host>'s data-disk keyfile into kleinbem-secrets, sops-encrypted (sudo on <host>, YubiKey for sops). Hosts: nasbook, orin-nano.")]
+data-key-backup host:
     #!/usr/bin/env bash
     set -euo pipefail
+    read -r key name < <(just access::_data-key {{host}})
     secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
-    f=nix/per-host/nasbook.yaml
-    # sudo asks on nasbook's TTY. Everything but the key line goes to the
+    f=nix/per-host/{{host}}.yaml
+    # sudo asks on the host's TTY. Everything but the key line goes to the
     # terminal (the prompt ends in a newline, so it shows at once); only the
     # KEY: line is captured. Piping the password into `sudo -S` was rejected.
-    remote=$'sudo -p "sudo password on nasbook:\n" sh -c "printf KEY:; base64 -w0 /nix/persist/secrets/nasbook-data.key; echo"'
-    b64=$(ssh -t nasbook "$remote" \
+    remote="sudo -p \"sudo password on {{host}}:"$'\n'"\" sh -c \"printf KEY:; base64 -w0 $key; echo\""
+    b64=$(ssh -t {{host}} "$remote" \
       | awk '{ sub(/\r$/, "") } /^KEY:/ { print substr($0, 5); next } { print > "/dev/stderr"; fflush("/dev/stderr") }') \
-      || { echo "reading the key on nasbook failed; nothing written" >&2; exit 1; }
-    [ "${#b64}" -eq 88 ] || { echo "unexpected key length (${#b64}); nothing written" >&2; exit 1; }
+      || { echo "reading the key on {{host}} failed; nothing written" >&2; exit 1; }
+    bytes=$(printf '%s' "$b64" | base64 -d 2>/dev/null | wc -c) || bytes=0
+    [ "$bytes" -ge 32 ] || { echo "key from {{host}} is empty, short or not base64 ($bytes bytes); nothing written" >&2; exit 1; }
     cd "$secrets"
     if [ -f "$f" ]; then
-      printf '%s' "$b64" | jq -Rs . | sops set --value-stdin "$f" '["nasbook_data_luks_key"]'
+      printf '%s' "$b64" | jq -Rs . | sops set --value-stdin "$f" "[\"$name\"]"
     else
       # The first secret creates the file, with the recipients from .sops.yaml.
-      printf 'nasbook_data_luks_key: %s\n' "$b64" \
+      printf '%s: %s\n' "$name" "$b64" \
         | sops encrypt --input-type yaml --output-type yaml --filename-override "$f" /dev/stdin > "$f.new"
       mv "$f.new" "$f"
     fi
     unset b64
-    echo "✓ nasbook_data_luks_key stored in nix/per-host/nasbook.yaml; commit kleinbem-secrets"
+    echo "✓ $name ($bytes bytes) stored in $f; commit kleinbem-secrets"
+
+# Never overwrites: an existing keyfile may be the one the disk opens with.
+[group("Access")]
+[doc("Restore <host>'s data-disk keyfile from kleinbem-secrets (YubiKey for sops, sudo on <host>). Refuses to overwrite.")]
+data-key-restore host:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    read -r key name < <(just access::_data-key {{host}})
+    secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+    tmp=$(mktemp -p "${XDG_RUNTIME_DIR:-/tmp}")
+    rtmp=""
+    trap 'rm -f "$tmp"; [ -z "$rtmp" ] || ssh {{host}} rm -f "$rtmp"' EXIT
+    (cd "$secrets" && sops -d --extract "[\"$name\"]" nix/per-host/{{host}}.yaml) | base64 -d > "$tmp"
+    bytes=$(wc -c < "$tmp")
+    [ "$bytes" -ge 32 ] || { echo "$name decodes to $bytes bytes; nothing written" >&2; exit 1; }
+    rtmp=$(ssh {{host}} mktemp)
+    scp -q "$tmp" {{host}}:"$rtmp"
+    d=$(dirname "$key")
+    ssh -t {{host}} "sudo -p 'sudo password on {{host}}: ' sh -c '[ ! -e $key ] || { echo \"$key exists; not overwriting\" >&2; exit 1; }; [ -d $d ] || install -d -m 0700 $d; install -m 0400 -o root -g root $rtmp $key'"
+    echo "✓ $name ($bytes bytes) installed at {{host}}:$key"
 
 # Read-only unlock check for <host> (needs its sudo password once). Unlock
 # policy, every host: Tang (any other host) → primary/backup YubiKey (FIDO2) →
