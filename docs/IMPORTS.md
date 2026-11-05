@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 102
+**Distinct imports:** 101
 
 ---
 
@@ -49,12 +49,12 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `nixos-nvme`
 
-- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/containers/langgraph.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/disko.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/vault-anythingllm-sync.nix`, `modules/nixos/workstation.nix`
+- **Modules:** `modules/nixos/apps.nix`, `modules/nixos/containers/langgraph.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/default.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/services/vault-anythingllm-sync.nix`, `modules/nixos/workstation.nix`
 - **Presets:** `nix-presets:all`
 - **Hardware:** `nix-hardware:intel-compute`, `nix-hardware:nixos-nvme`
 - **Users:** `user:dhirujaan`, `user:martin`
 - **Other inputs:** `disko:disko`, `nix-gantry:updater`, `revue:default`
-- **Local:** `./ai.nix`, `./containers.nix`, `./garage.nix`, `./hardware-boot.nix`, `./herdr.nix`, `./monitors.nix`, `./network.nix`, `./secrets.nix`
+- **Local:** `./ai.nix`, `./containers.nix`, `./disko.nix`, `./garage.nix`, `./hardware-boot.nix`, `./herdr.nix`, `./monitors.nix`, `./network.nix`, `./secrets.nix`
 
 ### `orin-nano`
 
@@ -85,7 +85,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./ai.nix` ← nixos-nvme
 - `./containers.nix` ← nixos-nvme
 - `./data-disk.nix` ← nasbook
-- `./disko.nix` ← mac-mini, nasbook, orin-nano, orin-nano-bootstrap
+- `./disko.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
 - `./esphome-secrets.nix` ← hass-pi
 - `./garage.nix` ← nixos-nvme
 - `./hardware-boot.nix` ← nixos-nvme
@@ -107,7 +107,6 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/data-disk.nix` ← nasbook, nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/desktop.nix` ← mac-mini
-- `modules/nixos/disko.nix` ← nixos-nvme
 - `modules/nixos/firejail.nix` ← mac-mini
 - `modules/nixos/headless.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/hosts.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
