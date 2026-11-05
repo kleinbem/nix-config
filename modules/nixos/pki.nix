@@ -2,6 +2,7 @@
 # Generates a root CA and per-container certificates on first boot.
 # Certificates are persisted in /nix/persist/pki/internal/.
 {
+  config,
   pkgs,
   lib,
   myInventory,
@@ -48,109 +49,121 @@ let
 
   allCertScripts = lib.concatStringsSep "\n" (lib.mapAttrsToList mkCertGenScript containerNodes);
 
+  # Containers (caddy, nix-gantry tls sidecars) that bind-mount from pkiDir.
+  consumers = lib.filterAttrs (
+    _: c: lib.any (m: lib.hasPrefix pkiDir (m.hostPath or "")) (lib.attrValues c.bindMounts)
+  ) config.containers;
 in
 {
-  # Ensure PKI directory structure exists
-  systemd.tmpfiles.settings."10-internal-pki" = {
-    "${pkiDir}".d = {
-      mode = "0755";
-      user = "root";
-      group = "root";
-    };
-    "${pkiDir}/certs".d = {
-      mode = "0755";
-      user = "root";
-      group = "root";
-    };
+  options.my.pki.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = consumers != { };
+    defaultText = lib.literalMD "true when a container bind-mounts from `${pkiDir}`";
+    description = "Generate the internal CA and per-container mTLS certificates.";
   };
 
-  # One-shot service: generate CA + certs on first boot (idempotent)
-  systemd.services.internal-pki = {
-    description = "Internal PKI — Generate CA and container certificates";
-    wantedBy = [ "multi-user.target" ];
-    before = lib.mapAttrsToList (name: _: "container@${name}.service") containerNodes;
-    after = [ "local-fs.target" ];
-
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      PrivateNetwork = true;
-      PrivateTmp = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      ReadWritePaths = [ pkiDir ];
-      NoNewPrivileges = true;
-
-      # STIG / Hardening baseline
-      CapabilityBoundingSet = "";
-      DevicePolicy = "closed";
-      LockPersonality = true;
-      MemoryDenyWriteExecute = true;
-      PrivateDevices = true;
-      ProtectClock = true;
-      ProtectControlGroups = true;
-      ProtectHostname = true;
-      ProtectKernelLogs = true;
-      ProtectKernelModules = true;
-      ProtectKernelTunables = true;
-      ProtectProc = "invisible";
-      RestrictAddressFamilies = [ "AF_UNIX" ];
-      RestrictNamespaces = true;
-      RestrictRealtime = true;
-      RestrictSUIDSGID = true;
-      SystemCallArchitectures = "native";
-      SystemCallFilter = [
-        "@system-service"
-        "~@privileged"
-      ];
+  config = lib.mkIf config.my.pki.enable {
+    # Ensure PKI directory structure exists
+    systemd.tmpfiles.settings."10-internal-pki" = {
+      "${pkiDir}".d = {
+        mode = "0755";
+        user = "root";
+        group = "root";
+      };
+      "${pkiDir}/certs".d = {
+        mode = "0755";
+        user = "root";
+        group = "root";
+      };
     };
 
-    path = [ pkgs.openssl ];
+    # One-shot service: generate CA + certs on first boot (idempotent)
+    systemd.services.internal-pki = {
+      description = "Internal PKI — Generate CA and container certificates";
+      wantedBy = [ "multi-user.target" ];
+      before = lib.mapAttrsToList (name: _: "container@${name}.service") containerNodes;
+      after = [ "local-fs.target" ];
 
-    script = ''
-      set -euo pipefail
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        PrivateNetwork = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        ReadWritePaths = [ pkiDir ];
+        NoNewPrivileges = true;
 
-      echo "🔐 Internal PKI: Checking certificate state..."
+        # STIG / Hardening baseline
+        CapabilityBoundingSet = "";
+        DevicePolicy = "closed";
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        PrivateDevices = true;
+        ProtectClock = true;
+        ProtectControlGroups = true;
+        ProtectHostname = true;
+        ProtectKernelLogs = true;
+        ProtectKernelModules = true;
+        ProtectKernelTunables = true;
+        ProtectProc = "invisible";
+        RestrictAddressFamilies = [ "AF_UNIX" ];
+        RestrictNamespaces = true;
+        RestrictRealtime = true;
+        RestrictSUIDSGID = true;
+        SystemCallArchitectures = "native";
+        SystemCallFilter = [
+          "@system-service"
+          "~@privileged"
+        ];
+      };
 
-      # --- Generate CA if missing ---
-      if [ ! -f "${pkiDir}/ca.crt" ]; then
-        echo "  Generating Internal CA..."
-        openssl req -new -x509 -nodes \
-          -keyout "${pkiDir}/ca.key" \
-          -out "${pkiDir}/ca.crt" \
-          -days ${certDays} \
-          -subj "${caSubject}"
+      path = [ pkgs.openssl ];
 
-        chmod 600 "${pkiDir}/ca.key"
-        chmod 644 "${pkiDir}/ca.crt"
-      fi
+      script = ''
+        set -euo pipefail
 
-      # --- Generate shared client certificate (for inter-container mTLS) ---
-      if [ ! -f "${pkiDir}/certs/client.crt" ]; then
-        echo "  Generating shared client certificate..."
-        openssl req -new -nodes \
-          -keyout "${pkiDir}/certs/client.key" \
-          -out "/tmp/pki-client.csr" \
-          -subj "/CN=internal-client/O=kleinbem"
+        echo "🔐 Internal PKI: Checking certificate state..."
 
-        openssl x509 -req \
-          -in "/tmp/pki-client.csr" \
-          -CA "${pkiDir}/ca.crt" \
-          -CAkey "${pkiDir}/ca.key" \
-          -CAcreateserial \
-          -out "${pkiDir}/certs/client.crt" \
-          -days ${certDays}
+        # --- Generate CA if missing ---
+        if [ ! -f "${pkiDir}/ca.crt" ]; then
+          echo "  Generating Internal CA..."
+          openssl req -new -x509 -nodes \
+            -keyout "${pkiDir}/ca.key" \
+            -out "${pkiDir}/ca.crt" \
+            -days ${certDays} \
+            -subj "${caSubject}"
 
-        chmod 644 "${pkiDir}/certs/client.crt"
-        chmod 600 "${pkiDir}/certs/client.key"
-        rm -f "/tmp/pki-client.csr"
-      fi
+          chmod 600 "${pkiDir}/ca.key"
+          chmod 644 "${pkiDir}/ca.crt"
+        fi
 
-      # --- Generate per-container server certificates ---
-      ${allCertScripts}
+        # --- Generate shared client certificate (for inter-container mTLS) ---
+        if [ ! -f "${pkiDir}/certs/client.crt" ]; then
+          echo "  Generating shared client certificate..."
+          openssl req -new -nodes \
+            -keyout "${pkiDir}/certs/client.key" \
+            -out "/tmp/pki-client.csr" \
+            -subj "/CN=internal-client/O=kleinbem"
 
-      echo "✅ Internal PKI: All certificates ready."
-    '';
+          openssl x509 -req \
+            -in "/tmp/pki-client.csr" \
+            -CA "${pkiDir}/ca.crt" \
+            -CAkey "${pkiDir}/ca.key" \
+            -CAcreateserial \
+            -out "${pkiDir}/certs/client.crt" \
+            -days ${certDays}
+
+          chmod 644 "${pkiDir}/certs/client.crt"
+          chmod 600 "${pkiDir}/certs/client.key"
+          rm -f "/tmp/pki-client.csr"
+        fi
+
+        # --- Generate per-container server certificates ---
+        ${allCertScripts}
+
+        echo "✅ Internal PKI: All certificates ready."
+      '';
+    };
   };
-
 }
