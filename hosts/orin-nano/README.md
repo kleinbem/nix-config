@@ -77,7 +77,7 @@ keyfile is inside `orin_crypt`, which initrd hasn't mounted yet.
   Tang server on the LAN answers; otherwise use the YubiKey (FIDO2) or the
   passphrase, either at the console or over initrd SSH on port 2222.
 - **SSH**: key-only (YubiKey/FIDO2). Port 22 is open on NetBird (`wt0`) and
-  also on the LAN interface (`enP8p1s0`), on purpose, as a fallback for when
+  also on the LAN interface (`enP8p1s0`), which keeps it reachable when
   NetBird is down.
 - **Bootloader**: systemd-boot, capped at 10 entries. extlinux is off.
 - **Firewall**: iptables-legacy (see `network.nix`).
