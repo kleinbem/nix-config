@@ -13,10 +13,10 @@
 - **sops-nix**: `b18e01ce`
 - **devenv**: `9655d320`
 - **nix-packages**: `148072dc`
-- **nix-hardware**: `93dd2545`
-- **nix-presets**: `2059cfb0`
-- **nix-devshells**: `5caa0f6c`
-- **nix-gantry**: `be2b52ca`
+- **nix-hardware**: `1201cd00`
+- **nix-presets**: `0f7ad86b`
+- **nix-devshells**: `cfecfb3d`
+- **nix-gantry**: `6cbe1d43`
 
 ## 🖥️ Managed Hosts
 
