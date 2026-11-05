@@ -61,6 +61,8 @@
     # The JetPack 6 vendor kernel lacks CONFIG_NFT_CT, CONFIG_NFT_REDIR and
     # CONFIG_NFT_FIB_IPV4, so nftables can't load conntrack or redirect rules.
     # Legacy iptables is fully supported.
+    # no-link: NVIDIA's JetPack defconfig, not a bug. kleinbem/nix-hardware#71 now
+    # builds these modules, so nftables (and ai-hardening) can likely come back.
     nftables.enable = false;
     nat = {
       enable = true;

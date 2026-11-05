@@ -54,11 +54,13 @@ in
     # Force the JMicron JMS581 (152d:0581) USB-NVMe bridge out of UAS into BOT mode.
     # Its UAS firmware resets under sustained write load, causing I/O errors and
     # filesystem corruption when provisioning the Orin SSD over the USB enclosure.
+    # no-link: bridge firmware bug; not yet in the kernel's unusual_uas.h.
     kernelParams = [
       "usb-storage.quirks=152d:0581:u"
     ];
     # acpi_tad takes rtc0 before rtc_cmos, and neither chrony nor hwclock can
     # use it, so the CMOS clock never gets trimmed and boots start years behind.
+    # no-link: likely board firmware; not reported to linux-acpi yet.
     blacklistedKernelModules = [ "acpi_tad" ];
     initrd = {
       availableKernelModules = [
@@ -92,6 +94,7 @@ in
       services.lvm.enable = true;
       services.udev.rules = ''
         # Prevent early-boot hangs (emergency shell) caused by empty USB storage readers
+        # no-link: an empty reader is not a bug, nothing to report.
         # Generic USB2.0 Card Reader
         SUBSYSTEM=="block", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0153", ENV{SYSTEMD_READY}="0"
         # USB to SATA/PCIe Bridge (External Harddisk Reader)
@@ -168,6 +171,7 @@ in
 
       # No SATA link power saving: the data disk failed to wake from ALPM,
       # the link reset out and btrfs went read-only. Always on AC anyway.
+      # no-link: drive/controller firmware.
       ACTION=="add|change", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
     '';
     fwupd.enable = true;

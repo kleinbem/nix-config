@@ -33,6 +33,7 @@ in
     # openclaw stays here rather than on mac-mini: its pnpm-deps hash in
     # nix-openclaw mismatches on a from-scratch build, and this host runs an
     # already-cached build.
+    # upstream: openclaw/nix-openclaw#94 (closed 2026-05; recheck a fresh build before moving)
     inputs.nix-presets.nixosModules.openclaw
     inputs.nix-presets.nixosModules.herdr-remote-client
   ];
@@ -272,7 +273,9 @@ in
 
     # Voice Pipeline
     wyoming = {
-      openwakeword.enable = false; # broken upstream right now
+      # pyopen-wakeword's vendored libtensorflowlite segfaults on aarch64.
+      # upstream: NixOS/nixpkgs#518379 (marked broken on aarch64-linux; no segfault report upstream yet)
+      openwakeword.enable = false;
       piper.servers."piper" = {
         enable = true;
         uri = "tcp://0.0.0.0:10200";
@@ -312,6 +315,7 @@ in
     # ESPHome 2026.8 removed `esphome dashboard`, which the NixOS module still
     # runs; use esphome-device-builder instead (same port and flags). esphome
     # itself stays on PATH for firmware builds.
+    # upstream: NixOS/nixpkgs#550245 (merged and in our pin; the ExecStart override can likely go)
     services.esphome = {
       path = [ pkgs.esphome-device-builder ];
       # Link the device configs in ./esphome into the state dir so this repo
