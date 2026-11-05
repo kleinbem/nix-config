@@ -101,9 +101,9 @@ keyfile is inside `orin_crypt`, which initrd hasn't mounted yet.
 
 - **Disk unlock**: the Jetson has no TPM, so there is no TPM sealing
   (`orin-seal` is inert). Tang/clevis unlocks `orin_crypt` unattended when a
-  Tang server on the LAN answers; otherwise use the passphrase, or a YubiKey
-  once FIDO2 is enrolled (see above), either at the console or over initrd
-  SSH on port 2222.
+  Tang server on the LAN answers. Otherwise type the passphrase, at the
+  console or over initrd SSH on port 2222, or plug an enrolled YubiKey
+  (FIDO2, see above) into the Orin itself; SSH doesn't forward the token.
 - **SSH**: key-only (YubiKey/FIDO2). Port 22 is open on NetBird (`wt0`) and
   also on the LAN interface (`enP8p1s0`), which keeps it reachable when
   NetBird is down.
