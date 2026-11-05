@@ -42,6 +42,12 @@ while read -r log; do
   found=1
   if [ -z "$cause" ]; then
     line=$(bzcat "$log" | grep -aE '[Ee]rror[: ]|FAIL|not satisfied|Killed|No space left|out of memory|Segmentation fault' | head -n 1)
+    # A fixed-output build that ran through failed on its hash: nix reports
+    # that itself, the build log doesn't have it.
+    if [ -z "$line" ] && nix derivation show "$d" 2>/dev/null |
+      jq -e '(.derivations // .) | to_entries[0].value.outputs.out.hash' >/dev/null; then
+      line="hash mismatch (fixed-output derivation)"
+    fi
     [ -n "$line" ] || line=$(bzcat "$log" | grep -av '^\s*$' | tail -n 1)
     cause="${b#*-}: $(echo "$line" | tr -s ' \t' ' ' | sed 's/^ //' | cut -c1-200)"
   fi

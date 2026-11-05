@@ -50,6 +50,31 @@ attic-coverage host="$(hostname)":
     echo "   Tip: commit + push so CI builds them → pulls into Attic → just jj::pull-all && just dev::apply {{host}}"
     exit 1
 
+# What CI's build of a host said for the newest pushed commit in @'s history.
+# Exit 1 when that build failed, 0 otherwise (also when there is no status).
+[group("Development")]
+[no-exit-message]
+ci-status host="$(hostname)":
+    #!/usr/bin/env bash
+    set -uo pipefail
+    sha=$(jj log --ignore-working-copy --no-graph -r 'heads(::@ & ::main@origin)' -T commit_id 2>/dev/null) || exit 0
+    [ -n "$sha" ] || exit 0
+    status=$(gh api "repos/kleinbem/nix-config/commits/$sha/statuses" \
+        --jq '[.[] | select(.context == "CI/{{host}}")][0] // empty | [.state, .description, .target_url] | @tsv' 2>/dev/null) || exit 0
+    [ -n "$status" ] || exit 0
+    IFS=$'\t' read -r state desc url <<<"$status"
+    case "$state" in
+        failure)
+            echo "❌ CI could not build {{host}} at ${sha:0:8}: $desc"
+            echo "   $url"
+            echo "   A local build most likely fails the same way."
+            exit 1
+            ;;
+        error) echo "⚠️  CI's build of {{host}} at ${sha:0:8} did not finish: $desc ($url)" ;;
+        pending) echo "⏳ CI is still building {{host}} at ${sha:0:8}: $url" ;;
+        success) echo "✓ CI built {{host}} at ${sha:0:8}; what is missing comes from local changes." ;;
+    esac
+
 [group("Development")]
 apply *args="":
     #!/usr/bin/env bash
@@ -159,9 +184,10 @@ apply *args="":
             echo "❌ Not applying: the coverage probe failed." >&2
             exit 1
         fi
+        # Why paths are missing: CI failed on this commit, or isn't done yet.
+        [ "$cov" -ne 1 ] || just dev::ci-status "$TARGET_HOST" || true
         if [ "$cov" -eq 1 ] && [ "$ALLOW_LOCAL" -eq 0 ]; then
-            # Usually CI for this commit isn't green or hasn't pushed to Attic yet;
-            # building locally can take hours.
+            # Building locally can take hours.
             if [ -t 0 ]; then
                 read -r -p "Build these locally anyway? [y/N] " answer
                 # Strip stray whitespace/CR (some terminal modes send \r with Enter).
