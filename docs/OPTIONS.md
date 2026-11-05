@@ -195,7 +195,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.garage-ui`
 
-- **Declared:** `nix-presets/containers/garage-ui.nix:106`
+- **Declared:** `nix-presets/containers/garage-ui.nix:104`
 - **Sub-options:** `adminPort`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `port`, `region`, `rootUrl`, `s3Port`, `secretsFile`, `tokenLogin`
 - **Consumed by:** `host:nixos-nvme`
 
