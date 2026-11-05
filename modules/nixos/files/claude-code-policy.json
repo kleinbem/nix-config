@@ -51,7 +51,17 @@
     ],
     "deny": [
       "Bash(gh pr merge --admin*)",
-      "Bash(gh pr merge *--admin*)"
+      "Bash(gh pr merge *--admin*)",
+      "Read(~/.config/sops/age/**)",
+      "Read(~/.ssh/id_*)",
+      "Read(//run/secrets/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(~/.config/sops/age/**)",
+      "Edit(~/.ssh/id_*)",
+      "Edit(//run/secrets/**)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)"
     ]
   },
   "autoMode": {
