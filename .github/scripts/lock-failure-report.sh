@@ -6,11 +6,17 @@
 set -euo pipefail
 log=$1 lock_before=$2
 
+if [[ ! -s $log ]]; then
+  echo "The nightly lock update failed validation (no eval log, see the run)."
+  exit 0
+fi
+
 check=$(grep -m1 '^FAILED ' "$log" | cut -d' ' -f2- || true)
 echo "The nightly lock update failed validation${check:+ at \`$check\`}."
 echo
 echo '```'
-grep -E '^\s*error:|Failed assertions|^\s+- ' "$log" | grep -vE '^\s+[0-9]+\|' | grep -v '^\s*- Nixpkgs import\|^\s*- NixOS:\|^\s*- nix-\*' | head -12
+# A grep without a match exits 1; under pipefail that would drop the report.
+{ grep -E '^\s*error:|Failed assertions|^\s+- ' "$log" || true; } | { grep -vE '^\s+[0-9]+\|' || true; } | { grep -v '^\s*- Nixpkgs import\|^\s*- NixOS:\|^\s*- nix-\*' || true; } | head -12
 echo '```'
 
 broken=$(grep -oE "Refusing to evaluate package '[^']+'" "$log" | head -1 | cut -d"'" -f2 || true)
@@ -24,7 +30,7 @@ echo
 echo "\`$broken\` is marked broken. The chain from the failing configuration down to it:"
 echo
 echo '```'
-grep -oE "while evaluating (derivation '[^']+'|the option \`[^']+')" "$log" | sed 's/^while evaluating //' | head -20
+{ grep -oE "while evaluating (derivation '[^']+'|the option \`[^']+')" "$log" || true; } | sed 's/^while evaluating //' | head -20
 echo '```'
 echo
 echo "Hold the package the fleet uses (the lowest top-level package in the chain, not \`$broken\` itself) in kleinbem/nix-detour-fleet \`held-packages.json\`:"

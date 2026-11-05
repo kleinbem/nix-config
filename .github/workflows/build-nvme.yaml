@@ -40,6 +40,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Nix fleet setup
         uses: ./.github/actions/nix-fleet-setup
@@ -68,6 +69,8 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: |
             kleinbem-secrets
+          # Only feeds Nix's github access-token.
+          permission-contents: read
 
       - name: Add swap for the eval
         # The eval runs near the hosted runner's memory ceiling; spill to the

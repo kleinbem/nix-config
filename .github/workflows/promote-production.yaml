@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # Pull-deploy hosts must never compile on-device, but build-all's cache push
@@ -40,13 +40,43 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
     steps:
+      # Picked once here and handed to promote, so the SHA that is verified is
+      # the SHA that is promoted.
+      - name: Determine target SHA
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_SHA" ]; then
+            SHA="$INPUT_SHA"
+            echo "Using dispatch-input SHA: $SHA"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            SHA="$RUN_SHA"
+            echo "Using build-all head SHA: $SHA"
+          else
+            SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/refs/heads/main" --jq '.object.sha')
+            echo "Using current main SHA: $SHA"
+          fi
+          if ! [[ $SHA =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Not a full commit SHA: '$SHA'"
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - name: Checkout promotion-candidate SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Check the exact commit build-all built, not whatever main is now.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ steps.target.outputs.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Nix fleet setup (pull-only)
         # Wires up NetBird + Attic as a SUBSTITUTER with the pull token and
@@ -76,6 +106,7 @@ jobs:
           # kleinbem-secrets fetch still 404s.
           repositories: |
             kleinbem-secrets
+          permission-contents: read
 
       - name: Assert committed flake.lock evaluates (no overrides)
         env:
@@ -147,7 +178,7 @@ jobs:
         id: manifest
         continue-on-error: true
         env:
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          SHA: ${{ steps.target.outputs.sha }}
         run: |
           set -euo pipefail
           echo '{}' > /tmp/systems.json
@@ -168,8 +199,11 @@ jobs:
             echo '{}' > "/tmp/ok-$sys.json"
             for name in $(jq -r 'keys[]' "/tmp/paths-$sys.json"); do
               path=$(jq -r --arg n "$name" '.[$n]' "/tmp/paths-$sys.json")
-              out="$(nix-store --store "local?root=$EMPTY" -r --dry-run "$path" --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1 || true)"
-              if echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
+              # A failed query (network, bad path) is a miss too, not a pass.
+              if ! out="$(nix-store --store "local?root=$EMPTY" -r --dry-run "$path" --option substituters "https://cache.nixos.org https://cache.kleinbem.dev/system" 2>&1)"; then
+                echo "::warning::$sys/$name cache query failed ($path) — dropped from manifest this cycle."
+                echo "$out"
+              elif echo "$out" | grep -qiE 'will be built|do.?n.?t know how to build'; then
                 echo "::warning::$sys/$name closure not fully cached ($path) — dropped from manifest this cycle."
                 echo "$out"
               else
@@ -197,6 +231,8 @@ jobs:
     # Only promote once the closure-completeness gate passes. `needs` makes this
     # job skip if verify-cache fails — hosts stay on the last good revision.
     needs: verify-cache
+    permissions:
+      contents: write
     # workflow_run fires regardless of conclusion; gate to success only.
     # workflow_dispatch always runs.
     # `branches: [main]` matches the head branch name, which a fork PR can
@@ -214,32 +250,12 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - name: Determine target SHA
-        id: target
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          INPUT_SHA: ${{ inputs.sha }}
-          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          set -euo pipefail
-          if [ -n "$INPUT_SHA" ]; then
-            SHA="$INPUT_SHA"
-            echo "Using dispatch-input SHA: $SHA"
-          elif [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
-            SHA="$RUN_SHA"
-            echo "Using build-all head SHA: $SHA"
-          else
-            SHA=$(gh api repos/${{ github.repository }}/git/refs/heads/main --jq '.object.sha')
-            echo "Using current main SHA: $SHA"
-          fi
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-
       - name: Move production tag
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SHA: ${{ needs.verify-cache.outputs.sha }}
         run: |
           set -euo pipefail
-          SHA="${{ steps.target.outputs.sha }}"
           # Force-move so the tag advances even after a force-push to main.
           gh api -X PATCH \
             "repos/${{ github.repository }}/git/refs/tags/production" \
@@ -281,6 +297,7 @@ jobs:
           # Bearer token for the authenticated ntfy server; empty while the
           # server is still open (nix/infra github-secrets.tf NTFY_CI_TOKEN).
           NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
+          SHA: ${{ needs.verify-cache.outputs.sha }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -291,7 +308,7 @@ jobs:
             ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
             -H "Title: production promoted" \
             -H "Tags: rocket" \
-            -d "production → ${{ steps.target.outputs.sha }}" \
+            -d "production → $SHA" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
           echo "📣 Fleet notified via ntfy — subscribed hosts upgrade now." >> "$GITHUB_STEP_SUMMARY"
 

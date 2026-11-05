@@ -124,6 +124,7 @@ jobs:
         # devShell drvPath covers most of it (host-* toplevels included), but
         # not the container-factory configs or non-x86_64 devShells.
         run: |
+          set -euo pipefail
           # kleinbem-secrets is private and CI has no PAT in nix access-tokens, so
           # substitute the shared dummy stub (see .github/scripts/).
           ./nix-config/.github/scripts/setup-dummy-secrets.sh
@@ -143,8 +144,12 @@ jobs:
             nix eval "$1" --apply builtins.attrNames --json \
               --override-input kleinbem-secrets /tmp/dummy-secrets | jq -r '.[]'
           }
+          # Names go into a variable first: a failing command substitution in
+          # a `for` list doesn't trip -e and would leave nothing to validate.
           for system in x86_64-linux aarch64-linux; do
-            for check in $(attr_names ".#checks.$system"); do
+            checks=$(attr_names ".#checks.$system")
+            [ -n "$checks" ] || { echo "::error::no checks found for $system"; exit 1; }
+            for check in $checks; do
               # host-phone (nix-on-droid) can never eval purely: upstream pins
               # its cross-compiled proot-static as a raw /nix/store string,
               # which types.package coerces via builtins.storePath — rejected
@@ -153,7 +158,9 @@ jobs:
               eval_drv ".#checks.$system.\"$check\".drvPath"
             done
           done
-          for shell in $(attr_names ".#devShells.x86_64-linux"); do
+          shells=$(attr_names ".#devShells.x86_64-linux")
+          [ -n "$shells" ] || { echo "::error::no devShells found"; exit 1; }
+          for shell in $shells; do
             eval_drv ".#devShells.x86_64-linux.\"$shell\".drvPath"
           done
 
