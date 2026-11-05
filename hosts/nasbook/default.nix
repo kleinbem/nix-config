@@ -227,6 +227,9 @@ in
     resolved.enable = true;
   };
 
+  # dhcpcd's DUID and leases; on tmpfs the DUID changes with every boot.
+  environment.persistence."/nix/persist".directories = [ "/var/lib/dhcpcd" ];
+
   # paperless trusts the X-Authentik-Username header for SSO, and its port is
   # routable fleet-wide, so a spoofed header would log anyone in. Only Caddy
   # may reach it. core-pi masquerades all cbr0 egress, so Caddy arrives as

@@ -59,6 +59,22 @@ jobs:
         # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
         nix eval .#nixosConfigurations $NIX_OVERRIDES --apply builtins.attrNames
 
+    - name: Policy checks
+      run: |
+        # Eval-level checks over every host (lib/policy/); build-all skips
+        # them so they stay in this required job. -L prints the violations.
+        # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
+        mapfile -t POLICY < <(nix eval .#checks.x86_64-linux $NIX_OVERRIDES --json \
+            --apply 'cs: builtins.filter (n: builtins.substring 0 7 n == "policy-") (builtins.attrNames cs)' \
+          | jq -r '.[]')
+        if [ "${#POLICY[@]}" -eq 0 ]; then
+          echo "::error::no policy-* checks found; enumeration is broken."
+          exit 1
+        fi
+        echo "Policy checks: ${POLICY[*]}"
+        # shellcheck disable=SC2086
+        nix build -L --no-link --keep-going $NIX_OVERRIDES "${POLICY[@]/#/.#checks.x86_64-linux.}"
+
     - name: Check Formatting
       run: |
         # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags

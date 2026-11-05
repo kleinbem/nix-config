@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   pkgs,
   ...
@@ -35,11 +36,25 @@ let
   '';
 in
 {
-  environment.systemPackages = with pkgs; [
-    clamav
-    clamtk # GUI
-    libnotify # For notifications
-  ];
+  environment = {
+    systemPackages = with pkgs; [
+      clamav
+      clamtk # GUI
+      libnotify # For notifications
+    ];
+  }
+  # The signature DB (~300 MB) would otherwise sit in RAM and be fetched again
+  # after every boot. optionalAttrs: hosts without impermanence lack the option.
+  // lib.optionalAttrs (options.environment ? persistence) {
+    persistence."/nix/persist".directories = [
+      {
+        directory = clamDir;
+        user = "clamav";
+        group = "clamav";
+        mode = "0755";
+      }
+    ];
+  };
 
   services.clamav = {
     daemon = {

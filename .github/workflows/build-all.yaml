@@ -103,13 +103,14 @@ jobs:
           # which on Determinate Nix printed `"checks": null` and silently
           # built nothing. An empty list is always an enumeration bug.
           # no-link: not reported upstream; `nix eval` is the sturdier way anyway.
-          # Excluded: VM tests (vm-tests.yaml runs them) and host-* checks
-          # (hosts are targeted explicitly below; nixos-nvme has build-nvme.yaml).
+          # Excluded: VM tests (vm-tests.yaml runs them), host-* checks
+          # (hosts are targeted explicitly below; nixos-nvme has build-nvme.yaml)
+          # and policy-* checks (ci.yml's required check job runs them).
           SYSTEM="${{ matrix.system }}"
           # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
           mapfile -t CI_CHECKS < <(nix eval ".#checks.$SYSTEM" \
               --apply builtins.attrNames --json $NIX_OVERRIDES \
-            | jq -r '.[] | select(test("(caddy|code-server|mobile-link|recovery)-test|^host-") | not)')
+            | jq -r '.[] | select(test("(caddy|code-server|mobile-link|recovery)-test|^host-|^policy-") | not)')
           if [ "${#CI_CHECKS[@]}" -eq 0 ]; then
             echo "::error::.#checks.$SYSTEM enumeration came back empty — enumeration is broken (it can never legitimately be empty)."
             exit 1

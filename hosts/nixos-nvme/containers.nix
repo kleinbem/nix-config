@@ -225,7 +225,7 @@
         ip = "${myInventory.network.nodes.paperless.ip}/24";
         hostDataDir = "/mnt/data/Archive/Paperless";
         hostConsumptionDir = "/mnt/data/Archive/Inbox";
-        passwordFile = config.sops.secrets.paperless_password.path;
+        passwordFile = lib.mkIf config.my.containers.paperless.enable config.sops.secrets.paperless_password.path;
       };
 
       buzz = {

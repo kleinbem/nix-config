@@ -221,6 +221,7 @@
         ./modules/flake/images.nix
         inputs.nix-topology.flakeModule
         ./modules/flake/checks.nix
+        ./modules/flake/policy-checks.nix
         ./modules/flake/hosts.nix
         ./modules/flake/colmena.nix
         ./modules/flake/nix-on-droid.nix

@@ -195,7 +195,8 @@ in
       # Static `esphome` user (not DynamicUser), so the plain path.
       "/var/lib/esphome"
       "/var/lib/private/matterjs-server"
-      "/var/lib/wyoming"
+      # piper and faster-whisper are DynamicUser (voices and models).
+      "/var/lib/private/wyoming"
       # Own music files for Music Assistant (mediaDir above), copied in by
       # the primary user; world-readable so the container's DynamicUser can
       # read them. impermanence creates the folder, so it sets the owner.

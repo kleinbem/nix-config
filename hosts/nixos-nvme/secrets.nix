@@ -137,11 +137,6 @@ in
 
       # Syncthing
       # syncthing_gui_password = { };
-
-      # Paperless
-      paperless_password = {
-        neededForUsers = true;
-      };
     }
     # Secrets below are gated on their feature: activation fails if a declared
     # key is missing from sops. To enable one, add the key first (e.g.
@@ -206,6 +201,11 @@ in
     // lib.optionalAttrs config.my.containers.github-runner.enable {
       github_runner_pat = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
+      };
+    }
+    // lib.optionalAttrs config.my.containers.paperless.enable {
+      paperless_password = {
+        neededForUsers = true;
       };
     }
     # AnythingLLM API key (created in its UI, Settings → API Keys) for the
