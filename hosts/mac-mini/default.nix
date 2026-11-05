@@ -285,7 +285,8 @@ in
         hostDataDir = "/var/lib/hermes";
         memoryLimit = "2G";
         ollamaUrl = "https://litellm.internal/v1";
-        secretsFile = config.sops.templates."hermes.env".path;
+        secretsFile =
+          if config.sops.templates ? "hermes.env" then config.sops.templates."hermes.env".path else null;
         discord.enable = true;
       };
 

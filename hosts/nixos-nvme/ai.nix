@@ -25,7 +25,8 @@
         enable = true;
         serverPort = 4000;
       };
-      secretsFile = config.sops.templates."litellm.env".path;
+      secretsFile =
+        if config.sops.templates ? "litellm.env" then config.sops.templates."litellm.env".path else null;
       backends = [
         {
           name = "qwen-32b-ollama";
@@ -137,7 +138,11 @@
       ip = "${myInventory.network.nodes.agent-team.ip}/24";
       hostDataDir = "/var/lib/images/agent-team";
       manager.humanInTheLoop = true; # Enabled per user request
-      secretsFile = config.sops.templates."agent-team.env".path;
+      secretsFile =
+        if config.sops.templates ? "agent-team.env" then
+          config.sops.templates."agent-team.env".path
+        else
+          null;
 
       # Team Definition based on industry best practices
       agents = {

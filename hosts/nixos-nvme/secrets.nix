@@ -97,7 +97,7 @@ in
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       }; # `openssl rand -base64 32`
       # 0444: services.typesense reads apiKeyFile as the unprivileged
-      # `typesense` user. No new exposure: buzz.env (0444) holds it too.
+      # `typesense` user.
       buzz_typesense_api_key = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
         mode = "0444";
@@ -106,32 +106,6 @@ in
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
       buzz_s3_secret_key = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-
-      # Service Internal Secrets
-      n8n_encryption_key = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      n8n_basic_auth_password = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      n8n_jwt_secret = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      n8n_user_management_main_user_email = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      n8n_user_management_main_user_password = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      openwebui_secret_key = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      langfuse_nextauth_secret = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      langfuse_salt = {
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
 
@@ -154,28 +128,12 @@ in
       github_app_private_key = {
         owner = "martin";
       };
-      langfuse_public_key = {
-        mode = "0444";
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      langfuse_secret_key = {
-        mode = "0444";
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
 
       # Backup Secrets
       restic_password = {
         owner = "martin";
       }; # User backup
       restic_system_password = { }; # Root backup
-
-      # Dashboard Keys
-      homepage_n8n_key = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
-      homepage_openwebui_key = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
-      };
 
       # Syncthing
       # syncthing_gui_password = { };
@@ -194,10 +152,54 @@ in
         sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
       };
     }
-    # Password of langfuse's least-privilege Postgres role.
+    # langfuse_db_password is the password of its least-privilege Postgres role.
     // lib.optionalAttrs config.my.containers.langfuse.enable {
       langfuse_db_password = {
-        sopsFile = secretFile "nix/per-host/nixos-nvme.yaml";
+        sopsFile = hostSops;
+      };
+      langfuse_nextauth_secret = {
+        sopsFile = hostSops;
+      };
+      langfuse_salt = {
+        sopsFile = hostSops;
+      };
+    }
+    // lib.optionalAttrs config.my.containers.n8n.enable {
+      n8n_encryption_key = {
+        sopsFile = hostSops;
+      };
+      n8n_basic_auth_password = {
+        sopsFile = hostSops;
+      };
+      n8n_jwt_secret = {
+        sopsFile = hostSops;
+      };
+      n8n_user_management_main_user_email = {
+        sopsFile = hostSops;
+      };
+      n8n_user_management_main_user_password = {
+        sopsFile = hostSops;
+      };
+    }
+    // lib.optionalAttrs config.my.containers.open-webui.enable {
+      openwebui_secret_key = {
+        sopsFile = hostSops;
+      };
+    }
+    // lib.optionalAttrs config.my.containers.agent-team.enable {
+      langfuse_public_key = {
+        sopsFile = hostSops;
+      };
+      langfuse_secret_key = {
+        sopsFile = hostSops;
+      };
+    }
+    // lib.optionalAttrs config.my.containers.dashboard.enable {
+      homepage_n8n_key = {
+        sopsFile = hostSops;
+      };
+      homepage_openwebui_key = {
+        sopsFile = hostSops;
       };
     }
     # GitHub runner registration token.
@@ -218,29 +220,10 @@ in
     # hosts/mac-mini/secrets.nix, keyed to nix/per-container/stalwart.yaml.)
 
     # --- Templated Env Files ---
+    # Default mode 0400: each env file is read as root by systemd's
+    # EnvironmentFile= inside a privateUsers = "no" container.
     templates = {
-      "homepage.env" = {
-        mode = "0444";
-        content = ''
-          HOMEPAGE_VAR_N8N_KEY=${config.sops.placeholder.homepage_n8n_key}
-          HOMEPAGE_VAR_OPENWEBUI_KEY=${config.sops.placeholder.homepage_openwebui_key}
-        '';
-      };
-      "openwebui.env" = {
-        mode = "0444";
-        content = ''
-          WEBUI_SECRET_KEY=${config.sops.placeholder.openwebui_secret_key}
-        '';
-      };
-      "agent-team.env" = {
-        mode = "0444";
-        content = ''
-          LANGFUSE_PUBLIC_KEY=${config.sops.placeholder.langfuse_public_key}
-          LANGFUSE_SECRET_KEY=${config.sops.placeholder.langfuse_secret_key}
-        '';
-      };
       "buzz.env" = {
-        mode = "0444";
         content = ''
           BUZZ_RELAY_PRIVATE_KEY=${config.sops.placeholder.buzz_relay_private_key}
           GARAGE_RPC_SECRET=${config.sops.placeholder.buzz_garage_rpc_secret}
@@ -253,55 +236,75 @@ in
           TYPESENSE_API_KEY=${config.sops.placeholder.buzz_typesense_api_key}
         '';
       };
-      "n8n.env" = {
-        mode = "0444";
-        content = ''
-          N8N_ENCRYPTION_KEY=${config.sops.placeholder.n8n_encryption_key}
-          N8N_BASIC_AUTH_PASSWORD=${config.sops.placeholder.n8n_basic_auth_password}
-          N8N_USER_MANAGEMENT_JWT_SECRET=${config.sops.placeholder.n8n_jwt_secret}
-          N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
-          N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
-        '';
-      };
-      # json-exporter config for the GitHub Actions dashboard (monitoring container).
-      # Module mappings + the GitHub API bearer token (reuses github_pat — classic
-      # repo scope covers Actions-read + self-hosted-runner-read). The token lives
-      # here (not in the store) because json-exporter needs it inside its config.
-      "json-exporter.yml" = {
-        mode = "0444";
-        content = ''
-          modules:
-            runners:
-              headers:
-                Authorization: "Bearer ${config.sops.placeholder.github_pat}"
-                Accept: "application/vnd.github+json"
-                X-GitHub-Api-Version: "2022-11-28"
-              metrics:
-                - name: github_runner
-                  type: object
-                  help: "Self-hosted runner (value=busy 1/0; label status=online/offline)"
-                  path: '{.runners[*]}'
-                  labels:
-                    name: '{.name}'
-                    status: '{.status}'
-                  values:
-                    busy: '{.busy}'
-            runs_count:
-              headers:
-                Authorization: "Bearer ${config.sops.placeholder.github_pat}"
-                Accept: "application/vnd.github+json"
-                X-GitHub-Api-Version: "2022-11-28"
-              metrics:
-                - name: github_workflow_runs
-                  type: value
-                  help: "Workflow runs in the queried status"
-                  path: '{.total_count}'
-        '';
-      };
       # "syncthing.env".content = ''
       #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
       # '';
     }
+    // lib.optionalAttrs config.my.containers.dashboard.enable {
+      "homepage.env".content = ''
+        HOMEPAGE_VAR_N8N_KEY=${config.sops.placeholder.homepage_n8n_key}
+        HOMEPAGE_VAR_OPENWEBUI_KEY=${config.sops.placeholder.homepage_openwebui_key}
+      '';
+    }
+    // lib.optionalAttrs config.my.containers.open-webui.enable {
+      "openwebui.env".content = ''
+        WEBUI_SECRET_KEY=${config.sops.placeholder.openwebui_secret_key}
+      '';
+    }
+    // lib.optionalAttrs config.my.containers.agent-team.enable {
+      "agent-team.env".content = ''
+        LANGFUSE_PUBLIC_KEY=${config.sops.placeholder.langfuse_public_key}
+        LANGFUSE_SECRET_KEY=${config.sops.placeholder.langfuse_secret_key}
+      '';
+    }
+    // lib.optionalAttrs config.my.containers.n8n.enable {
+      "n8n.env".content = ''
+        N8N_ENCRYPTION_KEY=${config.sops.placeholder.n8n_encryption_key}
+        N8N_BASIC_AUTH_PASSWORD=${config.sops.placeholder.n8n_basic_auth_password}
+        N8N_USER_MANAGEMENT_JWT_SECRET=${config.sops.placeholder.n8n_jwt_secret}
+        N8N_USER_MANAGEMENT_MAIN_USER_EMAIL=${config.sops.placeholder.n8n_user_management_main_user_email}
+        N8N_USER_MANAGEMENT_MAIN_USER_PASSWORD=${config.sops.placeholder.n8n_user_management_main_user_password}
+      '';
+    }
+    # json-exporter config for the GitHub Actions dashboard. The token
+    # (github_pat, repo scope) has to sit inside the config. 0444 because
+    # json-exporter runs as a DynamicUser in the monitoring container.
+    //
+      lib.optionalAttrs
+        (config.my.containers.monitoring.enable && config.my.containers.monitoring.githubMetrics.enable)
+        {
+          "json-exporter.yml" = {
+            mode = "0444";
+            content = ''
+              modules:
+                runners:
+                  headers:
+                    Authorization: "Bearer ${config.sops.placeholder.github_pat}"
+                    Accept: "application/vnd.github+json"
+                    X-GitHub-Api-Version: "2022-11-28"
+                  metrics:
+                    - name: github_runner
+                      type: object
+                      help: "Self-hosted runner (value=busy 1/0; label status=online/offline)"
+                      path: '{.runners[*]}'
+                      labels:
+                        name: '{.name}'
+                        status: '{.status}'
+                      values:
+                        busy: '{.busy}'
+                runs_count:
+                  headers:
+                    Authorization: "Bearer ${config.sops.placeholder.github_pat}"
+                    Accept: "application/vnd.github+json"
+                    X-GitHub-Api-Version: "2022-11-28"
+                  metrics:
+                    - name: github_workflow_runs
+                      type: value
+                      help: "Workflow runs in the queried status"
+                      path: '{.total_count}'
+            '';
+          };
+        }
     // lib.optionalAttrs config.my.containers.langfuse.enable {
       # 0400: carries the DB password; root reads it inside the container.
       "langfuse.env" = {
@@ -316,7 +319,6 @@ in
     }
     // lib.optionalAttrs config.my.containers.litellm.enable {
       "litellm.env" = {
-        mode = "0444";
         content = ''
           LITELLM_MASTER_KEY=${config.sops.placeholder.litellm_master_key}
           # Per-backend API keys go here as they're added — each backend's

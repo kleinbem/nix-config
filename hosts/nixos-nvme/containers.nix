@@ -33,7 +33,8 @@
         ip = "${myInventory.network.nodes.n8n.ip}/24";
         hostDataDir = "/var/lib/images/n8n";
         memoryLimit = "6G";
-        secretsFile = config.sops.templates."n8n.env".path;
+        secretsFile =
+          if config.sops.templates ? "n8n.env" then config.sops.templates."n8n.env".path else null;
         noteDirs = {
           repos = config.my.developDir;
         };
@@ -63,7 +64,11 @@
         ip = "${myInventory.network.nodes.open-webui.ip}/24";
         hostDataDir = "/var/lib/images/open-webui";
         memoryLimit = "4G";
-        secretsFile = config.sops.templates."openwebui.env".path;
+        secretsFile =
+          if config.sops.templates ? "openwebui.env" then
+            config.sops.templates."openwebui.env".path
+          else
+            null;
         tls = {
           enable = true;
           serverPort = 8080;
@@ -82,7 +87,8 @@
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = myInventory.hosts.nixos-nvme.ip;
         memoryLimit = "1G";
-        secretsFile = config.sops.templates."homepage.env".path;
+        secretsFile =
+          if config.sops.templates ? "homepage.env" then config.sops.templates."homepage.env".path else null;
       };
 
       qdrant = {
@@ -118,7 +124,11 @@
         githubMetrics = {
           enable = true;
           repos = [ "kleinbem/nix" ];
-          configFile = config.sops.templates."json-exporter.yml".path;
+          configFile =
+            if config.sops.templates ? "json-exporter.yml" then
+              config.sops.templates."json-exporter.yml".path
+            else
+              null;
         };
       };
 

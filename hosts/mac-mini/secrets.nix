@@ -9,10 +9,13 @@ let
   mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
 
   # alertmanager-ntfy: the `monitoring` ntfy user's password plus the alert
-  # topic. Gated on the key existing; sops-nix fails activation on a missing key.
+  # topic. Gated on monitoring+ntfy and on the key existing (sops-nix fails
+  # activation on a missing key).
   hostSops = secretFile "nix/per-host/mac-mini.yaml";
   hasMonitoringNtfy =
-    builtins.pathExists hostSops
+    config.my.containers.monitoring.enable
+    && config.my.containers.monitoring.ntfy.enable
+    && builtins.pathExists hostSops
     && lib.hasInfix "\nntfy_monitoring_password:" ("\n" + builtins.readFile hostSops);
 
   # Gates keys that may not be provisioned yet, like personaHasField below.
@@ -34,6 +37,8 @@ let
     claude-code = "anthropic_api_key";
   };
   invocablePersonas = lib.filterAttrs (_: p: toolApiKeyField ? ${p.tool}) (import ../../personas.nix);
+  hermesDiscord = config.my.containers.hermes.enable && config.my.containers.hermes.discord.enable;
+
   personaSopsFile = name: secretFile "personas/${name}.yaml";
 
   # One declared key missing from its file silently freezes every other secret on
@@ -93,6 +98,8 @@ in
         group = "wheel";
       };
 
+    }
+    // lib.optionalAttrs hermesDiscord {
       # Hermes Agent's Discord gateway bot token.
       discord_bot_token = {
         sopsFile = secretFile "nix/per-host/mac-mini.yaml";
@@ -104,7 +111,9 @@ in
       hermes_discord_allowed_users = {
         sopsFile = secretFile "nix/per-host/mac-mini.yaml";
       };
-
+    }
+    // lib.optionalAttrs hasMonitoringNtfy {
+      ntfy_monitoring_password.sopsFile = hostSops;
     }
     // lib.optionalAttrs (macMiniHasField "cloudflare_dyndns_token") {
       # Cloudflare token (Zone:DNS:Edit on kleinbem.dev only, narrower than the
@@ -145,7 +154,7 @@ in
         ];
       })
     )
-    // personaRuntimeSecrets;
+    // lib.optionalAttrs config.my.containers.persona-runtime.enable personaRuntimeSecrets;
 
     templates = {
       # Merged on top of alertmanager-ntfy's settings inside the monitoring
@@ -162,14 +171,15 @@ in
               topic: ${config.sops.placeholder.ntfy_alert_topic}
         '';
       };
-      "hermes.env" = {
-        mode = "0444";
-        content = ''
-          DISCORD_BOT_TOKEN=${config.sops.placeholder.discord_bot_token}
-          # By default the gateway denies everyone not listed here.
-          DISCORD_ALLOWED_USERS=${config.sops.placeholder.hermes_discord_allowed_users}
-        '';
-      };
+    }
+    // lib.optionalAttrs hermesDiscord {
+      # 0400: only the hermes module's activation script reads it (as root),
+      # merging it into $HERMES_HOME/.env.
+      "hermes.env".content = ''
+        DISCORD_BOT_TOKEN=${config.sops.placeholder.discord_bot_token}
+        # By default the gateway denies everyone not listed here.
+        DISCORD_ALLOWED_USERS=${config.sops.placeholder.hermes_discord_allowed_users}
+      '';
     }
     // lib.optionalAttrs config.my.containers.open-webui.oidc.enable openWebUiOidc.templates;
   };
