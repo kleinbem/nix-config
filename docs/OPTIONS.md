@@ -531,7 +531,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.virtualisation`
 
-- **Declared:** `nix-config/modules/nixos/virtualisation.nix:12`
+- **Declared:** `nix-config/modules/nixos/virtualisation.nix:27`
 - **Sub-options:** `enable`, `libvirtd.enable`, `podman.enable`
 - **Default-enabled.** Active on: `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 - **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
