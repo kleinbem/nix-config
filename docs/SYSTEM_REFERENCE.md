@@ -14,7 +14,7 @@
 - **devenv**: `9655d320`
 - **nix-packages**: `148072dc`
 - **nix-hardware**: `93dd2545`
-- **nix-presets**: `f5f83fda`
+- **nix-presets**: `2059cfb0`
 - **nix-devshells**: `5caa0f6c`
 - **nix-gantry**: `be2b52ca`
 
