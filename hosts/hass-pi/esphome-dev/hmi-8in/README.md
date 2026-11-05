@@ -37,3 +37,5 @@ Gotchas:
   the alarm and kitchen timer ring without the internet.
 - Hold the Home tab's Light button for the lights pop-up (brightness, colour,
   white, WiZ scenes). The lamps and their names live in `lights.h`.
+- The Infra tab shows Gatus (status.kleinbem.dev) once a minute: one tile per
+  service, down ones first. The tab button turns red with the number down.
