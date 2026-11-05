@@ -13,7 +13,7 @@
 #             my.security.sudo.unattendedDeploy makes it NOPASSWD.
 #
 # sudoers: the LAST matching entry wins. So deploy comes first, then the
-# read-only `machinectl shell * <cmd>` patterns override it, and the
+# read-only `machinectl shell <machine> <cmd>` patterns override it, and the
 # operateDenied negations come last to beat every allow, `%wheel ALL` included.
 {
   config,
@@ -93,11 +93,10 @@ let
     "${sw}/machinectl show *"
     "${sw}/machinectl status *"
     "${sw}/machinectl list"
-    "${sw}/machinectl shell * ${sw}/ip addr"
-    "${sw}/machinectl shell * ${sw}/ip route"
-    "${sw}/machinectl shell * ${sw}/cat /etc/hosts"
-    "${sw}/machinectl shell * ${sw}/cat /etc/resolv.conf"
-    "${sw}/machinectl shell * ${sw}/systemctl status *"
+    # Regex, not `shell * <cmd>`: a glob `*` also matches `root@.host /bin/sh -c '…; :'`,
+    # a root shell on the host. ${machine} can't start with `.`. --no-pager: in
+    # the PTY a pager runs as container root, and less's `!` is a shell.
+    "${sw}/machinectl ^shell ${machine} ${sw}/(ip addr|ip route|cat /etc/hosts|cat /etc/resolv[.]conf|systemctl status --no-pager ${unit})$"
     "${sw}/apparmor_status"
     # Viewing flags only: a `*` here would also pass --vacuum-*, --rotate
     # or --flush, which delete or move logs as root.
