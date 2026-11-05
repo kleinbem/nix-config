@@ -7,15 +7,16 @@
 > **Back up the Frigate SSD key first.** The second SSD's LUKS keyfile,
 > `/nix/persist/etc/crypt/frigate.key`, lives only on the main SSD (it is not
 > in sops). Wiping the main SSD without a copy leaves the Frigate recordings
-> unreadable. Copy it off the Orin before any reinstall:
+> unreadable. Copy it off the Orin before any reinstall of the main SSD:
 >
 > ```bash
 > (umask 077; ssh orin-nano sudo cat /nix/persist/etc/crypt/frigate.key > frigate.key)
 > ```
 >
-> and put it back after the first boot (`sudo install -D -m 0400 frigate.key
-> /nix/persist/etc/crypt/frigate.key`, then reboot). Delete the local copy
-> afterwards (`shred -u frigate.key`).
+> Path A keeps the Frigate SSD: put the key back after the first boot (`sudo
+> install -D -m 0400 frigate.key /nix/persist/etc/crypt/frigate.key`, then
+> reboot). Path B reformats it and needs a key during install (see below).
+> Delete the local copy afterwards (`shred -u frigate.key`).
 
 ## Install
 
@@ -51,13 +52,18 @@ provisioned SSD without wiping it.
 ```bash
 just deployment::orin-install-bootstrap /dev/sdb   # wipes /dev/sdb
 # boot the Orin from that SSD; root SSH by key only
-just deployment::orin-promote                      # wipes BOTH Orin SSDs
+just deployment::orin-promote root@orin-nano-bootstrap.local frigate.key   # wipes BOTH Orin SSDs
 ```
 
 `orin-promote` runs nixos-anywhere against `root@orin-nano-bootstrap.local` and
 builds natively on the Orin. Its disko phase uses the full orin-nano config,
 which also declares the second SSD (`/dev/nvme1n1`), so it **reformats the
 Frigate SSD too**: back up `/mnt/data/frigate` first if the recordings matter.
+disko formats it with `/nix/persist/etc/crypt/frigate.key`, which doesn't
+exist in the installer, so pass a keyfile as the second argument (the backup,
+or `(umask 077; head -c 64 /dev/urandom > frigate.key)` for a new one); it is
+copied in with nixos-anywhere's `--disk-encryption-keys`. After the first boot,
+install the same file at that path as in path A.
 
 `orin-promote-nokexec` skips the RAM boot, so it needs a target disk that
 isn't in use. The bootstrap system runs from the very SSD it would format, so

@@ -94,14 +94,16 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
     };
-    # chown -R walks every stored object, so it runs once (stamp file); later
-    # starts only fix the top dirs.
+    # chown -R walks every stored object, so it runs once per garage uid:gid
+    # (the stamp holds it; a re-created user gets a new uid); otherwise only
+    # the top dirs are fixed.
     script = ''
       d=/mnt/data/garage
       mkdir -p "$d/meta" "$d/data"
-      if [ ! -e "$d/.chown-recursive-done" ]; then
+      ids="$(id -u garage):$(id -g garage)"
+      if [ "$(cat "$d/.chown-recursive-done" 2>/dev/null)" != "$ids" ]; then
         chown -R garage:garage "$d"
-        touch "$d/.chown-recursive-done"
+        echo "$ids" > "$d/.chown-recursive-done"
       fi
       chown garage:garage "$d" "$d/meta" "$d/data"
     '';
