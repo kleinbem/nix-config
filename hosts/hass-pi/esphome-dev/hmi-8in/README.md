@@ -35,3 +35,5 @@ Gotchas:
 - Radio stations live in `stations.h`; the "Wake-up station" select lists
   their names in the same order. `chime.wav` (16 kHz mono) is built in, so
   the alarm and kitchen timer ring without the internet.
+- Hold the Home tab's Light button for the lights pop-up (brightness, colour,
+  white, WiZ scenes). The lamps and their names live in `lights.h`.

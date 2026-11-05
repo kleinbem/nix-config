@@ -19,6 +19,7 @@ esphome:
     - c6_fw.h
     - stations.h
     - weather.h
+    - lights.h
   on_boot:
     priority: -100
     then:
@@ -468,7 +469,7 @@ font:
       url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
     id: font_icon_small
     size: 36
-    glyphs: "󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰤠󰅤"
+    glyphs: "󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰤠󰅤󰃠"
 
 number:
   # Wake-up alarm: the radio fades in up to this volume.
@@ -622,6 +623,10 @@ select:
       - script.execute: clock_tick
 
 globals:
+  # Lights pop-up target: 0 = all lamps, else lights::LIST[sel - 1].
+  - id: lt_sel
+    type: int
+    initial_value: "0"
   # Nobody home (HA zone.home = 0): screen stays off.
   - id: away
     type: bool
@@ -685,6 +690,84 @@ time:
       - script.execute: update_clock
 
 script:
+  # Lights pop-up: marks the target button and shows its brightness (the
+  # first lamp that is on, for "All"); leaves the slider alone while dragged.
+  - id: lt_sync
+    mode: restart
+    then:
+      - lambda: |-
+          lv_obj_t *t[] = {id(lt_t0), id(lt_t1), id(lt_t2), id(lt_t3)};
+          binary_sensor::BinarySensor *on[] = {id(ha_light), id(lt_on2), id(lt_on3)};
+          sensor::Sensor *br[] = {id(lt_b1), id(lt_b2), id(lt_b3)};
+          int s = id(lt_sel);
+          for (int i = 0; i <= lights::COUNT; i++) {
+            if (i == s) lv_obj_add_state(t[i], LV_STATE_CHECKED);
+            else lv_obj_remove_state(t[i], LV_STATE_CHECKED);
+          }
+          float b = 0;
+          for (int i = 0; i < lights::COUNT; i++) {
+            if (s != 0 && s != i + 1) continue;
+            if (on[i]->state && !std::isnan(br[i]->state)) { b = br[i]->state; break; }
+          }
+          if (!lv_obj_has_state(id(lt_bri), LV_STATE_PRESSED))
+            lv_slider_set_value(id(lt_bri), (int) lroundf(b * 100 / 255), LV_ANIM_OFF);
+  - id: lt_select
+    parameters:
+      i: int
+    then:
+      - lambda: id(lt_sel) = i;
+      - script.execute: lt_sync
+  - id: lt_power
+    parameters:
+      p: bool
+    then:
+      - if:
+          condition:
+            lambda: return p;
+          then:
+            - homeassistant.action:
+                action: light.turn_on
+                data:
+                  entity_id: !lambda return lights::target(id(lt_sel));
+          else:
+            - homeassistant.action:
+                action: light.turn_off
+                data:
+                  entity_id: !lambda return lights::target(id(lt_sel));
+  - id: lt_color
+    parameters:
+      r: int
+      g: int
+      b: int
+    then:
+      - homeassistant.action:
+          action: light.turn_on
+          data:
+            entity_id: !lambda return lights::target(id(lt_sel));
+          data_template:
+            rgb_color: "{{ [r, g, b] }}"
+          variables:
+            r: !lambda return to_string(r);
+            g: !lambda return to_string(g);
+            b: !lambda return to_string(b);
+  - id: lt_white
+    parameters:
+      k: int
+    then:
+      - homeassistant.action:
+          action: light.turn_on
+          data:
+            entity_id: !lambda return lights::target(id(lt_sel));
+            color_temp_kelvin: !lambda return to_string(k);
+  - id: lt_scene
+    parameters:
+      name: string
+    then:
+      - homeassistant.action:
+          action: light.turn_on
+          data:
+            entity_id: !lambda return lights::target(id(lt_sel));
+            effect: !lambda return name;
   # Like a touch: screen on and the idle timers start over.
   - id: activity
     then:
@@ -1305,6 +1388,16 @@ text_sensor:
 
 binary_sensor:
   - platform: homeassistant
+    id: lt_on2
+    entity_id: light.wiz_rgbw_tunable_1f19dc
+    on_state:
+      - script.execute: lt_sync
+  - platform: homeassistant
+    id: lt_on3
+    entity_id: light.wiz_rgbw_tunable_20bfd2
+    on_state:
+      - script.execute: lt_sync
+  - platform: homeassistant
     id: ha_car_charging
     entity_id: binary_sensor.wj17vsx_charging
     on_state:
@@ -1315,6 +1408,7 @@ binary_sensor:
     id: ha_light
     entity_id: light.wiz_rgbw_tunable_241e14
     on_state:
+      - script.execute: lt_sync
       - lvgl.widget.update:
           id: btn_light
           state:
@@ -1333,6 +1427,27 @@ debug:
   update_interval: 30s
 
 sensor:
+  - platform: homeassistant
+    id: lt_b1
+    entity_id: light.wiz_rgbw_tunable_241e14
+    attribute: brightness
+    internal: true
+    on_value:
+      - script.execute: lt_sync
+  - platform: homeassistant
+    id: lt_b2
+    entity_id: light.wiz_rgbw_tunable_1f19dc
+    attribute: brightness
+    internal: true
+    on_value:
+      - script.execute: lt_sync
+  - platform: homeassistant
+    id: lt_b3
+    entity_id: light.wiz_rgbw_tunable_20bfd2
+    attribute: brightness
+    internal: true
+    on_value:
+      - script.execute: lt_sync
   # People at home; unknown or unavailable counts as home.
   - platform: homeassistant
     id: ha_home_count
@@ -1789,6 +1904,582 @@ lvgl:
                 text_align: CENTER
                 styles: muted
                 text: ""
+      # Lights pop-up, opened by holding the Home tab's Light button.
+      - obj:
+          id: lt_box
+          hidden: true
+          align: CENTER
+          width: 1240
+          height: 740
+          bg_color: 0x263038
+          border_color: 0xFFC107
+          border_width: 3
+          radius: 30
+          pad_all: 30
+          scrollable: false
+          widgets:
+            - label:
+                styles: muted
+                text: "LIGHTS"
+            - button:
+                align: TOP_RIGHT
+                y: -10
+                width: 140
+                height: 50
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Close"
+                on_click:
+                  - lvgl.widget.hide: lt_box
+            - button:
+                id: lt_t0
+                x: 0
+                y: 45
+                width: 170
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                checked:
+                  bg_color: 0xFFC107
+                  text_color: 0x101418
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text: "All"
+                on_click:
+                  - script.execute:
+                      id: lt_select
+                      i: 0
+            - button:
+                id: lt_t1
+                x: 180
+                y: 45
+                width: 170
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                checked:
+                  bg_color: 0xFFC107
+                  text_color: 0x101418
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text: "Lamp 1"
+                on_click:
+                  - script.execute:
+                      id: lt_select
+                      i: 1
+            - button:
+                id: lt_t2
+                x: 360
+                y: 45
+                width: 170
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                checked:
+                  bg_color: 0xFFC107
+                  text_color: 0x101418
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text: "Lamp 2"
+                on_click:
+                  - script.execute:
+                      id: lt_select
+                      i: 2
+            - button:
+                id: lt_t3
+                x: 540
+                y: 45
+                width: 170
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                checked:
+                  bg_color: 0xFFC107
+                  text_color: 0x101418
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text: "Lamp 3"
+                on_click:
+                  - script.execute:
+                      id: lt_select
+                      i: 3
+            - button:
+                x: 790
+                y: 45
+                width: 175
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "On"
+                on_click:
+                  - script.execute:
+                      id: lt_power
+                      p: true
+            - button:
+                x: 985
+                y: 45
+                width: 175
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Off"
+                on_click:
+                  - script.execute:
+                      id: lt_power
+                      p: false
+            - label:
+                x: 0
+                y: 140
+                text_font: font_icon_small
+                text_color: 0x8A949E
+                text: "󰃠"
+            - slider:
+                id: lt_bri
+                x: 60
+                y: 140
+                width: 1080
+                height: 40
+                min_value: 1
+                max_value: 100
+                value: 50
+                bg_color: 0x1E242B
+                indicator:
+                  bg_color: 0xFFC107
+                knob:
+                  bg_color: 0xE6EAEE
+                on_release:
+                  - homeassistant.action:
+                      action: light.turn_on
+                      data:
+                        entity_id: !lambda return lights::target(id(lt_sel));
+                        brightness_pct: !lambda return to_string((int) x);
+            - label:
+                x: 0
+                y: 210
+                styles: muted
+                text: "Colour"
+            - button:
+                x: 0
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0xFF0000
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 255
+                      g: 0
+                      b: 0
+            - button:
+                x: 147
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0xFF6E00
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 255
+                      g: 110
+                      b: 0
+            - button:
+                x: 294
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0xFFC800
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 255
+                      g: 200
+                      b: 0
+            - button:
+                x: 441
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0x00C850
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 0
+                      g: 200
+                      b: 80
+            - button:
+                x: 588
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0x00BED2
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 0
+                      g: 190
+                      b: 210
+            - button:
+                x: 735
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0x285AFF
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 40
+                      g: 90
+                      b: 255
+            - button:
+                x: 882
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0x9600FF
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 150
+                      g: 0
+                      b: 255
+            - button:
+                x: 1029
+                y: 245
+                width: 133
+                height: 80
+                radius: 20
+                bg_color: 0xFF3C8C
+                shadow_width: 0
+                on_click:
+                  - script.execute:
+                      id: lt_color
+                      r: 255
+                      g: 60
+                      b: 140
+            - label:
+                x: 0
+                y: 340
+                styles: muted
+                text: "White"
+            - button:
+                x: 0
+                y: 375
+                width: 376
+                height: 70
+                radius: 20
+                bg_color: 0xFFD9A0
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0x101418
+                      text: "Warm"
+                on_click:
+                  - script.execute:
+                      id: lt_white
+                      k: 2700
+            - button:
+                x: 392
+                y: 375
+                width: 376
+                height: 70
+                radius: 20
+                bg_color: 0xFFF1DC
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0x101418
+                      text: "Neutral"
+                on_click:
+                  - script.execute:
+                      id: lt_white
+                      k: 4000
+            - button:
+                x: 784
+                y: 375
+                width: 376
+                height: 70
+                radius: 20
+                bg_color: 0xE4EEFF
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0x101418
+                      text: "Daylight"
+                on_click:
+                  - script.execute:
+                      id: lt_white
+                      k: 6500
+            - label:
+                x: 0
+                y: 460
+                styles: muted
+                text: "Scenes"
+            - button:
+                x: 0
+                y: 495
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Cozy"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Cozy"
+            - button:
+                x: 196
+                y: 495
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Relax"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Relax"
+            - button:
+                x: 392
+                y: 495
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Focus"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Focus"
+            - button:
+                x: 588
+                y: 495
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Night light"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Night light"
+            - button:
+                x: 784
+                y: 495
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Fireplace"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Fireplace"
+            - button:
+                x: 980
+                y: 495
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Sunset"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Sunset"
+            - button:
+                x: 0
+                y: 577
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Ocean"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Ocean"
+            - button:
+                x: 196
+                y: 577
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Forest"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Forest"
+            - button:
+                x: 392
+                y: 577
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Romance"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Romance"
+            - button:
+                x: 588
+                y: 577
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "TV time"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "TV time"
+            - button:
+                x: 784
+                y: 577
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Party"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Party"
+            - button:
+                x: 980
+                y: 577
+                width: 180
+                height: 70
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Christmas"
+                on_click:
+                  - script.execute:
+                      id: lt_scene
+                      name: "Christmas"
       - obj:
           id: msg_box
           hidden: true
@@ -2171,7 +2862,18 @@ lvgl:
                             x: 60
                             text_font: font_small
                             text: "Light"
-                      on_click:
+                        - label:
+                            align: RIGHT_MID
+                            text_font: font_icon_small
+                            text: "󰅂"
+                      # Short click only: a hold opens the pop-up without toggling. The release
+                      # still flips the checkable state, so sync_light puts it back.
+                      on_long_press:
+                        - lvgl.widget.show: lt_box
+                        - script.execute: lt_sync
+                      on_release:
+                        - script.execute: sync_light
+                      on_short_click:
                         - homeassistant.action:
                             action: light.toggle
                             data:
