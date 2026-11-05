@@ -6,6 +6,8 @@
 # Supports both background service execution and interactive CLI usage.
 
 set -euo pipefail
+# Reports can name secrets and vulnerable paths: no world access.
+umask 027
 
 # --- Colors ---
 BLUE='\033[0;34m'
@@ -47,6 +49,7 @@ done
 
 scan_host() {
   log_step "Scanning NixOS Host Closure..."
+  : >"$REPORT_HOST"
 
   # 1. Trivy FS (CVE database)
   log_info "Running Trivy Host FS scan..."
@@ -101,7 +104,8 @@ scan_secrets() {
     gitleaks detect \
       --source "$WORKSPACE_PATH" \
       --report-path "$REPORT_SECRETS" \
-      --report-format json || true
+      --report-format json \
+      --redact || true
   else
     log_warn "Workspace path $WORKSPACE_PATH not found, skipping Gitleaks."
   fi
