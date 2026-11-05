@@ -175,5 +175,6 @@ in
   # Frigate SSD: LUKS → ext4 → /mnt/data/frigate, keyfile-unlocked in stage 2
   # (see disko.nix). A new disk needs /nix/persist/etc/crypt/frigate.key and
   # disko's format step scoped to partlabel disk-second-frigate before deploy.
+  # sops copy of the key: just access::data-key-backup orin-nano.
   _module.args.secondDiskDevice = "/dev/nvme1n1";
 }
