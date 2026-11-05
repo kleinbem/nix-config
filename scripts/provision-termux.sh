@@ -34,8 +34,17 @@ echo "   $PUB_KEY"
 mkdir -p /sdcard/Download 2>/dev/null || true
 echo "$PUB_KEY" >"/sdcard/Download/${DEVICE_TAG}_termux.pub" 2>/dev/null || true
 
-# 3. Fleet ~/.ssh/config
-cat <<'EOF' >~/.ssh/config
+# add_line <file> <line>: append once, keeping whatever else the file holds.
+add_line() {
+  touch "$1"
+  grep -qxF "$2" "$1" && return
+  # A last line without newline would swallow the appended one.
+  if [ -n "$(tail -c1 "$1")" ]; then printf '\n' >>"$1"; fi
+  printf '%s\n' "$2" >>"$1"
+}
+
+# 3. Fleet SSH hosts in their own file, included from ~/.ssh/config
+cat <<'EOF' >~/.ssh/fleet.conf
 # ─── Workstation Herdr (Live Agent Session) ───
 Host herdr
     HostName 100.117.212.232
@@ -91,16 +100,35 @@ Host orin
     IdentityFile ~/.ssh/id_ed25519
     StrictHostKeyChecking accept-new
 EOF
-chmod 600 ~/.ssh/config
+chmod 600 ~/.ssh/fleet.conf
+touch ~/.ssh/config
+# Resolved, so a symlinked config keeps its link and the target is updated.
+ssh_config="$(readlink -f ~/.ssh/config)"
+if [ ! -r "$ssh_config" ]; then
+  echo "❌ can't read $ssh_config; left it untouched" >&2
+  exit 1
+fi
+# Include goes first: after a Host/Match line it would only apply there.
+# That also makes fleet.conf win over the user's entries for its aliases.
+include_re='^[[:space:]]*Include[[:space:]]+fleet[.]conf[[:space:]]*$'
+if ! awk -v re="$include_re" '/^[[:space:]]*(Host|Match)([[:space:]]|$)/ { exit } $0 ~ re { f = 1; exit } END { exit !f }' "$ssh_config"; then
+  {
+    echo 'Include fleet.conf'
+    grep -vE "$include_re" "$ssh_config" || [ $? -eq 1 ] # 1 = no other lines
+  } >"$ssh_config.new"
+  mv "$ssh_config.new" "$ssh_config"
+fi
+chmod 600 "$ssh_config"
 
 # 4. Smart CLI Launchers in $PREFIX/bin
 mkdir -p "$PREFIX/bin"
 
 cat <<'EOF' >"$PREFIX/bin/herdr"
 #!/data/data/com.termux/files/usr/bin/bash
-if (echo > /dev/tcp/100.117.212.232/22) >/dev/null 2>&1; then
+# timeout: an unreachable IP otherwise blocks for minutes before the fallback.
+if timeout 2 bash -c 'echo > /dev/tcp/100.117.212.232/22' >/dev/null 2>&1; then
     exec ssh herdr "$@"
-elif (echo > /dev/tcp/10.0.0.5/22) >/dev/null 2>&1; then
+elif timeout 2 bash -c 'echo > /dev/tcp/10.0.0.5/22' >/dev/null 2>&1; then
     exec ssh herdr-lan "$@"
 else
     exec ssh herdr "$@"
@@ -122,9 +150,10 @@ chmod +x "$PREFIX/bin/herdr-mesh"
 
 cat <<'EOF' >"$PREFIX/bin/nvme"
 #!/data/data/com.termux/files/usr/bin/bash
-if (echo > /dev/tcp/100.117.212.232/22) >/dev/null 2>&1; then
+# timeout: an unreachable IP otherwise blocks for minutes before the fallback.
+if timeout 2 bash -c 'echo > /dev/tcp/100.117.212.232/22' >/dev/null 2>&1; then
     exec ssh nvme "$@"
-elif (echo > /dev/tcp/10.0.0.5/22) >/dev/null 2>&1; then
+elif timeout 2 bash -c 'echo > /dev/tcp/10.0.0.5/22' >/dev/null 2>&1; then
     exec ssh nvme-lan "$@"
 else
     exec ssh nvme "$@"
@@ -144,24 +173,23 @@ exec "$PREFIX/bin/herdr" "$@"
 EOF
 chmod +x "$PREFIX/bin/agents"
 
-# 5. Shell profile integration
-cat <<'EOF' >~/.bashrc
+# 5. Shell profile integration: own file, sourced from the user's rc files
+cat <<'EOF' >~/.fleet.bashrc
 # Kleinbem Fleet shortcuts
-alias herdr="herdr"
-alias herdr-lan="herdr-lan"
-alias nvme="nvme"
-alias nvme-lan="nvme-lan"
-alias agents="agents"
 alias corepi="ssh corepi"
 alias hass="ssh hass"
 alias nas="ssh nas"
 alias orin="ssh orin"
 EOF
 
-echo '[[ -f ~/.bashrc ]] && source ~/.bashrc' >~/.bash_profile
-
+add_line ~/.bashrc '[[ -f ~/.fleet.bashrc ]] && source ~/.fleet.bashrc'
+# Skip if .bash_profile already sources .bashrc in any form, or it runs twice.
+# shellcheck disable=SC2016 # literal $HOME in the pattern
+if ! grep -qE '^[^#]*(source|\.)[[:space:]]+"?(~|\$HOME|\$\{HOME\})/\.bashrc' ~/.bash_profile 2>/dev/null; then
+  add_line ~/.bash_profile '[[ -f ~/.bashrc ]] && source ~/.bashrc'
+fi
 if [ -f ~/.zshrc ]; then
-  cat ~/.bashrc >~/.zshrc
+  add_line ~/.zshrc '[[ -f ~/.fleet.bashrc ]] && source ~/.fleet.bashrc'
 fi
 
 echo "✅ Provisioning complete for $DEVICE_NAME!"

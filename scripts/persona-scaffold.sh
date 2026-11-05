@@ -23,6 +23,8 @@ NAME="$1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 NIX_CONFIG="$(dirname "$SCRIPT_DIR")"
 META_ROOT="$(dirname "$NIX_CONFIG")"
+# From a jj workspace (nix-config.ws/<name>) the fleet root is one more up.
+[[ $META_ROOT == *.ws ]] && META_ROOT="$(dirname "$META_ROOT")"
 PERSONAS_NIX="$NIX_CONFIG/personas.nix"
 KEYS_NIX="$NIX_CONFIG/modules/nixos/keys.nix"
 # kleinbem-secrets holds the signing key + mailbox password, and the plain
@@ -31,9 +33,11 @@ SECRETS_REPO="$META_ROOT/kleinbem-secrets"
 PERSONA_YAML="$SECRETS_REPO/personas/$NAME.yaml"
 
 WORK="$(mktemp -d /dev/shm/persona-scaffold-XXXXXX)"
+KEYS_TMP=""
 cleanup() {
   find "$WORK" -type f -exec shred -u {} \; 2>/dev/null || true
   rm -rf "$WORK"
+  [[ -z $KEYS_TMP ]] || rm -f "$KEYS_TMP"
 }
 trap cleanup EXIT
 
@@ -114,12 +118,32 @@ if [[ $CHANGED -eq 1 ]]; then
 fi
 
 # --- 4. Patch keys.nix with the public key ---
-if grep -q "\"$NAME\" = \".*\";" "$KEYS_NIX" && ! grep -q "\"$NAME\" = \"\";" "$KEYS_NIX"; then
+# keys.nix holds `<name> = "ssh-…";` inside `personas = {`; a quoted name is
+# the same attribute to Nix, so match it too or the insert duplicates it.
+if grep -Eq "^[[:space:]]*\"?$NAME\"? = \"[^\"]+\";" "$KEYS_NIX"; then
   echo "  ✓ keys.nix ssh.personas.$NAME already populated"
 else
   echo "  📝 Updating keys.nix ssh.personas.$NAME..."
-  # Replace the empty placeholder with the actual pubkey.
-  sed -i "s|$NAME = \"\";|$NAME = \"$PUBKEY\";|" "$KEYS_NIX"
+  if grep -Eq "^[[:space:]]*\"?$NAME\"? = \"\";" "$KEYS_NIX"; then
+    sed -i -E "s|^([[:space:]]*\"?$NAME\"?) = \"\";|\1 = \"$PUBKEY\";|" "$KEYS_NIX"
+  else
+    # Temp file next to keys.nix, renamed only once complete.
+    KEYS_TMP="$(mktemp "$KEYS_NIX.XXXXXX")"
+    NAME="$NAME" PUBKEY="$PUBKEY" awk '
+      { print }
+      /^[[:space:]]*personas = \{/ && !done {
+        match($0, /^[[:space:]]*/)
+        printf "%s  %s = \"%s\";\n", substr($0, 1, RLENGTH), ENVIRON["NAME"], ENVIRON["PUBKEY"]
+        done = 1
+      }
+    ' "$KEYS_NIX" >"$KEYS_TMP"
+    chmod --reference="$KEYS_NIX" "$KEYS_TMP"
+    mv "$KEYS_TMP" "$KEYS_NIX"
+  fi
+  if ! grep -Fq -e "$NAME = \"$PUBKEY\";" -e "\"$NAME\" = \"$PUBKEY\";" "$KEYS_NIX"; then
+    echo "❌ couldn't add $NAME to $KEYS_NIX — add it by hand" >&2
+    exit 1
+  fi
 fi
 
 # --- 5. Upload pubkey to GitHub as a Signing key ---
@@ -146,6 +170,7 @@ fi
 # Not `stalwart-cli`: it needs /api/schema, which our pinned Stalwart 0.15.5
 # lacks (404). Plain `POST /api/principal` instead, curl'd from the mac-mini
 # host at the container IP, since the container ships no curl.
+# no-link: version skew, the 1.x stalwart-cli reads the schema API of newer servers.
 STALWART_HOST="mac-mini"
 STALWART_IP="10.85.50.8" # inventory.nix network.nodes.stalwart
 STALWART_PORT="8080"
@@ -163,7 +188,7 @@ if ssh -o BatchMode=yes -o ConnectTimeout=5 "$STALWART_HOST" \
   # password stays out of sops). Created once by hand: see
   # docs/PHASE1_STALWART_STATUS.md "Automation principal bootstrap".
   AUTOMATION_PASSWORD="$(sops -d --extract '["stalwart_automation_password"]' \
-    "$SECRETS_REPO/nix/per-container/stalwart.yaml")"
+    "$SECRETS_REPO/nix/per-container/stalwart.yaml")" || AUTOMATION_PASSWORD=""
   if [[ -z $AUTOMATION_PASSWORD ]]; then
     echo "  ⚠️  stalwart_automation_password not in kleinbem-secrets — skipping mailbox creation." >&2
     echo "     See docs/PHASE1_STALWART_STATUS.md 'Automation principal bootstrap' — one-time setup." >&2

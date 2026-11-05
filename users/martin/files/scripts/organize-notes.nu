@@ -45,11 +45,9 @@ move_if_exists "temp.md" "Inbox"
 move_if_exists "Eltern Sport.md" "Areas"
 
 # --- Move Attachments (Images) ---
-try {
-    ls ($vault_path | path join "*.png") | each { |it| mv $it.name ($vault_path | path join "Attachments") }
-}
-try {
-    ls ($vault_path | path join "*.jpg") | each { |it| mv $it.name ($vault_path | path join "Attachments") }
+# glob returns [] on no match, so a failed mv still surfaces as an error.
+for f in (glob ($vault_path | path join "*.{png,jpg}")) {
+    mv $f ($vault_path | path join "Attachments")
 }
 
 print "✅ Organization complete!"

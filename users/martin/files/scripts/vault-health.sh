@@ -24,10 +24,12 @@ else
 fi
 
 # 2. Check for Large Attachments (> 50MB)
-LARGE_FILES=$(find "$VAULT_PATH" -type f -size +50M | wc -l)
+LARGE_FILES=$(find "$VAULT_PATH" -type f -size +50M -printf . | wc -c)
 if [ "$LARGE_FILES" -gt 0 ]; then
   echo "📦 Found $LARGE_FILES large attachments (>50MB):"
-  find "$VAULT_PATH" -type f -size +50M -exec ls -lh {} \; | awk '{print "   - " $9 " (" $5 ")"}'
+  # Tab- and NUL-separated, so paths with spaces or newlines stay whole.
+  find "$VAULT_PATH" -type f -size +50M -exec du -h --apparent-size -0 {} + |
+    while IFS=$'\t' read -r -d '' size path; do echo "   - $path ($size)"; done
 else
   echo "✅ No unusually large attachments found."
 fi

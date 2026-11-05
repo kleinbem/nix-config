@@ -4,11 +4,13 @@
 # Paths resolve from the script's location. --no-ci skips the gh calls
 # (faster, but no CI Status section).
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 NIX_CONFIG_ROOT="$(dirname "$SCRIPT_DIR")"
 META_ROOT="$(dirname "$NIX_CONFIG_ROOT")"
+# A jj workspace lives in nix-config.ws/<name>; the fleet root is one more up.
+[[ $META_ROOT == *.ws ]] && META_ROOT="$(dirname "$META_ROOT")"
 
 # Pinned interpreter (nix-config#legacyPackages.<system>.agent-python) so the
 # generators' deps (pyyaml) don't hinge on whichever python3 is first on PATH.
@@ -21,6 +23,10 @@ if PY_ENV="$(nix build --no-link --print-out-paths "$NIX_CONFIG_ROOT#legacyPacka
 else
   echo "⚠️  Couldn't build pinned agent-python — falling back to ambient python3"
   PYTHON="$(command -v python3 || true)"
+  if [ -z "$PYTHON" ]; then
+    echo "❌ python3 not found" >&2
+    exit 1
+  fi
 fi
 
 echo "🔍 Generating System Reference for AI assistants…"
@@ -30,10 +36,6 @@ echo "🔍 Generating System Reference for AI assistants…"
   "$@"
 
 # Regenerate the machine-readable my.* options + imports indexes + AI infrastructure manifest.
-if [ -n "$PYTHON" ]; then
-  "$PYTHON" "$SCRIPT_DIR/generate-options-index.py" || echo "⚠️  Options index generation failed (non-fatal)"
-  "$PYTHON" "$SCRIPT_DIR/generate-imports-index.py" || echo "⚠️  Imports index generation failed (non-fatal)"
-  "$PYTHON" "$SCRIPT_DIR/generate-infra-yaml.py" || echo "⚠️  Infrastructure YAML generation failed (non-fatal)"
-else
-  echo "⚠️  python3 not found — skipping AI index regeneration"
-fi
+"$PYTHON" "$SCRIPT_DIR/generate-options-index.py" || echo "⚠️  Options index generation failed (non-fatal)"
+"$PYTHON" "$SCRIPT_DIR/generate-imports-index.py" || echo "⚠️  Imports index generation failed (non-fatal)"
+"$PYTHON" "$SCRIPT_DIR/generate-infra-yaml.py" || echo "⚠️  Infrastructure YAML generation failed (non-fatal)"

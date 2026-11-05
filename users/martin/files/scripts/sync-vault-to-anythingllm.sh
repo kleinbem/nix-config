@@ -20,20 +20,37 @@ if [ ! -f "$API_KEY_FILE" ]; then
   echo "anythingllm-vault-sync: no API key at $API_KEY_FILE yet (bootstrap not done) — skipping" >&2
   exit 0
 fi
-API_KEY=$(cat "$API_KEY_FILE")
+
+# Header from a 0600 file, so the token isn't in curl's argv.
+hdr=$(umask 077 && mktemp -p "${XDG_RUNTIME_DIR:-/tmp}")
+trap 'rm -f "$hdr"' EXIT
+if ! api_key=$(cat "$API_KEY_FILE"); then
+  echo "anythingllm-vault-sync: cannot read API key at $API_KEY_FILE" >&2
+  exit 1
+fi
+printf 'Authorization: Bearer %s\n' "$api_key" >"$hdr"
+auth=(-H "@$hdr")
 
 mkdir -p "$(dirname "$STATE_FILE")"
 [ -f "$STATE_FILE" ] || echo '{}' >"$STATE_FILE"
 state=$(cat "$STATE_FILE")
 new_state="$state"
 
-auth=(-H "Authorization: Bearer ${API_KEY}")
+# Saved after every change and atomically: an interrupted run would otherwise
+# forget its uploads and duplicate them next time.
+save_state() {
+  printf '%s\n' "$new_state" >"$STATE_FILE.tmp"
+  mv "$STATE_FILE.tmp" "$STATE_FILE"
+}
 
+# Fails unless the server confirms; a 404 counts as already gone.
 remove_document() {
-  local location="$1"
-  curl -fsS "${auth[@]}" -H "Content-Type: application/json" \
+  local location="$1" code
+  code=$(curl -sS -o /dev/null -w '%{http_code}' "${auth[@]}" \
+    -H "Content-Type: application/json" \
     -X DELETE "${BASE_URL}/api/v1/system/remove-documents" \
-    -d "$(jq -nc --arg n "$location" '{names: [$n]}')" >/dev/null || true
+    -d "$(jq -nc --arg n "$location" '{names: [$n]}')") || return 1
+  [[ $code == 2?? || $code == 404 ]]
 }
 
 added=0
@@ -50,7 +67,12 @@ while IFS= read -r -d '' f; do
 
   [ "$prev_mtime" = "$mtime" ] && continue
 
-  [ -n "$prev_loc" ] && remove_document "$prev_loc"
+  # Keep the old entry on failure, so the next run retries instead of
+  # orphaning the old copy.
+  if [ -n "$prev_loc" ] && ! remove_document "$prev_loc"; then
+    echo "anythingllm-vault-sync: removing old copy failed for $rel" >&2
+    continue
+  fi
 
   resp=$(curl -fsS "${auth[@]}" \
     -F "file=@${f}" \
@@ -73,6 +95,7 @@ while IFS= read -r -d '' f; do
   fi
   new_state=$(jq --arg k "$rel" --arg loc "$loc" --arg mt "$mtime" \
     '.[$k] = {location: $loc, mtime: ($mt | tonumber)}' <<<"$new_state")
+  save_state
 done < <(find "$VAULT_PATH" -type f -name '*.md' \
   ! -path '*/.obsidian/*' ! -path '*/.trash/*' ! -name '*sync-conflict*' \
   -print0)
@@ -81,11 +104,14 @@ while IFS= read -r rel; do
   [ -n "$rel" ] || continue
   if [ -z "${seen[$rel]:-}" ]; then
     loc=$(jq -r --arg k "$rel" '.[$k].location' <<<"$state")
-    remove_document "$loc"
+    if ! remove_document "$loc"; then
+      echo "anythingllm-vault-sync: remove failed for $rel, retrying next run" >&2
+      continue
+    fi
     new_state=$(jq --arg k "$rel" 'del(.[$k])' <<<"$new_state")
+    save_state
     removed=$((removed + 1))
   fi
 done < <(jq -r 'keys[]' <<<"$state")
 
-echo "$new_state" >"$STATE_FILE"
 echo "anythingllm-vault-sync: +${added} ~${updated} -${removed}"

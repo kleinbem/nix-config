@@ -82,6 +82,9 @@ func parseAndFormat(data []byte) (string, error) {
 		if !hasTag("physical") {
 			continue
 		}
+		if data.IP == "" {
+			return "", fmt.Errorf("host %q is tagged physical but has no `ip` in inventory.nix (needed for ansible_host / mgmt_ip)", name)
+		}
 		if data.Board == "" {
 			return "", fmt.Errorf("host %q is tagged physical but has no `board` in inventory.nix (needed for the board_<board> group / group_vars)", name)
 		}
@@ -157,22 +160,23 @@ func parseAndFormat(data []byte) (string, error) {
 	return sb.String(), nil
 }
 
+// Errors go to stderr: the caller redirects stdout into inventory.ini.
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: gen-ansible-inventory <path-to-inventory.nix>")
+		fmt.Fprintln(os.Stderr, "Usage: gen-ansible-inventory <path-to-inventory.nix>")
 		os.Exit(1)
 	}
 	inventoryNix := os.Args[1]
 
 	data, err := fetchInventory(inventoryNix)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
 	output, err := parseAndFormat(data)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 

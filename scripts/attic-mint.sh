@@ -43,7 +43,13 @@ ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=$(sops -d --extract '["attic_server_token
 export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
 atticadm=$(nix build --no-link --print-out-paths nixpkgs#attic-server)/bin/atticadm
 
-"$atticadm" -f "$tmp/server.toml" make-token --validity 1y "$@" |
-  tr -d '\n' | jq -Rs . | sops set --value-stdin "$S/$file" "[\"$key\"]"
+# Capture first: piping straight into sops would write "" if atticadm fails.
+tok=$("$atticadm" -f "$tmp/server.toml" make-token --validity 1y "$@" | tr -d '\n') || exit 1
+[ -n "$tok" ] || {
+  echo "atticadm returned no token" >&2
+  exit 1
+}
+printf '%s' "$tok" | jq -Rs . | sops set --value-stdin "$S/$file" "[\"$key\"]"
+unset tok
 unset ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
 echo "   ✓ $key → $file"

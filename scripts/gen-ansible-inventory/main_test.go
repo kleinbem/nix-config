@@ -102,6 +102,14 @@ func TestPhysicalHostWithoutBoardFails(t *testing.T) {
 	}
 }
 
+// An empty ip would emit `ansible_host= mgmt_ip=`.
+func TestPhysicalHostWithoutIPFails(t *testing.T) {
+	mockJSON := []byte(`{"hosts": {"ap9": {"board": "orbi-rbs50", "tags": ["physical", "ap"]}}}`)
+	if _, err := parseAndFormat(mockJSON); err == nil {
+		t.Fatalf("expected an error for a physical host without ip, got none")
+	}
+}
+
 // Non-physical hosts never need a board.
 func TestNonPhysicalHostsAreIgnored(t *testing.T) {
 	mockJSON := []byte(`{"hosts": {"nas": {"ip": "10.0.0.30", "tags": ["server"]}}}`)

@@ -51,7 +51,9 @@ def collect_host_imports() -> dict[str, list]:
         entry_file = host_dir / "default.nix"
         if not entry_file.exists():
             # Some hosts use a different entry filename (e.g. nix-on-droid)
-            candidates = [p for p in host_dir.glob("*.nix") if p.name != "secrets.nix"]
+            candidates = sorted(
+                p for p in host_dir.glob("*.nix") if p.name != "secrets.nix"
+            )
             if not candidates:
                 continue
             entry_file = candidates[0]

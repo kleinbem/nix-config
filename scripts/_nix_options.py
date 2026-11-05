@@ -2,6 +2,7 @@
 
 Used by:
   - generate-options-index.py (builds nix-config/docs/OPTIONS.md)
+  - generate-system-reference.py, generate-infra-yaml.py (host → container map)
   - impact.py                  (blast-radius lookup for a changed file)
   - lint-conventions.py        (enforces my.* namespace + declaration locations)
 
@@ -45,13 +46,13 @@ OPT_DECL_RE = re.compile(
     r"^[ \t]*options\.(my(?:\.[a-zA-Z0-9_-]+)+)\s*=\s*\{", re.MULTILINE
 )
 
-# Any `options.<path> = {` declaration block (used by the lint to flag non-my.*)
+# Any `options.<path> = …` declaration, block or `mkOption` (used by the lint)
 ANY_OPT_DECL_RE = re.compile(
-    r"^[ \t]*options\.([a-zA-Z_][a-zA-Z0-9_.-]*)\s*=\s*\{", re.MULTILINE
+    r"^[ \t]*options\.([a-zA-Z_][a-zA-Z0-9_.-]*)\s*=(?!=)", re.MULTILINE
 )
 
-# Explicit assignment: `my.X.Y[.Z…] = …`
-MY_DOT_RE = re.compile(r"\bmy((?:\.[a-zA-Z0-9_-]+)+)\s*=")
+# Explicit assignment: `my.X.Y[.Z…] = …` (not a `==` comparison)
+MY_DOT_RE = re.compile(r"\bmy((?:\.[a-zA-Z0-9_-]+)+)\s*=(?!=)")
 
 # Start of a `my = { … }` group
 MY_BLOCK_RE = re.compile(r"\bmy\s*=\s*\{")
@@ -477,6 +478,114 @@ def extract_imports_in_file(path: Path) -> list[ImportEntry]:
         if e is not None:
             entries.append(e)
     return entries
+
+
+def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
+    """Grep-heuristic: which containers are enabled on which host.
+
+    Walks nix-config/hosts/<host>/*.nix looking for lines like:
+        my.containers.n8n.enable = true;
+        n8n.enable = true;
+        n8n = { enable = true; ... };
+        n8n.enable = lib.mkForce true;
+    (all but the first directly inside a `my.containers = {...}` or
+    `containers = {...}` block).
+
+    Only the block's direct children name a container, and only an `enable`
+    directly inside such a child counts for it, so nested option blocks
+    (`tls = { enable = true; }`) aren't credited as containers. Files are
+    walked sorted so the result doesn't depend on filesystem order.
+
+    Returns {host: {container: enabled_bool}}.
+    """
+    result: dict[str, dict[str, bool]] = {}
+    hosts_dir = nix_config / "hosts"
+    if not hosts_dir.is_dir():
+        return result
+    for host_dir in sorted(hosts_dir.iterdir()):
+        if not host_dir.is_dir():
+            continue
+        host_state: dict[str, bool] = {}
+        for nix_file in sorted(host_dir.rglob("*.nix")):
+            try:
+                # Stripped, so braces in comments or strings don't shift depth.
+                lines = strip_comments_and_strings(
+                    nix_file.read_text(encoding="utf-8", errors="replace")
+                ).splitlines()
+            except OSError:
+                continue
+            in_containers = False
+            depth = 0  # brace depth inside the containers block; 1 = direct child
+            current_container = None
+            for raw in lines:
+                line = raw.strip()
+                # Track when we enter a my.containers or containers block
+                if not in_containers:
+                    # Fully qualified: my.containers.n8n.enable = true;
+                    m = re.match(
+                        r"(?:my\.)?containers\.([a-z][a-z0-9-]*)\.enable\s*=\s*"
+                        r"(lib\.mkForce\s+)?(true|false)\b",
+                        line,
+                    )
+                    if m:
+                        host_state[m.group(1)] = m.group(3) == "true"
+                        continue
+                    if re.search(r"\b(my\.containers|containers)\s*=\s*\{", line):
+                        in_containers = True
+                        depth = line.count("{") - line.count("}")
+                    continue
+                depth_before = depth
+                depth += line.count("{") - line.count("}")
+                if depth <= 0:
+                    in_containers = False
+                    current_container = None
+                    continue
+                # Leaving the current container's own block
+                if current_container and depth < 2:
+                    current_container = None
+                # name = { ... } sub-block: a container only as a direct child
+                m = re.match(r"([a-z][a-z0-9-]*)\s*=\s*\{", line)
+                if m:
+                    if depth_before == 1:
+                        current_container = m.group(1)
+                        # `name = { enable = true; ... }`: enable as first attribute
+                        inline = re.match(
+                            r"[a-z][a-z0-9-]*\s*=\s*\{\s*enable\s*=\s*"
+                            r"(lib\.mkForce\s+)?(true|false)\b",
+                            line,
+                        )
+                        if inline:
+                            host_state[current_container] = inline.group(2) == "true"
+                        if depth < 2:  # block closed on the same line
+                            current_container = None
+                    continue
+                # name.enable = true|false, as a direct child
+                m = re.match(
+                    r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)",
+                    line,
+                )
+                if m and depth_before == 1:
+                    host_state[m.group(1)] = m.group(3) == "true"
+                    continue
+                # enable = true|false directly inside the container's block
+                m = re.match(r"enable\s*=\s*(lib\.mkForce\s+)?(true|false)", line)
+                if m and current_container and depth_before == 2:
+                    host_state[current_container] = m.group(2) == "true"
+        if host_state:
+            result[host_dir.name] = host_state
+    return result
+
+
+def preset_container_names(presets: Path) -> set[str]:
+    """Names declared as `options.my.containers.<name>` under nix-presets/containers."""
+    pat = re.compile(r"options\.my\.containers\.([a-z][a-z0-9-]*)")
+    names: set[str] = set()
+    for f in sorted((presets / "containers").rglob("*.nix")):
+        try:
+            names.update(pat.findall(f.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue
+    return names
 
 
 def iter_nix_files(root: Path):

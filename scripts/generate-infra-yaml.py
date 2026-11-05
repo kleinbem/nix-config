@@ -40,19 +40,16 @@ import yaml
 
 # Determine workspace roots
 SCRIPT_DIR = Path(__file__).resolve().parent
-NIX_CONFIG = SCRIPT_DIR.parent
-META_ROOT = NIX_CONFIG.parent
-
 sys.path.insert(0, str(SCRIPT_DIR))
-try:
-    from _nix_options import (
-        consumer_paths_in_file,
-        declarations_in_file,
-        extract_imports_in_file,
-    )
-except ImportError:
-    print("Warning: _nix_options.py not importable directly", file=sys.stderr)
-
+from _nix_options import (
+    META_ROOT,
+    NIX_CONFIG,
+    consumer_paths_in_file,
+    declarations_in_file,
+    extract_imports_in_file,
+    host_container_map,
+    preset_container_names,
+)
 
 # ---------------------------------------------------------------------------
 # Utility Helpers
@@ -199,57 +196,16 @@ def get_network_topology(inventory: dict[str, Any]) -> dict[str, Any]:
 
 
 def scan_host_containers(nix_config: Path) -> dict[str, list[str]]:
-    """Scan each host directory and find active containers (enable = true)."""
-    hosts_dir = nix_config / "hosts"
-    result: dict[str, list[str]] = defaultdict(list)
-    if not hosts_dir.is_dir():
-        return result
-
-    for host_dir in sorted(hosts_dir.iterdir()):
-        if not host_dir.is_dir():
-            continue
-        host_name = host_dir.name
-        # Grep-heuristic for container enables
-        enabled_containers = set()
-        for nix_file in host_dir.rglob("*.nix"):
-            try:
-                lines = nix_file.read_text(
-                    encoding="utf-8", errors="ignore"
-                ).splitlines()
-            except OSError:
-                continue
-            in_containers = False
-            depth = 0
-            current_c = None
-            for raw in lines:
-                line = raw.strip()
-                if re.search(r"\b(my\.containers|containers)\s*=\s*\{", line):
-                    in_containers = True
-                    depth = line.count("{") - line.count("}")
-                    continue
-                if in_containers:
-                    depth += line.count("{") - line.count("}")
-                    if depth <= 0:
-                        in_containers = False
-                        current_c = None
-                        continue
-                    m = re.match(r"([a-z][a-z0-9-]*)\s*=\s*\{", line)
-                    if m:
-                        current_c = m.group(1)
-                        continue
-                    m = re.match(
-                        r"([a-z][a-z0-9-]*)\.enable\s*=\s*(lib\.mkForce\s+)?(true|false)",
-                        line,
-                    )
-                    if m and m.group(3) == "true":
-                        enabled_containers.add(m.group(1))
-                        continue
-                    m = re.match(r"enable\s*=\s*(lib\.mkForce\s+)?(true|false)", line)
-                    if m and current_c and m.group(2) == "true":
-                        enabled_containers.add(current_c)
-        if enabled_containers:
-            result[host_name] = sorted(enabled_containers)
-
+    """Containers enabled per host, limited to names nix-presets declares when
+    it is checked out (keeps option blocks like `oidc`/`tls` out)."""
+    known = preset_container_names(META_ROOT / "nix-presets")
+    result: dict[str, list[str]] = {}
+    for host, state in host_container_map(nix_config).items():
+        enabled = sorted(
+            c for c, on in state.items() if on and (not known or c in known)
+        )
+        if enabled:
+            result[host] = enabled
     return result
 
 
@@ -378,7 +334,7 @@ def build_host_matrix(
                 imports_summary.append(f"[{imp.kind}] {imp.label}")
 
         host_entry: dict[str, Any] = {
-            "tier": h_data.get("tags", ["server"])[0],
+            "tier": (h_data.get("tags") or ["server"])[0],
             "system": h_data.get(
                 "system", "openwrt" if h_data.get("type") == "openwrt" else "unknown"
             ),
@@ -616,7 +572,12 @@ def build_developer_recipes() -> dict[str, Any]:
 
 def generate_manifest() -> dict[str, Any]:
     print("Evaluating authoritative inventory.nix...")
-    inv = eval_nix_json(NIX_CONFIG / "inventory.nix") or {}
+    inv = eval_nix_json(NIX_CONFIG / "inventory.nix")
+    if inv is None:
+        # Exit before writing: a hollow manifest would replace the good one.
+        sys.exit(
+            "error: inventory.nix failed to evaluate; INFRASTRUCTURE.yaml left unchanged"
+        )
 
     print("Evaluating personas.nix...")
     personas = eval_nix_json(NIX_CONFIG / "personas.nix") or {}
@@ -687,11 +648,12 @@ def main() -> int:
         )
 
     # Workspace root symlink
-    root_symlink = META_ROOT / "INFRASTRUCTURE.yaml"
+    # Next to this checkout, so a jj workspace never repoints the root's link.
+    root_symlink = NIX_CONFIG.parent / "INFRASTRUCTURE.yaml"
     try:
         if root_symlink.is_symlink() or root_symlink.exists():
             root_symlink.unlink()
-        rel_target = os.path.relpath(out_file, META_ROOT)
+        rel_target = os.path.relpath(out_file, NIX_CONFIG.parent)
         root_symlink.symlink_to(rel_target)
         print(f"Created symlink: {root_symlink} -> {rel_target}")
     except OSError as e:
