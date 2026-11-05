@@ -51,7 +51,11 @@ let
 
   # Containers (caddy, nix-gantry tls sidecars) that bind-mount from pkiDir.
   consumers = lib.filterAttrs (
-    _: c: lib.any (m: lib.hasPrefix pkiDir (m.hostPath or "")) (lib.attrValues c.bindMounts)
+    _: c:
+    # hostPath = null means the same path as mountPoint (nixos-containers).
+    lib.any (
+      m: lib.hasPrefix pkiDir (if m.hostPath or null != null then m.hostPath else m.mountPoint)
+    ) (lib.attrValues c.bindMounts)
   ) config.containers;
 in
 {
