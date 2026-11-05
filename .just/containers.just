@@ -121,18 +121,31 @@ garage-ui-token:
     #!/usr/bin/env bash
     set -euo pipefail
     SCOPE="GetClusterHealth,GetClusterStatus,GetClusterStatistics,GetNodeInfo,GetNodeStatistics,ListBuckets,GetBucketInfo,ListKeys,GetKeyInfo"
-    FILE="{{ META }}/kleinbem-secrets/nix/per-container/garage-ui.yaml"
-    if sudo garage admin-token info garage-ui-readonly >/dev/null 2>&1; then
-        echo "♻️  Replacing the existing garage-ui-readonly token..."
-        sudo garage admin-token delete --yes garage-ui-readonly >/dev/null
-    fi
-    TOKEN=$(sudo garage admin-token create -q --scope "$SCOPE" garage-ui-readonly)
-    if [ -f "$FILE" ]; then
-        sops --set "[\"garage_ui_admin_token\"] \"$TOKEN\"" "$FILE"
+    NAME=garage-ui-readonly
+    f=nix/per-container/garage-ui.yaml
+    cd "{{ META }}/kleinbem-secrets"
+    umask 077
+    # Mint under a temporary name and swap only once sops has it, so a failed
+    # run keeps the old token and leaves no plaintext behind.
+    sudo garage admin-token delete --yes "$NAME-new" >/dev/null 2>&1 || true
+    stored=0
+    trap 'rm -f "$f.new"; [ "$stored" = 1 ] || sudo garage admin-token delete --yes "$NAME-new" >/dev/null 2>&1 || true' EXIT
+    TOKEN=$(sudo garage admin-token create -q --scope "$SCOPE" "$NAME-new")
+    [ -n "$TOKEN" ] || { echo "❌ garage returned an empty token; nothing written" >&2; exit 1; }
+    if [ -f "$f" ]; then
+        printf '%s' "$TOKEN" | jq -Rs . | sops set --value-stdin "$f" '["garage_ui_admin_token"]'
     else
-        printf 'garage_ui_admin_token: %s\n' "$TOKEN" > "$FILE"
-        sops --config "{{ META }}/kleinbem-secrets/.sops.yaml" -e -i "$FILE"
+        # The first secret creates the file, with the recipients from .sops.yaml.
+        printf 'garage_ui_admin_token: %s\n' "$TOKEN" \
+            | sops encrypt --input-type yaml --output-type yaml --filename-override "$f" /dev/stdin > "$f.new"
+        mv "$f.new" "$f"
     fi
+    stored=1
     unset TOKEN
+    if sudo garage admin-token info "$NAME" >/dev/null 2>&1; then
+        echo "♻️  Replacing the existing $NAME token..."
+        sudo garage admin-token delete --yes "$NAME" >/dev/null
+    fi
+    sudo garage admin-token rename "$NAME-new" "$NAME" >/dev/null
     echo "✅ Read-only token stored in kleinbem-secrets/nix/per-container/garage-ui.yaml"
     echo "   Commit kleinbem-secrets, then: just dev::apply"

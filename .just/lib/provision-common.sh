@@ -88,7 +88,7 @@ pc_cache_preflight() {
   # Config-assembly leaves (etc, activate, units, generated config files) build
   # locally in seconds whenever they miss the cache, e.g. because of real
   # secrets. A real package/kernel miss is named <pkg>-<version>.drv and still stops.
-  leaves='nixos-system-|boot\.json|etc|activate|(system|user)-units|unit-.*|.*\.(rules|service|yaml|conf|toml|json)'
+  leaves='nixos-system-.*|boot\.json|etc|activate|(system|user)-units|unit-.*|.*\.(rules|service|yaml|conf|toml|json)'
   exclude="-(${leaves}${extra:+|$extra})\.drv\$"
   heavy=$(echo "$build_list" | grep -vE -- "$exclude" || true)
   if [ -n "$heavy" ]; then

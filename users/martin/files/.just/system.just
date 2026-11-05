@@ -1,10 +1,8 @@
 # `os system::*` — system configuration management.
 
-FLAKE_PATH := "~/Develop/github.com/kleinbem/nix-config"
-
 # Roll back to the previous system generation.
 rollback:
-    nh os switch --rollback {{FLAKE_PATH}}
+    nh os rollback
 
 # Show generation history.
 history:

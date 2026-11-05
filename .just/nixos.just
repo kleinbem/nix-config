@@ -151,19 +151,30 @@ reset-mode *args="":
 
 [group("Debugging")]
 verify-caddy:
-    @echo "🔍 Verifying Caddy Gateway..."
-    @for i in {1..5}; do curl -k -s https://10.85.46.107 > /dev/null && echo "✅ Caddy is responsive" && exit 0 || echo "⏳ Waiting for Caddy... ($i/5)" && sleep 2; done
-    @echo "❌ Caddy is NOT responsive. Checking status..."
-    @systemctl status container@caddy.service --no-pager || true
-    @echo "📜 Recent Logs:"
-    @journalctl -u container@caddy.service -n 20 --no-pager
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ip=$(nix eval --raw --impure --expr '(import ./inventory.nix).network.nodes.caddy.ip')
+    echo "🔍 Verifying Caddy Gateway at $ip..."
+    for i in {1..5}; do
+        if curl -k -s -o /dev/null --max-time 5 "https://$ip"; then
+            echo "✅ Caddy is responsive"
+            exit 0
+        fi
+        echo "⏳ Waiting for Caddy... ($i/5)"
+        sleep 2
+    done
+    echo "❌ Caddy is NOT responsive. Checking status..."
+    systemctl status container@caddy.service --no-pager || true
+    echo "📜 Recent Logs:"
+    journalctl -u container@caddy.service -n 20 --no-pager
+    exit 1
 
 [group("Development")]
 topology:
     @echo "🗺️ Rendering Infrastructure Topology..."
     @nix build .#topology.x86_64-linux.config.build.svg --no-link --print-out-paths > /tmp/topo-path
     @echo "✅ Rendered to: $(cat /tmp/topo-path)/main.svg"
-    @if [ -n "$DISPLAY" ]; then xdg-open "$(cat /tmp/topo-path)/main.svg"; else echo "🔗 File path: $(cat /tmp/topo-path)/main.svg"; fi
+    @if [ -n "${DISPLAY:-}" ]; then xdg-open "$(cat /tmp/topo-path)/main.svg"; else echo "🔗 File path: $(cat /tmp/topo-path)/main.svg"; fi
 
 # Attic client with the admin token from sops, e.g.
 #   just nixos::attic cache info system
@@ -213,7 +224,7 @@ attic-token:
 
 # For CI's ATTIC_PUSH_TOKEN (not the admin token above), e.g.:
 #   TOKEN=$(just nixos::attic-ci-token | grep '^eyJ')
-#   sops --set "[\"attic_push_token\"] \"$TOKEN\"" ../kleinbem-secrets/nix/per-host/orin-nano.yaml
+#   printf %s "$TOKEN" | jq -Rs . | sops set --value-stdin ../kleinbem-secrets/nix/per-host/orin-nano.yaml '["attic_push_token"]'
 
 # Mint a push/pull-only Attic token for one cache (no create/configure/destroy).
 [group("System")]

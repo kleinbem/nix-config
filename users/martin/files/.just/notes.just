@@ -3,9 +3,11 @@
 SCRIPTS := "~/Develop/github.com/kleinbem/nix-config/users/martin/files/scripts"
 
 # Append a quick note to the Obsidian Inbox.
+# The note goes in as $1, so quotes, $ and backticks stay literal.
+[positional-arguments]
 add message="":
     @echo "📝 Capturing note..."
-    @echo "- [ ] {{message}} (Captured on $(date))" >> $HOME/Documents/Notes/Inbox.md
+    @printf '%s\n' "- [ ] $1 (Captured on $(date))" >> "$HOME/Documents/Notes/Inbox.md"
 
 # Launch Obsidian in the background.
 open:

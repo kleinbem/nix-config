@@ -2,7 +2,6 @@
 # Dev, deployment and jj recipes live in the workspace justfiles instead.
 
 mod ai      '.just/ai.just'
-mod cleanup '.just/cleanup.just'
 mod diag    '.just/diag.just'
 mod dx      '.just/dx.just'
 mod fix     '.just/fix.just'
