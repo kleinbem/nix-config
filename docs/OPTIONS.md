@@ -328,7 +328,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.persona-runtime`
 
-- **Declared:** `nix-presets/containers/persona-runtime.nix:169`
+- **Declared:** `nix-presets/containers/persona-runtime.nix:155`
 - **Sub-options:** `autoStart`, `egress.lanAllowlist`, `egress.restrictLan`, `enable`, `gitConfigFile`, `hostDataDir`, `ip`, `memoryLimit`, `personas`, `secretsEnvFile`, `signingKeyFile`
 - **Consumed by:** `host:mac-mini`
 
