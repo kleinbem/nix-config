@@ -68,8 +68,7 @@
           lib.subtractLists excludeFromUpdater allEnabled;
       };
     };
-    # Orin Nano runs no airlocked AI webapps; ai-airlock needs CONFIG_NFT_REDIR.
-    # no-link: JP6 defconfig; kleinbem/nix-hardware#71 now builds NFT_REDIR.
+    # Off because the Orin runs no airlocked AI webapps.
     security.ai-hardening.enable = false;
     # Orin uses wired Ethernet, not wlo1 (Wi-Fi default)
     network.externalInterface = "enP8p1s0";

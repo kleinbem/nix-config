@@ -93,12 +93,18 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = [
-        "${pkgs.coreutils}/bin/mkdir -p /mnt/data/garage/meta /mnt/data/garage/data"
-        # Not -R: that walks every stored object on each start.
-        "${pkgs.coreutils}/bin/chown garage:garage /mnt/data/garage /mnt/data/garage/meta /mnt/data/garage/data"
-      ];
     };
+    # chown -R walks every stored object, so it runs once (stamp file); later
+    # starts only fix the top dirs.
+    script = ''
+      d=/mnt/data/garage
+      mkdir -p "$d/meta" "$d/data"
+      if [ ! -e "$d/.chown-recursive-done" ]; then
+        chown -R garage:garage "$d"
+        touch "$d/.chown-recursive-done"
+      fi
+      chown garage:garage "$d" "$d/meta" "$d/data"
+    '';
   };
 
   # Run garage as the static garage user (the module defaults to DynamicUser = a
