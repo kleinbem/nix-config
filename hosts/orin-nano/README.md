@@ -73,7 +73,7 @@ disko formats it with `/nix/persist/etc/crypt/frigate.key`, which doesn't
 exist in the installer, so pass a keyfile as the second argument (the backup,
 or `(umask 077; head -c 64 /dev/urandom > frigate.key)` for a new one); it is
 copied in with nixos-anywhere's `--disk-encryption-keys`. nixos-anywhere
-doesn't verify the installer's SSH host key (#582), so run this only on the
+doesn't verify the installer's SSH host key (no-link: no upstream report yet; tracked in kleinbem/nix-config#582), so run this only on the
 home LAN, after comparing `ssh-keyscan orin-nano-bootstrap.local | ssh-keygen -lf -`
 with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the Orin's console. After the first boot,
 install the same file at that path as in path A.
