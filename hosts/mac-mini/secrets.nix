@@ -9,10 +9,13 @@ let
   mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
 
   # alertmanager-ntfy: the `monitoring` ntfy user's password plus the alert
-  # topic. Gated on the key existing; sops-nix fails activation on a missing key.
+  # topic. Gated on monitoring+ntfy and on the key existing (sops-nix fails
+  # activation on a missing key).
   hostSops = secretFile "nix/per-host/mac-mini.yaml";
   hasMonitoringNtfy =
-    builtins.pathExists hostSops
+    config.my.containers.monitoring.enable
+    && config.my.containers.monitoring.ntfy.enable
+    && builtins.pathExists hostSops
     && lib.hasInfix "\nntfy_monitoring_password:" ("\n" + builtins.readFile hostSops);
 
   # Gates keys that may not be provisioned yet, like personaHasField below.
