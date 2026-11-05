@@ -12,7 +12,7 @@
       "x-systemd.device-timeout=60s"
       "nofail"
     ];
-    # Host-local, root-only (my.hostSecrets); sops copy via access::nasbook-data-backup.
+    # Host-local, root-only (my.hostSecrets); sops copy via access::data-key-backup.
     stage2KeyFile = "${config.my.hostSecrets.dir}/nasbook-data.key";
   };
 
