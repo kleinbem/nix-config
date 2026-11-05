@@ -108,14 +108,21 @@ in
   # ==========================================
   # VULNERABILITY SCANS (VULNIX & TRIVY)
   # ==========================================
-  environment.systemPackages = [
-    # pkgs.vulnix # Deprecated in favor of unified Trivy auditing
-    pkgs.trivy # Podman/Docker Images + NixOS Host FS
-    pkgs.gitleaks # Secret scanning
-    pkgs.ntfy-sh # Remote notifications
-    pkgs.libnotify # Desktop notifications (notify-send)
-    pkgs.lynis # Security auditing
-  ];
+  environment = {
+    systemPackages = [
+      # pkgs.vulnix # Deprecated in favor of unified Trivy auditing
+      pkgs.trivy # Podman/Docker Images + NixOS Host FS
+      pkgs.gitleaks # Secret scanning
+      pkgs.ntfy-sh # Remote notifications
+      pkgs.libnotify # Desktop notifications (notify-send)
+      pkgs.lynis # Security auditing
+    ];
+  }
+  # fluent-bit's journal cursors. optionalAttrs, not mkIf: a definition of an
+  # undeclared option fails even under mkIf false (hosts without impermanence).
+  // lib.optionalAttrs (options.environment ? persistence) {
+    persistence."/nix/persist".directories = [ "/var/lib/private/fluent-bit" ];
+  };
 
   systemd = {
     # Centralized Notification Script (Template)
@@ -415,11 +422,9 @@ in
     };
   };
 
-  # DynamicUser: the state dir lives under /var/lib/private, and /var is tmpfs.
+  # DynamicUser: the state dir lives under /var/lib/private, and /var is tmpfs
+  # (persisted with environment.systemPackages above).
   systemd.services.fluent-bit.serviceConfig.StateDirectory = "fluent-bit";
-  environment.persistence = lib.mkIf (options.environment ? persistence) {
-    "/nix/persist".directories = [ "/var/lib/private/fluent-bit" ];
-  };
 
   # Ensure fluent-bit can read the systemd journal and audit logs
   users.groups.systemd-journal.members = [ "fluent-bit" ];
