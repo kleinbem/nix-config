@@ -43,6 +43,9 @@ wifi:
   password: !secret wifi_password
   ap:
     ssid: ${friendly_name} Fallback
+    # Without a password the fallback AP and its captive portal are open to
+    # anyone in range. Same key as the main network.
+    password: !secret wifi_password
 
 # Wired alternative (the RJ45 goes through an IP101 PHY on the P4's EMAC).
 # Enable instead of wifi/esp32_hosted once the pins are confirmed:
