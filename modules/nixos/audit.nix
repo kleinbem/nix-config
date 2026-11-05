@@ -440,9 +440,10 @@ in
       "security-audit"
     ];
   };
-  users.groups.security-audit = { };
-
-  # Ensure fluent-bit can read the systemd journal and audit logs
-  users.groups.systemd-journal.members = [ "fluent-bit" ];
-  users.groups.audit.members = [ "fluent-bit" ]; # Required for auditd logs access
+  users.groups = {
+    security-audit = { };
+    # Ensure fluent-bit can read the systemd journal and audit logs
+    systemd-journal.members = [ "fluent-bit" ];
+    audit.members = [ "fluent-bit" ]; # Required for auditd logs access
+  };
 }
