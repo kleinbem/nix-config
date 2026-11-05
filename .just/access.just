@@ -60,21 +60,26 @@ host-keygen host:
       chmod 0600 "$d/ssh_host_ed25519_key"; \
       cat "$d/ssh_host_ed25519_key.pub"'
 
+# Stage-2 keyfile per host: "<path> <sops key>".
+[private]
+_data-key host:
+    #!/usr/bin/env bash
+    case "{{host}}" in
+      nasbook) echo /nix/persist/secrets/nasbook-data.key nasbook_data_luks_key ;;
+      orin-nano) echo /nix/persist/etc/crypt/frigate.key orin_frigate_luks_key ;;
+      *) echo "no data-disk keyfile known for {{host}}" >&2; exit 1 ;;
+    esac
+
 # Data disks opened in stage 2 from a host-local keyfile have no other key
 # slot. Keep an encrypted copy in kleinbem-secrets (nix/per-host/<host>.yaml,
-# base64) so a reinstall can restore it with
-#   sops -d --extract '["<name>"]' nix/per-host/<host>.yaml | base64 -d
-# Nix never reads it. The plaintext only travels through the SSH pipe into sops.
+# base64); data-key-restore puts it back after a reinstall. Nix never reads
+# it. The plaintext only travels through the SSH pipe into sops.
 [group("Access")]
 [doc("Back up <host>'s data-disk keyfile into kleinbem-secrets, sops-encrypted (sudo on <host>, YubiKey for sops). Hosts: nasbook, orin-nano.")]
 data-key-backup host:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{host}}" in
-      nasbook) key=/nix/persist/secrets/nasbook-data.key name=nasbook_data_luks_key ;;
-      orin-nano) key=/nix/persist/etc/crypt/frigate.key name=orin_frigate_luks_key ;;
-      *) echo "no data-disk keyfile known for {{host}}" >&2; exit 1 ;;
-    esac
+    read -r key name < <(just access::_data-key {{host}})
     secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
     f=nix/per-host/{{host}}.yaml
     # sudo asks on the host's TTY. Everything but the key line goes to the
@@ -97,6 +102,26 @@ data-key-backup host:
     fi
     unset b64
     echo "✓ $name ($bytes bytes) stored in $f; commit kleinbem-secrets"
+
+# Never overwrites: an existing keyfile may be the one the disk opens with.
+[group("Access")]
+[doc("Restore <host>'s data-disk keyfile from kleinbem-secrets (YubiKey for sops, sudo on <host>). Refuses to overwrite.")]
+data-key-restore host:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    read -r key name < <(just access::_data-key {{host}})
+    secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+    tmp=$(mktemp -p "${XDG_RUNTIME_DIR:-/tmp}")
+    rtmp=""
+    trap 'rm -f "$tmp"; [ -z "$rtmp" ] || ssh {{host}} rm -f "$rtmp"' EXIT
+    (cd "$secrets" && sops -d --extract "[\"$name\"]" nix/per-host/{{host}}.yaml) | base64 -d > "$tmp"
+    bytes=$(wc -c < "$tmp")
+    [ "$bytes" -ge 32 ] || { echo "$name decodes to $bytes bytes; nothing written" >&2; exit 1; }
+    rtmp=$(ssh {{host}} mktemp)
+    scp -q "$tmp" {{host}}:"$rtmp"
+    d=$(dirname "$key")
+    ssh -t {{host}} "sudo -p 'sudo password on {{host}}: ' sh -c '[ ! -e $key ] || { echo \"$key exists; not overwriting\" >&2; exit 1; }; [ -d $d ] || install -d -m 0700 $d; install -m 0400 -o root -g root $rtmp $key'"
+    echo "✓ $name ($bytes bytes) installed at {{host}}:$key"
 
 # Read-only unlock check for <host> (needs its sudo password once). Unlock
 # policy, every host: Tang (any other host) → primary/backup YubiKey (FIDO2) →
