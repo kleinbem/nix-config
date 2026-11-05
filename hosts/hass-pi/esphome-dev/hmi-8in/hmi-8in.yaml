@@ -1220,20 +1220,12 @@ text_sensor:
     internal: true
     on_value:
       - script.execute: np_refresh
-  # Wi-Fi tab: current network and the network list for the dropdown.
+  # Network details for the Info section of the Settings tab.
   - platform: wifi_info
     ssid:
       id: wifi_ssid_now
-      on_value:
-        - lvgl.label.update:
-            id: lbl_wifi_now
-            text: !lambda 'return "Connected to " + x + "  " + id(wifi_ip_now).state;'
     ip_address:
       id: wifi_ip_now
-      on_value:
-        - lvgl.label.update:
-            id: lbl_wifi_now
-            text: !lambda 'return "Connected to " + id(wifi_ssid_now).state + "  " + x;'
     mac_address:
       id: info_mac
       name: MAC address
@@ -1244,32 +1236,6 @@ text_sensor:
     power_save_mode:
       id: info_psm
       internal: true
-    scan_results:
-      id: wifi_scan
-      internal: true
-      on_value:
-        - lambda: |-
-            // "ssid: -60dB" per line, strongest first; keep each SSID once.
-            std::vector<std::string> seen;
-            std::string opts;
-            size_t pos = 0;
-            while (pos < x.size()) {
-              size_t nl = x.find('\n', pos);
-              if (nl == std::string::npos) nl = x.size();
-              std::string line = x.substr(pos, nl - pos);
-              pos = nl + 1;
-              size_t c = line.rfind(": ");
-              if (c == std::string::npos || c == 0) continue;
-              std::string ssid = line.substr(0, c);
-              if (std::find(seen.begin(), seen.end(), ssid) != seen.end()) continue;
-              seen.push_back(ssid);
-              if (!opts.empty()) opts += "\n";
-              opts += ssid;
-            }
-            if (!opts.empty()) lv_dropdown_set_options(id(dd_ssid)->obj, opts.c_str());
-        - lvgl.label.update:
-            id: lbl_wifi_msg
-            text: ""
   - platform: homeassistant
     id: ha_weather
     entity_id: weather.forecast_home
@@ -3251,209 +3217,103 @@ lvgl:
               - id: tile_settings
                 name: "Settings"
                 widgets:
-                          - label:
-                              x: 60
-                              y: 60
-                              text_font: font_big
-                              text: "Settings"
-                          - label:
-                              x: 60
-                              y: 200
-                              styles: muted
-                              text: "Brightness (day)"
-                          - slider:
-                              id: sl_day
-                              x: 60
-                              y: 260
-                              width: 1100
-                              height: 40
-                              min_value: 10
-                              max_value: 100
-                              bg_color: 0x1E242B
-                              indicator:
-                                bg_color: 0x4FC3F7
-                              knob:
-                                bg_color: 0xE6EAEE
-                              on_release:
-                                - number.set:
-                                    id: bright_day
-                                    value: !lambda return x;
-                          - label:
-                              x: 60
-                              y: 380
-                              styles: muted
-                              text: "Brightness (night, 22–7)"
-                          - slider:
-                              id: sl_night
-                              x: 60
-                              y: 440
-                              width: 1100
-                              height: 40
-                              min_value: 5
-                              max_value: 100
-                              bg_color: 0x1E242B
-                              indicator:
-                                bg_color: 0x4FC3F7
-                              knob:
-                                bg_color: 0xE6EAEE
-                              on_release:
-                                - number.set:
-                                    id: bright_night
-                                    value: !lambda return x;
-                          - label:
-                              x: 60
-                              y: 560
-                              styles: muted
-                              text: "Speaker volume"
-                          - slider:
-                              id: sl_vol
-                              x: 60
-                              y: 620
-                              width: 520
-                              height: 40
-                              min_value: 0
-                              max_value: 100
-                              bg_color: 0x1E242B
-                              indicator:
-                                bg_color: 0x4FC3F7
-                              knob:
-                                bg_color: 0xE6EAEE
-                              on_release:
-                                - media_player.volume_set:
-                                    id: panel_media
-                                    volume: !lambda return x / 100.0f;
-                          - label:
-                              x: 640
-                              y: 560
-                              styles: muted
-                              text: "Voice volume"
-                          - slider:
-                              id: sl_voice
-                              x: 640
-                              y: 620
-                              width: 520
-                              height: 40
-                              min_value: 0
-                              max_value: 100
-                              bg_color: 0x1E242B
-                              indicator:
-                                bg_color: 0x81C784
-                              knob:
-                                bg_color: 0xE6EAEE
-                              on_release:
-                                - number.set:
-                                    id: voice_volume
-                                    value: !lambda return x;
-              - id: tile_wifi
-                name: "Wi-Fi"
-                widgets:
                   - label:
                       x: 40
                       y: 20
-                      text_font: font_big
-                      text: "Wi-Fi"
-                  - label:
-                      id: lbl_wifi_now
-                      x: 40
-                      y: 115
                       styles: muted
-                      text: "--"
-                  - dropdown:
-                      id: dd_ssid
+                      text: "Brightness (day)"
+                  - slider:
+                      id: sl_day
                       x: 40
-                      y: 170
+                      y: 60
                       width: 560
-                      text_font: font_small
-                      options:
-                        - "(scanning)"
-                      dropdown_list:
-                        text_font: font_small
-                        max_height: 400
-                  - button:
-                      x: 620
-                      y: 170
-                      width: 180
-                      height: 60
+                      height: 40
+                      min_value: 10
+                      max_value: 100
                       bg_color: 0x1E242B
-                      widgets:
-                        - label:
-                            align: CENTER
-                            text_font: font_small
-                            text: "Scan"
-                      on_click:
-                        - lvgl.label.update:
-                            id: lbl_wifi_msg
-                            text: "Scanning..."
-                        - wifi.roam:
-                  - textarea:
-                      id: ta_pass
-                      x: 40
-                      y: 250
-                      width: 760
-                      height: 70
-                      one_line: true
-                      password_mode: true
-                      placeholder_text: "Password"
-                      text_font: font_small
-                  - button:
-                      x: 820
-                      y: 250
-                      width: 220
-                      height: 70
-                      bg_color: 0x4FC3F7
-                      widgets:
-                        - label:
-                            align: CENTER
-                            text_font: font_small
-                            text_color: 0x101418
-                            text: "Connect"
-                      on_click:
-                        - lvgl.label.update:
-                            id: lbl_wifi_msg
-                            text: "Connecting..."
-                        - wifi.configure:
-                            ssid: !lambda return id(dd_ssid)->get_selected_text();
-                            password: !lambda return std::string(lv_textarea_get_text(id(ta_pass)));
-                            save: true
-                            timeout: 30s
-                            on_connect:
-                              - lvgl.label.update:
-                                  id: lbl_wifi_msg
-                                  text: "Connected"
-                              - lvgl.textarea.update:
-                                  id: ta_pass
-                                  text: ""
-                            on_error:
-                              - lvgl.label.update:
-                                  id: lbl_wifi_msg
-                                  text: "Failed, back on the previous network"
+                      indicator:
+                        bg_color: 0x4FC3F7
+                      knob:
+                        bg_color: 0xE6EAEE
+                      on_release:
+                        - number.set:
+                            id: bright_day
+                            value: !lambda return x;
                   - label:
-                      id: lbl_wifi_msg
-                      x: 820
-                      y: 185
-                      styles: muted
-                      text: ""
-                  - keyboard:
-                      id: kb_wifi
-                      x: 40
-                      y: 345
-                      width: 1200
-                      height: 370
-                      textarea: ta_pass
-                      text_font: montserrat_28
-
-              - id: tile_info
-                name: "Info"
-                widgets:
-                  - label:
-                      x: 40
+                      x: 680
                       y: 20
-                      text_font: font_big
+                      styles: muted
+                      text: "Brightness (night, 22–7)"
+                  - slider:
+                      id: sl_night
+                      x: 680
+                      y: 60
+                      width: 560
+                      height: 40
+                      min_value: 5
+                      max_value: 100
+                      bg_color: 0x1E242B
+                      indicator:
+                        bg_color: 0x4FC3F7
+                      knob:
+                        bg_color: 0xE6EAEE
+                      on_release:
+                        - number.set:
+                            id: bright_night
+                            value: !lambda return x;
+                  - label:
+                      x: 40
+                      y: 140
+                      styles: muted
+                      text: "Speaker volume"
+                  - slider:
+                      id: sl_vol
+                      x: 40
+                      y: 180
+                      width: 560
+                      height: 40
+                      min_value: 0
+                      max_value: 100
+                      bg_color: 0x1E242B
+                      indicator:
+                        bg_color: 0x4FC3F7
+                      knob:
+                        bg_color: 0xE6EAEE
+                      on_release:
+                        - media_player.volume_set:
+                            id: panel_media
+                            volume: !lambda return x / 100.0f;
+                  - label:
+                      x: 680
+                      y: 140
+                      styles: muted
+                      text: "Voice volume"
+                  - slider:
+                      id: sl_voice
+                      x: 680
+                      y: 180
+                      width: 560
+                      height: 40
+                      min_value: 0
+                      max_value: 100
+                      bg_color: 0x1E242B
+                      indicator:
+                        bg_color: 0x81C784
+                      knob:
+                        bg_color: 0xE6EAEE
+                      on_release:
+                        - number.set:
+                            id: voice_volume
+                            value: !lambda return x;
+                  - label:
+                      x: 40
+                      y: 270
+                      styles: muted
                       text: "Info"
                   - label:
                       id: lbl_info
                       x: 40
-                      y: 110
+                      y: 310
                       width: 1200
                       text_font: font_small
                       text_color: 0xC8D0D8
@@ -3569,7 +3429,7 @@ interval:
           }
       - if:
           condition:
-            lambda: return lv_tabview_get_tab_active(id(tv)) == lv_obj_get_index(id(tile_info));
+            lambda: return lv_tabview_get_tab_active(id(tv)) == lv_obj_get_index(id(tile_settings));
           then:
             - lvgl.label.update:
                 id: lbl_info
