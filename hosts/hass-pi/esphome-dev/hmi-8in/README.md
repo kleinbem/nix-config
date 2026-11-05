@@ -37,3 +37,5 @@ Gotchas:
   the alarm and kitchen timer ring without the internet.
 - Hold the Home tab's Light button for the lights pop-up (brightness, colour,
   white, WiZ scenes). The lamps and their names live in `lights.h`.
+- The Shopping tab shows Home Assistant's `todo.shopping_list` (also filled
+  by voice): tap an item to tick it off, type new ones on the keyboard.
