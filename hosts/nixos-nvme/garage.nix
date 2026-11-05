@@ -99,6 +99,12 @@ in
     # once per garage uid:gid recorded in the stamp; otherwise only meta/data.
     script = ''
       d=/mnt/data/garage
+      for p in "$d" "$d/meta" "$d/data"; do
+        if [ -L "$p" ]; then
+          echo "refusing: $p is a symlink" >&2
+          exit 1
+        fi
+      done
       mkdir -p "$d/meta" "$d/data"
       chown root:garage "$d"
       chmod 0750 "$d"
