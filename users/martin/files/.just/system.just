@@ -1,10 +1,9 @@
 # `os system::*` — system configuration management.
 
-FLAKE_PATH := "~/Develop/github.com/kleinbem/nix-config"
-
-# Roll back to the previous system generation.
+# Roll back to the previous saved generation. Profile-based, so it also
+# works after `nh os test`, when the running system is no generation.
 rollback:
-    nh os switch --rollback {{FLAKE_PATH}}
+    sudo nixos-rebuild switch --rollback
 
 # Show generation history.
 history:

@@ -81,6 +81,8 @@ in
     # window stopped is started again: one stopped by hand stays off.
     users = {
       groups.mesh-llm-build-window = { };
+      # Manual builds take the window's lock (.just/orin.just test-mesh/build-mesh).
+      users.${config.my.username}.extraGroups = [ "mesh-llm-build-window" ];
       users.mesh-llm-gpu-runner = {
         isSystemUser = true;
         group = "mesh-llm-gpu-runner";
@@ -91,6 +93,11 @@ in
       tmpfiles.settings."10-mesh-llm-build-window" = {
         ${buildWindowDir}.d = {
           mode = "0770";
+          user = "root";
+          group = "mesh-llm-build-window";
+        };
+        "${buildWindowDir}/manual.lock".f = {
+          mode = "0660";
           user = "root";
           group = "mesh-llm-build-window";
         };
@@ -120,8 +127,17 @@ in
         mesh-llm-build-window-end = {
           description = "Start the MeshLLM node again after a GPU runner build";
           serviceConfig.Type = "oneshot";
+          path = [ pkgs.util-linux ];
           script = ''
             rm -f ${buildWindowDir}/done
+            # A manual build (.just/lib/mesh-build-window.sh) holds this lock
+            # and restarts the node itself when it ends. Held through the
+            # restart, so a new manual build waits and then stops it again.
+            exec 9>${buildWindowDir}/manual.lock
+            if ! flock -n -x 9; then
+              echo "manual build still running; it restarts mesh-llm"
+              exit 0
+            fi
             if [ -e ${buildWindowState}/stopped ]; then
               rm -f ${buildWindowState}/stopped
               systemctl restart mesh-llm.service

@@ -121,18 +121,34 @@ garage-ui-token:
     #!/usr/bin/env bash
     set -euo pipefail
     SCOPE="GetClusterHealth,GetClusterStatus,GetClusterStatistics,GetNodeInfo,GetNodeStatistics,ListBuckets,GetBucketInfo,ListKeys,GetKeyInfo"
-    FILE="{{ META }}/kleinbem-secrets/nix/per-container/garage-ui.yaml"
-    if sudo garage admin-token info garage-ui-readonly >/dev/null 2>&1; then
-        echo "♻️  Replacing the existing garage-ui-readonly token..."
-        sudo garage admin-token delete --yes garage-ui-readonly >/dev/null
-    fi
-    TOKEN=$(sudo garage admin-token create -q --scope "$SCOPE" garage-ui-readonly)
-    if [ -f "$FILE" ]; then
-        sops --set "[\"garage_ui_admin_token\"] \"$TOKEN\"" "$FILE"
+    NAME=garage-ui-readonly
+    f=nix/per-container/garage-ui.yaml
+    cd "{{ META }}/kleinbem-secrets"
+    umask 077
+    # Tokens go by ID: garage allows duplicate names, and `info <name>` then
+    # fails. The old ones are deleted only once sops holds the new one, so any
+    # failed or repeated run leaves sops with a live token.
+    ids() { sudo garage admin-token list | awk -v n="$NAME" 'NR > 1 && $3 == n { print $1 }'; }
+    old=$(ids)
+    new_id=""
+    stored=0
+    trap 'rm -f "$f.new"; [ "$stored" = 1 ] || [ -z "$new_id" ] || sudo garage admin-token delete --yes "$new_id" >/dev/null 2>&1 || true' EXIT
+    TOKEN=$(sudo garage admin-token create -q --scope "$SCOPE" "$NAME")
+    new_id=${TOKEN%%.*}
+    [ -n "$new_id" ] && [ "$new_id" != "$TOKEN" ] || { echo "❌ unexpected token format from garage; nothing written" >&2; exit 1; }
+    if [ -f "$f" ]; then
+        printf '%s' "$TOKEN" | jq -Rs . | sops set --value-stdin "$f" '["garage_ui_admin_token"]'
     else
-        printf 'garage_ui_admin_token: %s\n' "$TOKEN" > "$FILE"
-        sops --config "{{ META }}/kleinbem-secrets/.sops.yaml" -e -i "$FILE"
+        # The first secret creates the file, with the recipients from .sops.yaml.
+        printf 'garage_ui_admin_token: %s\n' "$TOKEN" \
+            | sops encrypt --input-type yaml --output-type yaml --filename-override "$f" /dev/stdin > "$f.new"
+        mv "$f.new" "$f"
     fi
+    stored=1
     unset TOKEN
+    for id in $old; do
+        echo "♻️  Deleting the previous $NAME token $id..."
+        sudo garage admin-token delete --yes "$id" >/dev/null
+    done
     echo "✅ Read-only token stored in kleinbem-secrets/nix/per-container/garage-ui.yaml"
     echo "   Commit kleinbem-secrets, then: just dev::apply"

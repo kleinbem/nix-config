@@ -9,8 +9,8 @@ set working-directory := ".."
 [group("Status")]
 ai-check:
     @echo "🩺 AI Stack Health Check"
-    @curl -s http://localhost:11434/api/tags >/dev/null && echo "✅ Ollama: Online" || echo "❌ Ollama: Offline"
-    @curl -s http://localhost:8000/health >/dev/null && echo "✅ vLLM: Online" || echo "❌ vLLM: Offline"
+    @curl -fs --max-time 5 http://localhost:11434/api/tags >/dev/null && echo "✅ Ollama: Online" || echo "❌ Ollama: Offline"
+    @curl -fs --max-time 5 http://localhost:8000/health >/dev/null && echo "✅ vLLM: Online" || echo "❌ vLLM: Offline"
 
 [group("Development")]
 ai-shell:

@@ -41,7 +41,9 @@ team:
             contact = if contactPath != "" then import contactPath else {};
             p = import ./lib/personas.nix { inherit lib contact; };
          in p.teamMarkdown' \
-        > ../kleinbem-secrets/docs/TEAM.md
+        > ../kleinbem-secrets/docs/TEAM.md.new
+    # Only replace TEAM.md once the eval succeeded.
+    mv ../kleinbem-secrets/docs/TEAM.md.new ../kleinbem-secrets/docs/TEAM.md
     nix run nixpkgs#pandoc -- \
         --from=gfm --to=html5 --standalone \
         --metadata title="kleinbem.dev — Team" \

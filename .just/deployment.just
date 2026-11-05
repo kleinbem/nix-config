@@ -48,8 +48,13 @@ deploy host:
     # Pre-flight check: Prevent deploying to a node that is booted from an SD card
     if [[ "{{host}}" == "core-pi" || "{{host}}" == "hass-pi" ]]; then
         echo "🔍 Checking boot medium for {{host}}..."
-        # We check /nix because / is tmpfs due to impermanence
-        if env SSH_AUTH_SOCK="" ssh -o ConnectTimeout=5 "{{host}}" "lsblk -s -n -o NAME \$(findmnt -n -o SOURCE /nix) | grep -q mmcblk0" 2>/dev/null; then
+        # We check /nix because / is tmpfs due to impermanence. A failed probe
+        # must abort, not read as "booted from the SSD".
+        if ! devs=$(env SSH_AUTH_SOCK="" ssh -o ConnectTimeout=5 "{{host}}" "src=\$(findmnt -n -o SOURCE /nix) && [ -n \"\$src\" ] && lsblk -s -n -o NAME \"\$src\""); then
+            echo "❌ ERROR: could not read the boot medium of {{host}} over ssh; not deploying."
+            exit 1
+        fi
+        if grep -q mmcblk0 <<<"$devs"; then
             echo "❌ ERROR: {{host}} is booted from the SD card (/dev/mmcblk0)!"
             echo "   Deploying now would write the bootloader to the SD card, not the SSD."
             echo "   To update the offline SSD, plug it into your laptop and run:"
@@ -308,10 +313,11 @@ orin-seal:
 orin-install-bootstrap device="/dev/sdb":
     #!/usr/bin/env bash
     set -euo pipefail
-    
-    # Prompt for sudo upfront and keep it alive in the background
-    sudo -v
-    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+    source .just/lib/provision-common.sh
+
+    pc_sudo_keepalive
+    pc_require_block_device "{{device}}"
+    pc_assert_safe_target "{{device}}"
     echo "🔍 Ensuring clean state before install..."
     sudo umount -R /mnt/orin-bootstrap 2>/dev/null || true
     sudo vgchange -an vg_orin 2>/dev/null || true
@@ -784,11 +790,15 @@ mac-mini-verify ip="10.0.0.16":
 
     check "RDP listening, but NOT firewall-exposed (SSH-tunnel-only by design)"
     listening="$(ssh "$IP" "ss -tlnp 2>/dev/null | grep -q ':3389 '" 2>/dev/null; echo $?)"
-    fw_open="$(ssh "$IP" "iptables -L nixos-fw -n 2>/dev/null | grep -q ':3389'" 2>/dev/null; echo $?)"
-    if [ "$listening" = "0" ] && [ "$fw_open" != "0" ]; then
-      ok "listening + no firewall rule (reach it via ssh -L 3389:localhost:3389 mac-mini)"
+    # nftables backend; `nft list table` is NOPASSWD (security/sudo.nix readOnly).
+    if ! fw="$(ssh "$IP" "sudo -n /run/current-system/sw/bin/nft list table inet nixos-fw" 2>/dev/null)"; then
+      bad "could not read the nixos-fw nftables table"
+    elif [ "$listening" != "0" ]; then
+      bad "nothing listening on :3389"
+    elif grep -qw 3389 <<<"$fw"; then
+      bad "3389 is open in nixos-fw: $(grep -w 3389 <<<"$fw" | head -1 | xargs)"
     else
-      bad "listening=$listening (want 0) fw_open=$fw_open (want nonzero)"
+      ok "listening + no firewall rule (reach it via ssh -L 3389:localhost:3389 mac-mini)"
     fi
 
     echo ""
@@ -1095,25 +1105,8 @@ pi-update-usb host device="/dev/sdc":
     CRYPT_NAME="${CRYPT_NAME%-pi}_crypt"
     MNT="/mnt/{{host}}"
 
-    echo "🔍 Pre-flight check: verifying cache coverage for {{host}}..."
-    output=$(nix build --no-link --dry-run .#nixosConfigurations.{{host}}.config.system.build.toplevel 2>&1) || true
-    
-    # Extract only the derivations that will be built, ignoring fast-builds or aliases
-    build_list=$(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -E '^\s+/nix/store' | awk '{print $1}' || true)
-    heavy_builds=$(echo "$build_list" | grep -vE -- '-(nixos-system-|boot\.json|linux-rpi.*-modules)\.drv$' || true)
-
-    if [ -n "$heavy_builds" ]; then
-        echo "❌ Cache miss detected! Heavy compilations required:"
-        echo "$heavy_builds" | sed 's/^/  /'
-        echo ""
-        echo "💡 To fix this and ensure a 0-build deployment:"
-        echo "   1. Commit any local changes to your git tree (dirty trees change hashes!)."
-        echo "   2. Push to GitHub so CI can build and push to Attic."
-        echo "   3. Run 'just jj::pull-all' to sync to the exact cached commit."
-        echo "   4. Retry this deployment script."
-        exit 1
-    fi
-    echo "✓ Closure fully covered by Attic! Proceeding with deployment."
+    # Same closure as the build below (no OVERRIDES); the Pi kernel modules may build locally.
+    pc_cache_preflight "{{host}}" 'linux-rpi.*-modules'
 
     echo "🧹 Cleaning up existing mounts and LUKS mappings before mounting..."
     for mp in $(awk '$2 ~ "^'"$MNT"'" {print $2}' /proc/mounts | sort -r); do

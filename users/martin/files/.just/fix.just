@@ -6,9 +6,10 @@ yubikey:
     gpgconf --kill gpg-agent || true
     sudo systemctl restart pcscd
 
-# Fix Chrome — restart shell + Chrome + YubiKey agents.
+# Fix Chrome — restart Chrome + YubiKey agents.
+# Leaves gnome-shell alone: on Wayland, killing it ends the whole session.
 chrome:
-    pkill -f gnome-shell || true
-    pkill -f google-chrome || true
-    just yubikey
+    # [g]: the pattern must not match this recipe's own `sh -c` line.
+    pkill -f '[g]oogle-chrome' || true
+    just --justfile "{{source_file()}}" yubikey
     google-chrome-stable > /dev/null 2>&1 &

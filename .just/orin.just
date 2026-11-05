@@ -31,31 +31,23 @@ ai-chat:
 # temporarily suspending background mesh-llm to free unified VRAM if running.
 [group("Orin")]
 test-mesh path=".":
-    @echo "🔨 Testing mesh-llm on-device (cores=2)..."
-    @bash -c ' \
-      stopped=0; \
-      if systemctl is-active --quiet mesh-llm; then \
-        echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."; \
-        sudo systemctl stop mesh-llm && stopped=1; \
-      fi; \
-      trap "[ \$$stopped -eq 1 ] && sudo systemctl start mesh-llm" EXIT; \
-      cargo test --manifest-path {{path}}/Cargo.toml -j 2 \
-    '
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🔨 Testing mesh-llm on-device (cores=2)..."
+    source "{{source_directory()}}/lib/mesh-build-window.sh"
+    mesh_window_open
+    cargo test --manifest-path "{{path}}/Cargo.toml" -j 2
 
 # Run a manual Nix package build on-device with memory-safe concurrency (2 cores),
 # temporarily freeing unified RAM.
 [group("Orin")]
 build-mesh flake="github:kleinbem/nixpkgs#mesh-llm":
-    @echo "🏗️ Building {{flake}} on-device (cores=2)..."
-    @bash -c ' \
-      stopped=0; \
-      if systemctl is-active --quiet mesh-llm; then \
-        echo "⏸️  Temporarily suspending background mesh-llm to free unified RAM..."; \
-        sudo systemctl stop mesh-llm && stopped=1; \
-      fi; \
-      trap "[ \$$stopped -eq 1 ] && sudo systemctl start mesh-llm" EXIT; \
-      nix build -L --keep-going --max-jobs 1 --cores 2 --no-link {{flake}} \
-    '
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🏗️ Building {{flake}} on-device (cores=2)..."
+    source "{{source_directory()}}/lib/mesh-build-window.sh"
+    mesh_window_open
+    nix build -L --keep-going --max-jobs 1 --cores 2 --no-link "{{flake}}"
 
 # ─── Remote recipes (run from the dev workstation via SSH) ────────
 
