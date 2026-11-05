@@ -230,7 +230,7 @@ jobs:
               [[ -z $issue || $BUILD_MODE != fetches ]] || gh issue close "$issue" --comment "Nothing fails any more: $RUN_URL"
               exit 0
             fi
-            body="This lock update evaluates, but nix-detour found packages that don't build with it (report only, the update still goes out):
+            body="This lock update evaluates, but nix-detour found packages whose fetches fail with it (built on x86_64-linux only; report only, the update still goes out):
 
           $HOLDS_REPORT
 
