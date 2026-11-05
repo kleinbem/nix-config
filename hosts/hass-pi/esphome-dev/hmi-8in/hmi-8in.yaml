@@ -18,6 +18,7 @@ esphome:
   includes:
     - c6_fw.h
     - stations.h
+    - weather.h
   on_boot:
     priority: -100
     then:
@@ -886,6 +887,7 @@ script:
             - voice_assistant.start:
   - id: update_clock
     then:
+      - script.execute: fc_render
       - lvgl.label.update:
           id: lbl_time
           text: !lambda return id(ha_time).now().strftime("%H:%M");
@@ -1023,6 +1025,75 @@ script:
       - script.execute: wake_stop
       - lambda: id(snooze_end) = millis() + 9 * 60000u;
       - script.execute: clock_show
+  # Daily forecast from Home Assistant's weather.get_forecasts.
+  - id: fc_fetch
+    then:
+      - if:
+          condition: api.connected
+          then:
+            - homeassistant.action:
+                action: weather.get_forecasts
+                data:
+                  entity_id: weather.forecast_home
+                  type: daily
+                capture_response: true
+                on_success:
+                  - lambda: |-
+                      // Home Assistant wraps the action's result in "response".
+                      JsonArrayConst f = response["response"]["weather.forecast_home"]["forecast"];
+                      ESP_LOGI("forecast", "%u days", (unsigned) f.size());
+                      auto num = [](JsonVariantConst v) { return v.is<float>() ? v.as<float>() : NAN; };
+                      weather::days.clear();
+                      for (JsonObjectConst d : f) {
+                        time_t ts = weather::parse_iso(d["datetime"].as<const char *>());
+                        if (!ts) continue;
+                        weather::days.push_back({ts, d["condition"].as<std::string>(), num(d["temperature"]),
+                                                 num(d["templow"]), num(d["precipitation"])});
+                      }
+                  - script.execute: fc_render
+                on_error:
+                  - logger.log:
+                      level: WARN
+                      format: "forecast: %s"
+                      args: [error.c_str()]
+  # Draws the stored forecast from today on, so the labels stay right after
+  # midnight even if a refresh fails.
+  - id: fc_render
+    then:
+      - lambda: |-
+          lv_obj_t *day[] = {id(fc_d0), id(fc_d1), id(fc_d2), id(fc_d3), id(fc_d4)};
+          lv_obj_t *ico[] = {id(fc_i0), id(fc_i1), id(fc_i2), id(fc_i3), id(fc_i4)};
+          lv_obj_t *hi[] = {id(fc_h0), id(fc_h1), id(fc_h2), id(fc_h3), id(fc_h4)};
+          lv_obj_t *lo[] = {id(fc_l0), id(fc_l1), id(fc_l2), id(fc_l3), id(fc_l4)};
+          lv_obj_t *rain[] = {id(fc_p0), id(fc_p1), id(fc_p2), id(fc_p3), id(fc_p4)};
+          bool clock = id(ha_time).now().is_valid();
+          int today = weather::local_day(::time(nullptr));
+          std::string hl = "Outside";
+          size_t col = 0;
+          for (auto &d : weather::days) {
+            if (col >= 5) break;
+            int dd = weather::local_day(d.ts);
+            if (clock && dd < today) continue;
+            char wd[8];
+            struct tm tm;
+            localtime_r(&d.ts, &tm);
+            strftime(wd, sizeof(wd), "%a", &tm);
+            lv_label_set_text(day[col], clock && dd == today ? "Today" : wd);
+            lv_label_set_text(ico[col], weather::icon(d.cond));
+            lv_label_set_text(hi[col], weather::deg(d.hi).c_str());
+            lv_label_set_text(lo[col], std::isnan(d.lo) ? "" : weather::deg(d.lo).c_str());
+            lv_label_set_text(rain[col], std::isnan(d.mm) ? "–" : d.mm >= 0.1f ? str_sprintf("%.1f mm", d.mm).c_str() : "dry");
+            if (clock && dd == today) hl = "Outside   " + weather::deg(d.hi) + " / " + weather::deg(d.lo);
+            col++;
+          }
+          for (; col < 5; col++) {
+            lv_label_set_text(day[col], "");
+            lv_label_set_text(ico[col], "");
+            lv_label_set_text(hi[col], "");
+            lv_label_set_text(lo[col], "");
+            lv_label_set_text(rain[col], "");
+          }
+          lv_label_set_text(id(lbl_weather_hl), hl.c_str());
   - id: play_chime
     then:
       - media_player.play_media:
@@ -1203,6 +1274,8 @@ text_sensor:
     id: ha_weather
     entity_id: weather.forecast_home
     on_value:
+      # Arrives right after Home Assistant connects, and with every new forecast.
+      - script.execute: fc_fetch
       - lvgl.label.update:
           id: lbl_weather_cond
           text: !lambda |-
@@ -1212,19 +1285,7 @@ text_sensor:
             return s;
       - lvgl.label.update:
           id: lbl_weather_icon
-          text: !lambda |-
-            std::string s = x;
-            if (s == "sunny") return std::string("󰖙");
-            if (s == "clear-night") return std::string("󰖔");
-            if (s == "partlycloudy") return std::string("󰖕");
-            if (s == "rainy") return std::string("󰖗");
-            if (s == "pouring") return std::string("󰖖");
-            if (s == "snowy" || s == "snowy-rainy") return std::string("󰖘");
-            if (s == "fog") return std::string("󰖑");
-            if (s == "windy" || s == "windy-variant") return std::string("󰖝");
-            if (s == "lightning" || s == "lightning-rainy") return std::string("󰖓");
-            if (s == "hail") return std::string("󰖒");
-            return std::string("󰖐");
+          text: !lambda return std::string(weather::icon(x));
   - platform: homeassistant
     id: ha_alarm
     entity_id: alarm_control_panel.alarmo
@@ -1533,6 +1594,235 @@ lvgl:
                 text: "󰍬"
           on_click:
             - script.execute: talk
+      # Five-day forecast, opened from the weather card; tap to close. Created
+      # before msg_box so pop-ups stay on top.
+      - obj:
+          id: fc_box
+          hidden: true
+          align: CENTER
+          width: 1100
+          height: 400
+          bg_color: 0x263038
+          border_color: 0x4FC3F7
+          border_width: 3
+          radius: 30
+          pad_all: 30
+          scrollable: false
+          on_click:
+            - lvgl.widget.hide: fc_box
+          widgets:
+            - label:
+                styles: muted
+                text: "FORECAST"
+            - label:
+                align: TOP_RIGHT
+                styles: muted
+                text: "tap to close"
+            - label:
+                id: fc_d0
+                x: 0
+                y: 50
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_i0
+                x: 0
+                y: 105
+                width: 200
+                text_align: CENTER
+                text_font: font_icon
+                text_color: 0x4FC3F7
+                text: ""
+            - label:
+                id: fc_h0
+                x: 0
+                y: 185
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_l0
+                x: 0
+                y: 230
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_p0
+                x: 0
+                y: 270
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_d1
+                x: 208
+                y: 50
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_i1
+                x: 208
+                y: 105
+                width: 200
+                text_align: CENTER
+                text_font: font_icon
+                text_color: 0x4FC3F7
+                text: ""
+            - label:
+                id: fc_h1
+                x: 208
+                y: 185
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_l1
+                x: 208
+                y: 230
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_p1
+                x: 208
+                y: 270
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_d2
+                x: 416
+                y: 50
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_i2
+                x: 416
+                y: 105
+                width: 200
+                text_align: CENTER
+                text_font: font_icon
+                text_color: 0x4FC3F7
+                text: ""
+            - label:
+                id: fc_h2
+                x: 416
+                y: 185
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_l2
+                x: 416
+                y: 230
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_p2
+                x: 416
+                y: 270
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_d3
+                x: 624
+                y: 50
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_i3
+                x: 624
+                y: 105
+                width: 200
+                text_align: CENTER
+                text_font: font_icon
+                text_color: 0x4FC3F7
+                text: ""
+            - label:
+                id: fc_h3
+                x: 624
+                y: 185
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_l3
+                x: 624
+                y: 230
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_p3
+                x: 624
+                y: 270
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_d4
+                x: 832
+                y: 50
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_i4
+                x: 832
+                y: 105
+                width: 200
+                text_align: CENTER
+                text_font: font_icon
+                text_color: 0x4FC3F7
+                text: ""
+            - label:
+                id: fc_h4
+                x: 832
+                y: 185
+                width: 200
+                text_align: CENTER
+                text_font: font_mid
+                text: ""
+            - label:
+                id: fc_l4
+                x: 832
+                y: 230
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
+            - label:
+                id: fc_p4
+                x: 832
+                y: 270
+                width: 200
+                text_align: CENTER
+                styles: muted
+                text: ""
       - obj:
           id: msg_box
           hidden: true
@@ -1671,12 +1961,16 @@ lvgl:
                       text_font: font_mid
                       text_color: 0x8A949E
                       text: ""
+                  # Tap for the forecast.
                   - obj:
                       styles: card
                       x: 40
                       y: 290
                       width: 480
                       height: 150
+                      on_click:
+                        - lvgl.widget.show: fc_box
+                        - script.execute: fc_fetch
                       widgets:
                         - label:
                             id: lbl_weather_icon
@@ -1684,6 +1978,7 @@ lvgl:
                             text_font: font_icon
                             text: "󰖐"
                         - label:
+                            id: lbl_weather_hl
                             x: 90
                             align: TOP_LEFT
                             styles: muted
@@ -3193,6 +3488,9 @@ lvgl:
               - script.execute: photo_stop
 
 interval:
+  - interval: 30min
+    then:
+      - script.execute: fc_fetch
   - interval: 1s
     then:
       - script.execute: clock_tick

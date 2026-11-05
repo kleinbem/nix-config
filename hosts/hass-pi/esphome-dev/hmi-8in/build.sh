@@ -35,7 +35,7 @@ fi
 
 mkdir -p "$build"
 chmod 700 "$cache/esphome-dev" "$build" # generated main.cpp holds Wi-Fi and API keys
-cp "$here"/hmi-8in.yaml "$here"/c6_fw.h "$here"/stations.h "$here"/chime.wav "$build"/
+cp "$here"/hmi-8in.yaml "$here"/c6_fw.h "$here"/stations.h "$here"/weather.h "$here"/chime.wav "$build"/
 ln -sfn "$secrets" "$build/secrets.yaml"
 mkdir -p "$cache/esphome-dev/tmp"
 export TMPDIR=$cache/esphome-dev/tmp # gcc's temp files overflow a small /tmp tmpfs
