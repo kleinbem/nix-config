@@ -10,11 +10,12 @@
 > unreadable. Copy it off the Orin before any reinstall:
 >
 > ```bash
-> ssh orin-nano sudo cat /nix/persist/etc/crypt/frigate.key > frigate.key
+> (umask 077; ssh orin-nano sudo cat /nix/persist/etc/crypt/frigate.key > frigate.key)
 > ```
 >
 > and put it back after the first boot (`sudo install -D -m 0400 frigate.key
-> /nix/persist/etc/crypt/frigate.key`, then reboot).
+> /nix/persist/etc/crypt/frigate.key`, then reboot). Delete the local copy
+> afterwards (`shred -u frigate.key`).
 
 ## Install
 
