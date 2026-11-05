@@ -116,13 +116,14 @@ if [[ $CHANGED -eq 1 ]]; then
 fi
 
 # --- 4. Patch keys.nix with the public key ---
-# keys.nix holds `<name> = "ssh-…";` (unquoted name) inside `personas = {`.
-if grep -Eq "^[[:space:]]*$NAME = \"[^\"]+\";" "$KEYS_NIX"; then
+# keys.nix holds `<name> = "ssh-…";` inside `personas = {`; a quoted name is
+# the same attribute to Nix, so match it too or the insert duplicates it.
+if grep -Eq "^[[:space:]]*\"?$NAME\"? = \"[^\"]+\";" "$KEYS_NIX"; then
   echo "  ✓ keys.nix ssh.personas.$NAME already populated"
 else
   echo "  📝 Updating keys.nix ssh.personas.$NAME..."
-  if grep -Eq "^[[:space:]]*$NAME = \"\";" "$KEYS_NIX"; then
-    sed -i -E "s|^([[:space:]]*)$NAME = \"\";|\1$NAME = \"$PUBKEY\";|" "$KEYS_NIX"
+  if grep -Eq "^[[:space:]]*\"?$NAME\"? = \"\";" "$KEYS_NIX"; then
+    sed -i -E "s|^([[:space:]]*\"?$NAME\"?) = \"\";|\1 = \"$PUBKEY\";|" "$KEYS_NIX"
   else
     NAME="$NAME" PUBKEY="$PUBKEY" awk '
       { print }
@@ -134,7 +135,7 @@ else
     ' "$KEYS_NIX" >"$WORK/keys.nix"
     cat "$WORK/keys.nix" >"$KEYS_NIX"
   fi
-  if ! grep -Fq "$NAME = \"$PUBKEY\";" "$KEYS_NIX"; then
+  if ! grep -Fq -e "$NAME = \"$PUBKEY\";" -e "\"$NAME\" = \"$PUBKEY\";" "$KEYS_NIX"; then
     echo "❌ couldn't add $NAME to $KEYS_NIX — add it by hand" >&2
     exit 1
   fi

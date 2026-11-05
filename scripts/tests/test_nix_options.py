@@ -372,3 +372,20 @@ def test_host_container_map_skips_nested_option_blocks(tmp_path: Path):
     assert host_container_map(tmp_path) == {
         "h1": {"forgejo": True, "monitoring": False}
     }
+
+
+def test_host_container_map_reads_one_line_form(tmp_path: Path):
+    host = tmp_path / "hosts" / "h1"
+    host.mkdir(parents=True)
+    (host / "containers.nix").write_text(
+        "{\n"
+        "  my.containers = {\n"
+        "    n8n = { enable = true; port = 1; };\n"
+        "    ente = { tls = { enable = true; }; };\n"
+        "    attic = { enable = lib.mkForce false;\n"
+        "      tls = { enable = true; };\n"
+        "    };\n"
+        "  };\n"
+        "}\n"
+    )
+    assert host_container_map(tmp_path) == {"h1": {"n8n": True, "attic": False}}

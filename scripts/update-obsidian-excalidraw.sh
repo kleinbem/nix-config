@@ -32,22 +32,29 @@ if [[ $CURRENT == "$LATEST" ]]; then
 fi
 log "Updating $CURRENT → $LATEST"
 
+# Edit a copy and replace $PKG only once every hash is in: a half-done bump
+# (new URLs, old hashes) would look up to date to the next run.
+WORK=$(mktemp "$PKG.XXXXXX")
+trap 'rm -f "$WORK"' EXIT
+cp -p "$PKG" "$WORK"
+
 # ── 2. Bump the version segment in all 3 URLs ────────────────────────────────
-sed -i "s#excalidraw-plugin/releases/download/${CURRENT}/#excalidraw-plugin/releases/download/${LATEST}/#g" "$PKG"
+sed -i "s#excalidraw-plugin/releases/download/${CURRENT}/#excalidraw-plugin/releases/download/${LATEST}/#g" "$WORK"
 
 # ── 3. Prefetch + patch each asset's hash ────────────────────────────────────
-# Set the `sha256 = "..."` that follows this asset's `url = "..."` line, so
-# other fetchurls in $PKG can't shift which hash gets patched.
+# Set the `sha256 = "..."` that follows this asset's `url = "..."` in the same
+# attrset (other fields or comments may sit between), so other fetchurls in
+# $PKG can't shift which hash gets patched.
 set_hash() {
   local url="$1" value="$2"
-  python3 - "$PKG" "$url" "$value" <<'PY'
+  python3 - "$WORK" "$url" "$value" <<'PY'
 import sys, re
 path, url, value = sys.argv[1:4]
 text = open(path).read()
-m = re.search(r'url = "' + re.escape(url) + r'";\s*sha256 = "[^"]*"', text)
+m = re.search(r'url = "' + re.escape(url) + r'";[^{}]*?sha256 = "[^"]*"', text)
 if not m:
     sys.exit(f"ERROR: no url+sha256 pair for {url} in {path}")
-h = re.search(r'sha256 = "[^"]*"', m.group(0))
+h = re.search(r'sha256 = "[^"]*"$', m.group(0))
 start, end = m.start() + h.start(), m.start() + h.end()
 open(path, 'w').write(text[:start] + f'sha256 = "{value}"' + text[end:])
 PY
@@ -59,5 +66,6 @@ for f in main.js manifest.json styles.css; do
   hash=$(nix-prefetch-url --type sha256 "$url")
   set_hash "$url" "$hash"
 done
+mv "$WORK" "$PKG"
 
 log "Done. obsidian-excalidraw-plugin $LATEST ready."

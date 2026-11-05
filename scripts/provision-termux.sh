@@ -37,7 +37,10 @@ echo "$PUB_KEY" >"/sdcard/Download/${DEVICE_TAG}_termux.pub" 2>/dev/null || true
 # add_line <file> <line>: append once, keeping whatever else the file holds.
 add_line() {
   touch "$1"
-  grep -qxF "$2" "$1" || printf '%s\n' "$2" >>"$1"
+  grep -qxF "$2" "$1" && return
+  # A last line without newline would swallow the appended one.
+  if [ -n "$(tail -c1 "$1")" ]; then printf '\n' >>"$1"; fi
+  printf '%s\n' "$2" >>"$1"
 }
 
 # 3. Fleet SSH hosts in their own file, included from ~/.ssh/config
@@ -99,15 +102,18 @@ Host orin
 EOF
 chmod 600 ~/.ssh/fleet.conf
 touch ~/.ssh/config
-# Include goes first: after a Host block it would only apply to that host.
-if ! grep -qxF 'Include fleet.conf' ~/.ssh/config; then
+# Resolved, so a symlinked config keeps its link and the target is updated.
+ssh_config="$(readlink -f ~/.ssh/config)"
+# Include goes first: after a Host/Match line it would only apply there.
+include_re='^[[:space:]]*Include[[:space:]]+fleet[.]conf[[:space:]]*$'
+if ! awk -v re="$include_re" '/^[[:space:]]*(Host|Match)([[:space:]]|$)/ { exit } $0 ~ re { f = 1; exit } END { exit !f }' "$ssh_config"; then
   {
     echo 'Include fleet.conf'
-    cat ~/.ssh/config
-  } >~/.ssh/config.new
-  mv ~/.ssh/config.new ~/.ssh/config
+    grep -vE "$include_re" "$ssh_config" || true
+  } >"$ssh_config.new"
+  mv "$ssh_config.new" "$ssh_config"
 fi
-chmod 600 ~/.ssh/config
+chmod 600 "$ssh_config"
 
 # 4. Smart CLI Launchers in $PREFIX/bin
 mkdir -p "$PREFIX/bin"
@@ -172,7 +178,11 @@ alias orin="ssh orin"
 EOF
 
 add_line ~/.bashrc '[[ -f ~/.fleet.bashrc ]] && source ~/.fleet.bashrc'
-add_line ~/.bash_profile '[[ -f ~/.bashrc ]] && source ~/.bashrc'
+# Skip if .bash_profile already sources .bashrc in any form, or it runs twice.
+# shellcheck disable=SC2016 # literal $HOME in the pattern
+if ! grep -qE '^[^#]*(source|\.)[[:space:]]+"?(~|\$HOME|\$\{HOME\})/\.bashrc' ~/.bash_profile 2>/dev/null; then
+  add_line ~/.bash_profile '[[ -f ~/.bashrc ]] && source ~/.bashrc'
+fi
 if [ -f ~/.zshrc ]; then
   add_line ~/.zshrc '[[ -f ~/.fleet.bashrc ]] && source ~/.fleet.bashrc'
 fi

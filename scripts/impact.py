@@ -44,9 +44,14 @@ SCAN_REPOS = [NIX_CONFIG] + [
 ]
 
 
+class ScanError(Exception):
+    """A repo exists but listing its changes failed."""
+
+
 def _changed_in_repo(r: Path) -> list[str] | None:
     """Changed paths relative to r, or None if r isn't a jj/git repo.
     jj first: workspaces have no .git, and jj shows everything since main."""
+    jj_err = None
     if (r / ".jj").is_dir():
         try:
             out = subprocess.check_output(
@@ -64,15 +69,15 @@ def _changed_in_repo(r: Path) -> list[str] | None:
                 stderr=subprocess.DEVNULL,
             )
             return out.splitlines()
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            jj_err = e
     if (r / ".git").exists():
         try:
             out = subprocess.check_output(
                 ["git", "status", "--porcelain", "-z", "-uall"], cwd=r, text=True
             )
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return None
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise ScanError(f"git status failed: {e}") from e
         files: list[str] = []
         entries = out.split("\0")
         i = 0
@@ -82,17 +87,28 @@ def _changed_in_repo(r: Path) -> list[str] | None:
             if len(e) < 4:
                 continue
             files.append(e[3:])
-            if e[0] in "RC":  # -z puts the rename source in the next entry
+            # -z puts the rename source in the next entry; a worktree rename
+            # (after `git add -N`) has the R in the second column.
+            if set(e[:2]) & {"R", "C"}:
                 i += 1
         return files
+    if jj_err is not None:
+        raise ScanError(f"jj diff failed: {jj_err}")
     return None
 
 
-def git_changed_files() -> list[Path]:
-    """Changed .nix files in nix-config and the sibling nix repos."""
+def git_changed_files() -> tuple[list[Path], bool]:
+    """Changed .nix files in nix-config and the sibling nix repos, and
+    whether every existing repo could be scanned."""
     paths: list[Path] = []
+    ok = True
     for r in SCAN_REPOS:
-        names = _changed_in_repo(r)
+        try:
+            names = _changed_in_repo(r)
+        except ScanError as e:
+            print(f"⚠️  {r}: {e}", file=sys.stderr)
+            ok = False
+            continue
         if names is None:
             if r == NIX_CONFIG:
                 print(f"⚠️  {r}: neither a jj nor a git repo", file=sys.stderr)
@@ -101,7 +117,7 @@ def git_changed_files() -> list[Path]:
             p = (r / name).resolve()
             if p.suffix == ".nix" and p.exists():
                 paths.append(p)
-    return paths
+    return paths, ok
 
 
 def classify(path: Path) -> str:
@@ -241,9 +257,12 @@ def main(argv: list[str]) -> int:
         return 0
 
     paths: list[Path]
+    scan_ok = True
     if argv[0] == "--git":
-        paths = git_changed_files()
+        paths, scan_ok = git_changed_files()
         if not paths:
+            if not scan_ok:
+                return 1
             print("No changed .nix files in nix-config or the sibling nix repos.")
             return 0
     else:
@@ -263,7 +282,7 @@ def main(argv: list[str]) -> int:
             print()
         for line in report_for_path(p):
             print(line)
-    return 0
+    return 0 if scan_ok else 1
 
 
 if __name__ == "__main__":

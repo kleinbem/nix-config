@@ -506,7 +506,9 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
         host_state: dict[str, bool] = {}
         for nix_file in sorted(host_dir.rglob("*.nix")):
             try:
-                lines = nix_file.read_text().splitlines()
+                lines = nix_file.read_text(
+                    encoding="utf-8", errors="replace"
+                ).splitlines()
             except OSError:
                 continue
             in_containers = False
@@ -534,6 +536,16 @@ def host_container_map(nix_config: Path) -> dict[str, dict[str, bool]]:
                 if m:
                     if depth_before == 1:
                         current_container = m.group(1)
+                        # `name = { enable = true; ... }`: enable as first attribute
+                        inline = re.match(
+                            r"[a-z][a-z0-9-]*\s*=\s*\{\s*enable\s*=\s*"
+                            r"(lib\.mkForce\s+)?(true|false)\b",
+                            line,
+                        )
+                        if inline:
+                            host_state[current_container] = inline.group(2) == "true"
+                        if depth < 2:  # block closed on the same line
+                            current_container = None
                     continue
                 # name.enable = true|false, as a direct child
                 m = re.match(
