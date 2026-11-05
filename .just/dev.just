@@ -59,7 +59,7 @@ ci-status host="$(hostname)":
     set -uo pipefail
     sha=$(jj log --ignore-working-copy --no-graph -r 'heads(::@ & ::main@origin)' -T commit_id 2>/dev/null) || exit 0
     [ -n "$sha" ] || exit 0
-    status=$(gh api "repos/kleinbem/nix-config/commits/$sha/statuses" \
+    status=$(timeout 15 gh api "repos/kleinbem/nix-config/commits/$sha/statuses?per_page=100" \
         --jq '[.[] | select(.context == "CI/{{host}}")][0] // empty | [.state, .description, .target_url] | @tsv' 2>/dev/null) || exit 0
     [ -n "$status" ] || exit 0
     IFS=$'\t' read -r state desc url <<<"$status"
