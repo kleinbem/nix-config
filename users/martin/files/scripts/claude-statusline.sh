@@ -24,11 +24,11 @@ done
 # --ignore-working-copy: a status line must never snapshot (and sign) @.
 change=""
 if [[ -n $dir ]]; then
-  # jj finds the repo root from any subdirectory itself; -R would not.
+  # jj finds the repo root from any subdirectory itself; -R would not. Only
+  # the change id: empty/conflict would show the last snapshot, not the files.
   change=$(cd "$dir" 2>/dev/null &&
     jj --ignore-working-copy --color never log -r @ --no-graph \
-      -T 'change_id.shortest(8) ++ if(empty, " empty", "") ++ if(conflict, " conflict", "")' \
-      2>/dev/null || true)
+      -T 'change_id.shortest(8)' 2>/dev/null || true)
 fi
 
 parts=("$where")
