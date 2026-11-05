@@ -1420,11 +1420,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793554975,
-        "narHash": "sha256-pxPPXSvSHq8jsoB+D85Oo8kiWqJRoobUvbvt/MwSJEk=",
+        "lastModified": 1793882514,
+        "narHash": "sha256-p1sFs8s6DPuUbIwnqX9N7ko+VakNC65cVyp9IsgOjoo=",
         "owner": "kleinbem",
         "repo": "nix-detour-fleet",
-        "rev": "a2abd5b399fb85cafe8183ef3aa6125b2285e5ca",
+        "rev": "0a1363c2f6e47a0b9f6aef38b0fb9f8da2508874",
         "type": "github"
       },
       "original": {
