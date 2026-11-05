@@ -1,97 +1,83 @@
-# Orin Nano Plus — NixOS Installation
+# Orin Nano Plus: NixOS installation
 
-## Prerequisites
+> **Warning: every install recipe below except `orin-update-usb` wipes the target SSD.** Check the
+> `device=` argument with `lsblk` first. The recipes ask for confirmation, but
+> they do not know which disk you meant.
 
-- Orin Nano booting **any Linux with SSH** (stock JetPack Ubuntu works)
-- Your workstation with this Nix config repo
+## Install
 
-## Installation
+Two ways, both run from the nix-config repo root on the workstation. Recipes
+live in [`.just/deployment.just`](../../.just/deployment.just).
 
-### 1. First boot with stock JetPack
+### A. SSD in a USB reader (preferred)
 
-Power on the Orin Nano with the SSD installed. Complete the initial JetPack Ubuntu setup, then note its IP:
-
-```bash
-# On the Orin Nano:
-ip addr
-```
-
-### 2. Enable SSH & copy your key
+Put the Orin's SSD in a USB-NVMe enclosure on the workstation:
 
 ```bash
-# On the Orin Nano (if SSH isn't running):
-sudo systemctl start ssh
-
-# From your workstation:
-ssh-copy-id root@<orin-ip>
+lsblk                                         # find the SSD, e.g. /dev/sdb
+just deployment::orin-install-usb device=/dev/sdb
 ```
 
-### 3. Install NixOS 🚀
+This wipes the SSD, partitions it with [`disko.nix`](./disko.nix), builds the
+closure, installs systemd-boot to the ESP, adds the new host age key to sops
+and binds LUKS to Tang. Then commit the re-encrypted secrets, put the SSD back
+in the Orin, connect ethernet and boot. The recipe prints the remaining
+first-boot steps.
+
+`just deployment::orin-update-usb` reinstalls onto an already provisioned SSD
+without wiping it.
+
+### B. Bootstrap image, then promote over SSH
 
 ```bash
-# From the workspace root:
-just orin-install root@<orin-ip>
+just deployment::orin-install-bootstrap device=/dev/sdb   # wipes /dev/sdb
+# boot the Orin from that SSD; root SSH by key only
+just deployment::orin-promote                             # wipes the Orin's SSD again
 ```
 
-`nixos-anywhere` will SSH in, kexec into a temporary NixOS installer, partition the SSD natively via `disko.nix`, copy the NixOS closure, install the bootloader, and reboot into NixOS.
+`orin-promote` runs nixos-anywhere against `root@orin-nano-bootstrap.local` and
+builds natively on the Orin. If kexec fails on the Jetson, use
+`orin-promote-nokexec`.
 
-### 4. First boot — NetBird setup
+## After the first boot
 
-After NixOS boots, connect via the **local network** (SSH is open on LAN for the first boot only until NetBird is set up):
+- **NetBird** joins on its own (`netbird-autojoin`, setup key from sops).
+  Check with `sudo netbird status`.
+- **Updates** arrive through comin pull-deploy. The Orin still builds its
+  kernel/L4T closure on the device, so there is no cache requirement and the
+  build timeout is 12 h. There is no manual push step.
 
-```bash
-ssh martin@<orin-ip>
+## Disk layout
 
-# Authenticate NetBird:
-sudo netbird up --setup-key <your-setup-key>
-
-# Verify:
-sudo netbird status
-```
-
-Once NetBird is authenticated, SSH is **locked down to NetBird only** (interface `wt0`) — no more LAN exposure. Note that this system uses a **stateless root**; however, your NetBird identity and LUKS keys are persisted in `/nix/persist`.
-
-### 5. Seal TPM2
-
-```bash
-# From your workstation (over Tailscale now):
-just orin-seal
-```
-
-### 6. Future updates
-
-```bash
-# Deploy config changes (over Tailscale):
-just deploy-orin
-```
-
-## Disk Layout
-
-Defined in [`disko.nix`](./disko.nix):
+Defined in [`disko.nix`](./disko.nix). `/` and `/var` are tmpfs
+(impermanence); state that must survive a reboot lives under `/nix/persist`.
 
 ```
-SSD (GPT)
-├── ESP   (1G, vfat)        → /boot
-└── LUKS  (remaining)       → orin_crypt
-    └── LVM (vg_orin)
-        ├── root (128G, ext4)   → /
-        └── data (rest, btrfs)  → /mnt/data
+Main SSD (GPT)
+├── ESP   (1G, vfat)              → /boot (systemd-boot)
+├── swap  (16G, random key)
+└── LUKS  (rest)                  → orin_crypt
+    └── LVM vg_orin
+        ├── nix    (128G, ext4)   → /nix
+        ├── models (256G, ext4)   → /mnt/models
+        └── data   (rest, btrfs)  → /mnt/data
+
+Second SSD (GPT)
+└── LUKS (keyfile on /nix/persist) → orin_frigate_crypt
+    └── ext4                       → /mnt/data/frigate (Frigate recordings)
 ```
 
-## Security Model
+The second disk is unlocked in stage 2 by crypttab (see `services.nix`): its
+keyfile is inside `orin_crypt`, which initrd hasn't mounted yet.
 
-- **SSH**: Key-only auth (YubiKey), restricted to `tailscale0` interface
-- **Disk**: LUKS encryption with TPM2 auto-unlock
-- **Network**: All management traffic over Tailscale (WireGuard)
-- **Updates**: Deployed from workstation via `nixos-rebuild` over Tailscale SSH
+## Security model
 
-## How nixos-anywhere Works
-
-The stock JetPack Ubuntu is just a **stepping stone** — `nixos-anywhere` completely replaces it. Under the hood:
-
-1. SSHs into the running Linux
-2. Kexec boots a temporary NixOS installer in RAM
-3. Runs `disko` **natively** on the device (no QEMU cross-arch issues)
-4. Copies the NixOS system closure
-5. Installs the extlinux bootloader
-6. Reboots into NixOS
+- **Disk unlock**: the Jetson has no TPM, so there is no TPM sealing
+  (`orin-seal` is inert). Tang/clevis unlocks `orin_crypt` unattended when a
+  Tang server on the LAN answers; otherwise use the YubiKey (FIDO2) or the
+  passphrase, either at the console or over initrd SSH on port 2222.
+- **SSH**: key-only (YubiKey/FIDO2). Port 22 is open on NetBird (`wt0`) and
+  also on the LAN interface (`enP8p1s0`), on purpose, as a fallback for when
+  NetBird is down.
+- **Bootloader**: systemd-boot, capped at 10 entries. extlinux is off.
+- **Firewall**: iptables-legacy (see `network.nix`).

@@ -60,7 +60,7 @@ in
       generic-extlinux-compatible.enable = lib.mkForce false;
     };
     tmp.useTmpfs = true;
-    # Enable systemd in initrd for TPM2 auto-unlock (provided by Disko)
+    # initrd SSH on 2222 for a manual LUKS unlock when Tang is unreachable.
     initrd = {
       network = {
         enable = true;
