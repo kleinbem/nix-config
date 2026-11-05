@@ -17,6 +17,7 @@ esphome:
   friendly_name: ${friendly_name}
   includes:
     - c6_fw.h
+    - stations.h
   on_boot:
     priority: -100
     then:
@@ -193,6 +194,22 @@ switch:
     name: Speaker Amp
     pin: GPIO53
     restore_mode: ALWAYS_ON
+  # Clock tab, also in Home Assistant.
+  - platform: lvgl
+    id: wake_on
+    widget: sw_wake
+    name: Wake-up alarm
+    icon: mdi:alarm
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_state:
+      - script.execute: clock_show
+  - platform: lvgl
+    id: wake_weekdays
+    widget: sw_weekdays
+    name: Wake-up on weekdays only
+    icon: mdi:calendar-week
+    entity_category: config
+    restore_mode: RESTORE_DEFAULT_ON
 
 microphone:
   - platform: i2s_audio
@@ -239,6 +256,12 @@ audio:
     flac:
     mp3:
 
+# Built-in chime for the alarm clock and the kitchen timer: rings without
+# the internet or Home Assistant.
+audio_file:
+  - id: chime
+    file: chime.wav
+
 media_source:
   - platform: audio_http
     id: src_http_announce
@@ -248,6 +271,8 @@ media_source:
     task_stack_in_psram: true
   - platform: sendspin
     id: src_sendspin
+  - platform: audio_file
+    id: src_file
 
 sendspin:
   id: sendspin_hub
@@ -269,6 +294,7 @@ media_player:
       sample_rate: 16000
       sources:
         - src_http_announce
+        - src_file
     media_pipeline:
       speaker: spk_media
       format: FLAC
@@ -444,6 +470,23 @@ font:
     glyphs: "󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰤠󰅤"
 
 number:
+  # Wake-up alarm: the radio fades in up to this volume.
+  - platform: template
+    id: wake_volume
+    name: Wake-up volume
+    icon: mdi:volume-high
+    entity_category: config
+    unit_of_measurement: "%"
+    optimistic: true
+    restore_value: true
+    initial_value: 40
+    min_value: 5
+    max_value: 100
+    step: 5
+    on_value:
+      - lvgl.slider.update:
+          id: sl_wake_vol
+          value: !lambda return x;
   # Volume of voice answers and announcements while no music plays.
   - platform: template
     id: voice_volume
@@ -511,6 +554,72 @@ number:
           value: !lambda return x;
       - script.execute: wake
 
+datetime:
+  - platform: template
+    id: wake_time
+    type: time
+    name: Wake-up time
+    icon: mdi:alarm
+    optimistic: true
+    restore_value: true
+    initial_value: "07:00"
+    time_id: ha_time
+    on_time:
+      - if:
+          condition:
+            lambda: |-
+              int d = id(ha_time).now().day_of_week; // 1 = Sunday
+              return id(wake_on).state && !id(wake_ringing) && (!id(wake_weekdays).state || (d >= 2 && d <= 6));
+          then:
+            - script.execute: wake_ring
+    on_value:
+      - script.execute: clock_show
+
+button:
+  - platform: template
+    id: wake_stop_btn
+    name: Stop wake-up alarm
+    icon: mdi:alarm-off
+    on_press:
+      - script.execute: wake_stop
+
+select:
+  # Same order as stations.h.
+  - platform: template
+    id: wake_station
+    name: Wake-up station
+    icon: mdi:radio
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - "Radio Mirchi Hindi"
+      - "Hits Of Bollywood"
+      - "RTÉ Radio 1"
+      - "Today FM"
+      - "Bayern 3"
+      - "1LIVE"
+      - "Hitradio Ö3"
+      - "FM4"
+    initial_option: "RTÉ Radio 1"
+    on_value:
+      - lvgl.label.update:
+          id: lbl_wake_station
+          text: !lambda return x;
+  # Stops whatever the panel plays after this long, fading out.
+  - platform: template
+    id: sleep_timer
+    name: Sleep timer
+    icon: mdi:timer-sand
+    optimistic: true
+    options: ["Off", "15 min", "30 min", "60 min", "90 min"]
+    initial_option: "Off"
+    on_value:
+      - lambda: |-
+          int m = atoi(x.c_str()); // "Off" gives 0
+          id(sleep_end) = m ? millis() + m * 60000u : 0;
+      - script.execute: clock_tick
+
 globals:
   # Nobody home (HA zone.home = 0): screen stays off.
   - id: away
@@ -534,6 +643,29 @@ globals:
   - id: pin
     type: std::string
     restore_value: false
+  # Clock tab. Deadlines are millis(), 0 when not running.
+  - id: wake_ringing
+    type: bool
+    initial_value: "false"
+  - id: wake_prev_vol
+    type: float
+    initial_value: "0.5"
+  - id: snooze_end
+    type: uint32_t
+    initial_value: "0"
+  - id: kt_end
+    type: uint32_t
+    initial_value: "0"
+  # Kitchen timer seconds while set or paused.
+  - id: kt_left
+    type: int
+    initial_value: "0"
+  - id: sleep_end
+    type: uint32_t
+    initial_value: "0"
+  - id: sleep_prev_vol
+    type: float
+    initial_value: "0.5"
 
 time:
   - platform: homeassistant
@@ -544,6 +676,12 @@ time:
       - seconds: 0
         then:
           - script.execute: update_clock
+  # The alarm clock also needs the time when Home Assistant is down.
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Dublin
+    on_time_sync:
+      - script.execute: update_clock
 
 script:
   # Like a touch: screen on and the idle timers start over.
@@ -605,13 +743,12 @@ script:
   - id: radio_play
     mode: restart
     parameters:
-      station: string
-      url: string
+      i: int
     then:
-      - lambda: id(radio_name) = station;
+      - lambda: id(radio_name) = stations::LIST[i].name;
       - media_player.play_media:
           id: panel_media
-          media_url: !lambda return url;
+          media_url: !lambda return stations::LIST[i].url;
       - lambda: id(np_local) = false;
       - script.execute: np_mode
   # Anything else played after a station (HA, Sendspin) must not keep its name;
@@ -805,6 +942,169 @@ script:
       - logger.log: "pop-up shown"
       - delay: 60s
       - lvgl.widget.hide: msg_box
+  # Alarm clock: the chosen station fades in; the built-in chime takes over
+  # if the stream doesn't start. Stops by itself after 30 minutes.
+  - id: wake_ring
+    mode: restart
+    then:
+      - lambda: |-
+          if (!id(wake_ringing)) id(wake_prev_vol) = id(panel_media).volume;
+          id(wake_ringing) = true;
+          id(snooze_end) = 0;
+      - if:
+          condition:
+            lambda: return id(photo_mode);
+          then:
+            - script.execute: photo_stop
+      - script.execute: activity
+      - lvgl.label.update:
+          id: lbl_ring_station
+          text: !lambda return id(wake_station).current_option();
+      - lvgl.widget.show: wake_box
+      - script.execute: clock_show
+      - logger.log: "wake-up alarm"
+      - media_player.volume_set:
+          id: panel_media
+          volume: 5%
+      - script.execute:
+          id: radio_play
+          i: !lambda return id(wake_station).active_index().value_or(2);
+      - script.execute: wake_fade
+      - delay: 20s
+      - if:
+          condition:
+            lambda: return id(panel_media).state != media_player::MEDIA_PLAYER_STATE_PLAYING;
+          then:
+            - logger.log: "wake-up stream did not start, chime instead"
+            - speaker_source.set_announcement_volume:
+                id: panel_media
+                volume: !lambda return id(wake_volume).state / 100.0f;
+            - repeat:
+                count: 360 # 30 minutes
+                then:
+                  - script.execute: play_chime
+                  - delay: 5s
+          else:
+            - delay: 30min
+      - script.execute: wake_stop
+  - id: wake_fade
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: return id(wake_ringing) && id(panel_media).volume < id(wake_volume).state / 100.0f - 0.005f;
+          then:
+            - delay: 2s
+            - media_player.volume_set:
+                id: panel_media
+                volume: !lambda return std::min(id(panel_media).volume + 0.02f, id(wake_volume).state / 100.0f);
+  # Also cancels a snooze; leaves other playback alone when nothing rings.
+  - id: wake_stop
+    then:
+      - lambda: id(snooze_end) = 0;
+      - if:
+          condition:
+            lambda: return id(wake_ringing);
+          then:
+            - script.stop: wake_ring
+            - script.stop: wake_fade
+            - lambda: id(wake_ringing) = false;
+            - lvgl.widget.hide: wake_box
+            - media_player.stop: panel_media
+            - media_player.volume_set:
+                id: panel_media
+                volume: !lambda return id(wake_prev_vol);
+            - speaker_source.set_announcement_volume:
+                id: panel_media
+                volume: !lambda return id(voice_volume).state / 100.0f;
+      - script.execute: clock_show
+  - id: wake_snooze
+    then:
+      - script.execute: wake_stop
+      - lambda: id(snooze_end) = millis() + 9 * 60000u;
+      - script.execute: clock_show
+  - id: play_chime
+    then:
+      - media_player.play_media:
+          id: panel_media
+          media_url: "audio-file://chime"
+          announcement: true
+  - id: kt_ring
+    then:
+      - script.execute:
+          id: popup
+          title: "Kitchen timer"
+          message: "Time is up"
+      - repeat:
+          count: 3
+          then:
+            - script.execute: play_chime
+            - delay: 2500ms
+  # Sleep timer ran out: fade out over about 30 seconds, then stop.
+  - id: sleep_fade
+    then:
+      - lambda: id(sleep_prev_vol) = id(panel_media).volume;
+      - while:
+          condition:
+            lambda: return id(panel_media).volume > 0.02f;
+          then:
+            - media_player.volume_set:
+                id: panel_media
+                volume: !lambda return std::max(id(panel_media).volume - id(sleep_prev_vol) / 15, 0.0f);
+            - delay: 2s
+      - media_player.stop: panel_media
+      - media_player.volume_set:
+          id: panel_media
+          volume: !lambda return id(sleep_prev_vol);
+  # Clock tab and Home tab texts for the alarm, snooze and kitchen timer.
+  - id: clock_show
+    then:
+      - lambda: |-
+          auto hm = str_sprintf("%02d:%02d", id(wake_time).hour, id(wake_time).minute);
+          lv_label_set_text(id(lbl_wake_time), hm.c_str());
+          std::string home;
+          if (id(snooze_end)) {
+            int left = (int32_t) (id(snooze_end) - millis()) / 1000;
+            home = str_sprintf("Snoozed, %d:%02d", std::max(left, 0) / 60, std::max(left, 0) % 60);
+          } else if (id(wake_on).state) {
+            home = "Wake-up " + hm;
+          }
+          int k = id(kt_end) ? (int32_t) (id(kt_end) - millis()) / 1000 + 1 : id(kt_left);
+          k = std::max(k, 0);
+          auto kt = str_sprintf("%d:%02d", k / 60, k % 60);
+          lv_label_set_text(id(lbl_kt), kt.c_str());
+          lv_label_set_text(id(lbl_kt_go), id(kt_end) ? "Pause" : "Start");
+          if (id(kt_end) || id(kt_left)) home += (home.empty() ? "" : "   ") + std::string("Kitchen ") + kt;
+          lv_label_set_text(id(lbl_clock_home), home.c_str());
+          std::string sl = "Off";
+          if (id(sleep_end)) {
+            int m = ((int32_t) (id(sleep_end) - millis()) + 59999) / 60000;
+            sl = str_sprintf("Stops in %d min", std::max(m, 0));
+          }
+          lv_label_set_text(id(lbl_sleep), sl.c_str());
+          if (id(wake_ringing)) lv_label_set_text(id(lbl_ring_time), id(ha_time).now().strftime("%H:%M").c_str());
+  # Once a second: deadlines of the snooze, kitchen and sleep timers.
+  - id: clock_tick
+    then:
+      - lambda: |-
+          auto due = [](uint32_t end) { return end && (int32_t) (millis() - end) >= 0; };
+          if (due(id(snooze_end))) {
+            id(snooze_end) = 0;
+            id(wake_ring).execute();
+          }
+          if (due(id(kt_end))) {
+            id(kt_end) = 0;
+            id(kt_left) = 0;
+            id(kt_ring).execute();
+          }
+          if (due(id(sleep_end))) {
+            id(sleep_end) = 0;
+            auto call = id(sleep_timer).make_call();
+            call.set_option("Off");
+            call.perform();
+            id(sleep_fade).execute();
+          }
+      - script.execute: clock_show
 
 text_sensor:
   - platform: debug
@@ -974,10 +1274,7 @@ text_sensor:
                 id: popup
                 title: "Alarm"
                 message: !lambda 'return x == "triggered" ? std::string("Alarm triggered!") : std::string("Enter code to disarm");'
-            - lvgl.tabview.select:
-                id: tv
-                index: 2
-                animated: false
+            - lambda: lv_tabview_set_active(id(tv), lv_obj_get_index(id(tile_alarm)), LV_ANIM_OFF);
 
 binary_sensor:
   - platform: homeassistant
@@ -1274,6 +1571,63 @@ lvgl:
                 align: BOTTOM_RIGHT
                 styles: muted
                 text: "tap to close"
+      # Wake-up alarm ringing: covers everything until Snooze or Stop.
+      - obj:
+          id: wake_box
+          hidden: true
+          width: 100%
+          height: 100%
+          bg_color: 0x101418
+          border_width: 0
+          radius: 0
+          scrollable: false
+          widgets:
+            - label:
+                id: lbl_ring_time
+                align: TOP_MID
+                y: 40
+                text_font: font_clock
+                text: "--:--"
+            - label:
+                id: lbl_ring_station
+                align: TOP_MID
+                y: 290
+                text_font: font_mid
+                text_color: 0x8A949E
+                text: ""
+            - button:
+                align: BOTTOM_LEFT
+                x: 60
+                y: -60
+                width: 560
+                height: 220
+                radius: 40
+                bg_color: 0x263038
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_big
+                      text: "Snooze 9 min"
+                on_click:
+                  - script.execute: wake_snooze
+            - button:
+                align: BOTTOM_RIGHT
+                x: -60
+                y: -60
+                width: 560
+                height: 220
+                radius: 40
+                bg_color: 0x4FC3F7
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_big
+                      text_color: 0x101418
+                      text: "Stop"
+                on_click:
+                  - script.execute: wake_stop
   pages:
     - id: main_page
       bg_color: 0x101418
@@ -1358,6 +1712,12 @@ lvgl:
                       y: 505
                       text_font: font_mid
                       text_color: 0xFFB74D
+                      text: ""
+                  - label:
+                      id: lbl_clock_home
+                      x: 300
+                      y: 513
+                      styles: muted
                       text: ""
                   - obj:
                       styles: card
@@ -1607,10 +1967,7 @@ lvgl:
                             text_color: 0x8A949E
                             text: "--"
                       on_click:
-                        - lvgl.tabview.select:
-                            id: tv
-                            index: 2
-                            animated: false
+                        - lambda: lv_tabview_set_active(id(tv), lv_obj_get_index(id(tile_alarm)), LV_ANIM_OFF);
                   - label:
                       x: 335
                       y: 668
@@ -1827,8 +2184,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "Radio Mirchi Hindi"
-                            url: "https://eu8.fastcast4u.com/proxy/clyedupq/stream"
+                            i: 0
                   - button:
                       x: 192
                       y: 580
@@ -1846,8 +2202,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "Hits Of Bollywood"
-                            url: "http://stream.zeno.fm/8ty8szwpwfeuv"
+                            i: 1
                   - button:
                       x: 344
                       y: 580
@@ -1865,8 +2220,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "RTÉ Radio 1"
-                            url: "http://icecast.rte.ie/radio1"
+                            i: 2
                   - button:
                       x: 496
                       y: 580
@@ -1884,8 +2238,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "Today FM"
-                            url: "https://stream.audioxi.com/TD"
+                            i: 3
                   - button:
                       x: 648
                       y: 580
@@ -1903,8 +2256,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "Bayern 3"
-                            url: "https://dispatcher.rndfnk.com/br/br3/live/mp3/mid"
+                            i: 4
                   - button:
                       x: 800
                       y: 580
@@ -1922,8 +2274,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "1LIVE"
-                            url: "http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3"
+                            i: 5
                   - button:
                       x: 952
                       y: 580
@@ -1941,8 +2292,7 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "Hitradio Ö3"
-                            url: "https://orf-live.ors-shoutcast.at/oe3-q2a"
+                            i: 6
                   - button:
                       x: 1104
                       y: 580
@@ -1960,8 +2310,352 @@ lvgl:
                       on_click:
                         - script.execute:
                             id: radio_play
-                            station: "FM4"
-                            url: "https://orf-live.ors-shoutcast.at/fm4-q2a"
+                            i: 7
+              - id: tile_clock
+                name: "Clock"
+                widgets:
+                  - obj:
+                      styles: card
+                      x: 40
+                      y: 30
+                      width: 590
+                      height: 650
+                      scrollable: false
+                      widgets:
+                        - label:
+                            styles: muted
+                            text: "WAKE-UP ALARM"
+                        - switch:
+                            id: sw_wake
+                            align: TOP_RIGHT
+                            width: 110
+                            height: 56
+                        - label:
+                            id: lbl_wake_time
+                            align: TOP_MID
+                            y: 60
+                            text_font: font_big
+                            text: "--:--"
+                        - button:
+                            x: 0
+                            y: 170
+                            width: 125
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "– h"
+                            on_click:
+                              - lambda: |-
+                                  int t = (id(wake_time).hour * 60 + id(wake_time).minute + -60 + 1440) % 1440;
+                                  id(wake_time).make_call().set_time(t / 60, t % 60, 0).perform();
+                        - button:
+                            x: 140
+                            y: 170
+                            width: 125
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "+ h"
+                            on_click:
+                              - lambda: |-
+                                  int t = (id(wake_time).hour * 60 + id(wake_time).minute + 60 + 1440) % 1440;
+                                  id(wake_time).make_call().set_time(t / 60, t % 60, 0).perform();
+                        - button:
+                            x: 285
+                            y: 170
+                            width: 125
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "– 5"
+                            on_click:
+                              - lambda: |-
+                                  int t = (id(wake_time).hour * 60 + id(wake_time).minute + -5 + 1440) % 1440;
+                                  id(wake_time).make_call().set_time(t / 60, t % 60, 0).perform();
+                        - button:
+                            x: 425
+                            y: 170
+                            width: 125
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "+ 5"
+                            on_click:
+                              - lambda: |-
+                                  int t = (id(wake_time).hour * 60 + id(wake_time).minute + 5 + 1440) % 1440;
+                                  id(wake_time).make_call().set_time(t / 60, t % 60, 0).perform();
+                        - label:
+                            y: 300
+                            text_font: font_mid
+                            text: "Weekdays only"
+                        - switch:
+                            id: sw_weekdays
+                            align: TOP_RIGHT
+                            y: 290
+                            width: 110
+                            height: 56
+                        - label:
+                            y: 380
+                            styles: muted
+                            text: "Station (tap to change)"
+                        - button:
+                            x: 0
+                            y: 420
+                            width: 550
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  id: lbl_wake_station
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: ""
+                            on_click:
+                              - select.next:
+                                  id: wake_station
+                                  cycle: true
+                        - label:
+                            y: 530
+                            styles: muted
+                            text: "Volume"
+                        - slider:
+                            id: sl_wake_vol
+                            x: 10
+                            y: 575
+                            width: 530
+                            min_value: 5
+                            max_value: 100
+                            on_release:
+                              - number.set:
+                                  id: wake_volume
+                                  value: !lambda return x;
+                  - obj:
+                      styles: card
+                      x: 650
+                      y: 30
+                      width: 590
+                      height: 360
+                      scrollable: false
+                      widgets:
+                        - label:
+                            styles: muted
+                            text: "KITCHEN TIMER"
+                        - label:
+                            id: lbl_kt
+                            align: TOP_MID
+                            y: 40
+                            text_font: font_big
+                            text: "0:00"
+                        - button:
+                            x: 0
+                            y: 150
+                            width: 170
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "+1 min"
+                            on_click:
+                              - lambda: if (id(kt_end)) id(kt_end) += 1 * 60000u; else id(kt_left) += 1 * 60;
+                              - script.execute: clock_show
+                        - button:
+                            x: 190
+                            y: 150
+                            width: 170
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "+5 min"
+                            on_click:
+                              - lambda: if (id(kt_end)) id(kt_end) += 5 * 60000u; else id(kt_left) += 5 * 60;
+                              - script.execute: clock_show
+                        - button:
+                            x: 380
+                            y: 150
+                            width: 170
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "+10 min"
+                            on_click:
+                              - lambda: if (id(kt_end)) id(kt_end) += 10 * 60000u; else id(kt_left) += 10 * 60;
+                              - script.execute: clock_show
+                        - button:
+                            x: 0
+                            y: 245
+                            width: 265
+                            height: 70
+                            radius: 20
+                            bg_color: 0x1565C0
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  id: lbl_kt_go
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "Start"
+                            on_click:
+                              - lambda: |-
+                                  if (id(kt_end)) {
+                                    id(kt_left) = std::max((int32_t) (id(kt_end) - millis()) / 1000, (int32_t) 0);
+                                    id(kt_end) = 0;
+                                  } else if (id(kt_left) > 0) {
+                                    id(kt_end) = millis() + id(kt_left) * 1000u;
+                                  }
+                              - script.execute: clock_show
+                        - button:
+                            x: 285
+                            y: 245
+                            width: 265
+                            height: 70
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "Reset"
+                            on_click:
+                              - lambda: id(kt_end) = 0; id(kt_left) = 0;
+                              - script.execute: clock_show
+                  - obj:
+                      styles: card
+                      x: 650
+                      y: 410
+                      width: 590
+                      height: 270
+                      scrollable: false
+                      widgets:
+                        - label:
+                            styles: muted
+                            text: "SLEEP TIMER"
+                        - label:
+                            id: lbl_sleep
+                            y: 45
+                            text_font: font_mid
+                            text: "Off"
+                        - button:
+                            x: 0
+                            y: 130
+                            width: 100
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "Off"
+                            on_click:
+                              - select.set:
+                                  id: sleep_timer
+                                  option: "Off"
+                        - button:
+                            x: 112
+                            y: 130
+                            width: 100
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "15"
+                            on_click:
+                              - select.set:
+                                  id: sleep_timer
+                                  option: "15 min"
+                        - button:
+                            x: 224
+                            y: 130
+                            width: 100
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "30"
+                            on_click:
+                              - select.set:
+                                  id: sleep_timer
+                                  option: "30 min"
+                        - button:
+                            x: 336
+                            y: 130
+                            width: 100
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "60"
+                            on_click:
+                              - select.set:
+                                  id: sleep_timer
+                                  option: "60 min"
+                        - button:
+                            x: 448
+                            y: 130
+                            width: 100
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "90"
+                            on_click:
+                              - select.set:
+                                  id: sleep_timer
+                                  option: "90 min"
               - id: tile_alarm
                 name: "Alarm"
                 widgets:
@@ -2224,7 +2918,7 @@ lvgl:
                         - lambda: id(pin).clear();
                         - script.execute: pin_show
               - id: tile_guest
-                name: "Guest Wi-Fi"
+                name: "Guest"
                 widgets:
                   - label:
                       x: 60
@@ -2499,6 +3193,9 @@ lvgl:
               - script.execute: photo_stop
 
 interval:
+  - interval: 1s
+    then:
+      - script.execute: clock_tick
   - interval: 60s
     then:
       - if:
@@ -2574,7 +3271,7 @@ interval:
           }
       - if:
           condition:
-            lambda: return lv_tabview_get_tab_active(id(tv)) == 6;
+            lambda: return lv_tabview_get_tab_active(id(tv)) == lv_obj_get_index(id(tile_info));
           then:
             - lvgl.label.update:
                 id: lbl_info

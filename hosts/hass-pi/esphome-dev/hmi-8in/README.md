@@ -32,3 +32,6 @@ Gotchas:
 - Builds put gcc's temp files in `~/.cache/esphome-dev/tmp`; a small `/tmp`
   tmpfs runs out.
 - Logs also go to UART0, the USB-C serial bridge (115200), for crash dumps.
+- Radio stations live in `stations.h`; the "Wake-up station" select lists
+  their names in the same order. `chime.wav` (16 kHz mono) is built in, so
+  the alarm and kitchen timer ring without the internet.
