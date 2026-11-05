@@ -47,6 +47,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Determine Cache Push
         id: cache
@@ -187,6 +188,8 @@ jobs:
           # Scope to the secrets repo explicitly: the default is nix-config only.
           repositories: |
             kleinbem-secrets
+          # Only feeds Nix's github access-token.
+          permission-contents: read
 
       - name: Build pull-deploy host toplevels from the committed lock (blocking)
         if: steps.cache.outputs.push_cache == 'true'
