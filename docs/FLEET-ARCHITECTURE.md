@@ -253,7 +253,7 @@ promote-production moves `production` once the closures are cached
 
 - **comin** hosts poll `production`, check the signature and switch.
 - **nixos-nvme** upgrades nightly (autoUpgrade), or by hand with `just dev::apply`.
-- **Canary (comin hosts):** a `testing-<host>` branch on top of `production` deploys to that host only. nixos-nvme has none: test there with `just dev::apply`.
+- **Canary (comin hosts):** a signed `testing-<host>` branch on top of `production` deploys to that host only (comin rejects unsigned heads). nixos-nvme has none: test there with `just dev::apply`.
 - **Rollback:** revert in a PR, or pick the previous generation on the host.
 
 core-gateway and the APs run OpenWrt and deploy through openwrt-config. Details: DEPLOYMENT-STRATEGY.md.
@@ -512,7 +512,7 @@ CI audit-versions detects drift
 1. Create in nix-presets (if reusable) or nix-config (if one-off)
 2. Define sops.secrets (if needed)
 3. Check: just dev::check-hosts
-4. Optional canary: a testing-<host> branch on one host
+4. Optional canary: a signed testing-<host> branch on one host
 5. Land it; hosts deploy it from production (DEPLOYMENT-STRATEGY.md)
 ```
 

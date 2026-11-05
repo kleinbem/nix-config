@@ -22,7 +22,7 @@ just dev::impact <file> # which hosts a change to that file touches
 
 ## Canary one host
 
-On comin hosts, push a `testing-<host>` branch on top of `production`. comin on that host applies it with `switch-to-configuration test` (no boot entry). Delete the branch to fall back.
+On comin hosts, push a `testing-<host>` branch on top of `production`; its head must be signed with Martin's SSH key or by GitHub (jj signs by default), or comin rejects it. comin on that host applies it with `switch-to-configuration test` (no boot entry). Delete the branch to fall back.
 
 ## Rollback
 
