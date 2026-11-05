@@ -10,6 +10,14 @@
 let
   keys = import ../../modules/nixos/keys.nix;
   personasLib = import ../../lib/personas.nix { inherit lib; };
+  claudeStatusLine = pkgs.writeShellApplication {
+    name = "claude-statusline";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.jujutsu
+    ];
+    text = builtins.readFile ./files/scripts/claude-statusline.sh;
+  };
 in
 {
   imports = [
@@ -43,7 +51,13 @@ in
     herdr.enable = true;
     ai-agents = {
       enable = true;
-      claude.settings = lib.importJSON ./files/claude-settings.json;
+      claude.settings = lib.importJSON ./files/claude-settings.json // {
+        statusLine = {
+          type = "command";
+          command = lib.getExe claudeStatusLine;
+          padding = 0;
+        };
+      };
       # goose (Block's agent) next to Claude Code, driving Claude Code through
       # its ACP adapter: same subscription, no API key, goose's extensions
       # reach Claude as MCP servers. "current" is goose's sentinel for the
