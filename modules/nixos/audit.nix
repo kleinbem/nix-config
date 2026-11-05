@@ -31,6 +31,8 @@ let
   # Journal cursors, so a fluent-bit restart resumes instead of skipping what
   # was logged while it was down. read_from_tail still applies on first start.
   fluentStateDir = "/var/lib/fluent-bit";
+
+  trivyCacheDir = "/var/cache/trivy";
 in
 {
   sops.secrets = {
@@ -121,7 +123,11 @@ in
   # fluent-bit's journal cursors. optionalAttrs, not mkIf: a definition of an
   # undeclared option fails even under mkIf false (hosts without impermanence).
   // lib.optionalAttrs (options.environment ? persistence) {
-    persistence."/nix/persist".directories = [ "/var/lib/private/fluent-bit" ];
+    persistence."/nix/persist".directories = [
+      "/var/lib/private/fluent-bit"
+      # Trivy's vulnerability DB, so a reboot doesn't force a full re-download.
+      trivyCacheDir
+    ];
   };
 
   systemd = {
@@ -179,6 +185,7 @@ in
         description = "Daily Security Audit (Unified)";
         serviceConfig = {
           Type = "oneshot";
+          Environment = [ "TRIVY_CACHE_DIR=${trivyCacheDir}" ];
           # Hardening
           ProtectSystem = "full";
           ProtectHome = "read-only";
@@ -196,7 +203,7 @@ in
         description = "Daily Podman Image Vulnerability Scan";
         serviceConfig = {
           Type = "oneshot";
-          Environment = [ "TRIVY_CACHE_DIR=/var/cache/trivy" ];
+          Environment = [ "TRIVY_CACHE_DIR=${trivyCacheDir}" ];
           # Hardening
           ProtectSystem = "full";
           ProtectHome = "read-only";
@@ -225,8 +232,8 @@ in
 
           # Determine status
           STATUS="Healthy"
-          if ( [ -s "$HOST_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$HOST_REPORT" ) || \
-             ( [ -s "$CONT_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:" "$CONT_REPORT" ); then
+          if ( [ -s "$HOST_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:|SCAN-FAILED" "$HOST_REPORT" ) || \
+             ( [ -s "$CONT_REPORT" ] && grep -E "Total: [1-9]|HIGH:|CRITICAL:|SCAN-FAILED" "$CONT_REPORT" ); then
             STATUS="Issues-Detected"
           fi
 
@@ -293,13 +300,15 @@ in
       };
     };
 
-    # Ensure log files and cache exist with correct permissions
+    # Reports are readable by root and fluent-bit only (security-audit group).
+    # setgid, so files gitleaks recreates keep the group.
     tmpfiles.rules = [
-      "d /var/log/security-audit 0755 root root - -"
-      "f /var/log/security-audit/security-report-host.txt 0644 root root - -"
-      "f /var/log/security-audit/security-report-containers.txt 0644 root root - -"
-      "f /var/log/security-audit/lynis-report.txt 0644 root root - -"
-      "d /var/cache/trivy 0755 root root - -"
+      "d /var/log/security-audit 2750 root security-audit - -"
+      "f /var/log/security-audit/security-report-host.txt 0640 root security-audit - -"
+      "f /var/log/security-audit/security-report-containers.txt 0640 root security-audit - -"
+      "f /var/log/security-audit/security-report-secrets.json 0640 root security-audit - -"
+      "f /var/log/security-audit/lynis-report.txt 0640 root security-audit - -"
+      "d ${trivyCacheDir} 0755 root root - -"
       "d /var/log/audit 0750 root root - -" # Ensure directory exists for auditd
     ];
   };
@@ -424,9 +433,18 @@ in
 
   # DynamicUser: the state dir lives under /var/lib/private, and /var is tmpfs
   # (persisted with environment.systemPackages above).
-  systemd.services.fluent-bit.serviceConfig.StateDirectory = "fluent-bit";
-
-  # Ensure fluent-bit can read the systemd journal and audit logs
-  users.groups.systemd-journal.members = [ "fluent-bit" ];
-  users.groups.audit.members = [ "fluent-bit" ]; # Required for auditd logs access
+  systemd.services.fluent-bit.serviceConfig = {
+    StateDirectory = "fluent-bit";
+    # DynamicUser: group membership must come from the unit, not users.groups.
+    SupplementaryGroups = lib.mkForce [
+      "systemd-journal"
+      "security-audit"
+    ];
+  };
+  users.groups = {
+    security-audit = { };
+    # Ensure fluent-bit can read the systemd journal and audit logs
+    systemd-journal.members = [ "fluent-bit" ];
+    audit.members = [ "fluent-bit" ]; # Required for auditd logs access
+  };
 }

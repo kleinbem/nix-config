@@ -1,31 +1,32 @@
 {
+  config,
+  lib,
   pkgs,
   ...
 }:
 
 let
-  user = "martin";
-  home = "/home/${user}";
+  home = "/home/${config.my.username}";
   clamDir = "/var/lib/clamav";
 
-  # Notification script that bridges systemd (root/clamav) -> user session (dbus)
+  # clamd runs as `clamav` and has no session bus, so VirusEvent hands the alert
+  # to security-notify@ (audit.nix): desktop notification for the user + ntfy.
+  # '|' separates the template fields, so it is swapped out of the payload. A
+  # unit name caps at 255 chars; the full path is in the journal line. The
+  # time+PID suffix keeps a second detection from merging into a running alert.
   notifyScript = pkgs.writeShellScript "clamav-notify" ''
-    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
-    export DISPLAY=":0"
-
+    escape=${lib.getExe' config.systemd.package "systemd-escape"}
     VIRUS="$CLAM_VIRUSEVENT_VIRUSNAME"
     FILE="$CLAM_VIRUSEVENT_FILENAME"
-
-    # Send desktop notification
-    ${pkgs.libnotify}/bin/notify-send \
-      -u critical \
-      -a "ClamAV" \
-      -i "security-high" \
-      "🚨 VIRUS DETECTED" \
-      "<b>Virus:</b> $VIRUS\n<b>File:</b> $FILE"
-
-    # Log to system journal
     echo "VIRUS DETECTED: $VIRUS in $FILE"
+    name=$(${pkgs.coreutils}/bin/basename -- "$FILE")
+    ref="clamav-daemon-journal-$(${pkgs.coreutils}/bin/date +%s)-$$"
+    msg="''${VIRUS:0:60} in ''${name:0:60}"
+    instance=$($escape "ClamAV-virus-detected|''${msg//|//}|$ref")
+    if [ "''${#instance}" -gt 230 ]; then
+      instance=$($escape "ClamAV-virus-detected|See-clamav-daemon-journal|$ref")
+    fi
+    ${lib.getExe' config.systemd.package "systemctl"} start --no-block "security-notify@$instance.service"
   '';
 
   # Config for clamdscan client
@@ -142,6 +143,21 @@ in
       "d ${clamDir} 0755 clamav clamav - -"
       "d /var/log/clamav 0755 clamav clamav - -"
     ];
+  };
+
+  # Lets clamd's VirusEvent start the alert unit, nothing else.
+  security.polkit = {
+    enable = true;
+    extraConfig = ''
+      polkit.addRule(function(action, subject) {
+        if (action.id == "org.freedesktop.systemd1.manage-units" &&
+            subject.user == "clamav" &&
+            action.lookup("verb") == "start" &&
+            action.lookup("unit").indexOf("security-notify@") == 0) {
+          return polkit.Result.YES;
+        }
+      });
+    '';
   };
 
   boot.kernel.sysctl = {
