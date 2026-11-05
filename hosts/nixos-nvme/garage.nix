@@ -94,18 +94,21 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
     };
-    # chown -R walks every stored object, so it runs once per garage uid:gid
-    # (the stamp holds it; a re-created user gets a new uid); otherwise only
-    # the top dirs are fixed.
+    # $d stays root-owned so garage can't plant symlinks this root script
+    # follows. chown -R (-h, no dereference) walks every object, so it runs
+    # once per garage uid:gid recorded in the stamp; otherwise only meta/data.
     script = ''
       d=/mnt/data/garage
       mkdir -p "$d/meta" "$d/data"
+      chown root:root "$d"
+      chmod 0755 "$d"
       ids="$(id -u garage):$(id -g garage)"
       if [ "$(cat "$d/.chown-recursive-done" 2>/dev/null)" != "$ids" ]; then
-        chown -R garage:garage "$d"
+        chown -R -h garage:garage "$d/meta" "$d/data"
+        rm -f "$d/.chown-recursive-done"
         echo "$ids" > "$d/.chown-recursive-done"
       fi
-      chown garage:garage "$d" "$d/meta" "$d/data"
+      chown -h garage:garage "$d/meta" "$d/data"
     '';
   };
 

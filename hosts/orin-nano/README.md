@@ -10,13 +10,20 @@
 > unreadable. Copy it off the Orin before any reinstall of the main SSD:
 >
 > ```bash
-> (umask 077; ssh orin-nano sudo cat /nix/persist/etc/crypt/frigate.key > frigate.key)
+> (umask 077; ssh orin-nano sudo cat /nix/persist/etc/crypt/frigate.key > frigate.key.new \
+>   && [ -s frigate.key.new ] && mv frigate.key.new frigate.key || rm -f frigate.key.new)
 > ```
 >
-> Path A keeps the Frigate SSD: put the key back after the first boot (`sudo
-> install -D -m 0400 frigate.key /nix/persist/etc/crypt/frigate.key`, then
-> reboot). Path B reformats it and needs a key during install (see below).
-> Delete the local copy afterwards (`shred -u frigate.key`).
+> Keep the copy somewhere encrypted (e.g. a Bitwarden attachment), not as a
+> plain file. Path A keeps the Frigate SSD: put the key back on the Orin after
+> the first boot, then reboot:
+>
+> ```bash
+> ssh orin-nano 'sudo install -D -m 0400 /dev/stdin /nix/persist/etc/crypt/frigate.key' < frigate.key
+> ```
+>
+> Path B reformats it and needs a key during install (see below). Delete the
+> local copy afterwards (`shred -u frigate.key`).
 
 ## Install
 
@@ -38,7 +45,10 @@ would be passed literally). This wipes that SSD only (it runs disko with
 [`disko.nix`](./disko.nix), builds the closure, installs systemd-boot to the
 ESP, adds the new host age key to sops and binds LUKS to Tang. Then:
 
-1. Commit the re-encrypted secrets (kleinbem-secrets + nix-config).
+1. Commit and push the re-encrypted secrets in kleinbem-secrets, then bump
+   the `kleinbem-secrets` input in nix-config (`nix flake update
+   kleinbem-secrets`) and commit `flake.lock`: `deploy-orin` builds from the
+   pinned revision.
 2. Put the SSD back in the Orin, connect ethernet and boot.
 3. Run `just deployment::deploy-orin` once. The installed closure predates the
    sops re-encryption, so runtime secrets (NetBird setup key included) don't
