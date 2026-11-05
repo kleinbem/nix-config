@@ -21,7 +21,7 @@ The admin secret is per-container (not per-host) so the mail server can move hos
 
 `automation` has the `admin` role because it creates principals. A custom Stalwart role with only the principal permissions would be narrower; that isn't set up.
 
-The API calls below run curl on mac-mini (the container ships none) and pass credentials as a curl config on stdin, so no password lands in a command line or shell history.
+The API calls below run curl on mac-mini (the container ships none) and pass credentials as a curl config on stdin. jq reads them from the environment and sops from stdin, so no password lands in a command line or shell history.
 
 ## Create the automation account
 
@@ -31,13 +31,16 @@ Once per server, before the first `personas::add`. Needs the fallback-admin plai
 cd ~/Develop/github.com/kleinbem/kleinbem-secrets
 read -rsp 'Stalwart admin password: ' ADMIN_PW; echo
 AUTOMATION_PW=$(openssl rand -base64 32)
-jq -rn --arg auth "admin:$ADMIN_PW" --arg pw "$AUTOMATION_PW" '
-  "user = \($auth | tojson)",
+export ADMIN_PW AUTOMATION_PW
+jq -rn '
+  "user = \("admin:" + env.ADMIN_PW | tojson)",
   "data = \({type: "individual", name: "automation", description: "persona-scaffold.sh service account",
-            quota: 0, emails: [], secrets: [$pw], roles: ["admin"]} | tojson | tojson)"' \
+            quota: 0, emails: [], secrets: [env.AUTOMATION_PW], roles: ["admin"]} | tojson | tojson)"' \
   | ssh mac-mini 'curl -sS --fail-with-body -K - -H "Content-Type: application/json" \
       -X POST http://10.85.50.8:8080/api/principal' \
-  && sops --set "[\"stalwart_automation_password\"] \"$AUTOMATION_PW\"" nix/per-container/stalwart.yaml
+  && printf '%s' "$AUTOMATION_PW" | jq -Rs . \
+    | sops set --value-stdin nix/per-container/stalwart.yaml '["stalwart_automation_password"]'
+unset ADMIN_PW AUTOMATION_PW
 ```
 
 sops only runs if the server accepted the principal. Commit the sops change in kleinbem-secrets.
@@ -59,15 +62,16 @@ just personas::add <persona>
 ```bash
 read -rsp 'Stalwart admin password: ' ADMIN_PW; echo
 NEW_PW=$(openssl rand -base64 32)
-jq -rn --arg auth "admin:$ADMIN_PW" --arg pw "$NEW_PW" '
-  "user = \($auth | tojson)",
-  "data = \([{action: "addItem", field: "secrets", value: $pw}] | tojson | tojson)"' \
+export ADMIN_PW NEW_PW
+jq -rn '
+  "user = \("admin:" + env.ADMIN_PW | tojson)",
+  "data = \([{action: "addItem", field: "secrets", value: env.NEW_PW}] | tojson | tojson)"' \
   | ssh mac-mini 'curl -sS --fail-with-body -K - -H "Content-Type: application/json" \
       -X PATCH http://10.85.50.8:8080/api/principal/<name>' \
   && echo "accepted"
 ```
 
-`addItem` with a plain password replaces only the password; `set` on `secrets` would also drop the principal's app passwords and OTP secret. Only after `accepted`, store `NEW_PW` under the matching key: `stalwart_automation_password` in `nix/per-container/stalwart.yaml`, or `mailbox_password` in `personas/<persona>.yaml`.
+`addItem` with a plain password replaces only the password; `set` on `secrets` would also drop the principal's app passwords and OTP secret. Only after `accepted`, store `NEW_PW` under the matching key with `printf '%s' "$NEW_PW" | jq -Rs . | sops set --value-stdin <file> '["<key>"]'`: `stalwart_automation_password` in `nix/per-container/stalwart.yaml`, or `mailbox_password` in `personas/<persona>.yaml`.
 
 ## Verify
 

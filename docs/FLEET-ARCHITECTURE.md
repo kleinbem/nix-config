@@ -243,7 +243,8 @@ Edit config (in a jj workspace)
     ↓
 main (signed commits, required checks)
     ↓
-build-all builds every host and pushes to Attic
+build-all builds the hosts and pushes to Attic
+(nixos-nvme in build-nvme, orin-nano best-effort)
     ↓
 promote-production moves `production` once the closures are cached
 ```
@@ -252,7 +253,7 @@ promote-production moves `production` once the closures are cached
 
 - **comin** hosts poll `production`, check the signature and switch.
 - **nixos-nvme** upgrades nightly (autoUpgrade), or by hand with `just dev::apply`.
-- **Canary:** a `testing-<host>` branch on top of `production` deploys to that host only.
+- **Canary (comin hosts):** a `testing-<host>` branch on top of `production` deploys to that host only. nixos-nvme has none: test there with `just dev::apply`.
 - **Rollback:** revert in a PR, or pick the previous generation on the host.
 
 core-gateway and the APs run OpenWrt and deploy through openwrt-config. Details: DEPLOYMENT-STRATEGY.md.
