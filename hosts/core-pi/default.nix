@@ -27,8 +27,9 @@ let
   # (bind-mounted into the container at runtime — see nix-presets'
   # containers/gatus.nix for why this can't be baked into the preset
   # itself: container-factory builds that closure once, centrally).
+  # Every endpoint alerts to ntfy (provider set up by the preset's alerting.ntfy).
   gatusEndpointsFile = (pkgs.formats.yaml { }).generate "gatus-endpoints.yaml" {
-    endpoints = [
+    endpoints = map (e: e // { alerts = [ { type = "ntfy"; } ]; }) [
       {
         name = "kleinbem.dev";
         group = "Public";
@@ -324,6 +325,10 @@ in
         # bind-mounted file because container-factory builds the closure
         # centrally (ADR-002), so inline endpoints would never reach core-pi.
         endpointsFile = gatusEndpointsFile;
+        alerting.ntfy = {
+          topicFile = config.sops.secrets.ntfy_alert_topic.path;
+          tokenFile = config.sops.secrets.ntfy_alert_token.path or null;
+        };
       };
 
       # Shared IdP: kleinbem.dev visitor login, persona OIDC, Matrix
