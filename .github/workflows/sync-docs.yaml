@@ -56,7 +56,7 @@ jobs:
       - name: Locked nix-presets revision
         id: presets
         run: |
-          rev=$(jq -er '.nodes["nix-presets"].locked.rev' nix-config/flake.lock)
+          rev=$(jq -er '.nodes[.root].inputs["nix-presets"] as $n | .nodes[$n].locked.rev' nix-config/flake.lock)
           echo "rev=$rev" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
