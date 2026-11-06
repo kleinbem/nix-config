@@ -187,10 +187,14 @@ in
       };
     }
     // lib.optionalAttrs hasGrafanaSecretKey {
-      # Read as root by the container's systemd (EnvironmentFile).
-      "grafana.env".content = ''
-        GF_SECURITY_SECRET_KEY=${config.sops.placeholder.monitoring_grafana_secret_key}
-      '';
+      # Read as root by the container's systemd (EnvironmentFile). A new key
+      # needs a container restart; rotate per nix-presets#187 first.
+      "grafana.env" = {
+        content = ''
+          GF_SECURITY_SECRET_KEY=${config.sops.placeholder.monitoring_grafana_secret_key}
+        '';
+        restartUnits = [ "container@monitoring.service" ];
+      };
     }
     // lib.optionalAttrs hermesDiscord {
       # 0400: only the hermes module's activation script reads it (as root),
