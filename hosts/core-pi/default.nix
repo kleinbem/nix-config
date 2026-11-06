@@ -257,6 +257,7 @@ in
         ip = "${myInventory.network.nodes.caddy.ip}/24";
         hostIP = myInventory.network.nodes.caddy.ip;
         proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
+        authUpstream = "${myInventory.network.nodes.authentik.ip}:${toString myInventory.network.nodes.authentik.port}";
         globalMaintenance = myInventory.globalMaintenance or false;
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";

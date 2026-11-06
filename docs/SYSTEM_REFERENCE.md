@@ -14,7 +14,7 @@
 - **devenv**: `9655d320`
 - **nix-packages**: `bd0a4d6e`
 - **nix-hardware**: `d80572d0`
-- **nix-presets**: `747950c2`
+- **nix-presets**: `48f8a6fa`
 - **nix-devshells**: `dad8644f`
 - **nix-gantry**: `f999f4e8`
 
@@ -65,7 +65,6 @@
 
 ### nasbook
 
-- 👥 **AI Agent Team** (`agent-team`) `10.85.47.118:8000` — Enterprise Role-Based Agent Team (CrewAI). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-team.nix:15]_
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
 - 📰 **Miniflux** (`miniflux`) `10.85.47.135:8080` → `news.kleinbem.dev` — Minimalist and opinionated feed reader. _[src: nix-presets/containers/miniflux.nix:23]_
 - 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:14]_
@@ -91,6 +90,7 @@
 
 ### Declared but not currently enabled on any host
 
+- `agent-team` — AI Agent Team _[src: nix-presets/containers/agent-team.nix:15]_
 - `alertmanager` — Alertmanager
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:13]_
 - `common` _[src: nix-presets/containers/common.nix:1]_

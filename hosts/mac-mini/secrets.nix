@@ -18,6 +18,14 @@ let
     && builtins.pathExists hostSops
     && lib.hasInfix "\nntfy_monitoring_password:" ("\n" + builtins.readFile hostSops);
 
+  # Grafana's secret_key (preset grafanaEnvFile). Gated on the key existing,
+  # so the wiring can land before the secret does.
+  monitoringSops = secretFile "nix/per-container/monitoring.yaml";
+  hasGrafanaSecretKey =
+    config.my.containers.monitoring.enable
+    && builtins.pathExists monitoringSops
+    && lib.hasInfix "\ngrafana_secret_key:" ("\n" + builtins.readFile monitoringSops);
+
   # Gates keys that may not be provisioned yet, like personaHasField below.
   macMiniSopsFile = secretFile "nix/per-host/mac-mini.yaml";
   macMiniHasField = field: lib.hasInfix "\n${field}:" ("\n" + builtins.readFile macMiniSopsFile);
@@ -133,6 +141,12 @@ in
         mode = "0444";
       };
     }
+    // lib.optionalAttrs hasGrafanaSecretKey {
+      monitoring_grafana_secret_key = {
+        sopsFile = monitoringSops;
+        key = "grafana_secret_key";
+      };
+    }
     // lib.optionalAttrs config.my.containers.open-webui.oidc.enable openWebUiOidc.secrets
     // lib.optionalAttrs config.my.containers.stalwart.enable (
       # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash or plaintext).
@@ -170,6 +184,16 @@ in
             notification:
               topic: ${config.sops.placeholder.ntfy_alert_topic}
         '';
+      };
+    }
+    // lib.optionalAttrs hasGrafanaSecretKey {
+      # Read as root by the container's systemd (EnvironmentFile). A new key
+      # needs a container restart; rotate per nix-presets#187 first.
+      "grafana.env" = {
+        content = ''
+          GF_SECURITY_SECRET_KEY=${config.sops.placeholder.monitoring_grafana_secret_key}
+        '';
+        restartUnits = [ "container@monitoring.service" ];
       };
     }
     // lib.optionalAttrs hermesDiscord {

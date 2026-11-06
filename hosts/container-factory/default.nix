@@ -38,6 +38,13 @@ let
     code-server = {
       ip = ip 22;
       hostDataDir = dataDir "code-server";
+      # Same sources as forward-auth-guard.nix: core-pi (Caddy's masqueraded
+      # cross-host traffic), Caddy itself, nixos-nvme's bridge.
+      allowedSources = [
+        myInventory.hosts.core-pi.ip
+        myInventory.network.nodes.caddy.ip
+        myInventory.hosts.nixos-nvme.ip
+      ];
     };
     open-webui = {
       ip = "${myInventory.network.nodes.open-webui.ip}/24"; # mac-mini
@@ -82,6 +89,7 @@ let
     openclaw = {
       ip = "${myInventory.network.nodes.openclaw.ip}/24"; # hass-pi
       hostDataDir = dataDir "openclaw";
+      egress.restrictLan = false; # host-side table, see hermes
     };
     music-assistant = {
       ip = "${myInventory.network.nodes.music-assistant.ip}/24"; # hass-pi
@@ -116,11 +124,15 @@ let
       ip = "${myInventory.network.nodes.hermes.ip}/24"; # mac-mini
       hostDataDir = dataDir "hermes";
       secretsFile = "/run/secrets/factory-dummy";
+      # A host-side nftables table, not part of the closure; the factory
+      # has no nftables and never boots (nix-presets asserts it).
+      egress.restrictLan = false;
     };
     caddy = {
       ip = "${myInventory.network.nodes.caddy.ip}/24"; # core-pi
       hostIP = myInventory.network.nodes.caddy.ip;
       proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
+      authUpstream = "${myInventory.network.nodes.authentik.ip}:${toString myInventory.network.nodes.authentik.port}";
       globalMaintenance = myInventory.globalMaintenance or false;
       staticSites."kleinbem.dev" = {
         hostPath = "/var/www/kleinbem.dev";
@@ -201,6 +213,8 @@ let
     dev-db = {
       ip = "${myInventory.network.nodes.dev-db.ip}/24"; # nixos-nvme
       hostDataDir = dataDir "dev-db";
+      # nixos-nvme's devshells (cbr0 address).
+      allowedClients = [ "${myInventory.hosts.nixos-nvme.ip}/32" ];
     };
     caido = {
       ip = "${myInventory.network.nodes.caido.ip}/24"; # nixos-nvme

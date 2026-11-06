@@ -57,6 +57,12 @@
         hostDataDir = config.my.developDir;
         user = config.my.username;
         memoryLimit = "8G"; # IDEs are heavy
+        # Must match container-factory, which builds the closure.
+        allowedSources = [
+          myInventory.hosts.core-pi.ip
+          myInventory.network.nodes.caddy.ip
+          myInventory.hosts.nixos-nvme.ip
+        ];
       };
 
       open-webui = {
@@ -254,6 +260,8 @@
         enable = true;
         ip = "${myInventory.network.nodes.dev-db.ip}/24";
         hostDataDir = "/var/lib/images/dev-db";
+        # The host's devshells, the only clients. Must match container-factory.
+        allowedClients = [ "${myInventory.hosts.nixos-nvme.ip}/32" ];
       };
 
       caido = {

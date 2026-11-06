@@ -87,10 +87,6 @@ in
           paths = [ "/var/lib/images/syncthing" ];
           exclude = [ "/var/lib/images/syncthing/syncthing.lock" ];
         };
-        agent-team = {
-          tier = "secure";
-          paths = [ "/var/lib/images/agent-team" ];
-        };
         paperless-documents = {
           paths = [ "/mnt/data/Archive/Inbox" ];
           exclude = [
@@ -145,7 +141,7 @@ in
       };
 
       agent-team = {
-        enable = true;
+        enable = false;
         ip = "${myInventory.network.nodes.agent-team.ip}/24";
       };
 
