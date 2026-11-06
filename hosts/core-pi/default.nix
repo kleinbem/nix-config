@@ -236,6 +236,8 @@ in
         "caddy"
         "crowdsec"
       ];
+      # caddy logs every request: 256M held about a day of it.
+      journal.maxUseFor.caddy = "1G";
     };
 
     services = {
