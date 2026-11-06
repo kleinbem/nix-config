@@ -300,7 +300,7 @@ in
       };
     };
 
-    # Reports are readable by root and fluent-bit only (security-audit group).
+    # Reports are readable by root and fluent-bit (security-audit group); wheel gets the Lynis one.
     # setgid, so files gitleaks recreates keep the group.
     tmpfiles.rules = [
       "d /var/log/security-audit 2750 root security-audit - -"
@@ -308,6 +308,10 @@ in
       "f /var/log/security-audit/security-report-containers.txt 0640 root security-audit - -"
       "f /var/log/security-audit/security-report-secrets.json 0640 root security-audit - -"
       "f /var/log/security-audit/lynis-report.txt 0640 root security-audit - -"
+      # wheel reads the Lynis report (workspace-atlas MCP), not the other reports:
+      # traverse-only on the directory, read on that one file.
+      "a+ /var/log/security-audit - - - - group:wheel:--x"
+      "a+ /var/log/security-audit/lynis-report.txt - - - - group:wheel:r--"
       "d ${trivyCacheDir} 0755 root root - -"
       "d /var/log/audit 0750 root root - -" # Ensure directory exists for auditd
     ];

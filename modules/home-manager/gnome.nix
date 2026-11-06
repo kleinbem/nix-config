@@ -358,32 +358,32 @@
             true
           ];
           command2 = lib.hm.gvariant.mkTuple [
-            "Apply (fast)"
-            (term "just apply-fast")
+            "Check"
+            (term "just check")
             "media-playback-start-symbolic"
             true
           ];
           command3 = lib.hm.gvariant.mkTuple [
             "Status"
-            (term "just status")
+            (term "just status-all")
             "view-list-symbolic"
             true
           ];
           command4 = lib.hm.gvariant.mkTuple [
             "Health Check"
-            (term "just maintenance::health-check")
+            (term "just maintenance::check-health")
             "emblem-ok-symbolic"
             true
           ];
           command5 = lib.hm.gvariant.mkTuple [
             "Clean (GC)"
-            (term "just maintenance::clean")
+            (term "just maintenance::clean-all")
             "user-trash-symbolic"
             true
           ];
           command6 = lib.hm.gvariant.mkTuple [
-            "Deploy Fleet"
-            (term "just deployment::fleet")
+            "PRs + CI"
+            (term "just jj::remote-status")
             "network-server-symbolic"
             true
           ];

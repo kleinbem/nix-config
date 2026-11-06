@@ -1,6 +1,8 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
+  # nix/tools/phone-deploy.sh and phone-ssh-deploy.sh put the scripts here.
+  toolsDir = "${config.user.home}/tools";
   portDashboard = "8080";
   portConsole = "7681";
 
@@ -15,12 +17,12 @@ let
     actions:
       - title: "🔄 Sync & Switch"
         icon: "⚡"
-        shell: "bash /home/nix-on-droid/scripts/phone-activate.sh"
+        shell: "bash ${toolsDir}/phone-activate.sh"
         timeout: 600
 
       - title: "🛡️ Create Backup"
         icon: "💾"
-        shell: "bash /home/nix-on-droid/scripts/phone-backup.sh"
+        shell: "bash ${toolsDir}/phone-backup.sh"
         timeout: 300
 
       - title: "🧹 Nix Garbage Collect"
@@ -37,6 +39,9 @@ in
   environment.packages = with pkgs; [
     olivetin
     ttyd
+    # phone-backup.sh encrypts the snapshot to the fleet's YubiKeys.
+    age
+    age-plugin-yubikey
     # Helper script to launch the dashboard and console in the background
     (pkgs.writeShellScriptBin "start-dashboard" ''
       echo "🚀 Starting Mobile Command Center..."
