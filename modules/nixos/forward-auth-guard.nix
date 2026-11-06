@@ -31,10 +31,19 @@ let
     ip daddr ${n.ip} tcp dport ${toString n.port} ip saddr { ${sources} } accept comment "forward-auth guard: Caddy -> ${name}"
     ip daddr ${n.ip} tcp dport ${toString n.port} log prefix "FA-GUARD: " drop comment "forward-auth guard: ${name} only via Caddy"'';
 
-  # Rules go into a new chain that replaces the live one in place, so the
-  # guard never lapses during a firewall reload.
+  # Each start fills a fresh fa-guard-* chain and jumps to it before removing
+  # the others, so the guard never lapses and no live chain is flushed, even
+  # after an interrupted start.
   chain = "fa-guard";
-  next = "${chain}-new";
+  next = "$fa_guard";
+  dropOthers = keep: ''
+    for c in $(iptables -w -S | sed -n 's/^-N \(${chain}-[^ ]*\)$/\1/p'); do
+      [ "$c" = "${keep}" ] && continue
+      while iptables -w -D FORWARD -j "$c" 2>/dev/null; do :; done
+      iptables -w -F "$c"
+      iptables -w -X "$c"
+    done
+  '';
   mkIptablesRules =
     _: n:
     let
@@ -64,22 +73,18 @@ in
       (!config.networking.nftables.enable && config.networking.firewall.enable && guarded != { })
       {
         networking.firewall.extraCommands = ''
-          iptables -w -N ${next} 2>/dev/null || iptables -w -F ${next}
+          fa_guard="${chain}-$(date +%s)-$$"
+          iptables -w -N ${next}
           iptables -w -A ${next} -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
           ${lib.concatStrings (lib.mapAttrsToList mkIptablesRules guarded)}
           iptables -w -I FORWARD 1 -j ${next}
-          while iptables -w -D FORWARD -j ${chain} 2>/dev/null; do :; done
-          iptables -w -F ${chain} 2>/dev/null || true
-          iptables -w -X ${chain} 2>/dev/null || true
-          iptables -w -E ${next} ${chain}
+          ${dropOthers next}
         '';
         # firewall-reload runs these before firewall-start, with its nixos-drop
         # jump in INPUT; keep the guard then, start replaces it.
         networking.firewall.extraStopCommands = ''
           if ! iptables -w -C INPUT -j nixos-drop 2>/dev/null; then
-            while iptables -w -D FORWARD -j ${chain} 2>/dev/null; do :; done
-            iptables -w -F ${chain} 2>/dev/null || true
-            iptables -w -X ${chain} 2>/dev/null || true
+            ${dropOthers ""}
           fi
         '';
       }
