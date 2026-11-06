@@ -24,6 +24,10 @@ let
   ];
   ntfyAuthSecret = lib.mkIf hasNtfyAuth { sopsFile = hostSops; };
 
+  # Gatus's public fallback topic (ntfy.sh): a long random name, since anyone
+  # who knows it can read and post. Gated like the auth keys above.
+  hasFallbackTopic = hasKey "ntfy_fallback_topic";
+
   # Caddy's Cloudflare DNS-01 token for inventory nodes with
   # `publicCert = true` (minted + synced by nix/infra/r2-tokens); asserted
   # below so a missing token fails the eval, not Caddy.
@@ -54,6 +58,10 @@ in
         vaultwarden_admin_token = { };
         # Gatus copies the topic into its env file at start (alerting.ntfy).
         ntfy_alert_topic.restartUnits = [ "container@gatus.service" ];
+        ntfy_fallback_topic = lib.mkIf hasFallbackTopic {
+          sopsFile = hostSops;
+          restartUnits = [ "container@gatus.service" ];
+        };
       }
       // (
         # Authentik, the shared IdP. Per-container file scoped to core_pi.

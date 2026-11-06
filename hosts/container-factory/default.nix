@@ -197,6 +197,7 @@ let
         url = "https://ntfy.kleinbem.dev";
         topicFile = "/run/secrets/factory-dummy";
       };
+      alerting.fallback.topicFile = "/run/secrets/factory-dummy";
     };
     authentik = {
       ip = "${myInventory.network.nodes.authentik.ip}/24"; # core-pi

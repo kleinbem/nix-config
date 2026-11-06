@@ -28,8 +28,20 @@ let
   # containers/gatus.nix for why this can't be baked into the preset
   # itself: container-factory builds that closure once, centrally).
   # Every endpoint alerts to ntfy (provider set up by the preset's alerting.ntfy).
+  # The ntfy probe also alerts on the public fallback: it fails exactly when the
+  # tunnel, Caddy or ntfy is down, i.e. when the main route can't deliver.
+  hasFallback = config.sops.secrets ? ntfy_fallback_topic;
+  withAlerts =
+    e:
+    e
+    // {
+      alerts = [
+        { type = "ntfy"; }
+      ]
+      ++ lib.optional (hasFallback && e.name == "ntfy") { type = "custom"; };
+    };
   gatusEndpointsFile = (pkgs.formats.yaml { }).generate "gatus-endpoints.yaml" {
-    endpoints = map (e: e // { alerts = [ { type = "ntfy"; } ]; }) [
+    endpoints = map withAlerts [
       {
         name = "kleinbem.dev";
         group = "Public";
@@ -329,6 +341,7 @@ in
           topicFile = config.sops.secrets.ntfy_alert_topic.path;
           tokenFile = config.sops.secrets.ntfy_alert_token.path or null;
         };
+        alerting.fallback.topicFile = config.sops.secrets.ntfy_fallback_topic.path or null;
       };
 
       # Shared IdP: kleinbem.dev visitor login, persona OIDC, Matrix
