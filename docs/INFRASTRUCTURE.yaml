@@ -296,6 +296,7 @@ hosts:
       - authentik.postgresPasswordFile
       - authentik.secretKeyFile
       - caddy
+      - caddy.authUpstream
       - caddy.enable
       - caddy.globalMaintenance
       - caddy.hostDataDir
@@ -548,6 +549,7 @@ hosts:
       - monitoring
       - monitoring.enable
       - monitoring.githubMetrics.enable
+      - monitoring.grafanaEnvFile
       - monitoring.grafanaOidc
       - monitoring.grafanaOidc.clientSecretFile
       - monitoring.grafanaOidc.enable
@@ -657,9 +659,6 @@ hosts:
       backup:
       - enable
       - items
-      - items.agent-team
-      - items.agent-team.paths
-      - items.agent-team.tier
       - items.paperless-documents
       - items.paperless-documents.exclude
       - items.paperless-documents.paths
@@ -744,7 +743,6 @@ hosts:
       - libvirtd.enable
       - podman.enable
     containers_hosted:
-    - agent-team
     - loki
     - miniflux
     - paperless
@@ -876,6 +874,7 @@ hosts:
       - caido.hostDataDir
       - caido.ip
       - code-server
+      - code-server.allowedSources
       - code-server.enable
       - code-server.hostDataDir
       - code-server.ip
@@ -896,6 +895,7 @@ hosts:
       - dashboard.memoryLimit
       - dashboard.secretsFile
       - dev-db
+      - dev-db.allowedClients
       - dev-db.enable
       - dev-db.hostDataDir
       - dev-db.ip

@@ -129,7 +129,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.caddy`
 
 - **Declared:** `nix-presets/containers/caddy/default.nix:20`
-- **Sub-options:** `enable`, `globalMaintenance`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `proxyTargets`, `secretsFile`, `staticSites`
+- **Sub-options:** `authUpstream`, `enable`, `globalMaintenance`, `hostBridge`, `hostDataDir`, `hostIP`, `ip`, `memoryLimit`, `proxyTargets`, `secretsFile`, `staticSites`
 - **Consumed by:** `host:core-pi`, `host:nixos-nvme`
 
 ### `my.containers.caido`
@@ -141,7 +141,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.code-server`
 
 - **Declared:** `nix-presets/containers/code-server.nix:14`
-- **Sub-options:** `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `privateUsers`, `user`
+- **Sub-options:** `allowedSources`, `autoStart`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `privateUsers`, `user`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.comfyui`
@@ -171,7 +171,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.dev-db`
 
 - **Declared:** `nix-presets/containers/dev-db.nix:16`
-- **Sub-options:** `enable`, `hostDataDir`, `initialDatabases`, `ip`, `memoryLimit`, `postgresPort`, `redisPort`
+- **Sub-options:** `allowedClients`, `enable`, `hostDataDir`, `initialDatabases`, `ip`, `memoryLimit`, `postgresPort`, `redisPort`
 - **Consumed by:** `host:nixos-nvme`
 
 ### `my.containers.ente`
@@ -201,8 +201,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.gatus`
 
-- **Declared:** `nix-presets/containers/gatus.nix:26`
-- **Sub-options:** `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
+- **Declared:** `nix-presets/containers/gatus.nix:50`
+- **Sub-options:** `alerting.ntfy.priority`, `alerting.ntfy.tokenFile`, `alerting.ntfy.topicFile`, `alerting.ntfy.url`, `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.github-runner`
@@ -268,7 +268,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.monitoring`
 
 - **Declared:** `nix-presets/containers/monitoring.nix:16`
-- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.authConfigFile`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
+- **Sub-options:** `enable`, `githubMetrics.configFile`, `githubMetrics.enable`, `githubMetrics.port`, `githubMetrics.repos`, `githubMetrics.scrapeInterval`, `grafanaEnvFile`, `grafanaOidc.clientId`, `grafanaOidc.clientSecretFile`, `grafanaOidc.enable`, `hostDataDir`, `ip`, `lokiUrl`, `nodeTargets`, `ntfy.authConfigFile`, `ntfy.enable`, `ntfy.topic`, `ntfy.url`, `ollamaTargets`, `vllmTargets`
 - **Default-enabled** (no hosts import the declaring file)
 - **Explicit overrides:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`
 
@@ -358,7 +358,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.stalwart`
 
-- **Declared:** `nix-presets/containers/stalwart.nix:26`
+- **Declared:** `nix-presets/containers/stalwart.nix:27`
 - **Sub-options:** `adminPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relaySecretFile`
 - **Consumed by:** `host:mac-mini`
 
