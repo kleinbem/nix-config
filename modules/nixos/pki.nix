@@ -79,6 +79,10 @@ in
         user = "root";
         group = "root";
       };
+      # The shared client pair: every TLS container held its key, so one
+      # compromised container could call any listener. Containers use their own.
+      "${pkiDir}/certs/client.key".r = { };
+      "${pkiDir}/certs/client.crt".r = { };
     };
 
     # One-shot service: generate CA + certs on first boot (idempotent)
@@ -140,27 +144,6 @@ in
 
           chmod 600 "${pkiDir}/ca.key"
           chmod 644 "${pkiDir}/ca.crt"
-        fi
-
-        # --- Generate shared client certificate (for inter-container mTLS) ---
-        if [ ! -f "${pkiDir}/certs/client.crt" ]; then
-          echo "  Generating shared client certificate..."
-          openssl req -new -nodes \
-            -keyout "${pkiDir}/certs/client.key" \
-            -out "/tmp/pki-client.csr" \
-            -subj "/CN=internal-client/O=kleinbem"
-
-          openssl x509 -req \
-            -in "/tmp/pki-client.csr" \
-            -CA "${pkiDir}/ca.crt" \
-            -CAkey "${pkiDir}/ca.key" \
-            -CAcreateserial \
-            -out "${pkiDir}/certs/client.crt" \
-            -days ${certDays}
-
-          chmod 644 "${pkiDir}/certs/client.crt"
-          chmod 600 "${pkiDir}/certs/client.key"
-          rm -f "/tmp/pki-client.csr"
         fi
 
         # --- Generate per-container server certificates ---
