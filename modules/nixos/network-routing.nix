@@ -18,7 +18,7 @@ let
     mac-mini = "10.85.50.0/24";
   };
 
-  routes = lib.mapAttrsToList (name: host: {
+  subnetRoutes = lib.mapAttrsToList (name: host: {
     address = lib.head (lib.splitString "/" subnets.${name});
     prefixLength = 24;
     via = host.physicalIp or host.ip;
@@ -26,6 +26,26 @@ let
       onlink = "";
     };
   }) (lib.filterAttrs (name: _: subnets ? ${name} && otherHosts ? ${name}) otherHosts);
+
+  # A node with `host` gets a /32 via that host. For containers on a host
+  # without its own subnet above (orin-nano's cbr0 reuses 10.85.46.0/24), so
+  # the /32 beats the /24 that points at nixos-nvme.
+  nodeRoutes = lib.mapAttrsToList (
+    _: n:
+    let
+      host = otherHosts.${n.host};
+    in
+    {
+      address = n.ip;
+      prefixLength = 32;
+      via = host.physicalIp or host.ip;
+      options = {
+        onlink = "";
+      };
+    }
+  ) (lib.filterAttrs (_: n: n ? host && otherHosts ? ${n.host}) myInventory.network.nodes);
+
+  routes = subnetRoutes ++ nodeRoutes;
 
 in
 {
