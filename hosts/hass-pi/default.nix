@@ -197,6 +197,8 @@ in
       "/var/lib/private/matterjs-server"
       # piper and faster-whisper are DynamicUser (voices and models).
       "/var/lib/private/wyoming"
+      # otbr-agent: the Thread network's dataset and keys.
+      "/var/lib/thread"
       # Own music files for Music Assistant (mediaDir above), copied in by
       # the primary user; world-readable so the container's DynamicUser can
       # read them. impermanence creates the folder, so it sets the owner.
