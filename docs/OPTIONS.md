@@ -201,8 +201,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.gatus`
 
-- **Declared:** `nix-presets/containers/gatus.nix:26`
-- **Sub-options:** `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
+- **Declared:** `nix-presets/containers/gatus.nix:50`
+- **Sub-options:** `alerting.ntfy.priority`, `alerting.ntfy.tokenFile`, `alerting.ntfy.topicFile`, `alerting.ntfy.url`, `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.github-runner`
@@ -358,7 +358,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.stalwart`
 
-- **Declared:** `nix-presets/containers/stalwart.nix:26`
+- **Declared:** `nix-presets/containers/stalwart.nix:27`
 - **Sub-options:** `adminPasswordFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `relaySecretFile`
 - **Consumed by:** `host:mac-mini`
 
