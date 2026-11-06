@@ -194,8 +194,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.gatus`
 
-- **Declared:** `nix-presets/containers/gatus.nix:50`
-- **Sub-options:** `alerting.ntfy.priority`, `alerting.ntfy.tokenFile`, `alerting.ntfy.topicFile`, `alerting.ntfy.url`, `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
+- **Declared:** `nix-presets/containers/gatus.nix:74`
+- **Sub-options:** `alerting.fallback.priority`, `alerting.fallback.topicFile`, `alerting.fallback.url`, `alerting.ntfy.priority`, `alerting.ntfy.tokenFile`, `alerting.ntfy.topicFile`, `alerting.ntfy.url`, `enable`, `endpointsFile`, `ip`, `memoryLimit`, `port`
 - **Consumed by:** `host:core-pi`
 
 ### `my.containers.github-runner`
