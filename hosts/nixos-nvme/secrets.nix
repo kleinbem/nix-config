@@ -13,9 +13,10 @@ let
   hostSops = secretFile "nix/per-host/nixos-nvme.yaml";
   # Gated on the key so eval works before it exists (sops-nix fails
   # activation on a missing key).
-  hasHassCliToken =
-    builtins.pathExists hostSops
-    && lib.hasInfix "\nhass_cli_token:" ("\n" + builtins.readFile hostSops);
+  hasKey =
+    key: builtins.pathExists hostSops && lib.hasInfix "\n${key}:" ("\n" + builtins.readFile hostSops);
+  hasHassCliToken = hasKey "hass_cli_token";
+  hasSkillsRefreshToken = hasKey "skills_refresh_token";
 in
 {
   # ==========================================
@@ -39,6 +40,13 @@ in
       # Long-lived token of HA's `cli` user, read by the hass-cli wrapper in
       # nix-devshells #workspace (never exported into shell environments).
       hass_cli_token = lib.mkIf hasHassCliToken {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
+      # Fine-grained PAT for kleinbem/skills only (contents + pull requests
+      # write), read by skills' `just refresh-skills` instead of the gh login.
+      skills_refresh_token = lib.mkIf hasSkillsRefreshToken {
         sopsFile = hostSops;
         owner = "martin";
         mode = "0400";
