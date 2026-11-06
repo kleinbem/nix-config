@@ -12,11 +12,11 @@
 - **home-manager**: `b787c48e`
 - **sops-nix**: `b18e01ce`
 - **devenv**: `9655d320`
-- **nix-packages**: `ce505c16`
-- **nix-hardware**: `1201cd00`
-- **nix-presets**: `7d7e6605`
+- **nix-packages**: `bd0a4d6e`
+- **nix-hardware**: `d80572d0`
+- **nix-presets**: `747950c2`
 - **nix-devshells**: `2f0dbdd6`
-- **nix-gantry**: `6618a97e`
+- **nix-gantry**: `f999f4e8`
 
 ## 🖥️ Managed Hosts
 
@@ -42,7 +42,7 @@
 - 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
 - 🔐 **Ente Auth API** (`ente`) `10.85.48.133:8080` → `2fa-api.kleinbem.dev` — E2E Encrypted 2FA Backend API. _[src: nix-presets/containers/ente.nix:22]_
-- 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:26]_
+- 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:50]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
 - 🔐 **Vaultwarden** (`vaultwarden`) `10.85.48.135:8222` → `vault.kleinbem.dev` — Self-hosted password manager (people + personas). _[src: nix-presets/containers/vaultwarden.nix:23]_
 
@@ -61,7 +61,7 @@
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:16]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:20]_
 - 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:155]_
-- 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:26]_
+- 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:27]_
 
 ### nasbook
 
