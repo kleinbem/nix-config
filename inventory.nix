@@ -603,6 +603,7 @@ in
       };
       syncthing-orin = {
         ip = "10.85.46.129";
+        host = "orin-nano"; # /32 route (network-routing.nix), see frigate
         port = 8384;
         meta = {
           name = "Syncthing (Orin)";
@@ -624,8 +625,10 @@ in
       # Services not currently proxied by Caddy but present
       frigate = {
         # orin-nano's cbr0 reuses nixos-nvme's 10.85.46.0/24. Separate L2
-        # segments, but don't route fleet-wide by that /24 alone.
+        # segments: `host` gives every other host a /32 via orin-nano
+        # (network-routing.nix), which beats the /24 to nixos-nvme.
         ip = "10.85.46.39";
+        host = "orin-nano";
         # nginx from the NixOS frigate module; 5000 was never served.
         port = 80;
         externalPort = 443;
