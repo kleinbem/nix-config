@@ -1,5 +1,6 @@
 {
   "theme": "dark",
   "autoCompactEnabled": true,
-  "remoteControlAtStartup": false
+  "remoteControlAtStartup": false,
+  "syncClaudeAiSkills": false
 }
