@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets opt into it. Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 80  
-**Consumer files scanned:** 36
+**Declarations indexed:** 79  
+**Consumer files scanned:** 37
 
 ---
 
@@ -82,13 +82,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Consumed by:** `host:nixos-nvme`
 
 ## `my.containers`
-
-### `my.containers.agent-team`
-
-- **Declared:** `nix-presets/containers/agent-team.nix:15`
-- **Sub-options:** `agents`, `authorizedKeys`, `autoStart`, `cpuLimit`, `enable`, `hostDataDir`, `ip`, `langfuse.enable`, `langfuse.host`, `langfuse.publicKey`, `langfuse.secretKey`, `litellmUrl`, `manager.humanInTheLoop`, `manager.process`, `memoryLimit`, `secretsFile`
-- **Default-enabled** (no hosts import the declaring file)
-- **Explicit overrides:** `host:nasbook`, `host:nixos-nvme`
 
 ### `my.containers.agent-zero`
 

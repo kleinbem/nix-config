@@ -13,10 +13,10 @@
 - **sops-nix**: `b18e01ce`
 - **devenv**: `9655d320`
 - **nix-packages**: `f2c85e27`
-- **nix-hardware**: `d80572d0`
-- **nix-presets**: `48f8a6fa`
+- **nix-hardware**: `56b133c0`
+- **nix-presets**: `e8600d00`
 - **nix-devshells**: `cb57c6fe`
-- **nix-gantry**: `f999f4e8`
+- **nix-gantry**: `b85ed60a`
 
 ## 🖥️ Managed Hosts
 
@@ -90,7 +90,7 @@
 
 ### Declared but not currently enabled on any host
 
-- `agent-team` — AI Agent Team _[src: nix-presets/containers/agent-team.nix:15]_
+- `agent-team` — AI Agent Team _[src: nix-presets/containers/agent-team.nix:184]_
 - `alertmanager` — Alertmanager
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:13]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
