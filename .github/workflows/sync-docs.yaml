@@ -55,7 +55,9 @@ jobs:
       # The docs describe the nix-presets this flake.lock pins, not its main.
       - name: Locked nix-presets revision
         id: presets
-        run: echo "rev=$(jq -er '.nodes["nix-presets"].locked.rev' nix-config/flake.lock)" >> "$GITHUB_OUTPUT"
+        run: |
+          rev=$(jq -er '.nodes["nix-presets"].locked.rev' nix-config/flake.lock)
+          echo "rev=$rev" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: kleinbem/nix-presets
