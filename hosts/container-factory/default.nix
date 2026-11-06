@@ -193,6 +193,10 @@ let
       ip = "${myInventory.network.nodes.gatus.ip}/24"; # core-pi
       # Non-null so the cached closure includes the config-setup branch.
       endpointsFile = "/run/secrets/factory-dummy";
+      alerting.ntfy = {
+        url = "https://ntfy.kleinbem.dev";
+        topicFile = "/run/secrets/factory-dummy";
+      };
     };
     authentik = {
       ip = "${myInventory.network.nodes.authentik.ip}/24"; # core-pi
