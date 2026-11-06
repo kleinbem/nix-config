@@ -23,7 +23,10 @@ concurrency:
 jobs:
   sync:
     # Same-repo PRs only: the app token must not push to fork branches.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Other events only on main: their docs PR is based on the generated commit.
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     # The sibling checkouts; everything that writes uses the App token.
     permissions:
@@ -100,7 +103,8 @@ jobs:
             HEAD="$PR_HEAD"
           else
             BRANCH=auto/sync-docs
-            HEAD=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+            # The commit the docs were generated from, not main's current head.
+            HEAD="$GITHUB_SHA"
             if gh api "repos/$REPO/git/ref/heads/$BRANCH" >/dev/null 2>&1; then
               gh api -X PATCH "repos/$REPO/git/refs/heads/$BRANCH" -f sha="$HEAD" -F force=true >/dev/null
             else
