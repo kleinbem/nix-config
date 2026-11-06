@@ -328,6 +328,7 @@ hosts:
       - ente.keyHashFile
       - ente.minioRootPasswordFile
       - gatus
+      - gatus.alerting.fallback.topicFile
       - gatus.alerting.ntfy
       - gatus.alerting.ntfy.tokenFile
       - gatus.alerting.ntfy.topicFile
@@ -378,6 +379,7 @@ hosts:
     - ente_minio_root_password
     - ntfy_alert_token
     - ntfy_alert_topic
+    - ntfy_fallback_topic
     - vaultwarden_admin_token
     hardware_profile: Raspberry Pi 5 (BCM2712, 4x Cortex-A76)
   hass-pi:
