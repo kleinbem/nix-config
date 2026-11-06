@@ -12,7 +12,7 @@
 - **home-manager**: `b787c48e`
 - **sops-nix**: `b18e01ce`
 - **devenv**: `9655d320`
-- **nix-packages**: `bd0a4d6e`
+- **nix-packages**: `f2c85e27`
 - **nix-hardware**: `d80572d0`
 - **nix-presets**: `48f8a6fa`
 - **nix-devshells**: `cb57c6fe`
