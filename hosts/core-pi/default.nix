@@ -285,6 +285,17 @@ in
         staticSites."kleinbem.dev" = {
           hostPath = "${pkgs.kleinbem-site}";
         };
+        # MTA-STS policy for the _mta-sts TXT record in nix/infra. Bump that
+        # record's id with every change here. `testing` until Stalwart has a
+        # publicly trusted cert: senders would refuse its self-signed one.
+        staticSites."mta-sts.kleinbem.dev" = {
+          hostPath = "${pkgs.writeTextDir ".well-known/mta-sts.txt" ''
+            version: STSv1
+            mode: testing
+            mx: mail.kleinbem.dev
+            max_age: 86400
+          ''}";
+        };
       };
 
       crowdsec = {
@@ -401,15 +412,6 @@ in
   # container-host module handles container data persistence
   # (auto-derived from each enabled container's hostDataDir, incl.
   # /var/lib/ente). Add only non-container directories here.
-
-  # Bind-mount the static site here: staticSites' own bindMounts never apply,
-  # because nix-presets' caddy module merges a `lib.mkIf` with `//`, which keeps
-  # only the mkIf content (its PKI-cert mounts are lost too). Fix it there,
-  # then drop this. staticSites still generates the vhost.
-  containers.caddy.bindMounts."/var/www/kleinbem.dev" = {
-    hostPath = "${pkgs.kleinbem-site}";
-    isReadOnly = true;
-  };
 
   services.crowdsec-firewall-bouncer = {
     enable = true;

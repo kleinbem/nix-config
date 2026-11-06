@@ -134,8 +134,13 @@ let
       proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
       authUpstream = "${myInventory.network.nodes.authentik.ip}:${toString myInventory.network.nodes.authentik.port}";
       globalMaintenance = myInventory.globalMaintenance or false;
+      # Must match core-pi's staticSites: the vhosts are built here, core-pi
+      # only bind-mounts the content.
       staticSites."kleinbem.dev" = {
         hostPath = "/var/www/kleinbem.dev";
+      };
+      staticSites."mta-sts.kleinbem.dev" = {
+        hostPath = "/var/www/mta-sts.kleinbem.dev";
       };
     };
     cups.ip = "${myInventory.network.nodes.cups.ip}/24"; # core-pi
