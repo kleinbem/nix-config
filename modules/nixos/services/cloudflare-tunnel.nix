@@ -33,12 +33,11 @@ in
           originRequest = {
             noTLSVerify = true;
           };
-          ingress = {
-            # Apex: the static kleinbem-site served by Caddy's staticSites —
-            # not an inventory node.
-            "kleinbem.dev" = caddy;
-          }
-          // lib.mapAttrs' (_: n: lib.nameValuePair n.domain caddy) publicNodes;
+          # Caddy's staticSites (the apex site, the MTA-STS policy) aren't
+          # inventory nodes, so route them here too.
+          ingress =
+            lib.mapAttrs (_: _: caddy) (config.my.containers.caddy.staticSites or { })
+            // lib.mapAttrs' (_: n: lib.nameValuePair n.domain caddy) publicNodes;
           default = "http_status:404";
         };
       };
