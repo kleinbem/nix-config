@@ -1227,11 +1227,11 @@
     "kleinbem-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1793913061,
-        "narHash": "sha256-a4It+kePUJme/k7GMwPPPEDLp3LRws3AEmVYq4b2apQ=",
+        "lastModified": 1793982259,
+        "narHash": "sha256-GnPp2Myoo06m4m7XXmO8/5NLebYboWq8bNcj4/t4Ayk=",
         "owner": "kleinbem",
         "repo": "kleinbem-secrets",
-        "rev": "9a54d6e1a7e6f37d85353361e7710b326daa246c",
+        "rev": "020de31fea4d7754db89878d4d0b226942b244ba",
         "type": "github"
       },
       "original": {
