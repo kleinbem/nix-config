@@ -52,6 +52,8 @@ in
         # validateSopsFiles = false here, so eval passes before the key exists;
         # activation (sops-install-secrets) needs it present.
         vaultwarden_admin_token = { };
+        # Gatus copies the topic into its env file at start (alerting.ntfy).
+        ntfy_alert_topic.restartUnits = [ "container@gatus.service" ];
       }
       // (
         # Authentik, the shared IdP. Per-container file scoped to core_pi.
