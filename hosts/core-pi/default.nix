@@ -40,6 +40,7 @@ let
       ]
       ++ lib.optional (hasFallback && e.name == "ntfy") { type = "custom"; };
     };
+  nodes = myInventory.network.nodes;
   gatusEndpointsFile = (pkgs.formats.yaml { }).generate "gatus-endpoints.yaml" {
     endpoints = map withAlerts [
       {
@@ -60,13 +61,16 @@ let
         conditions = [ "[STATUS] < 500" ];
       }
       {
-        # Through Caddy on this host to the container on hass-pi. HA answers
-        # its login page unauthenticated, so a 200 proves the whole path.
+        # meshOnly: public DNS sends hass.kleinbem.dev to Cloudflare, which
+        # answers 404 without a tunnel route. Probe the container directly.
         name = "Home Assistant";
         group = "Apps";
-        url = "https://hass.kleinbem.dev";
+        url = "http://${nodes.home-assistant.ip}:${toString nodes.home-assistant.port}/manifest.json";
         interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
+        conditions = [
+          "[STATUS] == 200"
+          "[BODY].name == Home Assistant"
+        ];
       }
       {
         name = "Vaultwarden";
@@ -121,11 +125,12 @@ let
         conditions = [ "[STATUS] < 500" ];
       }
       {
+        # meshOnly like Home Assistant above; atticd serves this page itself.
         name = "Attic cache";
         group = "Infrastructure";
-        url = "https://cache.kleinbem.dev";
+        url = "http://${nodes.attic.ip}:${toString nodes.attic.port}/";
         interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
+        conditions = [ "[STATUS] == 200" ];
       }
       {
         name = "n8n";
