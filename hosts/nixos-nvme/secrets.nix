@@ -16,6 +16,11 @@ let
   hasHassCliToken =
     builtins.pathExists hostSops
     && lib.hasInfix "\nhass_cli_token:" ("\n" + builtins.readFile hostSops);
+  # Same key gate, plus the opencode module that reads it.
+  opencodeGemini =
+    config.home-manager.users.martin.modules.opencode.enable
+    && builtins.pathExists hostSops
+    && lib.hasInfix "\ngemini_api_key:" ("\n" + builtins.readFile hostSops);
 in
 {
   # ==========================================
@@ -39,6 +44,13 @@ in
       # Long-lived token of HA's `cli` user, read by the hass-cli wrapper in
       # nix-devshells #workspace (never exported into shell environments).
       hass_cli_token = lib.mkIf hasHassCliToken {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
+      # Gemini API key (aistudio.google.com) for opencode's Google provider:
+      # `sops nix/per-host/nixos-nvme.yaml`, add `gemini_api_key: <key>`.
+      gemini_api_key = lib.mkIf opencodeGemini {
         sopsFile = hostSops;
         owner = "martin";
         mode = "0400";
@@ -330,4 +342,7 @@ in
       };
     };
   };
+
+  home-manager.users.martin.modules.opencode.googleApiKeyFile =
+    lib.mkIf opencodeGemini config.sops.secrets.gemini_api_key.path;
 }
