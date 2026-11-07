@@ -222,6 +222,7 @@ jobs:
           HOLDS_OUTCOME: ${{ steps.holds.outcome }}
           HOLDS_HELD: ${{ steps.holds.outputs.held }}
           HOLDS_FAILED: ${{ steps.holds.outputs.failed }}
+          HOLDS_AHEAD: ${{ steps.holds.outputs.ahead }}
           BUILD_MODE: ${{ steps.build-mode.outputs.build }}
           ISSUE_TITLE: "Lock update fails validation"
           BUILD_ISSUE_TITLE: "Lock update breaks package builds"
@@ -240,7 +241,7 @@ jobs:
             fi
             # Only downloads failed (cache or network): nothing is known about
             # the builds, so the issue stays as it is.
-            [[ -n $HOLDS_HELD || -n $HOLDS_FAILED ]] || exit 0
+            [[ -n $HOLDS_HELD || -n $HOLDS_FAILED || -n $HOLDS_AHEAD ]] || exit 0
             body="This lock update evaluates, but nix-detour found packages whose fetches fail with it (built on x86_64-linux only; report only, the update still goes out):
 
           $HOLDS_REPORT
