@@ -21,9 +21,12 @@
   };
   programs.gpg = {
     enable = true;
-    # scdaemon talks to the YubiKey through pcscd instead of its own CCID
-    # driver, so it shares the reader with ykman and friends.
-    scdaemonSettings.disable-ccid = true;
+    # scdaemon goes through pcscd and opens the YubiKey shared: an exclusive
+    # open makes age-plugin-yubikey (sops) fail with "generic error".
+    scdaemonSettings = {
+      disable-ccid = true;
+      pcsc-shared = true;
+    };
   };
   services.gpg-agent = {
     enable = true;
