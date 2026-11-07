@@ -1,3 +1,3 @@
 module github.com/kleinbem/nix/nix-config/scripts/gen-ansible-inventory
 
-go 1.21
+go 1.26.0
