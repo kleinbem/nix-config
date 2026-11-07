@@ -2,11 +2,11 @@
 
 # Create a Fedora development distrobox.
 create-fedora name="fedora-dev":
-    distrobox create --image registry.fedoraproject.org/fedora:44 --name {{name}}
+    distrobox create --image registry.fedoraproject.org/fedora:45 --name {{name}}
 
 # Create an Ubuntu development distrobox.
 create-ubuntu name="ubuntu-dev":
-    distrobox create --image ubuntu:24.04 --name {{name}}
+    distrobox create --image ubuntu:26.04 --name {{name}}
 
 # Own home dir so host cargo/pnpm config and PATH don't leak into package tests.
 # Create an Arch development distrobox for AUR packaging and testing.

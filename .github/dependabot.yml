@@ -11,3 +11,11 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # Go helper scripts (stdlib only so far).
+  - package-ecosystem: gomod
+    directories: ["/scripts/gen-ansible-inventory"]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
