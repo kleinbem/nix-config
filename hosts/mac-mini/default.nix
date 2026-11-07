@@ -274,8 +274,10 @@ in
         memoryLimit = "1G";
       };
 
+      # Off until it has a model backend: litellm.internal is disabled.
+      # Data stays in hostDataDir.
       anythingllm = {
-        enable = true;
+        enable = false;
         ip = "10.85.50.6/24";
         hostDataDir = "/var/lib/anythingllm";
         llmUrl = "https://litellm.internal";
@@ -354,9 +356,11 @@ in
 
   # anythingllm runs podman inside its ephemeral nspawn container, whose
   # ~3.9G tmpfs root is too small to unpack its image. Give podman storage
-  # its own tmpfs. Only set this for enabled containers: on a disabled one it
-  # leaves containers.<name> half-defined and breaks eval.
-  containers.anythingllm.tmpfs = [ "/var/lib/containers:size=8G" ];
+  # its own tmpfs. Gated on enable: on a disabled container it leaves
+  # containers.<name> half-defined and breaks eval.
+  containers = lib.mkIf config.my.containers.anythingllm.enable {
+    anythingllm.tmpfs = [ "/var/lib/containers:size=8G" ];
+  };
 
   # All services.* in one block (statix).
   services = {
