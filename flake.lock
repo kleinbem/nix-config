@@ -1782,11 +1782,11 @@
         "treefmt-nix": "treefmt-nix_6"
       },
       "locked": {
-        "lastModified": 1794048769,
-        "narHash": "sha256-hT2tPD+tEFGHKGn6DfMjT5U5SsyFe0+T5XeLrWOdEhc=",
+        "lastModified": 1794055082,
+        "narHash": "sha256-Bi/iA01eonsvXXLAFKFLlB28K7/kWUaIdLa4I8i+AhA=",
         "owner": "kleinbem",
         "repo": "nix-presets",
-        "rev": "dd11ebafa2175c8630b281597739d124135fff00",
+        "rev": "e53354fdb0674d3c6d762d8d838a42171966f73a",
         "type": "github"
       },
       "original": {
