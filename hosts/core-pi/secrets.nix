@@ -86,6 +86,9 @@ in
           keys = [
             "minio_root_password"
             "jwt_secret"
+            "garage_rpc_secret"
+            "s3_access_key_id"
+            "s3_secret_access_key"
           ];
         }
       )

@@ -417,3 +417,57 @@ def test_host_container_map_reads_fully_qualified_enable(tmp_path: Path):
         "}\n"
     )
     assert host_container_map(tmp_path) == {"h1": {"n8n": True, "ente": False}}
+
+
+# ---------------------------------------------------------------------------
+# declarations_in_file: default_enabled
+# ---------------------------------------------------------------------------
+
+
+def test_default_enabled_top_level_enable(tmp_path: Path):
+    f = tmp_path / "mod.nix"
+    f.write_text(
+        """{ lib, ... }: {
+          options.my.services.base = {
+            enable = lib.mkOption { type = lib.types.bool; default = true; };
+          };
+        }"""
+    )
+    (decl,) = declarations_in_file(f)
+    assert decl.default_enabled
+
+
+def test_default_enabled_ignores_sub_option_enables(tmp_path: Path):
+    """A sub-option like `minio.enable` defaulting to true doesn't enable the
+    module (ente's `enable` is an mkEnableOption)."""
+    f = tmp_path / "mod.nix"
+    f.write_text(
+        """{ lib, ... }: {
+          options.my.containers.ente = {
+            enable = lib.mkEnableOption "Ente";
+            minio.enable = lib.mkOption { type = lib.types.bool; default = true; };
+            garage = {
+              enable = lib.mkOption { type = lib.types.bool; default = true; };
+            };
+          };
+        }"""
+    )
+    (decl,) = declarations_in_file(f)
+    assert not decl.default_enabled
+
+
+def test_default_enabled_ignores_default_inside_example(tmp_path: Path):
+    f = tmp_path / "mod.nix"
+    f.write_text(
+        """{ lib, ... }: {
+          options.my.services.x = {
+            enable = lib.mkOption {
+              type = lib.types.bool;
+              example = { default = true; };
+              default = false;
+            };
+          };
+        }"""
+    )
+    (decl,) = declarations_in_file(f)
+    assert not decl.default_enabled

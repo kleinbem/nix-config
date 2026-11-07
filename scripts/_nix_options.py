@@ -79,10 +79,30 @@ class Declaration:
 
 # Detects `enable = mkOption { … default = true … }` — used to flag options that
 # are active by default whenever the declaring module is imported.
-_DEFAULT_ENABLE_RE = re.compile(
-    r"\benable\s*=\s*(?:lib\.)?mkOption\s*\{[^}]*?\bdefault\s*=\s*true\b",
-    re.DOTALL,
-)
+_ENABLE_OPTION_RE = re.compile(r"(?<![.\w-])enable\s*=\s*(?:lib\.)?mkOption\s*\{")
+_DEFAULT_TRUE_RE = re.compile(r"(?<![.\w-])default\s*=\s*true\b")
+
+
+def _depth(text: str) -> int:
+    return text.count("{") - text.count("}")
+
+
+def _top_level_enable_defaults_true(body: str) -> bool:
+    """Only the namespace's own `enable` (not `minio.enable` or
+    `minio = { enable = …; }`), and only its own `default`, not one inside
+    `example = { … }`."""
+    for m in _ENABLE_OPTION_RE.finditer(body):
+        if _depth(body[: m.start()]) != 0:
+            continue
+        close = find_matching_brace(body, m.end())
+        if close < 0:
+            continue
+        option = body[m.end() : close]
+        if any(
+            _depth(option[: d.start()]) == 0 for d in _DEFAULT_TRUE_RE.finditer(option)
+        ):
+            return True
+    return False
 
 
 def strip_comments_and_strings(src: str) -> str:
@@ -292,7 +312,7 @@ def declarations_in_file(path: Path) -> list[Declaration]:
             for s in all_sub
             if not any(other != s and other.startswith(s + ".") for other in all_sub)
         )
-        default_enabled = bool(_DEFAULT_ENABLE_RE.search(body))
+        default_enabled = _top_level_enable_defaults_true(body)
         decls.append(
             Declaration(
                 namespace=namespace,
