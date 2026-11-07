@@ -157,7 +157,7 @@ in
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
-    inputs.nix-presets.nixosModules.dashboard-homepage
+    inputs.nix-presets.nixosModules.dashboard-foyer
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.gatus
@@ -375,7 +375,7 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.0.0.22"; # core-pi IP
-        memoryLimit = "512M";
+        memoryLimit = "128M";
       };
 
       cups = {

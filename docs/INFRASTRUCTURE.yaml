@@ -260,7 +260,7 @@ hosts:
     - '[other] nix-gantry:updater'
     - '[module] modules/nixos/rpi5-disko.nix'
     - '[local] ./secrets.nix'
-    - '[preset] nix-presets:dashboard-homepage'
+    - '[preset] nix-presets:dashboard-foyer'
     - '[preset] nix-presets:ente'
     - '[preset] nix-presets:vaultwarden'
     - '[preset] nix-presets:gatus'
