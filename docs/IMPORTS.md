@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 101
+**Distinct imports:** 102
 
 ---
 
@@ -38,7 +38,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:forgejo`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:sandboxed-apps`, `nix-presets:stalwart`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
-- **Local:** `./disko.nix`, `./secrets.nix`
+- **Local:** `./disko.nix`, `./homarr.nix`, `./secrets.nix`
 
 ### `nasbook`
 
@@ -91,6 +91,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./hardware-boot.nix` ← nixos-nvme
 - `./hardware.nix` ← orin-nano
 - `./herdr.nix` ← nixos-nvme
+- `./homarr.nix` ← mac-mini
 - `./monitors.nix` ← nixos-nvme
 - `./network.nix` ← nixos-nvme, orin-nano
 - `./secrets.nix` ← core-pi, hass-pi, mac-mini, nasbook, nixos-nvme, orin-nano
