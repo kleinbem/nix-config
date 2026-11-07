@@ -88,15 +88,6 @@
         };
       };
 
-      dashboard = {
-        enable = false;
-        ip = "${myInventory.network.nodes.dashboard.ip}/24";
-        hostBridgeIp = myInventory.hosts.nixos-nvme.ip;
-        memoryLimit = "1G";
-        secretsFile =
-          if config.sops.templates ? "homepage.env" then config.sops.templates."homepage.env".path else null;
-      };
-
       qdrant = {
         enable = false;
         ip = "${myInventory.network.nodes.qdrant.ip}/24";

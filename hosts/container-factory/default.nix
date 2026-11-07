@@ -268,7 +268,6 @@ let
   realContainerNames = {
     dashboard = [
       "dashboard-foyer"
-      "dashboard-homepage"
     ];
   };
   wanted =
@@ -326,7 +325,7 @@ in
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
     inputs.nix-presets.nixosModules.revue
-    # dashboard-homepage/dashboard-homer declare the same `my.containers.dashboard` option as
+    # dashboard-homer declares the same `my.containers.dashboard` option as
     # dashboard-foyer, so only one can be imported. Swap them to cache another variant.
   ];
 

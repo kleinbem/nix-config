@@ -159,7 +159,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/dashboard/options.nix:6`
 - **Sub-options:** `enable`, `hostBridgeIp`, `ip`, `memoryLimit`, `secretsFile`
-- **Configured in:** `host:core-pi`, `host:nixos-nvme`
+- **Configured in:** `host:core-pi`
 
 ### `my.containers.dev-db`
 
