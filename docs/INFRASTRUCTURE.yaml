@@ -54,6 +54,10 @@ repo_atlas:
     path: coderabbit-dev/
     url: git@github.com:kleinbem-dev/coderabbit.git
     role: Supporting repository.
+  foyer:
+    path: foyer/
+    url: git@github.com:kleinbem-dev/foyer.git
+    role: Supporting repository.
   github-config:
     path: github-config/
     url: git@github.com:kleinbem/github-config.git

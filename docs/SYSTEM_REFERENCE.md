@@ -14,7 +14,7 @@
 - **devenv**: `9655d320`
 - **nix-packages**: `3e440698`
 - **nix-hardware**: `3307049b`
-- **nix-presets**: `4a29ca5f`
+- **nix-presets**: `187227b5`
 - **nix-devshells**: `f909f277`
 - **nix-gantry**: `d71c388d`
 
@@ -41,7 +41,7 @@
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
 - 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
-- 🔐 **Ente Auth API** (`ente`) `10.85.48.133:8080` → `2fa-api.kleinbem.dev` — E2E Encrypted 2FA Backend API. _[src: nix-presets/containers/ente.nix:22]_
+- 🔐 **Ente Auth API** (`ente`) `10.85.48.133:8080` → `2fa-api.kleinbem.dev` — E2E Encrypted 2FA Backend API. _[src: nix-presets/containers/ente.nix:33]_
 - 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:74]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
 - 🔐 **Vaultwarden** (`vaultwarden`) `10.85.48.135:8222` → `vault.kleinbem.dev` — Self-hosted password manager (people + personas). _[src: nix-presets/containers/vaultwarden.nix:23]_
