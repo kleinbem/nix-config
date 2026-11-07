@@ -263,27 +263,25 @@ jobs:
             gh issue create --title "$ISSUE_TITLE" --body "$body"
           fi
 
-      - name: Create Pull Request
+      # Where the lock commit goes: on the open lock PR it extends, or on main.
+      # Re-queues a full update instead when either moved during validation.
+      - name: Choose the lock PR base
+        id: pr-base
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           # Only for re-queueing this workflow (see below).
           DISPATCH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: update-flake-lock
+          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ steps.lock-pr.outputs.head }}
         run: |
           cd nix-config
           if cmp -s flake.lock /tmp/flake.lock.before; then
             echo "flake.lock unchanged — nothing to commit."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          BRANCH_NAME="update-flake-lock"
-          REPO="${{ github.repository }}"
-          BASE_SHA="${{ steps.lock-pr.outputs.head }}"
-
-          # Reset (or create) the branch to point at current main, then commit
-          # via GraphQL createCommitOnBranch — GitHub signs these commits
-          # automatically ("Verified", committer=GitHub), satisfying the
-          # required_signatures ruleset without any key material in CI.
           if [ -n "$BASE_SHA" ]; then
             # Validation takes minutes, and the lock PR can merge (deleting its
             # branch), close or move meanwhile. If it landed as-is, main now
@@ -300,64 +298,36 @@ jobs:
               else
                 echo "::warning::the lock PR moved away from $BASE_SHA during validation, re-queueing a full update"
                 GH_TOKEN="$DISPATCH_TOKEN" gh workflow run maintain.yml --ref main
+                echo "skip=true" >> "$GITHUB_OUTPUT"
                 exit 0
               fi
             fi
           fi
-          if [ -n "$BASE_SHA" ]; then
-            echo "extending the open lock PR at $BASE_SHA"
-          else
-            BASE_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          if [ -z "$BASE_SHA" ]; then
             # This run updated the lock it checked out. If a PR changed
             # flake.lock on main since then, committing ours would revert it
             # (#285 undid #284's kleinbem-secrets bump): start afresh instead.
-            git fetch --depth 1 origin "$BASE_SHA"
-            if ! git show "$BASE_SHA:flake.lock" | cmp -s - /tmp/flake.lock.before; then
+            main_sha=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+            git fetch --depth 1 origin "$main_sha"
+            if ! git show "$main_sha:flake.lock" | cmp -s - /tmp/flake.lock.before; then
               echo "::warning::flake.lock changed on main during validation, re-queueing a full update"
               GH_TOKEN="$DISPATCH_TOKEN" gh workflow run maintain.yml --ref main
+              echo "skip=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            if gh api "repos/$REPO/git/ref/heads/$BRANCH_NAME" >/dev/null 2>&1; then
-              gh api -X PATCH "repos/$REPO/git/refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" -F force=true >/dev/null
-            else
-              gh api "repos/$REPO/git/refs" -f ref="refs/heads/$BRANCH_NAME" -f sha="$BASE_SHA" >/dev/null
-            fi
+            # The branch goes onto this main, the one whose lock was checked.
+            echo "reset-to=$main_sha" >> "$GITHUB_OUTPUT"
           fi
+          echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
 
-          jq -n \
-            --arg repo "$REPO" \
-            --arg branch "$BRANCH_NAME" \
-            --arg sha "$BASE_SHA" \
-            --arg content "$(base64 -w0 flake.lock)" \
-            --arg query 'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
-            '{query: $query, variables: {input: {
-                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
-                message: {headline: "chore: update flake.lock (auto)"},
-                expectedHeadOid: $sha,
-                fileChanges: {additions: [{path: "flake.lock", contents: $content}]}
-            }}}' | gh api graphql --input -
-
-          # Resetting the branch makes it identical to main for an instant, and
-          # GitHub sometimes closes the open PR for it right then (zero-diff
-          # detection) before the new commit lands. Reopen it instead of leaving
-          # the bump stranded on the branch with every error swallowed.
-          PR_JSON=$(gh pr list --head "$BRANCH_NAME" --state all --limit 1 --json number,state --jq '.[0] // empty')
-          PR_NUMBER=$(jq -r '.number // empty' <<<"$PR_JSON")
-          PR_STATE=$(jq -r '.state // empty' <<<"$PR_JSON")
-          if [ "$PR_STATE" = "CLOSED" ]; then
-            echo "PR #$PR_NUMBER was closed by the branch reset — reopening it."
-            gh pr reopen "$PR_NUMBER"
-          elif [ "$PR_STATE" != "OPEN" ]; then
-            gh pr create \
-              --title "chore: update flake.lock" \
-              --body "Automated lockfile update. Check re-validates the new inputs on this PR; auto-merge is enabled and lands this once it's green." \
-              --head "$BRANCH_NAME" \
-              --base main
-          fi
-
-          gh pr merge "$BRANCH_NAME" --auto --squash || true
-
-          # Fail the run if the bump is not on its way: an open PR with auto-merge
-          # armed, or already merged.
-          gh pr view "$BRANCH_NAME" --json state,autoMergeRequest \
-            --jq 'if .state == "MERGED" or (.state == "OPEN" and .autoMergeRequest != null) then "lock bump PR: \(.state), auto-merge armed" else error("no open PR with auto-merge for the lock bump (state: \(.state))") end'
+      # Empty base-sha: the branch is reset to reset-to. A closed lock PR gets a
+      # new one instead of a reopen.
+      - name: Commit the lock and open or update its PR
+        if: github.ref == 'refs/heads/main' && steps.pr-base.outputs.skip != 'true'
+        uses: kleinbem/actions/lock-pr@872d4ed3eeb3da51d0bbe60e5ef3cbf6ece91e8e # v1.6.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          working-directory: nix-config
+          base-sha: ${{ steps.pr-base.outputs.sha }}
+          reset-to: ${{ steps.pr-base.outputs.reset-to }}
+          body: Automated lockfile update. Check re-validates the new inputs on this PR; auto-merge is enabled and lands this once it's green.
