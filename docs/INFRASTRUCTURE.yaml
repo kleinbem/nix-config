@@ -34,6 +34,10 @@ repo_atlas:
     path: android-config/
     url: git@github.com:kleinbem/android-config.git
     role: Supporting repository.
+  attic-ui:
+    path: attic-ui/
+    url: git@github.com:kleinbem-dev/attic-ui.git
+    role: Supporting repository.
   aur-packages:
     path: aur-packages/
     url: git@github.com:kleinbem/aur-packages.git
@@ -914,12 +918,6 @@ hosts:
       - cups
       - cups.enable
       - cups.ip
-      - dashboard
-      - dashboard.enable
-      - dashboard.hostBridgeIp
-      - dashboard.ip
-      - dashboard.memoryLimit
-      - dashboard.secretsFile
       - dev-db
       - dev-db.allowedClients
       - dev-db.enable

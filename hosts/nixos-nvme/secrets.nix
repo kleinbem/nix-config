@@ -197,14 +197,6 @@ in
         sopsFile = hostSops;
       };
     }
-    // lib.optionalAttrs config.my.containers.dashboard.enable {
-      homepage_n8n_key = {
-        sopsFile = hostSops;
-      };
-      homepage_openwebui_key = {
-        sopsFile = hostSops;
-      };
-    }
     # GitHub runner registration token.
     // lib.optionalAttrs config.my.containers.github-runner.enable {
       github_runner_pat = {
@@ -247,12 +239,6 @@ in
       # "syncthing.env".content = ''
       #   SYNCTHING_GUI_PASSWORD=${config.sops.placeholder.syncthing_gui_password}
       # '';
-    }
-    // lib.optionalAttrs config.my.containers.dashboard.enable {
-      "homepage.env".content = ''
-        HOMEPAGE_VAR_N8N_KEY=${config.sops.placeholder.homepage_n8n_key}
-        HOMEPAGE_VAR_OPENWEBUI_KEY=${config.sops.placeholder.homepage_openwebui_key}
-      '';
     }
     // lib.optionalAttrs config.my.containers.open-webui.enable {
       "openwebui.env".content = ''
