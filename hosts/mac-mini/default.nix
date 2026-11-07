@@ -52,6 +52,7 @@ in
     inputs.disko.nixosModules.disko
     ./disko.nix
     ./secrets.nix
+    ./homarr.nix
 
     inputs.nix-presets.nixosModules.monitoring-node
     inputs.nix-presets.nixosModules.monitoring
@@ -446,14 +447,6 @@ in
         wantedBy = [ "graphical.target" ];
       };
     };
-
-    # Homarr dashboard's data dirs.
-    tmpfiles.rules = [
-      "d /var/lib/homarr 0755 root root - -"
-      "d /var/lib/homarr/configs 0755 root root - -"
-      "d /var/lib/homarr/icons 0755 root root - -"
-      "d /var/lib/homarr/data 0755 root root - -"
-    ];
   };
 
   # Never suspend: no input device ever wakes it, and resume is broken on this
@@ -509,7 +502,6 @@ in
 
         # AdGuard is a DynamicUser service, so persist /var/lib/private, not
         # the /var/lib symlink.
-        "/var/lib/homarr"
         "/var/lib/private/AdGuardHome"
       ];
     };
@@ -672,17 +664,6 @@ in
     };
     "/nix".neededForBoot = true;
     "/nix/persist".neededForBoot = true;
-  };
-
-  # Homarr dashboard (start page).
-  virtualisation.oci-containers.containers.homarr = {
-    image = "ghcr.io/ajnart/homarr:latest";
-    ports = [ "7575:7575" ];
-    volumes = [
-      "/var/lib/homarr/configs:/app/data/configs"
-      "/var/lib/homarr/icons:/app/public/icons"
-      "/var/lib/homarr/data:/data"
-    ];
   };
 
   system.stateVersion = "25.11";
