@@ -193,7 +193,7 @@ jobs:
         id: holds
         if: always() && (steps.validate.outcome == 'failure' || steps.validate.outcome == 'success')
         continue-on-error: true
-        uses: kleinbem-dev/nix-detour/update@00c0138fc40d80ba54ded0126c8e7935f82bb460 # main after v0.3.1, for build: fetches
+        uses: kleinbem-dev/nix-detour/update@81a8caac8e97e46cde970f5358aba5f128314c45 # main after v0.3.1: build: fetches, unavailable, ahead
         with:
           token: ${{ steps.app-token.outputs.token }}
           directory: nix-config
@@ -220,6 +220,9 @@ jobs:
           OUTCOME: ${{ steps.validate.outcome }}
           HOLDS_REPORT: ${{ steps.holds.outputs.report || '(no report, see the run)' }}
           HOLDS_OUTCOME: ${{ steps.holds.outcome }}
+          HOLDS_HELD: ${{ steps.holds.outputs.held }}
+          HOLDS_FAILED: ${{ steps.holds.outputs.failed }}
+          HOLDS_AHEAD: ${{ steps.holds.outputs.ahead }}
           BUILD_MODE: ${{ steps.build-mode.outputs.build }}
           ISSUE_TITLE: "Lock update fails validation"
           BUILD_ISSUE_TITLE: "Lock update breaks package builds"
@@ -236,6 +239,9 @@ jobs:
               [[ -z $issue || $BUILD_MODE != fetches ]] || gh issue close "$issue" --comment "Nothing fails any more: $RUN_URL"
               exit 0
             fi
+            # Only downloads failed (cache or network): nothing is known about
+            # the builds, so the issue stays as it is.
+            [[ -n $HOLDS_HELD || -n $HOLDS_FAILED || -n $HOLDS_AHEAD ]] || exit 0
             body="This lock update evaluates, but nix-detour found packages whose fetches fail with it (built on x86_64-linux only; report only, the update still goes out):
 
           $HOLDS_REPORT
