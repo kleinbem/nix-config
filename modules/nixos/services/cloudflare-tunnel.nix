@@ -33,7 +33,7 @@ in
           originRequest = {
             noTLSVerify = true;
           };
-          # Caddy's staticSites (the apex site, the MTA-STS policy) aren't
+          # Caddy's staticSites (the MTA-STS policy) aren't
           # inventory nodes, so route them here too.
           ingress =
             lib.mapAttrs (_: _: caddy) (config.my.containers.caddy.staticSites or { })

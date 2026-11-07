@@ -283,13 +283,6 @@ in
         secretsFile = lib.mkIf (lib.any (n: n.publicCert or false) (
           lib.attrValues myInventory.network.nodes
         )) config.sops.templates."caddy.env".path;
-        # kleinbem.dev — static Astro build (kleinbem/kleinbem-site), packaged
-        # in nix-packages. hostPath is a Nix store path: every switch that
-        # picks up a newer kleinbem-site build re-points the bind-mount at
-        # the new output, no manual redeploy step.
-        staticSites."kleinbem.dev" = {
-          hostPath = "${pkgs.kleinbem-site}";
-        };
         # MTA-STS policy for the _mta-sts TXT record in nix/infra. Bump that
         # record's id with every change here. `testing` until Stalwart has a
         # publicly trusted cert: senders would refuse its self-signed one.
