@@ -85,8 +85,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.agent-zero`
 
-- **Declared:** `nix-presets/containers/agent-zero.nix:14`
-- **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `ollamaUrl`, `secretsFile`, `vllmUrl`
+- **Declared:** `nix-presets/containers/agent-zero.nix:84`
+- **Sub-options:** `enable`, `hostDataDir`, `ip`, `memoryLimit`, `modelPreset`, `ollamaUrl`, `secretsFile`, `vllmUrl`
 - **Consumed by:** `host:mac-mini`, `host:nixos-nvme`
 
 ### `my.containers.anythingllm`

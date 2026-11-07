@@ -14,7 +14,7 @@
 - **devenv**: `9655d320`
 - **nix-packages**: `cb98dc90`
 - **nix-hardware**: `3307049b`
-- **nix-presets**: `dd11ebaf`
+- **nix-presets**: `e53354fd`
 - **nix-devshells**: `e72da162`
 - **nix-gantry**: `d71c388d`
 
@@ -54,7 +54,7 @@
 
 ### mac-mini
 
-- 🕵️ **Agent Zero** (`agent-zero`) `10.85.50.5:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:14]_
+- 🕵️ **Agent Zero** (`agent-zero`) `10.85.50.5:50001` — Autonomous AI agent framework. [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/agent-zero.nix:84]_
 - 🧠 **AnythingLLM** (`anythingllm`) `10.85.50.6:3001` — All-in-one AI workspace and document orchestrator. _[src: nix-presets/containers/anythingllm.nix:12]_
 - 🌳 **Forgejo** (`forgejo`) `10.85.50.4:3000` → `git.kleinbem.dev` — Self-hosted Git forge with mirrors of the GitHub repos. _[src: nix-presets/containers/forgejo.nix:27]_
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
