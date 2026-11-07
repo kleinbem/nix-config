@@ -136,9 +136,6 @@ let
       globalMaintenance = myInventory.globalMaintenance or false;
       # Must match core-pi's staticSites: the vhosts are built here, core-pi
       # only bind-mounts the content.
-      staticSites."kleinbem.dev" = {
-        hostPath = "/var/www/kleinbem.dev";
-      };
       staticSites."mta-sts.kleinbem.dev" = {
         hostPath = "/var/www/mta-sts.kleinbem.dev";
       };

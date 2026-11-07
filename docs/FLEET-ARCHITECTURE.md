@@ -30,7 +30,7 @@ OPENWRT REPOS
 
 META REPOS
 ├─ github-config           (Terraform: org settings, rulesets)
-└─ kleinbem-site           (Astro site: kleinbem.dev)
+└─ kleinbem-site           (SvelteKit site on Cloudflare Pages: www.kleinbem.dev)
 ```
 
 ---
@@ -83,8 +83,7 @@ nix-config (primary config)
     ├─ imports: nix-presets (service bundles)
     ├─ imports: nix-devshells (home-manager)
     ├─ imports: nix-packages (overlays)
-    ├─ secrets: kleinbem-secrets (encrypted)
-    └─ depends: kleinbem-site (reference docs)
+    └─ secrets: kleinbem-secrets (encrypted)
 
 nix/ (conductor)
     └─ links to: nix-config, nix-devshells, nix-presets, etc.
