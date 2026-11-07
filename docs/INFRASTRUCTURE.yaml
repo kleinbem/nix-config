@@ -617,7 +617,6 @@ hosts:
       - libvirtd.enable
       - podman.enable
     containers_hosted:
-    - agent-zero
     - anythingllm
     - forgejo
     - hermes

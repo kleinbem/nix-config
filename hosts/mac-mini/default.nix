@@ -265,9 +265,10 @@ in
       # openclaw stays on hass-pi: a fresh build fails on a pnpm-deps hash
       # mismatch in upstream's lockfile; hass-pi runs a cached build.
       #
-      # LiteLLM auth is the mTLS client cert, so no secretsFile.
+      # Off until it has a model backend: the LiteLLM it would use is disabled.
+      # Data stays in hostDataDir.
       agent-zero = {
-        enable = true;
+        enable = false;
         ip = "10.85.50.5/24";
         hostDataDir = "/var/lib/agent-zero";
         memoryLimit = "1G";
