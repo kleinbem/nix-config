@@ -97,7 +97,9 @@ in
         version = 1;
         models = map (model: { inherit model; }) cfg.models;
       };
-      environmentFile = lib.mkIf (cfg.joinTokenSecret != null) config.sops.templates."mesh-llm.env".path;
+      environmentFiles = lib.optional (
+        cfg.joinTokenSecret != null
+      ) config.sops.templates."mesh-llm.env".path;
     };
 
     systemd.services.mesh-llm.wantedBy = lib.mkIf (!cfg.autoStart) (lib.mkForce [ ]);
