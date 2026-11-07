@@ -146,6 +146,10 @@ repo_atlas:
     path: skills/
     url: git@github.com:kleinbem/skills.git
     role: Supporting repository.
+  web-config:
+    path: web-config/
+    url: git@github.com:kleinbem/web-config.git
+    role: Supporting repository.
 network_topology:
   primary_domain: kleinbem.dev
   global_maintenance: false
