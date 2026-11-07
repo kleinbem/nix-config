@@ -169,9 +169,10 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.ente`
 
-- **Declared:** `nix-presets/containers/ente.nix:22`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minioRootPasswordFile`
-- **Consumed by:** `host:core-pi`
+- **Declared:** `nix-presets/containers/ente.nix:33`
+- **Sub-options:** `domain`, `enable`, `garage.capacity`, `garage.enable`, `garage.memoryMax`, `garage.rpcSecretFile`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minio.enable`, `minioRootPasswordFile`, `s3.accessKeyIdFile`, `s3.backend`, `s3.bucket`, `s3.secretAccessKeyFile`
+- **Default-enabled** (no hosts import the declaring file)
+- **Explicit overrides:** `host:core-pi`
 
 ### `my.containers.forgejo`
 
