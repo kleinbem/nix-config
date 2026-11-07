@@ -181,7 +181,7 @@ my = {
 **Devices:**
 - **orin-nano** — NVIDIA Jetson (AI/inference node)
 - **nasbook** — QNAP NAS (storage hub, data services, backups)
-- **hass-pi** — Home Assistant + container host (live; Homarr/AdGuard/monitoring/AI-stack have since been moved off it onto mac-mini, but HA itself runs here)
+- **hass-pi** — Home Assistant + container host (live; AdGuard/monitoring/AI-stack have since been moved off it onto mac-mini, but HA itself runs here)
 
 **Current Status:** orin-nano ✅, nasbook ✅, hass-pi ✅ (all deployed and live)
 
