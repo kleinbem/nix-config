@@ -329,12 +329,20 @@ hosts:
       - dashboard.memoryLimit
       - ente
       - ente.enable
+      - ente.garage
+      - ente.garage.enable
+      - ente.garage.rpcSecretFile
       - ente.hostDataDir
       - ente.ip
       - ente.jwtSecretFile
       - ente.keyEncryptionFile
       - ente.keyHashFile
+      - ente.minio.enable
       - ente.minioRootPasswordFile
+      - ente.s3
+      - ente.s3.accessKeyIdFile
+      - ente.s3.backend
+      - ente.s3.secretAccessKeyFile
       - gatus
       - gatus.alerting.fallback.topicFile
       - gatus.alerting.ntfy
@@ -381,10 +389,13 @@ hosts:
     - authentik_bootstrap_api_token
     - authentik_postgres_password
     - authentik_secret_key
+    - ente_garage_rpc_secret
     - ente_jwt_secret
     - ente_key_encryption
     - ente_key_hash
     - ente_minio_root_password
+    - ente_s3_access_key_id
+    - ente_s3_secret_access_key
     - ntfy_alert_token
     - ntfy_alert_topic
     - ntfy_fallback_topic

@@ -121,7 +121,8 @@ def main() -> int:
     lines.append("")
     lines.append(
         "Use this index to find (1) where an option is declared and (2) which "
-        "hosts / users / presets opt into it. Before editing a module, grep "
+        "hosts / users / presets set it (any value, `enable = false` included). "
+        "Before editing a module, grep "
         "this file for the namespace to see the blast radius."
     )
     lines.append("")
@@ -162,10 +163,10 @@ def main() -> int:
                     )
             elif consumers:
                 lines.append(
-                    f"- **Consumed by:** {', '.join(f'`{c}`' for c in consumers)}"
+                    f"- **Configured in:** {', '.join(f'`{c}`' for c in consumers)}"
                 )
             else:
-                lines.append("- **Consumed by:** _(no opt-ins detected)_")
+                lines.append("- **Configured in:** _(not set anywhere)_")
             lines.append("")
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
