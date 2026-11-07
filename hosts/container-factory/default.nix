@@ -266,7 +266,10 @@ let
   # Hosts register real container names, the catalogue uses option names.
   # List the real names here where a preset's container name differs.
   realContainerNames = {
-    dashboard = [ "dashboard-homepage" ];
+    dashboard = [
+      "dashboard-foyer"
+      "dashboard-homepage"
+    ];
   };
   wanted =
     name:
@@ -312,7 +315,7 @@ in
     inputs.nix-presets.nixosModules.home-assistant
     inputs.nix-presets.nixosModules.music-assistant
     inputs.nix-presets.nixosModules.anythingllm
-    inputs.nix-presets.nixosModules.dashboard-homepage
+    inputs.nix-presets.nixosModules.dashboard-foyer
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
     inputs.nix-presets.nixosModules.authentik
@@ -323,8 +326,8 @@ in
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
     inputs.nix-presets.nixosModules.revue
-    # dashboard-homer declares the same `my.containers.dashboard` option as
-    # dashboard-homepage, so only one can be imported. Swap them to cache homer.
+    # dashboard-homepage/dashboard-homer declare the same `my.containers.dashboard` option as
+    # dashboard-foyer, so only one can be imported. Swap them to cache another variant.
   ];
 
   # The same held packages as the hosts (modules/nixos/base.nix).

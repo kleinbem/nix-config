@@ -15,13 +15,13 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `container-factory`
 
-- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:forgejo`, `nix-presets:frigate`, `nix-presets:garage-ui`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:music-assistant`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:revue`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:backup`, `nix-presets:buzz`, `nix-presets:caddy`, `nix-presets:caido`, `nix-presets:code-server`, `nix-presets:comfyui`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-foyer`, `nix-presets:dev-db`, `nix-presets:ente`, `nix-presets:forgejo`, `nix-presets:frigate`, `nix-presets:garage-ui`, `nix-presets:gatus`, `nix-presets:hermes`, `nix-presets:home-assistant`, `nix-presets:langflow`, `nix-presets:langfuse`, `nix-presets:litellm`, `nix-presets:llama-cpp`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:music-assistant`, `nix-presets:n8n`, `nix-presets:netdata`, `nix-presets:ntfy`, `nix-presets:ollama`, `nix-presets:open-webui`, `nix-presets:openclaw`, `nix-presets:paperless`, `nix-presets:playground`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:revue`, `nix-presets:stalwart`, `nix-presets:syncthing`, `nix-presets:vaultwarden`
 - **Local:** `../../modules/nixos/options.nix`
 
 ### `core-pi`
 
 - **Modules:** `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`
-- **Presets:** `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-homepage`, `nix-presets:ente`, `nix-presets:gatus`, `nix-presets:herdr-remote-client`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
+- **Presets:** `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-foyer`, `nix-presets:ente`, `nix-presets:gatus`, `nix-presets:herdr-remote-client`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
 - **Other inputs:** `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
 - **Local:** `./secrets.nix`
 
@@ -143,7 +143,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:comfyui` ← container-factory
 - `nix-presets:crowdsec` ← container-factory, core-pi
 - `nix-presets:cups` ← container-factory, core-pi
-- `nix-presets:dashboard-homepage` ← container-factory, core-pi
+- `nix-presets:dashboard-foyer` ← container-factory, core-pi
 - `nix-presets:dev-db` ← container-factory
 - `nix-presets:ente` ← container-factory, core-pi
 - `nix-presets:forgejo` ← container-factory, mac-mini

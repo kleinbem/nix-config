@@ -220,7 +220,7 @@ in
       # App Containers
       dashboard = {
         ip = "10.85.48.103";
-        # homepage-dashboard's port. Caddy proxies to this field directly, so a
+        # foyer dashboard's port. Caddy proxies to this field directly, so a
         # wrong value is a silent 502.
         port = 8082;
         externalPort = 443; # Default HTTPS
