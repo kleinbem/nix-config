@@ -495,7 +495,7 @@ hosts:
     ips:
       physical: 10.0.0.16
       container_bridge: null
-      netbird: 100.117.247.175
+      netbird: 100.117.93.197
     mesh_group: personal-devices
     storage_and_boot:
       framework: Disko
@@ -649,7 +649,7 @@ hosts:
     ips:
       physical: 10.0.0.30
       container_bridge: null
-      netbird: null
+      netbird: 100.117.39.136
     mesh_group: smart-home
     storage_and_boot:
       framework: Disko
@@ -1092,7 +1092,7 @@ hosts:
     ips:
       physical: 10.0.0.15
       container_bridge: null
-      netbird: null
+      netbird: 100.117.37.104
     mesh_group: smart-home
     storage_and_boot:
       framework: Disko
@@ -1276,6 +1276,49 @@ hosts:
     enabled_subsystems: {}
     containers_hosted: []
     secrets_consumed: []
+ssh_known_hosts:
+  core-pi:
+    host_names:
+    - core-pi
+    - core-pi.netbird.cloud
+    - 10.0.0.22
+    - 100.117.146.201
+    public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDthqth+/7U8IV1QGqicdM1bkzJOg74KR22Uu+kvJHiB
+  hass-pi:
+    host_names:
+    - hass-pi
+    - hass-pi.netbird.cloud
+    - 10.0.0.21
+    - 100.117.163.227
+    public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIElELgFKoqhpqh0lpfjWnV6AW1aDtNnB/Dcov3BsI5Og
+  mac-mini:
+    host_names:
+    - mac-mini
+    - mac-mini.netbird.cloud
+    - 10.0.0.16
+    - 100.117.93.197
+    public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqxR0+Xm1yCSZU1Sr2LHr29ps2Z8tqgyV9+HMe+++DE
+  nasbook:
+    host_names:
+    - nasbook
+    - nasbook.netbird.cloud
+    - 10.0.0.30
+    - 100.117.39.136
+    public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFtfFCMLBPS2GNOcey9l3zknSK212um53qOypMH8H6Of
+  nixos-nvme:
+    host_names:
+    - nixos-nvme
+    - nixos-nvme-212-232.netbird.cloud
+    - 10.0.0.5
+    - 100.117.212.232
+    public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ7NKRoxF7Zb+j5zuJbPzdo+uJ+EplkMNXRJYviw0P7a
+  orin-nano:
+    host_names:
+    - orin-nano
+    - orin-nano.netbird.cloud
+    - 10.0.0.15
+    - 100.117.37.104
+    public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHy97GqGvnrs4gPsY+Hxq/9fp/DBrmtMPkusppMAJhpT
 services:
   agent-team:
     name: AI Agent Team

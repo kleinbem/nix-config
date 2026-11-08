@@ -91,6 +91,18 @@ rec {
     };
   };
 
+  # Normal SSH host keys (port 22), pinned fleet-wide via lib/known-hosts.nix.
+  # The private halves persist in /nix/persist/etc/ssh (persistence.nix); a
+  # reinstall that mints new ones must update these.
+  hostKeys = {
+    nixos-nvme = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ7NKRoxF7Zb+j5zuJbPzdo+uJ+EplkMNXRJYviw0P7a";
+    core-pi = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDthqth+/7U8IV1QGqicdM1bkzJOg74KR22Uu+kvJHiB";
+    hass-pi = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIElELgFKoqhpqh0lpfjWnV6AW1aDtNnB/Dcov3BsI5Og";
+    mac-mini = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHqxR0+Xm1yCSZU1Sr2LHr29ps2Z8tqgyV9+HMe+++DE";
+    nasbook = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFtfFCMLBPS2GNOcey9l3zknSK212um53qOypMH8H6Of";
+    orin-nano = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHy97GqGvnrs4gPsY+Hxq/9fp/DBrmtMPkusppMAJhpT";
+  };
+
   # Public caches the fleet substitutes from. core.nix trusts them, and
   # Attic skips paths signed by any of them (the atticd upstream filter on
   # core-pi and push-cache's local filter), so it holds only what no

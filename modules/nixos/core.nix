@@ -225,6 +225,9 @@ in
   # CORE UTILITIES
   # ==========================================
   programs = {
+    # Fleet hosts' port-22 keys, so ssh between them never trusts on first use.
+    ssh.knownHosts = import ../../lib/known-hosts.nix;
+
     # Allow non-root users to mount FUSE
     fuse.userAllowOther = true;
 
