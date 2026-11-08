@@ -578,6 +578,15 @@ def generate_manifest() -> dict[str, Any]:
             "error: inventory.nix failed to evaluate; INFRASTRUCTURE.yaml left unchanged"
         )
 
+    print("Evaluating lib/known-hosts.nix...")
+    known_hosts = eval_nix_json(NIX_CONFIG / "lib" / "known-hosts.nix")
+    if known_hosts is None:
+        # Consumers (android-config's Termux provisioning) pin from this; a
+        # missing section must fail loudly, not ship an empty trust list.
+        sys.exit(
+            "error: lib/known-hosts.nix failed to evaluate; INFRASTRUCTURE.yaml left unchanged"
+        )
+
     print("Evaluating personas.nix...")
     personas = eval_nix_json(NIX_CONFIG / "personas.nix") or {}
 
@@ -595,6 +604,10 @@ def generate_manifest() -> dict[str, Any]:
         "repo_atlas": get_repo_atlas(repos),
         "network_topology": get_network_topology(inv),
         "hosts": build_host_matrix(inv, NIX_CONFIG, host_containers, host_secrets),
+        "ssh_known_hosts": {
+            name: {"host_names": e["hostNames"], "public_key": e["publicKey"]}
+            for name, e in sorted(known_hosts.items())
+        },
         "services": build_services_catalog(inv, host_containers, META_ROOT),
         "modules_system": build_system_modules(NIX_CONFIG),
         "modules_user": build_home_manager_catalog(NIX_CONFIG),

@@ -42,6 +42,8 @@ in
       ip = "10.85.46.1"; # Container bridge IP
       physicalIp = "10.0.0.5"; # LAN IP for routing
       netbirdIp = "100.117.212.232"; # Mesh IP (stable per enrollment; re-enrolling mints a new one)
+      # NetBird suffixed the DNS label (name clash at enrollment).
+      netbirdFqdn = "nixos-nvme-212-232.netbird.cloud";
       system = "x86_64-linux";
       deployType = "local"; # Deployed via apply-local
       tags = [
@@ -80,6 +82,7 @@ in
     };
     orin-nano = {
       ip = "10.0.0.15"; # LAN DHCP IP — assign static or use NetBird for production
+      netbirdIp = "100.117.37.104"; # Mesh IP (stable per enrollment)
       system = "aarch64-linux";
       deployType = "ssh";
       tags = [
@@ -130,6 +133,7 @@ in
     };
     nasbook = {
       ip = "10.0.0.30"; # infra VLAN — NAS + Tang mesh member (fleet is all-10.x)
+      netbirdIp = "100.117.39.136"; # Mesh IP (stable per enrollment)
       system = "x86_64-linux";
       deployType = "ssh";
       tags = [
@@ -140,7 +144,7 @@ in
     };
     mac-mini = {
       ip = "10.0.0.16"; # LAN IP, static
-      netbirdIp = "100.117.247.175"; # Mesh IP (stable per enrollment)
+      netbirdIp = "100.117.93.197"; # Mesh IP (stable per enrollment)
       system = "x86_64-linux"; # Mid-2011 Mac Mini (Macmini5,x) — Intel, real 64-bit EFI
       deployType = "ssh";
       tags = [

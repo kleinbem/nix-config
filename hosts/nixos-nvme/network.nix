@@ -1,5 +1,6 @@
 {
   pkgs,
+  myInventory,
   ...
 }:
 
@@ -14,7 +15,7 @@
     # TODO: remove once OpenWrt router is enrolled in NetBird and pushes DNS nameserver rules.
     # no-link: internal infra migration (router NetBird enrollment).
     # NetBird peer IPs are stable, but this bypasses proper split-DNS.
-    hosts."100.117.61.169" = [
+    hosts.${myInventory.hosts.orin-nano.netbirdIp} = [
       "orin-nano.netbird.cloud"
       "orin-nano"
     ];
