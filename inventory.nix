@@ -225,6 +225,8 @@ in
         port = 8082;
         externalPort = 443; # Default HTTPS
         domain = "home.kleinbem.dev";
+        extraDomains = [ "foyer.kleinbem.dev" ];
+        publicCert = true;
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         maintenance = false;
         auth = false; # Gated at the edge by Cloudflare Access (terraform/cloudflare-access.tf)
@@ -232,7 +234,7 @@ in
           name = "Dashboard";
           category = "Infrastructure";
           icon = "🏠";
-          description = "Homelab Landing Page.";
+          description = "Homelab Landing Page (Foyer).";
         };
       };
       attic = {
@@ -779,6 +781,7 @@ in
         externalPort = 443;
         domain = "git.kleinbem.dev";
         meshOnly = true;
+        publicCert = true;
         auth = false;
         meta = {
           name = "Forgejo";
@@ -793,12 +796,43 @@ in
         externalPort = 443;
         domain = "revue.kleinbem.dev";
         meshOnly = true;
+        publicCert = true;
         auth = false; # Webhook requests authenticate via HMAC signatures
         meta = {
           name = "Revue AI Reviewer";
           category = "Dev";
           icon = "🤖";
           description = "Nix-native AI PR review daemon for Forgejo & GitHub.";
+        };
+      };
+      cadre = {
+        ip = "10.0.0.5"; # nixos-nvme LAN IP
+        port = 8384;
+        externalPort = 443;
+        domain = "cadre.kleinbem.dev";
+        meshOnly = true;
+        publicCert = true;
+        auth = false;
+        meta = {
+          name = "Cadre";
+          category = "AI Engineering";
+          icon = "◈";
+          description = "Autonomous AI teammates web surface & mesh.";
+        };
+      };
+      nix-detour = {
+        ip = "10.0.0.5"; # nixos-nvme LAN IP
+        port = 8385;
+        externalPort = 443;
+        domain = "detour.kleinbem.dev";
+        meshOnly = true;
+        publicCert = true;
+        auth = false;
+        meta = {
+          name = "Nix Detour";
+          category = "Dev";
+          icon = "🚧";
+          description = "Nixpkgs PR holds and patch detour tracker.";
         };
       };
       dev-db = {

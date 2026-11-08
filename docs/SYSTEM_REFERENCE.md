@@ -40,7 +40,7 @@
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:20]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
 - 🖨️ **CUPS Printing** (`cups`) `10.85.48.123:631` — Print server management (Containerized). _[src: nix-presets/containers/cups.nix:12]_
-- 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page. _[src: nix-presets/containers/dashboard/options.nix:6]_
+- 🏠 **Dashboard** (`dashboard`) `10.85.48.103:8082` → `home.kleinbem.dev` — Homelab Landing Page (Foyer). _[src: nix-presets/containers/dashboard/options.nix:6]_
 - 🔐 **Ente Auth API** (`ente`) `10.85.48.133:8080` → `2fa-api.kleinbem.dev` — E2E Encrypted 2FA Backend API. _[src: nix-presets/containers/ente.nix:33]_
 - 🟢 **Status** (`gatus`) `10.85.48.140:8080` → `status.kleinbem.dev` — Fleet uptime / status page. _[src: nix-presets/containers/gatus.nix:74]_
 - 📣 **ntfy Push** (`ntfy`) `10.85.48.131:2586` → `ntfy.kleinbem.dev` — Pub/sub notifications — fleet deploy signal from CI. _[src: nix-presets/containers/ntfy.nix:13]_
@@ -92,6 +92,7 @@
 - `agent-team` — AI Agent Team _[src: nix-presets/containers/agent-team.nix:184]_
 - `agent-zero` — Agent Zero _[src: nix-presets/containers/agent-zero.nix:84]_
 - `alertmanager` — Alertmanager
+- `cadre` — Cadre
 - `comfyui` — ComfyUI _[src: nix-presets/containers/comfyui.nix:13]_
 - `common` _[src: nix-presets/containers/common.nix:1]_
 - `ente-web` — Ente Auth Web
@@ -104,6 +105,7 @@
 - `llama-cpp` _[src: nix-presets/containers/llama-cpp.nix:41]_
 - `n8n` — n8n Automation _[src: nix-presets/containers/n8n.nix:15]_
 - `nextcloud` _[src: nix-presets/containers/nextcloud.nix:14]_
+- `nix-detour` — Nix Detour
 - `ollama` — Ollama _[src: nix-presets/containers/ollama.nix:13]_
 - `ollama-orin` — Ollama Orin Nano
 - `playground` — Playground _[src: nix-presets/containers/playground.nix:14]_
