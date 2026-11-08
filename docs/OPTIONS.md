@@ -7,7 +7,7 @@
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
 **Declarations indexed:** 79  
-**Consumer files scanned:** 37
+**Consumer files scanned:** 38
 
 ---
 
@@ -171,7 +171,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/ente.nix:33`
 - **Sub-options:** `domain`, `enable`, `garage.capacity`, `garage.enable`, `garage.memoryMax`, `garage.rpcSecretFile`, `hostDataDir`, `ip`, `jwtSecretFile`, `keyEncryptionFile`, `keyHashFile`, `memoryLimit`, `minio.enable`, `minioRootPasswordFile`, `s3.accessKeyIdFile`, `s3.backend`, `s3.bucket`, `s3.secretAccessKeyFile`
-- **Configured in:** `host:core-pi`
+- **Configured in:** `host:core-pi`, `preset:nix-presets/checks/ente.nix`
 
 ### `my.containers.forgejo`
 
