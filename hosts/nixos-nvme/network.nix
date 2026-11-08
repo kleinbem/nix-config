@@ -54,11 +54,15 @@
       interfaces."wt0".allowedTCPPorts = [
         22 # SSH
         8383 # nix-revue webhook listener over mesh
+        8384 # cadre web surface over mesh
+        8385 # nix-detour web dashboard over mesh
       ];
-      # Tang and nix-revue on the LAN/Wi-Fi interface
+      # Tang, nix-revue, cadre, nix-detour on the LAN/Wi-Fi interface
       interfaces."wlo1".allowedTCPPorts = [
         7654
         8383
+        8384
+        8385
       ];
       allowedTCPPortRanges = [
         {

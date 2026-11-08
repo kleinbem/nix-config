@@ -274,7 +274,13 @@ in
         enable = lib.mkForce true;
         ip = "${myInventory.network.nodes.caddy.ip}/24";
         hostIP = myInventory.network.nodes.caddy.ip;
-        proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
+        proxyTargets = lib.mapAttrs (
+          _: node:
+          node
+          // {
+            publicCert = node.publicCert or (node ? domain && !(node.insecure or false));
+          }
+        ) (lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes);
         authUpstream = "${myInventory.network.nodes.authentik.ip}:${toString myInventory.network.nodes.authentik.port}";
         globalMaintenance = myInventory.globalMaintenance or false;
         hostDataDir = "/var/lib/caddy";

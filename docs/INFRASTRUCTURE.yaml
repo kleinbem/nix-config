@@ -1404,6 +1404,20 @@ services:
     upstream_preset: nix-presets/containers/caddy/default.nix
     persistence_path: /var/lib/machines/caddy
     description: Reverse Proxy & SSL Termination.
+  cadre:
+    name: Cadre
+    category: AI Engineering
+    host: unassigned
+    ip: 10.0.0.5
+    port: 8384
+    external_port: 443
+    domain: cadre.kleinbem.dev
+    public: false
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/cadre
+    description: Autonomous AI teammates web surface & mesh.
   caido:
     name: Caido Security
     category: Security
@@ -1487,7 +1501,7 @@ services:
     mtls: false
     upstream_preset: null
     persistence_path: /var/lib/machines/dashboard
-    description: Homelab Landing Page.
+    description: Homelab Landing Page (Foyer).
   dev-db:
     name: Dev Database
     category: Dev
@@ -1782,6 +1796,20 @@ services:
     upstream_preset: nix-presets/containers/netdata.nix
     persistence_path: /var/lib/machines/netdata
     description: Real-time per-second telemetry.
+  nix-detour:
+    name: Nix Detour
+    category: Dev
+    host: unassigned
+    ip: 10.0.0.5
+    port: 8385
+    external_port: 443
+    domain: detour.kleinbem.dev
+    public: false
+    auth: None (Internal / Anonymous)
+    mtls: false
+    upstream_preset: null
+    persistence_path: /var/lib/machines/nix-detour
+    description: Nixpkgs PR holds and patch detour tracker.
   ntfy:
     name: ntfy Push
     category: Infrastructure
