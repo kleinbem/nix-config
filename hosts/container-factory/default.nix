@@ -183,17 +183,6 @@ let
       jwtSecretFile = "/run/secrets/factory-dummy";
       keyEncryptionFile = "/run/secrets/factory-dummy";
       keyHashFile = "/run/secrets/factory-dummy";
-      # Must match core-pi's ente: the closure is built here.
-      garage = {
-        enable = true;
-        rpcSecretFile = "/run/secrets/factory-dummy";
-      };
-      s3 = {
-        backend = "garage";
-        accessKeyIdFile = "/run/secrets/factory-dummy";
-        secretAccessKeyFile = "/run/secrets/factory-dummy";
-      };
-      minio.enable = false;
     };
     vaultwarden = {
       ip = "${myInventory.network.nodes.vaultwarden.ip}/24"; # core-pi
