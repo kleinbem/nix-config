@@ -35,7 +35,7 @@
 
 ### core-pi
 
-- 📦 **Attic Binary Cache** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server. _[src: nix-presets/containers/attic.nix:14]_
+- 📦 **Attic UI** (`attic`) `10.85.48.120:8080` → `cache.kleinbem.dev` — Nix binary cache server & explorer. _[src: nix-presets/containers/attic.nix:14]_
 - 🪪 **Authentik** (`authentik`) `10.85.48.142:9000` → `auth.kleinbem.dev` — Shared identity provider (SSO, social login, persona OIDC). _[src: nix-presets/containers/authentik.nix:28]_
 - 🔄 **Caddy Proxy** (`caddy`) `10.85.48.107` — Reverse Proxy & SSL Termination. _[src: nix-presets/containers/caddy/default.nix:20]_
 - 🛡️ **CrowdSec LAPI** (`crowdsec`) `10.85.48.119:8080` — Intrusion detection & IP reputation engine. _[src: nix-presets/containers/crowdsec.nix:13]_
