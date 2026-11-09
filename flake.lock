@@ -1860,11 +1860,11 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1794231256,
-        "narHash": "sha256-+3NVG6eABVDf8VZZrlO+3btxsqRxCIuhu4p5WgUscrw=",
+        "lastModified": 1794267446,
+        "narHash": "sha256-dmkhlx2dNthHI4Sag3Ns+hd0FzkPpLPjV1pUzNpG6zE=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "f2c2afaccf1650c86b1591193d945e7d4336b0de",
+        "rev": "96b02495c46265451801d0ff8d1b85451f0f6199",
         "type": "github"
       },
       "original": {
