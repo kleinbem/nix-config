@@ -287,6 +287,7 @@ hosts:
       container-host:
       - enable
       - enablePersistence
+      - excludeFromStandalone
       - excludeFromUpdater
       - hostAddress
       - journal.maxUseFor.caddy

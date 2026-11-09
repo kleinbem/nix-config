@@ -249,9 +249,11 @@ in
       # nix-gantry defaults this off to avoid requiring impermanence; this
       # fleet always imports it.
       enablePersistence = true;
+      excludeFromStandalone = [
+        "caddy"
+      ];
       excludeFromUpdater = [
         "attic"
-        "caddy"
         "crowdsec"
       ];
       # caddy logs every request: 256M held about a day of it.
