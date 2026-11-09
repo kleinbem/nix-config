@@ -254,10 +254,10 @@ in
         # Mesh-only: every consumer reaches it over NetBird, the tunnel 413s on
         # large NARs, and the cache holds private sources. Pulls need a token.
         meta = {
-          name = "Attic Binary Cache";
+          name = "Attic UI";
           category = "Infrastructure";
           icon = "📦";
-          description = "Nix binary cache server.";
+          description = "Nix binary cache server & explorer.";
         };
       };
       ntfy = {

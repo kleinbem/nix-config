@@ -1377,7 +1377,7 @@ services:
     persistence_path: /var/lib/machines/anythingllm
     description: All-in-one AI workspace and document orchestrator.
   attic:
-    name: Attic Binary Cache
+    name: Attic UI
     category: Infrastructure
     host: core-pi
     ip: 10.85.48.120
@@ -1389,7 +1389,7 @@ services:
     mtls: false
     upstream_preset: nix-presets/containers/attic.nix
     persistence_path: /var/lib/machines/attic
-    description: Nix binary cache server.
+    description: Nix binary cache server & explorer.
   authentik:
     name: Authentik
     category: Identity

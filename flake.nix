@@ -111,6 +111,10 @@
       url = "github:kleinbem-dev/revue";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    attic-ui = {
+      url = "github:kleinbem-dev/attic-ui";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     cadre = {
       url = "github:kleinbem-dev/cadre";
       inputs = {
