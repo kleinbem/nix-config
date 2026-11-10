@@ -471,7 +471,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.services.githubNotify`
 
-- **Declared:** `nix-config/modules/nixos/services/github-notify.nix:92`
+- **Declared:** `nix-config/modules/nixos/services/github-notify.nix:95`
 - **Sub-options:** `enable`, `githubTokenFile`, `interval`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `quietOwnerReasons`, `quietOwners`, `reasons`
 - **Configured in:** `host:core-pi`
 
