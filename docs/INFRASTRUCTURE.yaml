@@ -369,6 +369,7 @@ hosts:
       - serverIp
       services:
       - cloudflareTunnel.enable
+      - githubNotify
       - tang.enable
     containers_hosted:
     - attic
@@ -390,8 +391,11 @@ hosts:
     - ente_key_encryption
     - ente_key_hash
     - ente_minio_root_password
+    - github_notifications_token
     - ntfy_alert_token
     - ntfy_alert_topic
+    - ntfy_dev_token
+    - ntfy_dev_topic
     - ntfy_fallback_topic
     - vaultwarden_admin_token
     hardware_profile: Raspberry Pi 5 (BCM2712, 4x Cortex-A76)

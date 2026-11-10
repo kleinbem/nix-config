@@ -28,6 +28,11 @@ let
   # who knows it can read and post. Gated like the auth keys above.
   hasFallbackTopic = hasKey "ntfy_fallback_topic";
 
+  # GitHub notifications to ntfy (my.services.githubNotify): a classic token
+  # with only the notifications scope, and the dev topic plus its write token.
+  hasGithubNotify = hasKey "github_notifications_token" && hasKey "ntfy_dev_topic";
+  githubNotifySecret = lib.mkIf hasGithubNotify { sopsFile = hostSops; };
+
   # Caddy's Cloudflare DNS-01 token for inventory nodes with
   # `publicCert = true` (minted + synced by nix/infra/r2-tokens); asserted
   # below so a missing token fails the eval, not Caddy.
@@ -130,6 +135,11 @@ in
         ntfy_auth_users = ntfyAuthSecret;
         ntfy_auth_access = ntfyAuthSecret;
         ntfy_auth_tokens = ntfyAuthSecret;
+
+        # GitHub notifications to ntfy (see hasGithubNotify).
+        github_notifications_token = githubNotifySecret;
+        ntfy_dev_topic = githubNotifySecret;
+        ntfy_dev_token = lib.mkIf (hasGithubNotify && hasKey "ntfy_dev_token") { sopsFile = hostSops; };
 
         # Caddy DNS-01 (see acmeDns).
         caddy_acme_cloudflare_token = lib.mkIf acmeDns { sopsFile = hostSops; };

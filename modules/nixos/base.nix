@@ -47,6 +47,7 @@
     ./forward-auth-guard.nix # auth = true inventory nodes reachable only via Caddy (nftables hosts)
     ./services/timesync.nix
     ./services/mesh-llm.nix # my.services.meshLlm — a MeshLLM node in the fleet mesh; per-host opt-in
+    ./services/github-notify.nix # my.services.githubNotify — GitHub notifications to ntfy; per-host opt-in
     ./machine-id.nix # my.machineId — stable machine-id on the tmpfs root (kernel cmdline pin)
     ./backup.nix # my.backup — fleet destinations/keys for nix-presets' backup-engine (off until a host enables it)
     ./heartbeat.nix # my.heartbeat — external dead-man's switch (healthchecks.io); per-host opt-in

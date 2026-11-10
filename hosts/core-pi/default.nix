@@ -263,6 +263,17 @@ in
     services = {
       tang.enable = true;
       cloudflareTunnel.enable = true;
+
+      # Inert until the keys exist in nix/per-host/core-pi.yaml (secrets.nix).
+      githubNotify = lib.mkIf (config.sops.secrets ? github_notifications_token) {
+        enable = true;
+        githubTokenFile = config.sops.secrets.github_notifications_token.path;
+        ntfy = {
+          url = "https://${myInventory.network.nodes.ntfy.domain}";
+          topicFile = config.sops.secrets.ntfy_dev_topic.path;
+          tokenFile = config.sops.secrets.ntfy_dev_token.path or null;
+        };
+      };
     };
 
     # Fleet wiring in modules/nixos/backup.nix. vaultwarden, authentik, ente,

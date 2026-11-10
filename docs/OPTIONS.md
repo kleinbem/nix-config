@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 79  
+**Declarations indexed:** 80  
 **Consumer files scanned:** 38
 
 ---
@@ -467,6 +467,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/services/cloudflare-tunnel.nix:18`
 - **Sub-options:** `enable`
+- **Configured in:** `host:core-pi`
+
+### `my.services.githubNotify`
+
+- **Declared:** `nix-config/modules/nixos/services/github-notify.nix:82`
+- **Sub-options:** `enable`, `githubTokenFile`, `interval`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `quietOwnerReasons`, `quietOwners`, `reasons`
 - **Configured in:** `host:core-pi`
 
 ### `my.services.meshLlm`
