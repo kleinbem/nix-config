@@ -1731,11 +1731,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1794082956,
-        "narHash": "sha256-f/lS6KWuiwdOwFv1qlTCxcuN+svwKof5zi3JYK3K/WI=",
+        "lastModified": 1794304674,
+        "narHash": "sha256-PtC9FL39vBdKZigjQ9+oGXWO9JCC1FUNvZA5zdb4BuM=",
         "owner": "kleinbem",
         "repo": "nix-hardware",
-        "rev": "57a076dd4fbb04d289fc916a0c4be43037ed44d9",
+        "rev": "776603b62000366319fe519fb86e5db7511b8c65",
         "type": "github"
       },
       "original": {
@@ -2129,11 +2129,11 @@
         "nixpkgs": "nixpkgs_7"
       },
       "locked": {
-        "lastModified": 1793871777,
-        "narHash": "sha256-DbFyxXHjP4SJDWVVIILkgrUZxj29cDusi8ULXoQGuZ8=",
+        "lastModified": 1794222723,
+        "narHash": "sha256-jehPADpSIsWnyNHw/s44OHF9l6Y75QmW74sqO9cEe0A=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "d645c71a58dbae3eb17ff551a07aea13a541cb1a",
+        "rev": "919c16cf46a7acf9b44b2c2444bc39aa094eaa85",
         "type": "github"
       },
       "original": {
