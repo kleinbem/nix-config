@@ -112,7 +112,9 @@ let
         auth=(-H "@/dev/fd/$auth_fd")
       fi
       dir=$(jq -r '.working_dir // empty' <<<"$ev")
-      body=$(jq -r '.last_assistant_message // "finished"' <<<"$ev" | head -c 400)
+      # Truncated in jq: `| head -c` can SIGPIPE jq (pipefail drops the push)
+      # and split a UTF-8 character.
+      body=$(jq -r '(.last_assistant_message // "finished") | .[0:400]' <<<"$ev")
 
       # Print nothing: a Stop hook's stdout can keep goose running.
       curl -fsS --max-time 5 "''${auth[@]}" \
