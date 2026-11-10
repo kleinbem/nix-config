@@ -17,16 +17,18 @@ let
       pkgs.jq
     ];
     text = ''
-      gh_token=$(cat ${lib.escapeShellArg cfg.githubTokenFile})
+      # Tokens go to curl as header files on a file descriptor, never in argv
+      # (/proc/*/cmdline is world-readable).
+      gh_header() { printf 'Authorization: Bearer %s\n' "$(cat ${lib.escapeShellArg cfg.githubTokenFile})"; }
+      ntfy_header() {
+        if [ -r ${lib.escapeShellArg (toString cfg.ntfy.tokenFile)} ]; then
+          printf 'Authorization: Bearer %s\n' "$(cat ${lib.escapeShellArg (toString cfg.ntfy.tokenFile)})"
+        fi
+      }
       topic=$(cat ${lib.escapeShellArg cfg.ntfy.topicFile})
-      ntfy_auth=()
-      if [ -r ${lib.escapeShellArg (toString cfg.ntfy.tokenFile)} ]; then
-        ntfy_auth=(-H "Authorization: Bearer $(cat ${lib.escapeShellArg (toString cfg.ntfy.tokenFile)})")
-      fi
 
       gh() {
-        curl -fsS --max-time 30 \
-          -H "Authorization: Bearer $gh_token" \
+        curl -fsS --max-time 30 -H @<(gh_header) \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" "$@"
       }
@@ -37,15 +39,23 @@ let
       since=$(cat "$state" 2>/dev/null || date -u -d '-10 minutes' +%Y-%m-%dT%H:%M:%SZ)
       now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-      # Only unread threads updated since the last poll, oldest first.
-      gh "https://api.github.com/notifications?since=$since&per_page=50" \
-        | jq -c --argjson quiet ${lib.escapeShellArg (builtins.toJSON cfg.quietOwners)} \
-            --argjson quietReasons ${lib.escapeShellArg (builtins.toJSON cfg.quietOwnerReasons)} \
-            --argjson reasons ${lib.escapeShellArg (builtins.toJSON cfg.reasons)} '
-          reverse[]
+      # Every page of unread threads updated since the last poll. Files, not
+      # variables in jq's argv: a busy inbox exceeds the argument size limit.
+      pages=$(mktemp -d)
+      trap 'rm -rf "$pages"' EXIT
+      for page in $(seq 1 20); do
+        gh "https://api.github.com/notifications?since=$since&per_page=50&page=$page" >"$pages/$page.json"
+        [ "$(jq length "$pages/$page.json")" -eq 50 ] || break
+      done
+
+      # Oldest first.
+      jq -c --argjson quiet ${lib.escapeShellArg (builtins.toJSON cfg.quietOwners)} \
+          --argjson quietReasons ${lib.escapeShellArg (builtins.toJSON cfg.quietOwnerReasons)} \
+          --argjson reasons ${lib.escapeShellArg (builtins.toJSON cfg.reasons)} '
+          sort_by(.updated_at)[]
           | select(
               if (.repository.owner.login | IN($quiet[])) then (.reason | IN($quietReasons[]))
-              else (.reason | IN($reasons[])) end)' \
+              else (.reason | IN($reasons[])) end)' <(jq -s add "$pages"/*.json) \
         | while read -r n; do
             repo=$(jq -r '.repository.full_name' <<<"$n")
             title=$(jq -r '.subject.title' <<<"$n")
@@ -65,7 +75,7 @@ let
               *) prio=default ;;
             esac
             # The URL goes in the body too, so it shows and can be copied.
-            curl -fsS --max-time 15 "''${ntfy_auth[@]}" \
+            curl -fsS --max-time 15 -H @<(ntfy_header) \
               -H "Title: $repo" -H "Priority: $prio" -H "Tags: $reason" \
               -H "Click: $click" -H "Actions: view, Open, $click" \
               --data-binary "$title ($reason)"$'\n'"$click" \
@@ -153,6 +163,13 @@ in
 
   config = lib.mkIf cfg.enable (
     {
+      assertions = [
+        {
+          assertion = cfg.ntfy.tokenFile == null || lib.hasPrefix "https://" cfg.ntfy.url;
+          message = "my.services.githubNotify.ntfy.tokenFile is set, but ntfy.url is not https://: the bearer token would go out in clear text.";
+        }
+      ];
+
       systemd.services.github-notify = {
         description = "Forward GitHub notifications to ntfy";
         after = [ "network-online.target" ];

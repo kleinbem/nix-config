@@ -44,6 +44,12 @@ in
   # taking every vhost down. Fail the eval instead: run `just apply` in
   # nix/infra/r2-tokens and bump kleinbem-secrets first.
   assertions = [
+    # With auth on, ntfy denies anonymous posts: the poller would run but every
+    # message would fail.
+    {
+      assertion = (hasNtfyAuth && hasGithubNotify) -> hasKey "ntfy_dev_token";
+      message = "core-pi has ntfy auth and github-notify keys but no ntfy_dev_token in kleinbem-secrets/nix/per-host/core-pi.yaml: github-notify could not post.";
+    }
     {
       assertion = acmeDns -> hasKey "caddy_acme_cloudflare_token";
       message = "inventory has a node with publicCert = true, but kleinbem-secrets/nix/per-host/core-pi.yaml has no caddy_acme_cloudflare_token (mint it: nix/infra/r2-tokens `just apply`).";
