@@ -78,10 +78,12 @@ let
               *) prio=default ;;
             esac
             # The URL goes in the body too, so it shows and can be copied.
+            # --data-raw: titles come from outsiders, and a leading @ would
+            # make curl send a local file.
             curl -fsS --max-time 15 -H @<(ntfy_header) \
               -H "Title: $repo" -H "Priority: $prio" -H "Tags: $reason" \
               -H "Click: $click" -H "Actions: view, Open, $click" \
-              --data-binary "$title ($reason)"$'\n'"$click" \
+              --data-raw "$title ($reason)"$'\n'"$click" \
               ${lib.escapeShellArg cfg.ntfy.url}/"$topic" >/dev/null
           done
 
