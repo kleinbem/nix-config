@@ -43,9 +43,12 @@ let
       # variables in jq's argv: a busy inbox exceeds the argument size limit.
       pages=$(mktemp -d)
       trap 'rm -rf "$pages"' EXIT
-      for page in $(seq 1 20); do
+      # A failed request must stop the run (errexit), not end the loop early.
+      page=1
+      while :; do
         gh "https://api.github.com/notifications?since=$since&per_page=50&page=$page" >"$pages/$page.json"
         [ "$(jq length "$pages/$page.json")" -eq 50 ] || break
+        page=$((page + 1))
       done
 
       # Oldest first.
