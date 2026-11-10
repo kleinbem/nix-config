@@ -15,6 +15,7 @@ let
   hasTopic =
     builtins.pathExists hostSops
     && lib.hasInfix "\nntfy_agents_topic:" ("\n" + builtins.readFile hostSops);
+  hasToken = lib.hasInfix "\nntfy_agents_token:" ("\n" + builtins.readFile hostSops);
 in
 lib.mkIf hasTopic {
   sops.secrets.ntfy_agents_topic = {
@@ -24,8 +25,25 @@ lib.mkIf hasTopic {
     mode = "0400";
   };
 
-  home-manager.users.${config.my.username}.modules.herdr.ntfy = {
-    url = "https://${myInventory.network.nodes.ntfy.domain}";
-    topicFile = config.sops.secrets.ntfy_agents_topic.path;
+  # Write token for the topic once ntfy denies anonymous access.
+  sops.secrets.ntfy_agents_token = lib.mkIf hasToken {
+    sopsFile = hostSops;
+    owner = config.my.username;
+    group = "users";
+    mode = "0400";
+  };
+
+  home-manager.users.${config.my.username}.modules = {
+    herdr.ntfy = {
+      url = "https://${myInventory.network.nodes.ntfy.domain}";
+      topicFile = config.sops.secrets.ntfy_agents_topic.path;
+      tokenFile = config.sops.secrets.ntfy_agents_token.path or null;
+    };
+    # Same topic for goose (and Berd, which runs goose).
+    ai-agents.goose.ntfy = {
+      url = "https://${myInventory.network.nodes.ntfy.domain}";
+      topicFile = config.sops.secrets.ntfy_agents_topic.path;
+      tokenFile = config.sops.secrets.ntfy_agents_token.path or null;
+    };
   };
 }
