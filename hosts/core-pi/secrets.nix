@@ -28,6 +28,11 @@ let
   # who knows it can read and post. Gated like the auth keys above.
   hasFallbackTopic = hasKey "ntfy_fallback_topic";
 
+  # GitHub notifications to ntfy (my.services.githubNotify): a classic token
+  # with only the notifications scope, and the dev topic plus its write token.
+  hasGithubNotify = hasKey "github_notifications_token" && hasKey "ntfy_dev_topic";
+  githubNotifySecret = lib.mkIf hasGithubNotify { sopsFile = hostSops; };
+
   # Caddy's Cloudflare DNS-01 token for inventory nodes with
   # `publicCert = true` (minted + synced by nix/infra/r2-tokens); asserted
   # below so a missing token fails the eval, not Caddy.
@@ -39,6 +44,12 @@ in
   # taking every vhost down. Fail the eval instead: run `just apply` in
   # nix/infra/r2-tokens and bump kleinbem-secrets first.
   assertions = [
+    # With auth on, ntfy denies anonymous posts: the poller would run but every
+    # message would fail.
+    {
+      assertion = (hasNtfyAuth && hasGithubNotify) -> hasKey "ntfy_dev_token";
+      message = "core-pi has ntfy auth and github-notify keys but no ntfy_dev_token in kleinbem-secrets/nix/per-host/core-pi.yaml: github-notify could not post.";
+    }
     {
       assertion = acmeDns -> hasKey "caddy_acme_cloudflare_token";
       message = "inventory has a node with publicCert = true, but kleinbem-secrets/nix/per-host/core-pi.yaml has no caddy_acme_cloudflare_token (mint it: nix/infra/r2-tokens `just apply`).";
@@ -130,6 +141,11 @@ in
         ntfy_auth_users = ntfyAuthSecret;
         ntfy_auth_access = ntfyAuthSecret;
         ntfy_auth_tokens = ntfyAuthSecret;
+
+        # GitHub notifications to ntfy (see hasGithubNotify).
+        github_notifications_token = githubNotifySecret;
+        ntfy_dev_topic = githubNotifySecret;
+        ntfy_dev_token = lib.mkIf (hasGithubNotify && hasKey "ntfy_dev_token") { sopsFile = hostSops; };
 
         # Caddy DNS-01 (see acmeDns).
         caddy_acme_cloudflare_token = lib.mkIf acmeDns { sopsFile = hostSops; };
