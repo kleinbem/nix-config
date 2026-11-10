@@ -120,7 +120,7 @@ let
       curl -fsS --max-time 5 "''${auth[@]}" \
         -H "Title: goose finished''${dir:+ · ''${dir##*/}}" \
         -H "Tags: white_check_mark" \
-        --data-binary "$body" \
+        --data-raw "$body" \
         ${lib.escapeShellArg (toString gooseNtfy.url)}/"$topic" >/dev/null 2>&1 || true
     '';
   };
