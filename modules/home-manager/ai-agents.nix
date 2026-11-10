@@ -68,6 +68,84 @@ let
   # Every agent we must put on PATH: the default plus any explicit extras.
   wantedAgents = lib.unique ([ cfg.defaultAgent ] ++ cfg.installAgents);
   wantsGoose = builtins.elem "goose" wantedAgents;
+
+  # goose lifecycle hooks (Open Plugins, ~/.agents/plugins/<name>/hooks):
+  # UserPromptSubmit stamps the turn start, Stop pushes to ntfy when the turn
+  # ran long enough to have stopped watching. Also covers Berd, which runs goose.
+  gooseNtfy = cfg.goose.ntfy;
+  gooseNtfyEnabled = wantsGoose && gooseNtfy.url != null && gooseNtfy.topicFile != null;
+  gooseNtfyHook = pkgs.writeShellApplication {
+    name = "goose-ntfy-hook";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.jq
+    ];
+    text = ''
+      ev=$(cat)
+      session=$(jq -r '.session_id // empty' <<<"$ev")
+      [ -n "$session" ] || exit 0
+      state_dir=''${XDG_STATE_HOME:-$HOME/.local/state}/goose-ntfy
+      mkdir -p "$state_dir"
+      stamp="$state_dir/''${session//[^A-Za-z0-9_-]/_}"
+
+      case "''${1:-}" in
+        start)
+          date +%s >"$stamp"
+          exit 0
+          ;;
+        stop) ;;
+        *) exit 0 ;;
+      esac
+
+      started=$(cat "$stamp" 2>/dev/null || echo 0)
+      rm -f "$stamp"
+      elapsed=$(($(date +%s) - started))
+      [ "$started" -gt 0 ] && [ "$elapsed" -ge ${toString gooseNtfy.minSeconds} ] || exit 0
+
+      topic=$(cat ${lib.escapeShellArg (toString gooseNtfy.topicFile)} 2>/dev/null) || exit 0
+      [ -n "$topic" ] || exit 0
+      # The header goes through a file descriptor, not argv (/proc/*/cmdline).
+      auth=()
+      if [ -r ${lib.escapeShellArg (toString gooseNtfy.tokenFile)} ]; then
+        exec {auth_fd}< <(printf 'Authorization: Bearer %s\n' "$(cat ${lib.escapeShellArg (toString gooseNtfy.tokenFile)})")
+        auth=(-H "@/dev/fd/$auth_fd")
+      fi
+      dir=$(jq -r '.working_dir // empty' <<<"$ev")
+      body=$(jq -r '.last_assistant_message // "finished"' <<<"$ev" | head -c 400)
+
+      # Print nothing: a Stop hook's stdout can keep goose running.
+      curl -fsS --max-time 5 "''${auth[@]}" \
+        -H "Title: goose finished''${dir:+ · ''${dir##*/}}" \
+        -H "Tags: white_check_mark" \
+        --data-binary "$body" \
+        ${lib.escapeShellArg (toString gooseNtfy.url)}/"$topic" >/dev/null 2>&1 || true
+    '';
+  };
+  gooseNtfyHooks = {
+    hooks = {
+      UserPromptSubmit = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "${lib.getExe gooseNtfyHook} start";
+            }
+          ];
+        }
+      ];
+      Stop = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "${lib.getExe gooseNtfyHook} stop";
+            }
+          ];
+        }
+      ];
+    };
+  };
   agentPackages =
     lib.filter (p: p != null) (map (name: agents.${name}.package) wantedAgents)
     ++ lib.optionals wantsGoose cfg.goose.extraPackages;
@@ -235,6 +313,30 @@ in
           and friends from PATH). Only installed when goose is a selected agent.
         '';
       };
+
+      ntfy = {
+        url = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "https://ntfy.example.org";
+          description = "ntfy server for \"goose finished\" pushes (a goose Stop hook). Null disables the hook.";
+        };
+        topicFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "File holding the ntfy topic (a secret), readable by the user.";
+        };
+        tokenFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "File with an ntfy access token that may write the topic.";
+        };
+        minSeconds = lib.mkOption {
+          type = lib.types.ints.unsigned;
+          default = 60;
+          description = "Only push when the turn took at least this long; quick replies you're watching anyway.";
+        };
+      };
     };
 
     crashHandler.enable = lib.mkOption {
@@ -248,11 +350,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # opencode is the one agent this module doesn't package itself.
     assertions = [
+      # opencode is the one agent this module doesn't package itself.
       {
         assertion = !(builtins.elem "opencode" wantedAgents) || (config.modules.opencode.enable or false);
         message = "modules.ai-agents: opencode is selected but modules.opencode.enable is false — nothing puts `opencode` on PATH.";
+      }
+      {
+        assertion =
+          !gooseNtfyEnabled || gooseNtfy.tokenFile == null || lib.hasPrefix "https://" gooseNtfy.url;
+        message = "modules.ai-agents.goose.ntfy.tokenFile is set, but ntfy.url is not https://: the bearer token would go out in clear text.";
       }
     ];
 
@@ -273,19 +380,24 @@ in
       # Each skill linked into each agent's skills directory, plus .agents/skills
       # (emerging cross-agent convention, AGENTS.md ecosystem). recursive keeps
       # a real directory per skill with its files linked inside.
-      file = lib.mkIf cfg.skills.enable (
-        lib.mkMerge (
-          lib.concatMap (
-            skillDir:
-            lib.mapAttrsToList (skill: source: {
-              "${skillDir}/${skill}" = {
-                inherit source;
-                recursive = true;
-              };
-            }) skills
-          ) (lib.filter (d: d != null) (lib.mapAttrsToList (_: a: a.skillDir) agents) ++ [ ".agents/skills" ])
-        )
-      );
+      file = lib.mkMerge [
+        (lib.mkIf cfg.skills.enable (
+          lib.mkMerge (
+            lib.concatMap (
+              skillDir:
+              lib.mapAttrsToList (skill: source: {
+                "${skillDir}/${skill}" = {
+                  inherit source;
+                  recursive = true;
+                };
+              }) skills
+            ) (lib.filter (d: d != null) (lib.mapAttrsToList (_: a: a.skillDir) agents) ++ [ ".agents/skills" ])
+          )
+        ))
+        (lib.mkIf gooseNtfyEnabled {
+          ".agents/plugins/kleinbem-ntfy/hooks/hooks.json".text = builtins.toJSON gooseNtfyHooks;
+        })
+      ];
     };
 
     # Claude Code keeps a scratch folder per session under /tmp/claude-<uid>
