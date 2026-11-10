@@ -1077,6 +1077,7 @@ hosts:
     - hass_cli_token
     - langfuse_db_password
     - mode
+    - ntfy_agents_token
     - ntfy_agents_topic
     - owner
     - paperless_password
