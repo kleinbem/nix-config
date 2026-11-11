@@ -1076,6 +1076,7 @@ hosts:
     secrets_consumed:
     - buzz_typesense_api_key
     - garage_rpc_secret
+    - gemini_api_key
     - github_runner_pat
     - hass_cli_token
     - langfuse_db_password

@@ -17,6 +17,9 @@ let
     key: builtins.pathExists hostSops && lib.hasInfix "\n${key}:" ("\n" + builtins.readFile hostSops);
   hasHassCliToken = hasKey "hass_cli_token";
   hasSkillsRefreshToken = hasKey "skills_refresh_token";
+  # Plus the opencode module that reads it.
+  opencodeGemini =
+    config.home-manager.users.martin.modules.opencode.enable && hasKey "gemini_api_key";
 in
 {
   # ==========================================
@@ -47,6 +50,13 @@ in
       # Fine-grained PAT for kleinbem/skills only (contents + pull requests
       # write), read by skills' `just refresh-skills` instead of the gh login.
       skills_refresh_token = lib.mkIf hasSkillsRefreshToken {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
+      # Gemini API key (aistudio.google.com) for opencode's Google provider:
+      # `sops nix/per-host/nixos-nvme.yaml`, add `gemini_api_key: <key>`.
+      gemini_api_key = lib.mkIf opencodeGemini {
         sopsFile = hostSops;
         owner = "martin";
         mode = "0400";
@@ -324,4 +334,7 @@ in
       };
     };
   };
+
+  home-manager.users.martin.modules.opencode.googleApiKeyFile =
+    lib.mkIf opencodeGemini config.sops.secrets.gemini_api_key.path;
 }
