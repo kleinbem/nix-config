@@ -1146,6 +1146,8 @@ pi-update-usb host device="/dev/sdc":
         --argstr luksName "$CRYPT_NAME" \
         --root-mountpoint "$MNT" \
         ./modules/nixos/rpi5-disko.nix
+    # The ESP partlabel also exists on the workstation; never write boot files there.
+    pc_assert_esp_on_target "$MNT" "{{device}}"
 
     # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
     if pgrep -f "nix build .#nixosConfigurations.{{host}}" >/dev/null; then
@@ -1232,6 +1234,10 @@ core-rebind-tang device="/dev/sdf":
         ./modules/nixos/rpi5-disko.nix
         
     LUKS_DEV=$(sudo cryptsetup status core_crypt | awk '/device:/ {print $2}')
+    # disko reuses an already-open core_crypt, which may belong to another disk.
+    if [ -n "$LUKS_DEV" ] && [ "$(lsblk -no PKNAME "$LUKS_DEV" | head -1)" != "$(basename "{{device}}")" ]; then
+        echo "❌ core_crypt is backed by $LUKS_DEV, not {{device}}. Close it and retry."; exit 1
+    fi
     if [ -n "$LUKS_DEV" ]; then
         echo "⚠️ Unbinding old Tang key..."
         sudo clevis luks unbind -d "$LUKS_DEV" -s 1 || echo "No old key in slot 1 or failed to unbind."
