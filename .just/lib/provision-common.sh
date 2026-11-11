@@ -18,10 +18,17 @@ pc_sudo_keepalive() {
 # Lazy-unmount everything under <mnt>, without fuser -k: on an abort the mount
 # may be the workstation's own filesystem, whose users must not be killed.
 pc_unmount_nokill() {
-  local p
-  for p in $(awk -v m="$1" '$2 ~ "^"m"(/|$)" {print $2}' /proc/mounts | sort -r | uniq); do
-    sudo umount -l "$p" 2>/dev/null || true
+  local mnt="$1" p u
+  local -a mps
+  for u in 1 2 3 4 5; do
+    # No uniq: a stacked mount needs one umount per layer.
+    mapfile -t mps < <(awk -v m="$mnt" '$2 ~ "^"m"(/|$)" {print $2}' /proc/mounts | sort -r)
+    [ "${#mps[@]}" -gt 0 ] || return 0
+    for p in "${mps[@]}"; do
+      sudo umount -l -- "$p" 2>/dev/null || true
+    done
   done
+  echo "⚠️  Mounts remain under $mnt after $u attempts; check findmnt -R $mnt."
 }
 
 # Kernel name of a disk path, so /dev/disk/by-id/... compares equal to sdX.
