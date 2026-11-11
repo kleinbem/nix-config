@@ -15,6 +15,22 @@ pc_sudo_keepalive() {
 }
 
 # ── safety guards (workstation shares disko partlabels with the target SSDs) ───
+# Lazy-unmount everything under <mnt>, without fuser -k: on an abort the mount
+# may be the workstation's own filesystem, whose users must not be killed.
+pc_unmount_nokill() {
+  local mnt="$1" p u
+  local -a mps
+  for u in 1 2 3 4 5; do
+    # No uniq: a stacked mount needs one umount per layer.
+    mapfile -t mps < <(awk -v m="$mnt" '$2 ~ "^"m"(/|$)" {print $2}' /proc/mounts | sort -r)
+    [ "${#mps[@]}" -gt 0 ] || return 0
+    for p in "${mps[@]}"; do
+      sudo umount -l -- "$p" 2>/dev/null || true
+    done
+  done
+  echo "⚠️  Mounts remain under $mnt after $u attempts; check findmnt -R $mnt."
+}
+
 # Kernel name of a disk path, so /dev/disk/by-id/... compares equal to sdX.
 pc_disk_name() {
   local r
@@ -23,15 +39,22 @@ pc_disk_name() {
 }
 
 # disko reuses an already-open mapping, which may sit on another disk. Abort
-# unless <crypt> is closed or backed by <dev>; <mnt>, if given, is unmounted.
+# unless <crypt> is backed by <dev>. Without <mnt> (before the wipe) a closed
+# mapping passes; with <mnt> (after the mount) it must be open, and <mnt> is
+# unmounted on abort.
 pc_assert_luks_on_target() {
   local crypt="$1" dev="$2" mnt="${3:-}" backing pk
   backing=$(sudo cryptsetup status "$crypt" 2>/dev/null | awk '/device:/ {print $2}' || true)
-  [ -n "$backing" ] || return 0
+  if [ -z "$backing" ]; then
+    [ -z "$mnt" ] && return 0
+    echo "❌ SAFETY ABORT: $crypt is not open after mounting $mnt; can't verify its disk."
+    pc_unmount_nokill "$mnt"
+    exit 1
+  fi
   pk=$(lsblk -no PKNAME "$backing" 2>/dev/null | head -1 || true)
   if [ -z "$pk" ] || [ "$pk" != "$(pc_disk_name "$dev")" ]; then
     echo "❌ SAFETY ABORT: $crypt is open on $backing (disk '${pk:-unknown}'), not $dev. Close it and retry."
-    [ -n "$mnt" ] && sudo umount -R "$mnt" 2>/dev/null
+    [ -n "$mnt" ] && pc_unmount_nokill "$mnt"
     exit 1
   fi
 }
@@ -73,7 +96,7 @@ pc_assert_esp_on_target() {
   pk=$(lsblk -no PKNAME "$src" 2>/dev/null | head -1)
   if [ "$pk" != "$(pc_disk_name "$dev")" ]; then
     echo "❌ SAFETY ABORT: $mnt/boot ($src) is on disk '$pk', not $(pc_disk_name "$dev") — partlabel collision with the workstation ESP. NOT writing."
-    sudo umount -R "$mnt" 2>/dev/null || true
+    pc_unmount_nokill "$mnt"
     exit 1
   fi
   echo "✅ Safety: $mnt/boot is on $(pc_disk_name "$dev")."
