@@ -187,12 +187,12 @@ in
     fstrim.enable = true;
 
     # --- High-Performance Scheduling (Official Nixpkgs) ---
-    scx = {
+    scx-loader = {
       enable = true;
       # lavd understands hybrid P/E cores (rusty doesn't): interactive tasks
       # stay on P-cores, builds ride the E-cores. A misbehaving BPF scheduler
       # is evicted by the kernel, falling back to EEVDF.
-      scheduler = "scx_lavd";
+      config.default_sched = "scx_lavd";
     };
   };
 
