@@ -15,7 +15,7 @@
 - **nix-packages**: `521ff29e`
 - **nix-hardware**: `bed5032b`
 - **nix-presets**: `7495db0f`
-- **nix-devshells**: `10333924`
+- **nix-devshells**: `ec95445c`
 - **nix-gantry**: `be3dad70`
 
 ## 🖥️ Managed Hosts
