@@ -199,8 +199,14 @@ push-cache +args:
     # Attic is a sparse overlay: it should hold only paths no public cache has.
     # A path from a trusted upstream carries that cache's signature, so push
     # only closure members without one (--no-closure). Local check, no network.
-    # Key names should match keys.upstreamCacheKeyNames in modules/nixos/keys.nix.
-    UPSTREAM_KEYS='cache.nixos.org-1 nix-community.cachix.org-1 devenv.cachix.org-1 cuda-maintainers.cachix.org-1 anduril.cachix.org-1'
+    # Same key list as core.nix trusts and the atticd upstream filter uses.
+    UPSTREAM_KEYS=$(nix eval --raw --file ./modules/nixos/keys.nix upstreamCacheKeyNames \
+        --apply 'builtins.concatStringsSep " "' 2>/dev/null) || UPSTREAM_KEYS=""
+    if [ -z "$UPSTREAM_KEYS" ]; then
+        # An empty filter would push every upstream path into Attic.
+        echo "⚠️  Could not read upstreamCacheKeyNames from modules/nixos/keys.nix; skipping push."
+        exit 0
+    fi
     push_filtered() {
         local root="$1" label="$2"
         local to_push
@@ -1010,7 +1016,11 @@ pi-install-usb host device="/dev/sdc":
         echo "❌ Invalid host: {{host}}. Must be core-pi or hass-pi."; exit 1
     fi
     DEV="{{device}}"; HOST="{{host}}"; MNT="/mnt/{{host}}"
+    # Must match the host's luksVolumeName (passed to rpi5-disko.nix as luksName).
     CRYPT="{{host}}"; CRYPT="${CRYPT%-pi}_crypt"
+    # Both Pis share one layout; check it before anything is wiped.
+    LAYOUT="./modules/nixos/rpi5-disko.nix"
+    [ -f "$LAYOUT" ] || { echo "❌ Disk layout $LAYOUT not found. Run from the nix-config root."; exit 1; }
 
     pc_sudo_keepalive
 
@@ -1022,15 +1032,18 @@ pi-install-usb host device="/dev/sdc":
     pc_cache_preflight "$HOST" 'linux-rpi.*-modules'
 
     pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
+    pc_assert_luks_on_target "$CRYPT" "$DEV"
     pc_wipe "$DEV" 100
 
     echo "💿 Formatting via disko (will prompt for a NEW LUKS passphrase)..."
     sudo nix run github:nix-community/disko -- \
         --mode destroy,format,mount \
         --argstr device "$DEV" \
-        --root-mountpoint "$MNT" ./hosts/{{host}}/disko.nix
+        --argstr luksName "$CRYPT" \
+        --root-mountpoint "$MNT" "$LAYOUT"
 
-    # Guard: <mnt>/boot MUST be on the target disk, not the workstation's ESP.
+    # Guard: the mapping and <mnt>/boot MUST be on the target disk, not the workstation's.
+    pc_assert_luks_on_target "$CRYPT" "$DEV" "$MNT"
     pc_assert_esp_on_target "$MNT" "$DEV"
 
     SYSTEM="$(pc_build_toplevel "$HOST")"
@@ -1132,8 +1145,12 @@ pi-update-usb host device="/dev/sdc":
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
+        --argstr luksName "$CRYPT_NAME" \
         --root-mountpoint "$MNT" \
-        ./hosts/{{host}}/disko.nix
+        ./modules/nixos/rpi5-disko.nix
+    # The partlabels also exist on the workstation; never write to its disk.
+    pc_assert_luks_on_target "$CRYPT_NAME" "{{device}}" "$MNT"
+    pc_assert_esp_on_target "$MNT" "{{device}}"
 
     # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
     if pgrep -f "nix build .#nixosConfigurations.{{host}}" >/dev/null; then
@@ -1206,6 +1223,7 @@ router-provision:
 core-rebind-tang device="/dev/sdf":
     #!/usr/bin/env bash
     set -euo pipefail
+    source .just/lib/provision-common.sh
     
     # Prompt for sudo upfront and keep it alive in the background
     sudo -v
@@ -1215,9 +1233,11 @@ core-rebind-tang device="/dev/sdf":
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
+        --argstr luksName core_crypt \
         --root-mountpoint /mnt/core-pi \
-        ./hosts/core-pi/disko.nix
+        ./modules/nixos/rpi5-disko.nix
         
+    pc_assert_luks_on_target core_crypt "{{device}}" /mnt/core-pi
     LUKS_DEV=$(sudo cryptsetup status core_crypt | awk '/device:/ {print $2}')
     if [ -n "$LUKS_DEV" ]; then
         echo "⚠️ Unbinding old Tang key..."

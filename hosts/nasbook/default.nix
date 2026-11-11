@@ -87,6 +87,8 @@ in
           paths = [ "/var/lib/images/syncthing" ];
           exclude = [ "/var/lib/images/syncthing/syncthing.lock" ];
         };
+        # Merges with the paperless preset's item, which adds hostDataDir
+        # (/mnt/data/Archive/Paperless): that is what these excludes trim.
         paperless-documents = {
           paths = [ "/mnt/data/Archive/Inbox" ];
           exclude = [

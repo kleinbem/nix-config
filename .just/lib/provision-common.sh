@@ -15,6 +15,27 @@ pc_sudo_keepalive() {
 }
 
 # ── safety guards (workstation shares disko partlabels with the target SSDs) ───
+# Kernel name of a disk path, so /dev/disk/by-id/... compares equal to sdX.
+pc_disk_name() {
+  local r
+  r=$(readlink -f -- "$1") && [ -n "$r" ] || return 1
+  basename "$r"
+}
+
+# disko reuses an already-open mapping, which may sit on another disk. Abort
+# unless <crypt> is closed or backed by <dev>; <mnt>, if given, is unmounted.
+pc_assert_luks_on_target() {
+  local crypt="$1" dev="$2" mnt="${3:-}" backing pk
+  backing=$(sudo cryptsetup status "$crypt" 2>/dev/null | awk '/device:/ {print $2}' || true)
+  [ -n "$backing" ] || return 0
+  pk=$(lsblk -no PKNAME "$backing" 2>/dev/null | head -1 || true)
+  if [ -z "$pk" ] || [ "$pk" != "$(pc_disk_name "$dev")" ]; then
+    echo "❌ SAFETY ABORT: $crypt is open on $backing (disk '${pk:-unknown}'), not $dev. Close it and retry."
+    [ -n "$mnt" ] && sudo umount -R "$mnt" 2>/dev/null
+    exit 1
+  fi
+}
+
 # Refuse to touch a non-USB disk, or one backing THIS host's / or /boot.
 pc_assert_safe_target() {
   local dev="$1" d rootpk bootpk tran rootsrc bootsrc
@@ -27,7 +48,7 @@ pc_assert_safe_target() {
     echo "❌ SAFETY ABORT: $dev is not USB-attached (TRAN=$tran). Refusing to wipe."
     exit 1
   fi
-  d=$(basename "$dev")
+  d=$(pc_disk_name "$dev")
   # A tmpfs root has a non-block SOURCE, where `lsblk PKNAME` exits 32 and
   # set -e would abort; only look it up for real block devices.
   rootsrc=$(findmnt -no SOURCE / 2>/dev/null || true)
@@ -50,12 +71,12 @@ pc_assert_esp_on_target() {
   local mnt="$1" dev="$2" src pk
   src=$(findmnt -no SOURCE "$mnt/boot" 2>/dev/null)
   pk=$(lsblk -no PKNAME "$src" 2>/dev/null | head -1)
-  if [ "$pk" != "$(basename "$dev")" ]; then
-    echo "❌ SAFETY ABORT: $mnt/boot ($src) is on disk '$pk', not $(basename "$dev") — partlabel collision with the workstation ESP. NOT writing."
+  if [ "$pk" != "$(pc_disk_name "$dev")" ]; then
+    echo "❌ SAFETY ABORT: $mnt/boot ($src) is on disk '$pk', not $(pc_disk_name "$dev") — partlabel collision with the workstation ESP. NOT writing."
     sudo umount -R "$mnt" 2>/dev/null || true
     exit 1
   fi
-  echo "✅ Safety: $mnt/boot is on $(basename "$dev")."
+  echo "✅ Safety: $mnt/boot is on $(pc_disk_name "$dev")."
 }
 
 pc_require_block_device() {
@@ -172,7 +193,7 @@ pc_cleanup() {
   fi
 
   # 4. Close any LUKS mapping backed by this disk, then the named container.
-  dn=$(basename "$dev")
+  dn=$(pc_disk_name "$dev")
   for h in /sys/class/block/"${dn}"*/holders/*; do
     [ -e "$h" ] && sudo cryptsetup close "$(basename "$(readlink "$h")")" 2>/dev/null || true
   done
