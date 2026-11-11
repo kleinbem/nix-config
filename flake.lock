@@ -1492,11 +1492,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794350378,
-        "narHash": "sha256-IR6X9pVIr+s0np41KtlgS9+2nLW0WGrttGXXtF4qozU=",
+        "lastModified": 1794409192,
+        "narHash": "sha256-ETqZx5nzlU9cBtpYhRhK0P7Bl5/SbkMvQ20KfLcKzD8=",
         "owner": "kleinbem",
         "repo": "nix-detour-fleet",
-        "rev": "f397a7ff4c450022145cbe1d61200b8a20668956",
+        "rev": "e4077d220f7ddaeddbc2dfa3cf2e829376d23357",
         "type": "github"
       },
       "original": {
@@ -1731,11 +1731,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1794389531,
-        "narHash": "sha256-WKK42XYXAs+HsWN36iQ1l9A1sSUnNBKMPiid1sBQIZU=",
+        "lastModified": 1794417396,
+        "narHash": "sha256-fwwXack6q9r/pdvw1msHGFLik7gPPwnFPfwC4+Pvwzs=",
         "owner": "kleinbem",
         "repo": "nix-hardware",
-        "rev": "c33cfce67d36810a949ae5becc4ea30c8daa3bfd",
+        "rev": "aac271d463270acc1715f547b6f5184bf09c5169",
         "type": "github"
       },
       "original": {
