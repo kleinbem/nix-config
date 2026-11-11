@@ -511,7 +511,9 @@ in
         # AdGuard is a DynamicUser service, so persist /var/lib/private, not
         # the /var/lib symlink.
         "/var/lib/private/AdGuardHome"
-      ];
+      ]
+      # DynamicUser too; holds the last-pushed IP so restarts skip the API call.
+      ++ lib.optional config.services.cloudflare-dyndns.enable "/var/lib/private/cloudflare-dyndns";
     };
 
     systemPackages = with pkgs; [
