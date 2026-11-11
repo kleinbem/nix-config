@@ -107,6 +107,12 @@
     ../../pki/caddy-root.crt
   ];
 
+  # Firefox keeps its own certificate store, so the fleet CA goes in by policy.
+  programs.firefox = {
+    enable = true;
+    policies.Certificates.Install = [ "${../../pki/caddy-root.crt}" ];
+  };
+
   my = {
     security.ai-hardening.enable = true;
     monitoring.node.enable = true;
