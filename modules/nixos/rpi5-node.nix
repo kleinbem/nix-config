@@ -92,37 +92,14 @@ in
       {
         name = "rpi5-server-tuning";
         patch = null;
-        extraStructuredConfig = with lib.kernel; {
-          # ── Scheduling / timers ───────────────────────────────
-          # Server throughput over desktop responsiveness, but voluntary (not
-          # PREEMPT_NONE) so hass-pi's Zigbee/voice paths stay responsive.
-          PREEMPT = no;
-          PREEMPT_VOLUNTARY = yes;
-          HZ_1000 = no;
-          HZ_250 = yes;
-          HZ = freeform "250";
-          # These nodes are mostly idle — omit ticks on idle CPUs to cut
-          # wakeups/jitter and save a little power.
-          NO_HZ_IDLE = yes;
-
-          # ── Networking throughput ─────────────────────────────
-          # BBR + fq pacing (fq selected via net.core.default_qdisc sysctl).
+        structuredExtraConfig = with lib.kernel; {
+          # BBR and fq from boot: end0 comes up in the initrd (ip= above),
+          # before the default_qdisc sysctl, so it kept pfifo_fast.
           TCP_CONG_BBR = yes;
           DEFAULT_BBR = yes;
           NET_SCH_FQ = yes;
-          NET_SCH_FQ_CODEL = yes;
-          # In-kernel WireGuard so NetBird uses the kernel data path instead of
-          # userspace wireguard-go — lower CPU + higher throughput for the
-          # Attic-cache-over-NetBird pulls that keep these nodes build-free.
-          WIREGUARD = module;
-
-          # ── Containers (podman + nixos-containers) ────────────
-          MEMCG = yes;
-          MEMCG_SWAP = yes;
-
-          # ── Trim debug overhead (we pay the build cost anyway) ─
-          DEBUG_KERNEL = no;
-          DEBUG_INFO = no;
+          NET_SCH_DEFAULT = yes;
+          DEFAULT_FQ = yes;
         };
       }
     ];
