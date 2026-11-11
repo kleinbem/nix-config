@@ -1731,11 +1731,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1794365598,
-        "narHash": "sha256-y1xM3JN3YOebAiShXFJIRUPm0tc1V2KIYyJEVM9BylM=",
+        "lastModified": 1794389531,
+        "narHash": "sha256-WKK42XYXAs+HsWN36iQ1l9A1sSUnNBKMPiid1sBQIZU=",
         "owner": "kleinbem",
         "repo": "nix-hardware",
-        "rev": "bed5032b67f31664b5db17330d8e308c30980523",
+        "rev": "c33cfce67d36810a949ae5becc4ea30c8daa3bfd",
         "type": "github"
       },
       "original": {
