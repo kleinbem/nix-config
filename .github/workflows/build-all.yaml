@@ -326,7 +326,7 @@ jobs:
             -H "Title: container-factory eval failed (${{ matrix.system }})" \
             -H "Tags: rotating_light" \
             -H "Priority: high" \
-            -d "Blocking factory eval is red on ${{ matrix.system }}. Likely an insecure re-ack (openclaw version bump → update the pin in nix-gantry lib/factory.nix) or a preset regression. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d "Blocking factory eval is red on ${{ matrix.system }}. Likely a preset regression; see the run log. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       # Builds every standalone container closure for this arch; nothing else

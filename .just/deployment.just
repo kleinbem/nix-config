@@ -1143,8 +1143,9 @@ pi-update-usb host device="/dev/sdc":
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
+        --argstr luksName "$CRYPT_NAME" \
         --root-mountpoint "$MNT" \
-        ./hosts/{{host}}/disko.nix
+        ./modules/nixos/rpi5-disko.nix
 
     # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
     if pgrep -f "nix build .#nixosConfigurations.{{host}}" >/dev/null; then
@@ -1226,8 +1227,9 @@ core-rebind-tang device="/dev/sdf":
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
+        --argstr luksName core_crypt \
         --root-mountpoint /mnt/core-pi \
-        ./hosts/core-pi/disko.nix
+        ./modules/nixos/rpi5-disko.nix
         
     LUKS_DEV=$(sudo cryptsetup status core_crypt | awk '/device:/ {print $2}')
     if [ -n "$LUKS_DEV" ]; then
