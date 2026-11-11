@@ -64,13 +64,12 @@ add name:
 [group("Personas")]
 tf-apply: tf-export
     @cd ../nix && tools/tf-apply.sh -- \
-        -target=cloudflare_record.mail_a \
-        -target=cloudflare_record.mail_mx \
-        -target=cloudflare_record.mail_spf \
-        -target=cloudflare_record.mail_dmarc \
-        -target=cloudflare_record.mail_mta_sts \
-        -target=cloudflare_record.mail_tlsrpt \
-        -target=cloudflare_record.stalwart_dkim \
+        -target=cloudflare_dns_record.mail_mx \
+        -target=cloudflare_dns_record.mail_spf \
+        -target=cloudflare_dns_record.mail_dmarc \
+        -target=cloudflare_dns_record.mail_mta_sts \
+        -target=cloudflare_dns_record.mail_tlsrpt \
+        -target=cloudflare_dns_record.stalwart_dkim \
         -auto-approve
 
 # Plan persona-related Terraform without applying. Use to preview the

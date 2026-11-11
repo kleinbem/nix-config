@@ -7,7 +7,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERBOSE=${VERBOSE:-0}
 TARGET_DEVICE="${1:-}"
 
 # Colors for output

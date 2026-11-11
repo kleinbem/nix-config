@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Rotate the Attic token signing key and re-issue every token, least privilege
 # per consumer. Old tokens stop working once core-pi runs the new key.
-# Values go into sops via stdin, never to disk. The signing key is exported to
-# nix build and atticadm, so it is in their environment while they run.
+# Values go into sops via stdin. The signing key also sits in atticadm's
+# config in a private runtime-dir tmpdir (removed on exit), never in an env.
 #
 #   attic_server_token_rs256  nix/per-host/core-pi.yaml     new signing key
 #   attic_pull_token          nix/shared.yaml               sub fleet-pull: pull system
@@ -41,10 +41,17 @@ avg-size = 65536
 max-size = 262144
 TOML
 
-# Same format as the attic docs: PKCS#1 PEM, base64.
-ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=$(openssl genrsa -traditional 4096 2>/dev/null | base64 -w0)
-export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
 atticadm=$(nix build --no-link --print-out-paths nixpkgs#attic-server)/bin/atticadm
+# Same format as the attic docs: PKCS#1 PEM, base64.
+signing_key=$(openssl genrsa -traditional 4096 2>/dev/null | base64 -w0)
+[ -n "$signing_key" ] || {
+  echo "openssl produced no signing key" >&2
+  exit 1
+}
+(
+  umask 077
+  printf '[jwt.signing]\ntoken-rs256-secret-base64 = "%s"\n' "$signing_key" >>"$tmp/server.toml"
+)
 
 mint() {
   local t
@@ -71,7 +78,7 @@ admin=$(mint --sub admin --pull '*' --push '*' --delete '*' --create-cache '*' -
   --configure-cache-retention '*' --destroy-cache '*')
 
 echo "📝 Writing the signing key and tokens to sops (YubiKey prompts follow)..."
-put nix/per-host/core-pi.yaml attic_server_token_rs256 "$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64"
+put nix/per-host/core-pi.yaml attic_server_token_rs256 "$signing_key"
 put nix/shared.yaml attic_pull_token "$pull"
 put nix/per-host/orin-nano.yaml attic_push_token "$orin"
 put nix/per-host/nixos-nvme.yaml attic_push_token "$nvme"
@@ -79,7 +86,7 @@ put infra/terraform.yaml attic_ci_push_token "$ci_push"
 put infra/terraform.yaml attic_ci_pull_token "$ci_pull"
 put nix/per-host/nixos-nvme.yaml attic_admin_token "$admin"
 unset pull orin nvme ci_push ci_pull admin
-unset ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
+unset signing_key
 
 cat <<'NEXT'
 
