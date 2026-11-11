@@ -22,6 +22,9 @@ done
 # node has publicCert = true (hosts/core-pi/secrets.nix reads the key name
 # from this file), so the dummy has to carry the key too.
 echo "caddy_acme_cloudflare_token: dummy" >"$out/nix/per-host/core-pi.yaml"
+# mac-mini gates cloudflare-dyndns on its token; carry it so CI evaluates the
+# service and policy-state-persisted sees its StateDirectory.
+echo "cloudflare_dyndns_token: dummy" >"$out/nix/per-host/mac-mini.yaml"
 
 for host in nixos-nvme core-pi hass-pi orin-nano; do
   echo "ci-dummy-jwe-placeholder" >"$out/initrd/cryptroot_${host}.jwe"
