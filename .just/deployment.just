@@ -1042,7 +1042,8 @@ pi-install-usb host device="/dev/sdc":
         --argstr luksName "$CRYPT" \
         --root-mountpoint "$MNT" "$LAYOUT"
 
-    # Guard: <mnt>/boot MUST be on the target disk, not the workstation's ESP.
+    # Guard: the mapping and <mnt>/boot MUST be on the target disk, not the workstation's.
+    pc_assert_luks_on_target "$CRYPT" "$DEV" "$MNT"
     pc_assert_esp_on_target "$MNT" "$DEV"
 
     SYSTEM="$(pc_build_toplevel "$HOST")"

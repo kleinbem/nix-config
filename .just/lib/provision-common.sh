@@ -16,7 +16,11 @@ pc_sudo_keepalive() {
 
 # ── safety guards (workstation shares disko partlabels with the target SSDs) ───
 # Kernel name of a disk path, so /dev/disk/by-id/... compares equal to sdX.
-pc_disk_name() { basename "$(readlink -f "$1")"; }
+pc_disk_name() {
+  local r
+  r=$(readlink -f -- "$1") && [ -n "$r" ] || return 1
+  basename "$r"
+}
 
 # disko reuses an already-open mapping, which may sit on another disk. Abort
 # unless <crypt> is closed or backed by <dev>; <mnt>, if given, is unmounted.
@@ -24,9 +28,9 @@ pc_assert_luks_on_target() {
   local crypt="$1" dev="$2" mnt="${3:-}" backing pk
   backing=$(sudo cryptsetup status "$crypt" 2>/dev/null | awk '/device:/ {print $2}' || true)
   [ -n "$backing" ] || return 0
-  pk=$(lsblk -no PKNAME "$backing" 2>/dev/null | head -1)
-  if [ "$pk" != "$(pc_disk_name "$dev")" ]; then
-    echo "❌ SAFETY ABORT: $crypt is open on $backing (disk '$pk'), not $dev. Close it and retry."
+  pk=$(lsblk -no PKNAME "$backing" 2>/dev/null | head -1 || true)
+  if [ -z "$pk" ] || [ "$pk" != "$(pc_disk_name "$dev")" ]; then
+    echo "❌ SAFETY ABORT: $crypt is open on $backing (disk '${pk:-unknown}'), not $dev. Close it and retry."
     [ -n "$mnt" ] && sudo umount -R "$mnt" 2>/dev/null
     exit 1
   fi
