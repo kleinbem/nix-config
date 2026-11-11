@@ -1,0 +1,100 @@
+name: nix-detour check
+# A nixpkgs bump outside the nightly update (a hand-made PR for one package's
+# fix) brings everything else along, and the nightly run after it sees no new
+# nixpkgs to check. This checks every PR that moves nixpkgs, with full builds:
+# the nightly's fetch-only builds miss packages that fail to compile.
+on:
+  pull_request:
+    paths: [flake.lock]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  detour:
+    # Bots can't read the App secrets.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: read
+    steps:
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: read
+          permission-pull-requests: write
+
+      - name: Checkout nix-config
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: nix-config
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+
+      - name: Set up Nix
+        uses: kleinbem/actions/nix-setup@7ec628296d5194e6e10031706387b992a10a1638 # v1.0.1
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+
+      - name: Dummy secrets
+        run: ./nix-config/.github/scripts/setup-dummy-secrets.sh
+
+      - name: What this PR breaks
+        id: holds
+        uses: kleinbem-dev/nix-detour/update@0ae1443289a75d93a717cbade8cea290b125eed3 # main after #67: skip-unmoved, unreached
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          directory: nix-config
+          skip-unmoved: true
+          base: ${{ github.event.pull_request.base.ref }}
+          holds-repo: kleinbem/nix-detour-fleet
+          holds-input: nix-detour-fleet
+          nix-args: --override-input kleinbem-secrets /tmp/dummy-secrets
+          # Builds need the runner's system; aarch64 only evaluates.
+          systems: x86_64-linux aarch64-linux
+          build: true
+
+      # One comment per PR, updated on each push.
+      - name: Comment the report
+        if: steps.holds.outputs.moved == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          REPORT: ${{ steps.holds.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          marker='<!-- nix-detour-check -->'
+          body="$marker
+          This PR moves nixpkgs. nix-detour, checked against kleinbem/nix-detour-fleet:
+
+          $REPORT
+
+          Run: $RUN_URL"
+          id=$(gh api "repos/$GH_REPO/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)
+          if [[ -n $id ]]; then
+            gh api -X PATCH "repos/$GH_REPO/issues/comments/$id" -f body="$body" >/dev/null
+          else
+            gh pr comment "$PR" --body "$body"
+          fi
+
+      - name: Fail on what it breaks
+        # unavailable: a download failed, so those weren't checked.
+        if: steps.holds.outputs.held != '' || steps.holds.outputs.failed != '' || steps.holds.outputs.unreached != '' || steps.holds.outputs.unavailable != ''
+        env:
+          HELD: ${{ steps.holds.outputs.held }}
+          FAILED: ${{ steps.holds.outputs.failed }}
+          UNREACHED: ${{ steps.holds.outputs.unreached }}
+          UNAVAILABLE: ${{ steps.holds.outputs.unavailable }}
+        run: |
+          echo "::error::This nixpkgs bump breaks: ${HELD} ${FAILED}; holds that don't reach: ${UNREACHED}; not checked (download failed): ${UNAVAILABLE}. See the PR comment."
+          exit 1
