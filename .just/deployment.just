@@ -1032,6 +1032,7 @@ pi-install-usb host device="/dev/sdc":
     pc_cache_preflight "$HOST" 'linux-rpi.*-modules'
 
     pc_cleanup "$MNT" "$DEV" "$CRYPT" ""
+    pc_assert_luks_on_target "$CRYPT" "$DEV"
     pc_wipe "$DEV" 100
 
     echo "💿 Formatting via disko (will prompt for a NEW LUKS passphrase)..."
@@ -1146,7 +1147,8 @@ pi-update-usb host device="/dev/sdc":
         --argstr luksName "$CRYPT_NAME" \
         --root-mountpoint "$MNT" \
         ./modules/nixos/rpi5-disko.nix
-    # The ESP partlabel also exists on the workstation; never write boot files there.
+    # The partlabels also exist on the workstation; never write to its disk.
+    pc_assert_luks_on_target "$CRYPT_NAME" "{{device}}" "$MNT"
     pc_assert_esp_on_target "$MNT" "{{device}}"
 
     # Terminate any stale background builds for this host to prevent Nix store lock deadlocks
@@ -1220,6 +1222,7 @@ router-provision:
 core-rebind-tang device="/dev/sdf":
     #!/usr/bin/env bash
     set -euo pipefail
+    source .just/lib/provision-common.sh
     
     # Prompt for sudo upfront and keep it alive in the background
     sudo -v
@@ -1233,11 +1236,8 @@ core-rebind-tang device="/dev/sdf":
         --root-mountpoint /mnt/core-pi \
         ./modules/nixos/rpi5-disko.nix
         
+    pc_assert_luks_on_target core_crypt "{{device}}" /mnt/core-pi
     LUKS_DEV=$(sudo cryptsetup status core_crypt | awk '/device:/ {print $2}')
-    # disko reuses an already-open core_crypt, which may belong to another disk.
-    if [ -n "$LUKS_DEV" ] && [ "$(lsblk -no PKNAME "$LUKS_DEV" | head -1)" != "$(basename "{{device}}")" ]; then
-        echo "❌ core_crypt is backed by $LUKS_DEV, not {{device}}. Close it and retry."; exit 1
-    fi
     if [ -n "$LUKS_DEV" ]; then
         echo "⚠️ Unbinding old Tang key..."
         sudo clevis luks unbind -d "$LUKS_DEV" -s 1 || echo "No old key in slot 1 or failed to unbind."
