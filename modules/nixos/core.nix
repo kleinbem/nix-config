@@ -214,11 +214,11 @@ in
   # Generic Boot Preferences
   boot.loader.timeout = 2; # Fast boot
 
-  # Massive Swap (Essential for AI workloads)
+  # Fleet default; hosts with tighter RAM budgets (orin-nano) set their own.
   zramSwap = {
     enable = true;
     algorithm = "zstd";
-    memoryPercent = 50;
+    memoryPercent = lib.mkDefault 50;
   };
 
   # ==========================================
