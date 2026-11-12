@@ -360,10 +360,22 @@ in
         ip = "${myInventory.network.nodes.ente.ip}/24";
         inherit (myInventory.network.nodes.ente) domain;
         hostDataDir = "/var/lib/ente";
-        minioRootPasswordFile = config.sops.secrets.ente_minio_root_password.path;
         jwtSecretFile = config.sops.secrets.ente_jwt_secret.path;
         keyEncryptionFile = config.sops.secrets.ente_key_encryption.path;
         keyHashFile = config.sops.secrets.ente_key_hash.path;
+        # Objects in a Garage inside the container; MinIO is archived and its
+        # image can't be pulled any more (it held no data).
+        # no-link: minio/minio is archived, so there is no upstream to report to.
+        garage = {
+          enable = true;
+          rpcSecretFile = config.sops.secrets.ente_garage_rpc_secret.path;
+        };
+        s3 = {
+          backend = "garage";
+          accessKeyIdFile = config.sops.secrets.ente_s3_access_key_id.path;
+          secretAccessKeyFile = config.sops.secrets.ente_s3_secret_access_key.path;
+        };
+        minio.enable = false;
       };
 
       vaultwarden = {
