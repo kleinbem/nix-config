@@ -2,7 +2,7 @@
 # Builds and flashes the HMI 8" panel with the toolchain it needs: ESPHome dev
 # plus the mipi_csi camera PR, and the PPA fix for ESP-IDF 5.5.6. hass-pi's
 # dashboard can't build this config.
-#   build.sh compile | upload [--device 10.0.0.112|/dev/ttyACM0] | logs
+#   [UNIT=2] build.sh compile | upload [--device 10.0.0.112|/dev/ttyACM0] | logs
 # upload compiles first: ESPHome's own upload flashes whatever was built last.
 set -euo pipefail
 
@@ -14,6 +14,11 @@ here=$(cd "$(dirname "$0")" && pwd)
 cache=${XDG_CACHE_HOME:-$HOME/.cache}
 src=$cache/esphome-dev/src venv=$cache/esphome-dev/venv build=$cache/esphome-dev/hmi-8in
 secrets=${SECRETS:-$cache/esphome-dev/secrets.yaml}
+unit=hmi-8in-${UNIT:-1}.yaml
+[ -f "$here/$unit" ] || {
+  echo "no $unit next to build.sh" >&2
+  exit 1
+}
 
 [ -f "$secrets" ] || {
   echo "secrets.yaml missing at $secrets (copy of hass-pi's /var/lib/esphome/secrets.yaml)" >&2
@@ -22,7 +27,8 @@ secrets=${SECRETS:-$cache/esphome-dev/secrets.yaml}
 secrets=$(realpath -- "$secrets") # the link below resolves from $build
 
 want=$ESPHOME_DEV_REV+$CAMERA_PR_REV
-if [ "$(cat "$cache/esphome-dev/rev" 2>/dev/null)" != "$want" ]; then
+# Also rebuild when the venv's python is gone (garbage-collected store path).
+if [ "$(cat "$cache/esphome-dev/rev" 2>/dev/null)" != "$want" ] || ! "$venv/bin/python" -c '' 2>/dev/null; then
   rm -rf "$src" "$venv"
   git clone -q --filter=blob:none https://github.com/esphome/esphome "$src"
   git -C "$src" checkout -q "$ESPHOME_DEV_REV"
@@ -35,7 +41,7 @@ fi
 
 mkdir -p "$build"
 chmod 700 "$cache/esphome-dev" "$build" # generated main.cpp holds Wi-Fi and API keys
-cp "$here"/hmi-8in.yaml "$here"/c6_fw.h "$here"/stations.h "$here"/weather.h "$here"/lights.h "$here"/infra.h "$here"/chime.wav "$build"/
+cp "$here"/hmi-8in*.yaml "$here"/c6_fw.h "$here"/stations.h "$here"/weather.h "$here"/lights.h "$here"/infra.h "$here"/chime.wav "$build"/
 ln -sfn "$secrets" "$build/secrets.yaml"
 mkdir -p "$cache/esphome-dev/tmp"
 export TMPDIR=$cache/esphome-dev/tmp # gcc's temp files overflow a small /tmp tmpfs
@@ -51,10 +57,10 @@ patch_idf() {
 }
 cmd=${1:-compile}
 if [ "$cmd" != logs ] && ! patch_idf; then
-  "$venv/bin/esphome" compile "$build/hmi-8in.yaml" || true
+  "$venv/bin/esphome" compile "$build/$unit" || true
   patch_idf
 fi
 
 cd "$build"
-[ "$cmd" = upload ] && "$venv/bin/esphome" compile hmi-8in.yaml
-exec "$venv/bin/esphome" "$cmd" hmi-8in.yaml "${@:2}"
+[ "$cmd" = upload ] && "$venv/bin/esphome" compile "$unit"
+exec "$venv/bin/esphome" "$cmd" "$unit" "${@:2}"

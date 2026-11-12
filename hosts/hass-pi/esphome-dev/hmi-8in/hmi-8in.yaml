@@ -1,13 +1,13 @@
 # Waveshare ESP32-P4-WIFI6 8" HMI — 800x1280 10-point touch, dual mic,
 # speaker, OV5647 MIPI-CSI camera (mipi_csi from esphome/esphome#19480, which
-# build.sh pins). One file per physical unit: copy, change `name`. Pins from Waveshare's waveshareteam/ESP32-P4-WIFI6-Touch-LCD-X
+# build.sh pins). Shared by every unit: hmi-8in-<n>.yaml sets name, friendly_name
+# and api_key. Pins from Waveshare's waveshareteam/ESP32-P4-WIFI6-Touch-LCD-X
 # examples (displays_config.h, 09_Audio_Playback, 10_Mic_Record,
 # 09_video_lcd_display).
 substitutions:
-  name: hmi-8in-1
   guest_ssid: !secret wifi_guest_ssid
   guest_pass: !secret wifi_guest_password
-  friendly_name: HMI 8in 1
+  watchdog_timeout: 5s
   ha_url: http://10.0.0.21:8123
   # hass-pi's photo-frame service (my.services.photo-frame).
   photo_url: http://10.0.0.21:8099/random.jpg?w=1280&h=800
@@ -43,6 +43,7 @@ esp32:
     # ESPHome requires this for OTA on 32MB flash.
     advanced:
       enable_idf_experimental_features: true
+  watchdog_timeout: ${watchdog_timeout}
 
 psram:
   mode: hex
@@ -89,9 +90,9 @@ wifi:
 
 api:
   encryption:
-    key: !secret api_key_hmi_8in_1
+    key: ${api_key}
   # Home Assistant can pop a message up on the panel:
-  # action esphome.hmi_8in_1_show_message {title, message}
+  # action esphome.<name>_show_message {title, message}
   actions:
     - action: show_message
       variables:
