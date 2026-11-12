@@ -41,14 +41,21 @@ while read -r log; do
   fi
   found=1
   if [ -z "$cause" ]; then
-    line=$(bzcat "$log" | grep -aE '[Ee]rror[: ]|FAIL|not satisfied|Killed|No space left|out of memory|Segmentation fault' | head -n 1)
+    # Without colour codes. A panic's message follows "panicked at", between
+    # cargo's progress lines from parallel jobs; a link failure's cause is in
+    # its note; "error" counts only as "error:" ("thiserror v2" isn't one).
+    plain=$(bzcat "$log" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g')
+    progress='^\s*(Compiling|Fresh|Checking|Building|Downloaded|Running|Finished|Blocking|warning:)'
+    line=$(grep -aA20 'panicked at' <<<"$plain" | sed 1d | grep -avE "$progress|^\s*$|^--" | head -n 1)
+    [ -n "$line" ] || line=$(grep -aE 'cannot find -l|undefined reference to|No space left|out of memory|Killed|Segmentation fault' <<<"$plain" | head -n 1)
+    [ -n "$line" ] || line=$(grep -aE '(^|[^A-Za-z_-])[Ee]rror(\[E[0-9]+\])?:|FAIL|not satisfied' <<<"$plain" | head -n 1)
     # A fixed-output build that ran through failed on its hash: nix reports
     # that itself, the build log doesn't have it.
     if [ -z "$line" ] && nix derivation show "$d" 2>/dev/null |
       jq -e '(.derivations // .) | to_entries[0].value.outputs.out.hash' >/dev/null; then
       line="hash mismatch (fixed-output derivation)"
     fi
-    [ -n "$line" ] || line=$(bzcat "$log" | grep -av '^\s*$' | tail -n 1)
+    [ -n "$line" ] || line=$(grep -av '^\s*$' <<<"$plain" | tail -n 1)
     cause="${b#*-}: $(echo "$line" | tr -s ' \t' ' ' | sed 's/^ //' | cut -c1-200)"
   fi
   echo "- \`${b#*-}\`" >>"$summary"
