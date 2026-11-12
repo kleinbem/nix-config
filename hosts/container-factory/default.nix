@@ -179,7 +179,6 @@ let
       hostDataDir = dataDir "ente";
       # Non-null so the env-setup script keeps every `cat` branch; a null
       # bakes that branch out of the cached closure.
-      minioRootPasswordFile = "/run/secrets/factory-dummy";
       jwtSecretFile = "/run/secrets/factory-dummy";
       keyEncryptionFile = "/run/secrets/factory-dummy";
       keyHashFile = "/run/secrets/factory-dummy";

@@ -88,14 +88,12 @@ in
         }
       )
       // (
-        # Ente Auth (auth.kleinbem.dev). minio_root_password only applies on
-        # MinIO's first boot: on a live deployment rotate the root user with
-        # `mc admin user` BEFORE restarting museum, or it loses object storage.
-        # No postgres_password: ente uses native Postgres with peer auth.
+        # Ente Auth (auth.kleinbem.dev). Objects live in the in-container
+        # Garage (MinIO is off). No postgres_password: ente uses native
+        # Postgres with peer auth.
         mkPerContainerSecrets {
           container = "ente";
           keys = [
-            "minio_root_password"
             "jwt_secret"
             "garage_rpc_secret"
             "s3_access_key_id"

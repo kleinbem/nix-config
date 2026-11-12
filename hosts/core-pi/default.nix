@@ -360,7 +360,6 @@ in
         ip = "${myInventory.network.nodes.ente.ip}/24";
         inherit (myInventory.network.nodes.ente) domain;
         hostDataDir = "/var/lib/ente";
-        minioRootPasswordFile = config.sops.secrets.ente_minio_root_password.path;
         jwtSecretFile = config.sops.secrets.ente_jwt_secret.path;
         keyEncryptionFile = config.sops.secrets.ente_key_encryption.path;
         keyHashFile = config.sops.secrets.ente_key_hash.path;
