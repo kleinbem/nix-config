@@ -140,6 +140,7 @@
     claudeCode.enable = true;
     desktop = {
       gnome.enable = true;
+      omarchy.enable = true;
       claude.enable = true;
       # Windows apps via Bottles (ntsync, 32-bit graphics; no gaming tweaks)
       bottles.enable = true;

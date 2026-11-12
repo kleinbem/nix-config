@@ -2,6 +2,7 @@
   pkgs,
   lib,
   config,
+  inputs,
   ...
 }:
 
@@ -27,9 +28,12 @@ in
 {
   options.my.desktop = {
     gnome.enable = lib.mkEnableOption "Desktop Environment (GNOME 50)";
+    omarchy.enable = lib.mkEnableOption "Omarchy Desktop Environment (Hyprland + QuickShell)";
   };
 
-  imports = [ ];
+  imports = [
+    inputs.nix-omarchy.nixosModules.default
+  ];
 
   config = lib.mkMerge [
     # ==========================================
@@ -273,6 +277,55 @@ in
       };
 
       fonts.fontconfig.enable = true;
+    })
+
+    # ==========================================
+    # DESKTOP (OMARCHY)
+    # ==========================================
+    (lib.mkIf cfg.omarchy.enable {
+      omarchy = {
+        enable = true;
+        # Preserve OEM UEFI boot splash (bgrt) configured above
+        plymouth.enable = false;
+        # nix-mineral and kernel.nix manage workstation sysctl, udev, and zram
+        systemTuning.enable = false;
+        # Preserve user's own Neovim configuration; do not seed LazyVim
+        nvimPackage = null;
+        exclude_packages = [
+          "chromium"
+          "fcitx5"
+          "fcitx5-gtk"
+          "fcitx5-chinese-addons"
+          "fcitx5-hangul"
+          "fcitx5-mozc"
+          "fcitx5-chewing"
+          "fcitx5-table-extra"
+          "asdcontrol"
+          "superwhisper"
+          "omarchy-nvim"
+          "owe"
+        ];
+      };
+
+      # Disable excluded Fcitx5 user unit so it cannot launch into graphical sessions
+      systemd.user.services.omarchy-fcitx5.enable = false;
+
+      # GDM manages logins and offers session switching between GNOME and Omarchy
+      services.displayManager.sddm.enable = lib.mkForce false;
+
+      # Voice dictation via Voxtype (push-to-talk voice-to-text for Wayland)
+      environment.systemPackages = [ pkgs.voxtype ];
+      hardware.uinput.enable = true;
+      users.users.${config.my.username}.extraGroups = [
+        "input"
+        "uinput"
+      ];
+
+      # Seed per-user config and agent skills
+      home-manager = {
+        sharedModules = [ inputs.nix-omarchy.homeModules.default ];
+        users.${config.my.username}.omarchy.enable = true;
+      };
     })
   ];
 }
