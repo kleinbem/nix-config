@@ -45,11 +45,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794516952,
-        "narHash": "sha256-hbYT22mcPB3jeNvnSV7MMv4utLm7aGFQgRjGeAZn5Dc=",
+        "lastModified": 1794525090,
+        "narHash": "sha256-Q08qJhXwufI+ugqcTJAnBzC2B8ThIEBeGiWRkJX7x4E=",
         "owner": "kleinbem-dev",
         "repo": "attic-ui",
-        "rev": "4a25610f2e7b9f697d230ee0b36f6f1e208fc949",
+        "rev": "fcea8a9ffc2d213b68112bcf6cb87315fa53577e",
         "type": "github"
       },
       "original": {
