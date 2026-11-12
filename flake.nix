@@ -216,6 +216,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Omarchy desktop vendored and rewired for NixOS
+    nix-omarchy = {
+      url = "github:kleinbem/nix-omarchy";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
+    };
+
   };
 
   outputs =
