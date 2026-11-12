@@ -10,7 +10,15 @@ ESP-IDF. `build.sh` pins all three and sets them up in
 ./build.sh upload --device 10.0.0.112     # compile + OTA
 ./build.sh upload --device /dev/ttyACM0   # compile + USB, if OTA is not possible
 ./build.sh logs --device 10.0.0.112
+UNIT=2 ./build.sh upload --device <ip>    # unit 2 (default UNIT=1)
 ```
+
+`hmi-8in.yaml` is shared; `hmi-8in-<n>.yaml` holds what differs per unit (name,
+API key). A new unit needs its own file, a line in `../../esphome-secrets.nix`
+and the key in sops. Its C6 still runs the factory firmware, which stalls boot
+past the 5 s watchdog (see below): flash it once over USB with
+`watchdog_timeout: 30s` in its unit file, install the "C6 firmware" update,
+then drop that line and update over the air.
 
 `secrets.yaml` is read from `~/.cache/esphome-dev/secrets.yaml` (a 0600 copy of
 hass-pi's rendered `/var/lib/esphome/secrets.yaml`, or set `SECRETS=`). The guest

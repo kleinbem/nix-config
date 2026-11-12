@@ -19,6 +19,7 @@ let
   # !secret name → sops key in the host file. Add a line per new device.
   deviceKeys = lib.filterAttrs (_: has hostSops) {
     api_key_hmi_8in_1 = "esphome_api_key_hmi_8in_1";
+    api_key_hmi_8in_2 = "esphome_api_key_hmi_8in_2";
     api_key_smart_86_box_1 = "esphome_api_key_smart_86_box_1";
     ota_password = "esphome_ota_password";
     # The panels' guest Wi-Fi QR code (the Orbi's guest network).

@@ -1,0 +1,8 @@
+# Unit 1 (MAC 80:f1:b2:d5:cb:3e).
+substitutions:
+  name: hmi-8in-1
+  friendly_name: HMI 8in 1
+  api_key: !secret api_key_hmi_8in_1
+
+packages:
+  panel: !include hmi-8in.yaml
