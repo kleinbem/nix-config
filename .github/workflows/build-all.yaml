@@ -9,12 +9,9 @@ on:
       - 'docs/**'
       - 'terraform/**'
       - 'LICENSE'
+  # No paths-ignore here: the required "Build" check must report on every PR.
+  # The changes job skips the builds for docs-only PRs instead.
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'terraform/**'
-      - 'LICENSE'
   workflow_dispatch:
   schedule:
     - cron: '0 4 * * 1'
@@ -27,8 +24,41 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Whether a PR touches anything besides the paths main pushes ignore.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - name: Checkout repository
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Files outside docs
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != pull_request ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE...$HEAD")
+          code=$(grep -vE '\.md$|^docs/|^terraform/|^LICENSE$' <<<"$files" || true)
+          echo "code=$([ -n "$code" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "Changed outside docs: ${code:-none}"
+
   build-all:
     name: "Build (${{ matrix.system }})"
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -455,3 +485,21 @@ jobs:
           if [ "$SYSTEM" = "aarch64-linux" ]; then
             update_status "orin-nano" "${{ steps.orin-build.outcome }}" "Orin Nano toplevel build" "$ORIN_CAUSE"
           fi
+
+  # The required check: green when both systems built or a docs-only PR
+  # skipped them. A skipped matrix job doesn't report its expanded names, so
+  # "Build (x86_64-linux)" itself can't be required.
+  build:
+    name: Build
+    needs: [changes, build-all]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Builds passed or were skipped
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          BUILD: ${{ needs.build-all.result }}
+        run: |
+          echo "changes=$CHANGES build-all=$BUILD"
+          [ "$CHANGES" = success ] && { [ "$BUILD" = success ] || [ "$BUILD" = skipped ]; }
