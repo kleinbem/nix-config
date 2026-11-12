@@ -2252,11 +2252,11 @@
         "omarchy-src": "omarchy-src"
       },
       "locked": {
-        "lastModified": 1794442623,
-        "narHash": "sha256-/eFjY7HOQbaT54zkj2gv1uMFupXI3FdAEdIDv6dCV8c=",
+        "lastModified": 1794462106,
+        "narHash": "sha256-CWhU/3/NER4hLktYdezJ69tY9/MzB3RSmMoFSFHlUiM=",
         "owner": "kleinbem",
         "repo": "nix-omarchy",
-        "rev": "9dc11879a29b11b1ef6a37dbebceacd70645c7c6",
+        "rev": "03016be6018cae4a65760b0fcf0f6a556d346fc0",
         "type": "github"
       },
       "original": {
@@ -3232,17 +3232,17 @@
     "omarchy-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1794437964,
-        "narHash": "sha256-eBZth6sEV2DvTHcDndek3NruqoZq8P+Wu8b374B5Qik=",
+        "lastModified": 1792682803,
+        "narHash": "sha256-bn4Mnfz8/SuPEAArMD7PwwSPfJcKvAEa6beDoa4Bitk=",
         "owner": "omacom",
         "repo": "omarchy",
-        "rev": "e6554e02d5257518609343f6d2ef64524edd0da1",
+        "rev": "3c7027db2a4fa9fa6a49d7af7f87c27ac48e677d",
         "type": "github"
       },
       "original": {
         "owner": "omacom",
-        "ref": "quattro",
         "repo": "omarchy",
+        "rev": "3c7027db2a4fa9fa6a49d7af7f87c27ac48e677d",
         "type": "github"
       }
     },

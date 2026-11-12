@@ -313,8 +313,14 @@ in
       # GDM manages logins and offers session switching between GNOME and Omarchy
       services.displayManager.sddm.enable = lib.mkForce false;
 
-      # Voice dictation via Voxtype (push-to-talk voice-to-text for Wayland)
-      environment.systemPackages = [ pkgs.voxtype ];
+      # Voice dictation via Voxtype: sqlite is needed by voxtype's linker in this nixpkgs pin.
+      nixpkgs.overlays = [
+        (final: prev: {
+          voxtype = prev.voxtype.overrideAttrs (old: {
+            buildInputs = (old.buildInputs or [ ]) ++ [ final.sqlite ];
+          });
+        })
+      ];
       hardware.uinput.enable = true;
       users.users.${config.my.username}.extraGroups = [
         "input"
