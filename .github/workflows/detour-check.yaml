@@ -88,13 +88,15 @@ jobs:
           fi
 
       - name: Fail on what it breaks
-        # unavailable: a download failed, so those weren't checked.
-        if: steps.holds.outputs.held != '' || steps.holds.outputs.failed != '' || steps.holds.outputs.unreached != '' || steps.holds.outputs.unavailable != ''
+        # unavailable: a download failed, so those weren't checked. ahead: the
+        # fix is in nix-detour-fleet, but this lock has an older revision of it.
+        if: steps.holds.outputs.held != '' || steps.holds.outputs.failed != '' || steps.holds.outputs.unreached != '' || steps.holds.outputs.unavailable != '' || steps.holds.outputs.ahead != ''
         env:
           HELD: ${{ steps.holds.outputs.held }}
           FAILED: ${{ steps.holds.outputs.failed }}
           UNREACHED: ${{ steps.holds.outputs.unreached }}
           UNAVAILABLE: ${{ steps.holds.outputs.unavailable }}
+          AHEAD: ${{ steps.holds.outputs.ahead }}
         run: |
-          echo "::error::This nixpkgs bump breaks: ${HELD} ${FAILED}; holds that don't reach: ${UNREACHED}; not checked (download failed): ${UNAVAILABLE}. See the PR comment."
+          echo "::error::This nixpkgs bump breaks: ${HELD} ${FAILED}; held in nix-detour-fleet already, update that input: ${AHEAD}; holds that don't reach: ${UNREACHED}; not checked (download failed): ${UNAVAILABLE}. See the PR comment."
           exit 1
