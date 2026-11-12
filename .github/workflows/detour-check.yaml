@@ -29,7 +29,6 @@ jobs:
           client-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           permission-contents: read
-          permission-pull-requests: write
 
       - name: Checkout nix-config
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,25 +61,39 @@ jobs:
           systems: x86_64-linux aarch64-linux
           build: true
 
-      # One comment per PR, updated on each push.
+      # The first token has expired by now: the builds take hours.
+      - name: Mint a token for the comment
+        id: comment-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+
+      # One comment per PR, updated on each push; removed once the PR no
+      # longer moves nixpkgs.
       - name: Comment the report
-        if: steps.holds.outputs.moved == 'true'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.comment-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          MOVED: ${{ steps.holds.outputs.moved }}
           REPORT: ${{ steps.holds.outputs.report }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           marker='<!-- nix-detour-check -->'
+          id=$(gh api "repos/$GH_REPO/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)
+          if [[ $MOVED != true ]]; then
+            [[ -z $id ]] || gh api -X DELETE "repos/$GH_REPO/issues/comments/$id"
+            exit 0
+          fi
           body="$marker
           This PR moves nixpkgs. nix-detour, checked against kleinbem/nix-detour-fleet:
 
           $REPORT
 
           Run: $RUN_URL"
-          id=$(gh api "repos/$GH_REPO/issues/$PR/comments" --paginate \
-            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)
           if [[ -n $id ]]; then
             gh api -X PATCH "repos/$GH_REPO/issues/comments/$id" -f body="$body" >/dev/null
           else
