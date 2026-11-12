@@ -82,9 +82,10 @@ jobs:
           sudo swapon /swapfile-ci
           free -h
 
+      # No continue-on-error: the run shows red when the toplevel fails. The
+      # alert and status steps below run anyway (if: always()).
       - name: Build nixos-nvme toplevel (best-effort)
         id: nvme-build
-        continue-on-error: true
         env:
           NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
         run: |
