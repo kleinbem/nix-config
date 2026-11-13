@@ -14,7 +14,7 @@
 - **devenv**: `215e857b`
 - **nix-packages**: `8be86d92`
 - **nix-hardware**: `4e4dce0d`
-- **nix-presets**: `b8ae8939`
+- **nix-presets**: `c3f7b919`
 - **nix-devshells**: `041535a8`
 - **nix-gantry**: `167a2078`
 
@@ -64,7 +64,7 @@
 ### nasbook
 
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
-- 📰 **Miniflux** (`miniflux`) `10.85.47.135:8080` → `news.kleinbem.dev` — Minimalist and opinionated feed reader. _[src: nix-presets/containers/miniflux.nix:23]_
+- 📰 **Miniflux** (`miniflux`) `10.85.47.135:8080` → `news.kleinbem.dev` — Minimalist and opinionated feed reader. _[src: nix-presets/containers/miniflux.nix:27]_
 - 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:14]_
 - 📥 **qBittorrent** (`qbittorrent`) `10.85.47.134:8080` → `torrents.kleinbem.dev` — Headless torrent downloader with WebUI. _[src: nix-presets/containers/qbittorrent.nix:16]_
 - 🗄️ **Qdrant DB** (`qdrant`) `10.85.47.105:6333` — Vector database for AI context. _[src: nix-presets/containers/qdrant.nix:14]_

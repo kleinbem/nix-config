@@ -727,6 +727,9 @@ hosts:
       - miniflux.enable
       - miniflux.hostDataDir
       - miniflux.ip
+      - miniflux.oidc
+      - miniflux.oidc.clientSecretFile
+      - miniflux.oidc.enable
       - monitoring
       - monitoring.enable
       - monitoring.hostDataDir
@@ -787,6 +790,7 @@ hosts:
     - syncthing
     secrets_consumed:
     - attic_pull_token
+    - miniflux_oauth_client_secret
     - paperless_password
     hardware_profile: x86_64 Laptop/NAS with dedicated Btrfs /data storage pool
   nixos-nvme:
