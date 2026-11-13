@@ -44,6 +44,8 @@ in
     inputs.nix-presets.nixosModules.herdr-remote-client
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
+    inputs.nix-presets.nixosModules.stalwart
+    inputs.nix-presets.nixosModules.forgejo
 
     # Needs SOPS to unlock the secrets below
     ./secrets.nix
@@ -194,6 +196,27 @@ in
           clientSecretFile = config.sops.secrets.miniflux_oauth_client_secret.path;
         };
       };
+
+      stalwart = {
+        enable = true;
+        ip = "${myInventory.network.nodes.stalwart.ip}/24";
+        hostDataDir = "/var/lib/images/stalwart";
+        domain = "kleinbem.dev";
+        memoryLimit = "1G";
+        adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
+      };
+
+      forgejo = {
+        enable = true;
+        ip = "${myInventory.network.nodes.forgejo.ip}/24";
+        domain = myInventory.network.nodes.forgejo.domain;
+        memoryLimit = "1G";
+        admin.passwordFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_admin_password.path;
+        oidc = {
+          enable = true;
+          clientSecretFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_oauth_client_secret.path;
+        };
+      };
     };
     monitoring.node.enable = true;
   };
@@ -209,6 +232,8 @@ in
       "d /var/lib/images/qdrant - - - - -"
       "d /var/lib/images/syncthing - - - - -"
       "d /var/lib/images/miniflux - - - - -"
+      "d /var/lib/images/stalwart - - - - -"
+      "d /var/lib/images/forgejo - - - - -"
       "d /mnt/data/Archive 0755 martin users - -"
       "d /mnt/data/Archive/Inbox 0755 martin users - -"
       "d /mnt/data/Archive/Paperless 0755 root root - -"
@@ -239,7 +264,19 @@ in
   networking = {
     hostName = "nasbook";
 
-    nftables.enable = true;
+    nftables = {
+      enable = true;
+      # Inbound SMTP: forwards WAN:25 to Stalwart on cbr0.
+      tables.mail-nat = {
+        family = "inet";
+        content = ''
+          chain prerouting {
+            type nat hook prerouting priority dstnat; policy accept;
+            iifname "enp4s0" tcp dport 25 dnat ip to ${myInventory.network.nodes.stalwart.ip}
+          }
+        '';
+      };
+    };
 
     firewall = {
       enable = true;

@@ -6,7 +6,6 @@
   ...
 }:
 let
-  mkPerContainerSecrets = import ../../lib/secrets.nix { inherit lib inputs; };
 
   # alertmanager-ntfy: the `monitoring` ntfy user's password plus the alert
   # topic. Gated on monitoring+ntfy and on the key existing (sops-nix fails
@@ -148,26 +147,6 @@ in
       };
     }
     // lib.optionalAttrs config.my.containers.open-webui.oidc.enable openWebUiOidc.secrets
-    // lib.optionalAttrs config.my.containers.stalwart.enable (
-      # Stalwart fallback-admin secret (`mkpasswd -m sha-512` hash or plaintext).
-      # Per-container scope so it can move hosts with the mail server.
-      mkPerContainerSecrets {
-        container = "stalwart";
-        keys = [ "admin_password_hash" ];
-      }
-    )
-    // lib.optionalAttrs config.my.containers.forgejo.enable (
-      # Owned by uid 990, the forgejo user the preset pins inside the
-      # container, so the bootstrap unit can read the bind mounts without
-      # making them world-readable.
-      lib.mapAttrs (_: s: s // { uid = 990; }) (mkPerContainerSecrets {
-        container = "forgejo";
-        keys = [
-          "admin_password"
-          "oauth_client_secret"
-        ];
-      })
-    )
     // lib.optionalAttrs config.my.containers.persona-runtime.enable personaRuntimeSecrets;
 
     templates = {

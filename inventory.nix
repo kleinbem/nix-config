@@ -759,11 +759,11 @@ in
           description = "Shared identity provider (SSO, social login, persona OIDC).";
         };
       };
-      # Persona mail on mac-mini; persona-scaffold.sh creates the mailboxes.
+      # Persona mail on nasbook; persona-scaffold.sh creates the mailboxes.
       # SMTP/IMAP can't go through Cloudflare, so personas reach this IP over
       # the mesh directly.
       stalwart = {
-        ip = "10.85.50.8";
+        ip = "10.85.47.137";
         port = 8080;
         # Caddy proxies only the JMAP/webadmin HTTP surface, LAN/mesh only:
         # a mail admin console stays off public DNS.
@@ -778,9 +778,9 @@ in
       };
       # Logs in through Authentik OIDC itself, so no forward-auth gate. SSH
       # stays off: this domain resolves to Caddy, so it needs its own name and
-      # a DNAT on mac-mini first. Git goes over HTTPS.
+      # a DNAT on nasbook first. Git goes over HTTPS.
       forgejo = {
-        ip = "10.85.50.4";
+        ip = "10.85.47.136";
         port = 3000;
         externalPort = 443;
         domain = "git.kleinbem.dev";

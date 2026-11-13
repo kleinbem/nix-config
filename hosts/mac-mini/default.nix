@@ -60,8 +60,6 @@ in
     inputs.nix-presets.nixosModules.anythingllm
     inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.persona-runtime
-    inputs.nix-presets.nixosModules.stalwart
-    inputs.nix-presets.nixosModules.forgejo
     inputs.nix-presets.nixosModules.herdr-remote-client
     # Discord/Element/Signal in nixpak sandboxes — successor to the
     # firejail.nix wrappers imported above, app by app.
@@ -324,33 +322,6 @@ in
           email = personasView.all.${name}.email;
         });
       };
-
-      # Persona mail server (docs/STALWART.md). Admin secret is
-      # per-container since the personas are fleet-wide. Mailboxes come from
-      # scripts/persona-scaffold.sh, not Nix. No relay: direct delivery only,
-      # external mail needs one.
-      stalwart = {
-        enable = true;
-        ip = "${myInventory.network.nodes.stalwart.ip}/24";
-        hostDataDir = "/var/lib/stalwart";
-        domain = "kleinbem.dev";
-        memoryLimit = "1G";
-        adminPasswordFile = lib.mkIf config.my.containers.stalwart.enable config.sops.secrets.stalwart_admin_password_hash.path;
-      };
-
-      # State is under /var/lib/images, which is persisted.
-      # Bootstrap user created from nix/per-container/forgejo.yaml
-      forgejo = {
-        enable = true;
-        ip = "${myInventory.network.nodes.forgejo.ip}/24";
-        domain = myInventory.network.nodes.forgejo.domain;
-        memoryLimit = "1G";
-        admin.passwordFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_admin_password.path;
-        oidc = {
-          enable = true;
-          clientSecretFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_oauth_client_secret.path;
-        };
-      };
     };
   };
 
@@ -583,9 +554,8 @@ in
     # nftables backend so extraForwardRules works (see nixos-nvme's network.nix).
     nftables = {
       enable = true;
-      # Inbound SMTP: the router forwards WAN:25 to this host, and Stalwart
-      # lives on cbr0, so DNAT it in prerouting (like core-pi's netbird-nat).
-      # container-host.nix's `oifname "cbr0" accept` covers the forward.
+      # Inbound SMTP fallback: forwards any WAN:25 still hitting mac-mini
+      # to Stalwart on nasbook.
       tables.mail-nat = {
         family = "inet";
         content = ''
