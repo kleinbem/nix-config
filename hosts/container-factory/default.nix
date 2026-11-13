@@ -257,6 +257,10 @@ let
     miniflux = {
       ip = "${myInventory.network.nodes.miniflux.ip}/24"; # nasbook
       hostDataDir = dataDir "miniflux";
+      oidc = {
+        enable = true;
+        clientSecretFile = "/run/secrets/factory-dummy";
+      };
     };
     # Hybrid containers (comfyui, langflow) run Podman inside nspawn containers
     # with runtime image pulling and produce no static factory closure to cache.
