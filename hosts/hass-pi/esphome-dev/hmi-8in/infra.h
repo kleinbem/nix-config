@@ -13,6 +13,7 @@ struct Service {
   int status, ms;
 };
 inline std::vector<Service> services;
+inline uint32_t last_ok_ms = 0;
 
 // Gatus /api/v1/endpoints/statuses with pageSize=1: one result per endpoint.
 inline bool parse(const std::string &body) {
@@ -45,45 +46,54 @@ inline int count(State st) {
 
 constexpr uint32_t GREEN = 0x66BB6A, RED = 0xEF5350, CARD = 0x161B21, MUTED = 0x8A949E, ACTIVE = 0x4FC3F7;
 
-// Rebuilds the tiles; the grid is a flex-wrap container from the YAML.
+// Updates tiles in place when the count matches to avoid reallocating 48 LVGL widgets each minute.
 inline void render(lv_obj_t *grid, const lv_font_t *name_font, const lv_font_t *small_font) {
-  lv_obj_clean(grid);
   lv_obj_set_style_opa(grid, LV_OPA_COVER, 0);
-  for (auto &s : services) {
+  if (lv_obj_get_child_count(grid) != services.size()) {
+    lv_obj_clean(grid);
+    for (size_t i = 0; i < services.size(); i++) {
+      lv_obj_t *t = lv_obj_create(grid);
+      lv_obj_set_size(t, 298, 130);
+      lv_obj_set_scrollable(t, false);
+      lv_obj_set_style_border_width(t, 6, 0);
+      lv_obj_set_style_border_side(t, LV_BORDER_SIDE_LEFT, 0);
+      lv_obj_set_style_radius(t, 10, 0);
+      lv_obj_set_style_pad_all(t, 14, 0);
+
+      lv_obj_t *n = lv_label_create(t);
+      lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
+      lv_obj_set_width(n, 258);
+      lv_obj_set_style_text_font(n, name_font, 0);
+      lv_obj_set_style_text_color(n, lv_color_hex(0xFFFFFF), 0);
+      lv_obj_align(n, LV_ALIGN_TOP_LEFT, 0, 0);
+
+      lv_obj_t *g = lv_label_create(t);
+      lv_obj_set_style_text_font(g, small_font, 0);
+      lv_obj_set_style_text_color(g, lv_color_hex(MUTED), 0);
+      lv_obj_align(g, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+
+      lv_obj_t *st = lv_label_create(t);
+      lv_obj_set_style_text_font(st, small_font, 0);
+      lv_obj_align(st, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    }
+  }
+  for (size_t i = 0; i < services.size(); i++) {
+    const auto &s = services[i];
     uint32_t c = s.state == UP ? GREEN : s.state == DOWN ? RED : MUTED;
-    lv_obj_t *t = lv_obj_create(grid);
-    lv_obj_set_size(t, 290, 130);
-    lv_obj_set_scrollable(t, false);
+    lv_obj_t *t = lv_obj_get_child(grid, i);
     lv_obj_set_style_bg_color(t, lv_color_hex(s.state == DOWN ? 0x3A1A1A : CARD), 0);
     lv_obj_set_style_border_color(t, lv_color_hex(c), 0);
-    lv_obj_set_style_border_width(t, 6, 0);
-    lv_obj_set_style_border_side(t, LV_BORDER_SIDE_LEFT, 0);
-    lv_obj_set_style_radius(t, 10, 0);
-    lv_obj_set_style_pad_all(t, 14, 0);
 
-    lv_obj_t *n = lv_label_create(t);
-    lv_label_set_text(n, s.name.c_str());
-    lv_label_set_long_mode(n, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_width(n, 250);
-    lv_obj_set_style_text_font(n, name_font, 0);
-    lv_obj_set_style_text_color(n, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_align(n, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_label_set_text(lv_obj_get_child(t, 0), s.name.c_str());
+    lv_label_set_text(lv_obj_get_child(t, 1), s.group.c_str());
 
-    lv_obj_t *g = lv_label_create(t);
-    lv_label_set_text(g, s.group.c_str());
-    lv_obj_set_style_text_font(g, small_font, 0);
-    lv_obj_set_style_text_color(g, lv_color_hex(MUTED), 0);
-    lv_obj_align(g, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-
-    lv_obj_t *st = lv_label_create(t);
-    std::string txt = s.state == UP     ? std::to_string(s.ms) + " ms"
+    lv_obj_t *st = lv_obj_get_child(t, 2);
+    std::string txt = s.state == UP        ? std::to_string(s.ms) + " ms"
                       : s.state == UNKNOWN ? "not checked yet"
-                      : s.status          ? "HTTP " + std::to_string(s.status)
-                                          : "no answer";
+                      : s.status           ? "HTTP " + std::to_string(s.status)
+                                           : "no answer";
     lv_label_set_text(st, txt.c_str());
-    lv_obj_set_style_text_font(st, small_font, 0);
     lv_obj_set_style_text_color(st, lv_color_hex(c), 0);
-    lv_obj_align(st, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
   }
 }
 

@@ -19,7 +19,30 @@ inline const char *icon(const std::string &s) {
   if (s == "windy" || s == "windy-variant") return "\U000F059D";
   if (s == "lightning" || s == "lightning-rainy") return "\U000F0593";
   if (s == "hail") return "\U000F0592";
+  if (s == "exceptional") return "\U000F0026";
   return "\U000F0590";
+}
+
+// Home Assistant condition keys ("partlycloudy", "clear-night", ...) to display text.
+inline std::string label(const std::string &s) {
+  if (s == "sunny") return "Sunny";
+  if (s == "clear-night") return "Clear night";
+  if (s == "partlycloudy") return "Partly cloudy";
+  if (s == "cloudy") return "Cloudy";
+  if (s == "rainy") return "Rain";
+  if (s == "pouring") return "Heavy rain";
+  if (s == "snowy") return "Snow";
+  if (s == "snowy-rainy") return "Sleet";
+  if (s == "fog") return "Fog";
+  if (s == "windy" || s == "windy-variant") return "Windy";
+  if (s == "lightning" || s == "lightning-rainy") return "Thunderstorm";
+  if (s == "hail") return "Hail";
+  if (s == "exceptional") return "Severe weather";
+  std::string out = s;
+  for (auto &c : out)
+    if (c == '-' || c == '_') c = ' ';
+  if (!out.empty()) out[0] = toupper((unsigned char) out[0]);
+  return out;
 }
 
 // Missing values are NAN.
