@@ -1239,6 +1239,7 @@ hosts:
       - container-updater.manifestUrl
       - meshLlm
       - meshLlm.enable
+      - meshLlm.extraArgs
       - meshLlm.models
       - meshLlm.package
       - meshLlmGpuRunner.enable
