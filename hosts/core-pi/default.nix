@@ -148,6 +148,43 @@ let
       }
     ];
   };
+
+  # attic-ui ships neutral upstream defaults; layer fleet settings via /config.json.
+  atticUiRoot = pkgs.symlinkJoin {
+    name = "attic-ui-fleet";
+    paths = [
+      inputs.attic-ui.packages.${pkgs.stdenv.hostPlatform.system}.default
+      (pkgs.writeTextDir "config.json" (
+        builtins.toJSON {
+          defaultCache = "system";
+          upstreamFallback = true;
+          footer = "kleinbem fleet infrastructure";
+          publicKeys.system = "system:dCe+aNk1+Dwf3IG6OVBKcf5h0oL0hkRVqYiLN7iOJhU=";
+          presets =
+            map (domain: {
+              label = domain;
+              endpoint = "https://${domain}";
+              cacheName = "system";
+            }) ([ nodes.attic.domain ] ++ (nodes.attic.extraDomains or [ ]))
+            ++ [
+              {
+                label = "cache.nixos.org";
+                endpoint = "https://cache.nixos.org";
+                cacheName = "";
+              }
+            ];
+          specs = {
+            "Host Machine" = "core-pi (${nodes.attic.ip})";
+            "Transport" = "NetBird Mesh + Caddy TLS";
+            "Compression" = "zstd (level 3)";
+            "NAR Threshold" = "1 MiB (un-chunked)";
+            "Average Chunk" = "4 MiB";
+            "Retention & Reaper" = "12h GC pass; weekly reaper Sunday 05:30";
+          };
+        }
+      ))
+    ];
+  };
 in
 {
   imports = [
@@ -301,7 +338,7 @@ in
               // {
                 attic = myInventory.network.nodes.attic // {
                   spa = {
-                    root = inputs.attic-ui.packages.${pkgs.system}.default;
+                    root = atticUiRoot;
                     backendPaths = [
                       "/system*"
                       "/api/*"
