@@ -799,12 +799,15 @@ in
         port = 8383;
         externalPort = 443;
         domain = "revue.kleinbem.dev";
-        meshOnly = true;
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         publicCert = true;
         # The dashboard and read API have no login and show reviews of private
         # repos. Webhooks can't log in; revue checks their HMAC signature.
         auth = true;
-        authExcludePaths = [ "/webhook" ];
+        authExcludePaths = [
+          "/webhook"
+          "/health"
+        ];
         meta = {
           name = "Revue AI Reviewer";
           category = "Dev";
