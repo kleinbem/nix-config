@@ -189,6 +189,10 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.miniflux.ip}/24";
         hostDataDir = "/var/lib/images/miniflux";
+        oidc = {
+          enable = true;
+          clientSecretFile = config.sops.secrets.miniflux_oauth_client_secret.path;
+        };
       };
     };
     monitoring.node.enable = true;

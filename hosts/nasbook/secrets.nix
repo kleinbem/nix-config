@@ -1,4 +1,13 @@
 {
+  config,
+  lib,
+  inputs,
+  ...
+}:
+let
+  secretHelpers = import ../../lib/secrets.nix { inherit lib inputs; };
+in
+{
   sops = {
     # Use host SSH keys for automated decryption
     age.sshKeyPaths = [ "/nix/persist/etc/ssh/ssh_host_ed25519_key" ];
@@ -22,6 +31,14 @@
       # For the netbird-autojoin oneshot (networking.nix). Without NetBird the
       # mesh-only cache.kleinbem.dev is unreachable.
       netbird_setup_key = { };
-    };
+    }
+    // lib.optionalAttrs config.my.containers.miniflux.oidc.enable (
+      lib.mapAttrs (_: s: s // { mode = "0444"; }) (
+        secretHelpers.mkPerContainerSecrets {
+          container = "miniflux";
+          keys = [ "oauth_client_secret" ];
+        }
+      )
+    );
   };
 }
