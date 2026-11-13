@@ -41,9 +41,12 @@ Gotchas:
   tmpfs runs out.
 - Logs also go to UART0, the USB-C serial bridge (115200), for crash dumps.
 - Radio stations live in `stations.h`; the "Wake-up station" select lists
-  their names in the same order. `chime.wav` (16 kHz mono) is built in, so
-  the alarm and kitchen timer ring without the internet.
+  their names in the same order, and tapping the active station stops it.
+  `chime.wav` (16 kHz mono) is built in, so the wake-up alarm, kitchen timer
+  and voice timers ring without the internet (tap the pop-up to silence).
 - Hold the Home tab's Light button for the lights pop-up (brightness, colour,
-  white, WiZ scenes). The lamps and their names live in `lights.h`.
-- The Infra tab shows Gatus (status.kleinbem.dev) once a minute: one tile per
-  service, down ones first. The tab button turns red with the number down.
+  white, WiZ scenes; lamps live in `lights.h`). Tap the Car card for the EV
+  pop-up (climate pre-conditioning, start/stop charge).
+- The Infra tab shows Gatus (status.kleinbem.dev) once a minute while awake
+  (tap the header to refresh now): one tile per service, down ones first. The
+  tab button turns red with the number down.

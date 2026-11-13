@@ -28,8 +28,18 @@ esphome:
     priority: -100
     then:
       # Tabs only: no swipe between pages, so no slide animation to redraw.
-      - lambda: lv_obj_remove_flag(lv_tabview_get_content(id(tv)), LV_OBJ_FLAG_SCROLLABLE);
-      - lambda: c6_fw::start();
+      - lambda: |-
+          lv_obj_set_scrollable(lv_tabview_get_content(id(tv)), false);
+          c6_fw::start();
+          lv_slider_set_value(id(sl_day), (int) lroundf(id(bright_day).state), LV_ANIM_OFF);
+          lv_slider_set_value(id(sl_night), (int) lroundf(id(bright_night).state), LV_ANIM_OFF);
+          lv_slider_set_value(id(sl_wake_vol), (int) lroundf(id(wake_volume).state), LV_ANIM_OFF);
+          lv_slider_set_value(id(sl_voice), (int) lroundf(id(voice_volume).state), LV_ANIM_OFF);
+          lv_slider_set_value(id(sl_vol), (int) lroundf(id(panel_media).volume * 100.0f), LV_ANIM_OFF);
+          lv_label_set_text(id(lbl_wake_station), id(wake_station).current_option().c_str());
+      - script.execute: clock_show
+      - script.execute: car_sync
+      - script.execute: np_refresh
 
 esp32:
   board: esp32-p4_r3
@@ -87,6 +97,8 @@ wifi:
   ap:
     ssid: ${friendly_name} Fallback
     password: !secret wifi_password
+  on_connect:
+    - script.execute: inf_fetch
 
 api:
   encryption:
@@ -142,6 +154,7 @@ touchscreen:
     i2c_id: bus_a
     display: lcd
     on_touch:
+      - lambda: if (id(photo_mode) && !id(photo_page)->is_showing()) id(photo_mode) = false;
       - script.execute: wake
 
 output:
@@ -166,7 +179,8 @@ mipi_csi:
   sensor: OV5647
   resolution: 1280x960
   pixel_format: RGB565
-  framerate: 10 fps
+  # OV5647 clocks out 45 fps, which divides cleanly to 9 fps.
+  framerate: 9 fps
   sccb_frequency: 400kHz
   init_ldo: false
 
@@ -386,6 +400,7 @@ voice_assistant:
         id: popup
         title: "Timer"
         message: !lambda 'return timer.name.empty() ? std::string("Time is up") : timer.name + " is done";'
+    - script.execute: ring_chime
   on_timer_cancelled:
     - lvgl.label.update:
         id: lbl_timer
@@ -404,6 +419,26 @@ image:
       - lvgl.image.update:
           id: img_photo
           src: photo
+      - if:
+          condition:
+            and:
+              - lambda: return id(photo_mode);
+              - not:
+                  lvgl.page.is_showing: photo_page
+          then:
+            - script.execute: photo_clock_sync
+            - lvgl.widget.hide: btn_talk
+            - lvgl.page.show:
+                id: photo_page
+                animation: FADE_IN
+                time: 600ms
+    on_error:
+      - if:
+          condition:
+            not:
+              lvgl.page.is_showing: photo_page
+          then:
+            - lambda: id(photo_mode) = false;
   - platform: sendspin
     id: ss_art
     format: JPEG
@@ -450,14 +485,17 @@ font:
     id: font_big
     size: 72
     glyphsets: [GF_Latin_Core] # é, ö, ü in titles and station names
+    ignore_missing_glyphs: true
   - file: "gfonts://Roboto"
     id: font_mid
     size: 36
     glyphsets: [GF_Latin_Core] # é, ö, ü in titles and station names
+    ignore_missing_glyphs: true
   - file: "gfonts://Roboto"
     id: font_small
     size: 26
     glyphsets: [GF_Latin_Core] # é, ö, ü in titles and station names
+    ignore_missing_glyphs: true
   - file: "gfonts://Roboto"
     id: font_pin
     size: 64
@@ -468,13 +506,13 @@ font:
       url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
     id: font_icon
     size: 64
-    glyphs: "󰐹󰒮󰐎󰒭󰎊󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂"
+    glyphs: "󰐹󰒮󰐎󰒭󰎊󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰐊󰏤󰓛󰭜"
   - file:
       type: web
       url: https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf
     id: font_icon_small
     size: 36
-    glyphs: "󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰤠󰅤󰃠"
+    glyphs: "󰖐󰖙󰖕󰖗󰖖󰖘󰖑󰖝󰖓󰖔󰖒󰌵󰖏󰕥󰔏󰖎󰭬󰍬󰔛󰐲󰀦󰁍󰅂󰤠󰅤󰃠󰑐󰜉󰋩󰈐󱐋󰚥󰓛"
 
 number:
   # Wake-up alarm: the radio fades in up to this volume.
@@ -791,23 +829,29 @@ script:
           transition_length: 2s
       - lvgl.pause:
   # Slideshow: day-time screensaver with photos from hass-pi.
+  # Fades in once online_image finishes downloading so the previous buffer never flashes.
   - id: photo_start
     then:
       - lambda: id(photo_mode) = true;
       - online_image.set_url:
           id: photo
           url: !lambda return std::string("${photo_url}&t=") + to_string(millis());
+  - id: photo_clock_sync
+    then:
       - lvgl.label.update:
           id: lbl_photo_clock
           text: !lambda |-
             auto t = id(ha_time).now();
             float c = id(ha_weather_temp).state;
             return t.strftime("%H:%M") + (std::isnan(c) ? std::string("") : str_sprintf("   %.0f°", c));
-      - lvgl.widget.hide: btn_talk
-      - lvgl.page.show:
-          id: photo_page
-          animation: FADE_IN
-          time: 600ms
+      - lvgl.label.update:
+          id: lbl_photo_date
+          text: !lambda |-
+            auto t = id(ha_time).now();
+            std::string s = t.is_valid() ? t.strftime("%A, %d %B") : std::string("");
+            std::string w = weather::label(id(ha_weather).state);
+            if (!w.empty()) s += (s.empty() ? "" : "   ·   ") + w;
+            return s;
   # Off a few minutes after the slideshow handed over to the night, unless touched.
   - id: night_off
     mode: restart
@@ -834,12 +878,21 @@ script:
     parameters:
       i: int
     then:
-      - lambda: id(radio_name) = stations::LIST[i].name;
-      - media_player.play_media:
-          id: panel_media
-          media_url: !lambda return stations::LIST[i].url;
-      - lambda: id(np_local) = false;
-      - script.execute: np_mode
+      - if:
+          condition:
+            lambda: |-
+              return id(panel_media).state == media_player::MEDIA_PLAYER_STATE_PLAYING &&
+                     id(radio_name) == stations::LIST[i].name;
+          then:
+            - lambda: id(radio_name).clear();
+            - media_player.stop: panel_media
+          else:
+            - lambda: id(radio_name) = stations::LIST[i].name;
+            - media_player.play_media:
+                id: panel_media
+                media_url: !lambda return stations::LIST[i].url;
+            - lambda: id(np_local) = false;
+            - script.execute: np_mode
   # Anything else played after a station (HA, Sendspin) must not keep its name;
   # switching stations passes through idle only briefly.
   - id: radio_idle
@@ -892,6 +945,16 @@ script:
             if (id(np_local)) return std::string("on this panel");
             if (id(np_player).state.rfind("media_player.", 0) != 0) return std::string("");
             return "on " + id(np_player).state.substr(13);
+      - lambda: |-
+          bool playing = id(panel_media).state == media_player::MEDIA_PLAYER_STATE_PLAYING;
+          lv_label_set_text(id(lbl_np_play),
+                            !id(np_local) ? "\U000F040E" : playing ? "\U000F03E4" : "\U000F040A");
+          lv_obj_t *rads[] = {id(rad_0), id(rad_1), id(rad_2), id(rad_3),
+                              id(rad_4), id(rad_5), id(rad_6), id(rad_7)};
+          for (int i = 0; i < stations::COUNT; i++) {
+            if (playing && id(radio_name) == stations::LIST[i].name) lv_obj_add_state(rads[i], LV_STATE_CHECKED);
+            else lv_obj_remove_state(rads[i], LV_STATE_CHECKED);
+          }
       - script.execute: np_progress
   - id: np_progress
     then:
@@ -899,10 +962,10 @@ script:
           float d = id(ss_duration).state, p = id(ss_progress).state;
           // Live radio has no length; a Sendspin track's duration may linger.
           if (!id(np_local) || !id(radio_name).empty() || std::isnan(d) || d <= 0) {
-            lv_obj_add_flag(id(bar_np_progress), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(id(bar_np_progress), true);
             return;
           }
-          lv_obj_remove_flag(id(bar_np_progress), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_set_hidden(id(bar_np_progress), false);
           int v = std::isnan(p) ? 0 : (int) (1000.0f * p / d);
           lv_bar_set_value(id(bar_np_progress), std::clamp(v, 0, 1000), LV_ANIM_OFF);
   - id: np_local_cover
@@ -963,6 +1026,59 @@ script:
           id: btn_pump
           state:
             checked: !lambda return id(ha_pump).state;
+  - id: pump_sync
+    then:
+      - lvgl.label.update:
+          id: lbl_pump
+          text: !lambda |-
+            float p = id(ha_pump_power).state;
+            if (id(ha_pump).state && !std::isnan(p) && p >= 1.0f) return str_sprintf("Pump %.0fW", p);
+            return std::string("Pump");
+  - id: car_sync
+    mode: restart
+    then:
+      - lambda: |-
+          float bat = id(ha_car_battery).state;
+          float rng = id(ha_car_range).state;
+          float odo = id(ha_car_mileage).state;
+          float pwr = id(ha_car_power).state;
+          float rem = id(ha_car_rem).state;
+          bool chg = id(ha_car_charging).state;
+          bool plug = id(ha_car_plug).state;
+          bool hvac = id(ha_car_hvac).state;
+
+          std::string bat_s = std::isnan(bat) ? "-- %" : str_sprintf("%.0f %%", bat);
+          lv_label_set_text(id(lbl_car), bat_s.c_str());
+          lv_label_set_text(id(lbl_car_box_bat), bat_s.c_str());
+
+          lv_label_set_text(id(lbl_car_top), std::isnan(rng) ? "Car" : str_sprintf("%.0f km", rng).c_str());
+          lv_label_set_text(id(lbl_car_box_range),
+                            std::isnan(rng) ? "Range --" : str_sprintf("Range %.0f km", rng).c_str());
+
+          uint32_t ic = chg ? 0x66BB6A : (hvac || plug) ? 0x4FC3F7 : (!std::isnan(bat) && bat < 20.0f) ? 0xFFB74D : 0x8A949E;
+          lv_obj_set_style_text_color(id(lbl_car_icon), lv_color_hex(ic), 0);
+
+          std::string sub;
+          if (chg) {
+            sub = !std::isnan(pwr) && pwr >= 0.1f ? str_sprintf("Charging %.1f kW", pwr) : std::string("Charging");
+          } else if (hvac) {
+            sub = "Climate on";
+          } else if (plug) {
+            sub = "Plugged in";
+          } else if (id(ha_car_plug).has_state()) {
+            sub = "Unplugged";
+          }
+          lv_label_set_text(id(lbl_car_sub), sub.c_str());
+
+          std::string st = chg ? "Charging" : plug ? "Plugged in" : id(ha_car_plug).has_state() ? "Unplugged" : "Status unknown";
+          if (chg && !std::isnan(pwr) && pwr >= 0.1f) st += str_sprintf(" (%.1f kW)", pwr);
+          if (chg && !std::isnan(rem) && rem >= 1.0f) {
+            int m = (int) lroundf(rem);
+            st += m >= 60 ? str_sprintf("   ·   %dh %02dm left", m / 60, m % 60) : str_sprintf("   ·   %d min left", m);
+          }
+          if (hvac) st += "   ·   Climate running";
+          if (!std::isnan(odo)) st += str_sprintf("   ·   %.0f km", odo);
+          lv_label_set_text(id(lbl_car_box_status), st.c_str());
   - id: talk
     then:
       - if:
@@ -982,6 +1098,11 @@ script:
       - lvgl.label.update:
           id: lbl_date
           text: !lambda return id(ha_time).now().strftime("%A, %d %B");
+      - if:
+          condition:
+            lambda: return id(photo_mode);
+          then:
+            - script.execute: photo_clock_sync
   - id: show_voice
     parameters:
       text: string
@@ -991,6 +1112,10 @@ script:
           id: lbl_voice
           text: !lambda return text;
           text_color: !lambda return lv_color_hex(color);
+      - lambda: |-
+          bool idle = color == 0x8A949E;
+          lv_obj_set_style_bg_color(id(btn_talk), lv_color_hex(idle ? 0x1E242B : color), 0);
+          lv_obj_set_style_text_color(id(lbl_talk_icon), lv_color_hex(idle ? 0x4FC3F7 : 0x101418), 0);
   - id: pin_show
     then:
       - lvgl.label.update:
@@ -1006,6 +1131,11 @@ script:
           condition: lvgl.is_paused
           then:
             - lvgl.resume:
+            - if:
+                condition:
+                  lambda: return millis() - infra::last_ok_ms > 60000u;
+                then:
+                  - script.execute: inf_fetch
       - light.turn_on:
           id: backlight
           brightness: !lambda |-
@@ -1132,6 +1262,7 @@ script:
                                        "Status page not readable (HTTP " + to_string(response->status_code) + ")");
                           return;
                         }
+                        infra::last_ok_ms = millis();
                         infra::render(id(inf_grid), id(font_mid)->get_lv_font(), id(font_small)->get_lv_font());
                         infra::mark_tab(id(tv), tab);
                         int n = infra::services.size(), d = infra::count(infra::DOWN), u = infra::count(infra::UNKNOWN);
@@ -1221,23 +1352,33 @@ script:
             lv_label_set_text(rain[col], "");
           }
           lv_label_set_text(id(lbl_weather_hl), hl.c_str());
+          std::string fh = "FORECAST";
+          if (!std::isnan(id(ha_weather_hum).state))
+            fh += str_sprintf("   ·   Humidity %.0f%%", id(ha_weather_hum).state);
+          if (!std::isnan(id(ha_weather_wind).state))
+            fh += str_sprintf("   ·   Wind %.0f km/h", id(ha_weather_wind).state);
+          lv_label_set_text(id(lbl_fc_head), fh.c_str());
   - id: play_chime
     then:
       - media_player.play_media:
           id: panel_media
           media_url: "audio-file://chime"
           announcement: true
+  - id: ring_chime
+    mode: restart
+    then:
+      - repeat:
+          count: 4
+          then:
+            - script.execute: play_chime
+            - delay: 2500ms
   - id: kt_ring
     then:
       - script.execute:
           id: popup
           title: "Kitchen timer"
           message: "Time is up"
-      - repeat:
-          count: 3
-          then:
-            - script.execute: play_chime
-            - delay: 2500ms
+      - script.execute: ring_chime
   # Sleep timer ran out: fade out over about 30 seconds, then stop.
   - id: sleep_fade
     then:
@@ -1272,6 +1413,7 @@ script:
           auto kt = str_sprintf("%d:%02d", k / 60, k % 60);
           lv_label_set_text(id(lbl_kt), kt.c_str());
           lv_label_set_text(id(lbl_kt_go), id(kt_end) ? "Pause" : "Start");
+          lv_obj_set_style_bg_color(id(btn_kt_go), lv_color_hex(id(kt_end) ? 0xEF6C00 : 0x1565C0), 0);
           if (id(kt_end) || id(kt_left)) home += (home.empty() ? "" : "   ") + std::string("Kitchen ") + kt;
           lv_label_set_text(id(lbl_clock_home), home.c_str());
           std::string sl = "Off";
@@ -1280,6 +1422,12 @@ script:
             sl = str_sprintf("Stops in %d min", std::max(m, 0));
           }
           lv_label_set_text(id(lbl_sleep), sl.c_str());
+          lv_obj_t *slps[] = {id(slp_0), id(slp_1), id(slp_2), id(slp_3), id(slp_4)};
+          size_t si = id(sleep_timer).active_index().value_or(0);
+          for (size_t i = 0; i < 5; i++) {
+            if (i == si) lv_obj_add_state(slps[i], LV_STATE_CHECKED);
+            else lv_obj_remove_state(slps[i], LV_STATE_CHECKED);
+          }
           if (id(wake_ringing)) lv_label_set_text(id(lbl_ring_time), id(ha_time).now().strftime("%H:%M").c_str());
   # Once a second: deadlines of the snooze, kitchen and sleep timers.
   - id: clock_tick
@@ -1371,11 +1519,7 @@ text_sensor:
       - script.execute: fc_fetch
       - lvgl.label.update:
           id: lbl_weather_cond
-          text: !lambda |-
-            std::string s = x;
-            for (auto &c : s) if (c == '-' || c == '_') c = ' ';
-            if (!s.empty()) s[0] = toupper(s[0]);
-            return s;
+          text: !lambda return weather::label(x);
       - lvgl.label.update:
           id: lbl_weather_icon
           text: !lambda return std::string(weather::icon(x));
@@ -1392,6 +1536,7 @@ text_sensor:
           else if (x == "triggered") c = 0xF44336;
           lv_obj_set_style_text_color(id(lbl_alarm), lv_color_hex(c), 0);
           lv_obj_set_style_text_color(id(lbl_alarm_icon), lv_color_hex(c), 0);
+          lv_obj_set_style_text_color(id(lbl_alarm_state), lv_color_hex(c), 0);
       - lvgl.label.update:
           id: lbl_alarm
           text: !lambda |-
@@ -1416,19 +1561,25 @@ text_sensor:
             else if (s == "pending") s = "Pending – enter code";
             else if (s == "triggered") s = "TRIGGERED";
             return s;
-          text_color: !lambda |-
-            if (x == "disarmed") return lv_color_hex(0x81C784);
-            if (x == "armed_home" || x == "arming" || x == "pending") return lv_color_hex(0xFFB74D);
-            return lv_color_hex(0xE57373);
       - if:
           condition:
             lambda: return x == "triggered" || x == "pending";
           then:
-            - script.execute:
-                id: popup
-                title: "Alarm"
-                message: !lambda 'return x == "triggered" ? std::string("Alarm triggered!") : std::string("Enter code to disarm");'
+            - if:
+                condition:
+                  lambda: return id(photo_mode);
+                then:
+                  - script.execute: photo_stop
+            - script.execute: activity
             - lambda: lv_tabview_set_active(id(tv), lv_obj_get_index(id(tile_alarm)), LV_ANIM_OFF);
+            - if:
+                condition:
+                  lambda: return x == "triggered";
+                then:
+                  - script.execute:
+                      id: popup
+                      title: "Alarm"
+                      message: "Alarm triggered!"
 
 binary_sensor:
   - platform: homeassistant
@@ -1445,9 +1596,19 @@ binary_sensor:
     id: ha_car_charging
     entity_id: binary_sensor.wj17vsx_charging
     on_state:
-      - lvgl.label.update:
-          id: lbl_car_sub
-          text: !lambda 'return std::string(x ? "Charging" : "Not charging");'
+      - script.execute: car_sync
+  - platform: homeassistant
+    id: ha_car_plug
+    entity_id: binary_sensor.wj17vsx_plug
+    internal: true
+    on_state:
+      - script.execute: car_sync
+  - platform: homeassistant
+    id: ha_car_hvac
+    entity_id: binary_sensor.wj17vsx_hvac
+    internal: true
+    on_state:
+      - script.execute: car_sync
   - platform: homeassistant
     id: ha_light
     entity_id: light.wiz_rgbw_tunable_241e14
@@ -1465,6 +1626,7 @@ binary_sensor:
           id: btn_pump
           state:
             checked: !lambda return x;
+      - script.execute: pump_sync
 
 # Mic level, for checking placement and gain from Home Assistant.
 debug:
@@ -1560,70 +1722,70 @@ sensor:
     on_value:
       - lvgl.label.update:
           id: lbl_t1_temp
-          text: !lambda return str_sprintf("%.1f°", x);
+          text: !lambda 'return std::isnan(x) ? std::string("--°") : str_sprintf("%.1f°", x);'
   - platform: homeassistant
     id: ha_t1_hum
     entity_id: sensor.sbht_003c_90f6_humidity
     on_value:
       - lvgl.label.update:
           id: lbl_t1_hum
-          text: !lambda return str_sprintf("%.0f %%", x);
+          text: !lambda 'return std::isnan(x) ? std::string("-- %") : str_sprintf("%.0f %%", x);'
   - platform: homeassistant
     id: ha_t2_temp
     entity_id: sensor.sbht_003c_626f_temperature
     on_value:
       - lvgl.label.update:
           id: lbl_t2_temp
-          text: !lambda return str_sprintf("%.1f°", x);
+          text: !lambda 'return std::isnan(x) ? std::string("--°") : str_sprintf("%.1f°", x);'
   - platform: homeassistant
     id: ha_t2_hum
     entity_id: sensor.sbht_003c_626f_humidity
     on_value:
       - lvgl.label.update:
           id: lbl_t2_hum
-          text: !lambda return str_sprintf("%.0f %%", x);
+          text: !lambda 'return std::isnan(x) ? std::string("-- %") : str_sprintf("%.0f %%", x);'
   - platform: homeassistant
     id: ha_t3_temp
     entity_id: sensor.sbht_003c_fd9f_temperature
     on_value:
       - lvgl.label.update:
           id: lbl_t3_temp
-          text: !lambda return str_sprintf("%.1f°", x);
+          text: !lambda 'return std::isnan(x) ? std::string("--°") : str_sprintf("%.1f°", x);'
   - platform: homeassistant
     id: ha_t3_hum
     entity_id: sensor.sbht_003c_fd9f_humidity
     on_value:
       - lvgl.label.update:
           id: lbl_t3_hum
-          text: !lambda return str_sprintf("%.0f %%", x);
+          text: !lambda 'return std::isnan(x) ? std::string("-- %") : str_sprintf("%.0f %%", x);'
   - platform: homeassistant
     id: ha_t4_temp
     entity_id: sensor.7c_c6_b6_63_36_9d_369d_temperature
     on_value:
       - lvgl.label.update:
           id: lbl_t4_temp
-          text: !lambda return str_sprintf("%.1f°", x);
+          text: !lambda 'return std::isnan(x) ? std::string("--°") : str_sprintf("%.1f°", x);'
   - platform: homeassistant
     id: ha_t4_hum
     entity_id: sensor.7c_c6_b6_63_36_9d_369d_humidity
     on_value:
       - lvgl.label.update:
           id: lbl_t4_hum
-          text: !lambda return str_sprintf("%.0f %%", x);
+          text: !lambda 'return std::isnan(x) ? std::string("-- %") : str_sprintf("%.0f %%", x);'
   - platform: homeassistant
     id: ha_t5_temp
     entity_id: sensor.7c_c6_b6_71_a0_6f_a06f_temperature
     on_value:
       - lvgl.label.update:
           id: lbl_t5_temp
-          text: !lambda return str_sprintf("%.1f°", x);
+          text: !lambda 'return std::isnan(x) ? std::string("--°") : str_sprintf("%.1f°", x);'
   - platform: homeassistant
     id: ha_t5_hum
     entity_id: sensor.7c_c6_b6_71_a0_6f_a06f_humidity
     on_value:
       - lvgl.label.update:
           id: lbl_t5_hum
-          text: !lambda return str_sprintf("%.0f %%", x);
+          text: !lambda 'return std::isnan(x) ? std::string("-- %") : str_sprintf("%.0f %%", x);'
   - platform: homeassistant
     id: ha_weather_temp
     entity_id: weather.forecast_home
@@ -1631,14 +1793,56 @@ sensor:
     on_value:
       - lvgl.label.update:
           id: lbl_weather_temp
-          text: !lambda return str_sprintf("%.0f°", x);
+          text: !lambda 'return std::isnan(x) ? std::string("--°") : str_sprintf("%.0f°", x);'
+  - platform: homeassistant
+    id: ha_weather_hum
+    entity_id: weather.forecast_home
+    attribute: humidity
+    internal: true
+    on_value:
+      - script.execute: fc_render
+  - platform: homeassistant
+    id: ha_weather_wind
+    entity_id: weather.forecast_home
+    attribute: wind_speed
+    internal: true
+    on_value:
+      - script.execute: fc_render
+  - platform: homeassistant
+    id: ha_pump_power
+    entity_id: sensor.shellypluspluguk_08b61f6ec0b8_switch_0_power
+    internal: true
+    on_value:
+      - script.execute: pump_sync
   - platform: homeassistant
     id: ha_car_battery
     entity_id: sensor.wj17vsx_battery
     on_value:
-      - lvgl.label.update:
-          id: lbl_car
-          text: !lambda return str_sprintf("%.0f %%", x);
+      - script.execute: car_sync
+  - platform: homeassistant
+    id: ha_car_range
+    entity_id: sensor.wj17vsx_battery_autonomy
+    internal: true
+    on_value:
+      - script.execute: car_sync
+  - platform: homeassistant
+    id: ha_car_mileage
+    entity_id: sensor.wj17vsx_mileage
+    internal: true
+    on_value:
+      - script.execute: car_sync
+  - platform: homeassistant
+    id: ha_car_power
+    entity_id: sensor.wj17vsx_charging_power
+    internal: true
+    on_value:
+      - script.execute: car_sync
+  - platform: homeassistant
+    id: ha_car_rem
+    entity_id: sensor.wj17vsx_charging_remaining_time
+    internal: true
+    on_value:
+      - script.execute: car_sync
 
 lvgl:
   displays: [lcd]
@@ -1713,6 +1917,7 @@ lvgl:
           shadow_width: 0
           widgets:
             - label:
+                id: lbl_talk_icon
                 align: CENTER
                 text_font: font_icon_small
                 text_color: 0x4FC3F7
@@ -1737,6 +1942,7 @@ lvgl:
             - lvgl.widget.hide: fc_box
           widgets:
             - label:
+                id: lbl_fc_head
                 styles: muted
                 text: "FORECAST"
             - label:
@@ -2524,6 +2730,142 @@ lvgl:
                   - script.execute:
                       id: lt_scene
                       name: "Christmas"
+      # Car pop-up, opened by tapping the Home tab's Car card.
+      - obj:
+          id: car_box
+          hidden: true
+          align: CENTER
+          width: 960
+          height: 430
+          bg_color: 0x263038
+          border_color: 0x4FC3F7
+          border_width: 3
+          radius: 30
+          pad_all: 30
+          scrollable: false
+          widgets:
+            - label:
+                styles: muted
+                text: "CAR"
+            - button:
+                align: TOP_RIGHT
+                y: -10
+                width: 140
+                height: 50
+                radius: 20
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: CENTER
+                      text_font: font_small
+                      text_color: 0xE6EAEE
+                      text: "Close"
+                on_click:
+                  - lvgl.widget.hide: car_box
+            - label:
+                id: lbl_car_box_bat
+                x: 0
+                y: 55
+                text_font: font_big
+                text: "-- %"
+            - label:
+                id: lbl_car_box_range
+                x: 240
+                y: 78
+                text_font: font_mid
+                text_color: 0x4FC3F7
+                text: ""
+            - label:
+                id: lbl_car_box_status
+                x: 0
+                y: 155
+                width: 880
+                long_mode: DOT
+                text_font: font_mid
+                text_color: 0xC8D0D8
+                text: ""
+            - button:
+                x: 0
+                y: 255
+                width: 280
+                height: 95
+                radius: 24
+                bg_color: 0x1565C0
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: LEFT_MID
+                      x: 16
+                      text_font: font_icon_small
+                      text: "󰈐"
+                  - label:
+                      align: LEFT_MID
+                      x: 68
+                      text_font: font_small
+                      text: "Pre-condition"
+                on_click:
+                  - homeassistant.action:
+                      action: button.press
+                      data:
+                        entity_id: button.wj17vsx_start_air_conditioner
+                  - lvgl.label.update:
+                      id: lbl_car_box_status
+                      text: "Requested climate start…"
+            - button:
+                x: 305
+                y: 255
+                width: 280
+                height: 95
+                radius: 24
+                bg_color: 0x2E7D32
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: LEFT_MID
+                      x: 16
+                      text_font: font_icon_small
+                      text: "󱐋"
+                  - label:
+                      align: LEFT_MID
+                      x: 68
+                      text_font: font_small
+                      text: "Start charge"
+                on_click:
+                  - homeassistant.action:
+                      action: button.press
+                      data:
+                        entity_id: button.wj17vsx_start_charge
+                  - lvgl.label.update:
+                      id: lbl_car_box_status
+                      text: "Requested charge start…"
+            - button:
+                x: 610
+                y: 255
+                width: 280
+                height: 95
+                radius: 24
+                bg_color: 0x1E242B
+                shadow_width: 0
+                widgets:
+                  - label:
+                      align: LEFT_MID
+                      x: 16
+                      text_font: font_icon_small
+                      text: "󰓛"
+                  - label:
+                      align: LEFT_MID
+                      x: 68
+                      text_font: font_small
+                      text: "Stop charge"
+                on_click:
+                  - homeassistant.action:
+                      action: button.press
+                      data:
+                        entity_id: button.wj17vsx_stop_charge
+                  - lvgl.label.update:
+                      id: lbl_car_box_status
+                      text: "Requested charge stop…"
       - obj:
           id: msg_box
           hidden: true
@@ -2536,6 +2878,8 @@ lvgl:
           radius: 30
           pad_all: 30
           on_click:
+            - script.stop: ring_chime
+            - script.stop: popup
             - lvgl.widget.hide: msg_box
           widgets:
             - label:
@@ -2866,12 +3210,28 @@ lvgl:
                       y: 480
                       width: 330
                       height: 210
+                      on_click:
+                        - script.execute: car_sync
+                        - lvgl.widget.show: car_box
                       widgets:
                         - label:
+                            id: lbl_car_icon
                             align: TOP_LEFT
                             text_font: font_icon_small
                             text_color: 0x8A949E
                             text: "󰭬"
+                        - label:
+                            id: lbl_car_top
+                            align: TOP_LEFT
+                            x: 44
+                            y: 4
+                            styles: muted
+                            text: "Car"
+                        - label:
+                            align: TOP_RIGHT
+                            text_font: font_icon_small
+                            text_color: 0x8A949E
+                            text: "󰅂"
                         - label:
                             id: lbl_car
                             align: LEFT_MID
@@ -2942,8 +3302,9 @@ lvgl:
                             text_font: font_icon_small
                             text: "󰖏"
                         - label:
+                            id: lbl_pump
                             align: LEFT_MID
-                            x: 60
+                            x: 52
                             text_font: font_small
                             text: "Pump"
                       on_click:
@@ -3091,6 +3452,7 @@ lvgl:
                       shadow_width: 0
                       widgets:
                         - label:
+                            id: lbl_np_play
                             align: CENTER
                             text_font: font_icon
                             text_color: 0x101418
@@ -3175,6 +3537,7 @@ lvgl:
                                     volume_level: !lambda return str_sprintf("%.2f", x / 100.0f);
                   # Stations from Music Assistant's radio favourites that stream MP3.
                   - button:
+                      id: rad_0
                       x: 40
                       y: 580
                       width: 140
@@ -3182,17 +3545,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "Mirchi"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 0
                   - button:
+                      id: rad_1
                       x: 192
                       y: 580
                       width: 140
@@ -3200,17 +3566,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "Bollywood"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 1
                   - button:
+                      id: rad_2
                       x: 344
                       y: 580
                       width: 140
@@ -3218,17 +3587,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "RTÉ 1"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 2
                   - button:
+                      id: rad_3
                       x: 496
                       y: 580
                       width: 140
@@ -3236,17 +3608,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "Today FM"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 3
                   - button:
+                      id: rad_4
                       x: 648
                       y: 580
                       width: 140
@@ -3254,17 +3629,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "Bayern 3"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 4
                   - button:
+                      id: rad_5
                       x: 800
                       y: 580
                       width: 140
@@ -3272,17 +3650,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "1LIVE"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 5
                   - button:
+                      id: rad_6
                       x: 952
                       y: 580
                       width: 140
@@ -3290,17 +3671,20 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "Ö3"
                       on_click:
                         - script.execute:
                             id: radio_play
                             i: 6
                   - button:
+                      id: rad_7
                       x: 1104
                       y: 580
                       width: 140
@@ -3308,11 +3692,13 @@ lvgl:
                       radius: 20
                       bg_color: 0x1E242B
                       shadow_width: 0
+                      checked:
+                        bg_color: 0x4FC3F7
+                        text_color: 0x101418
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_small
-                            text_color: 0xE6EAEE
                             text: "FM4"
                       on_click:
                         - script.execute:
@@ -3478,7 +3864,7 @@ lvgl:
                         - button:
                             x: 0
                             y: 150
-                            width: 170
+                            width: 126
                             height: 80
                             radius: 20
                             bg_color: 0x263038
@@ -3487,14 +3873,37 @@ lvgl:
                               - label:
                                   align: CENTER
                                   text_font: font_mid
-                                  text: "+1 min"
+                                  text: "–1"
+                            on_click:
+                              - lambda: |-
+                                  if (id(kt_end)) {
+                                    int left = (int32_t) (id(kt_end) - millis()) / 1000 - 60;
+                                    if (left > 0) id(kt_end) = millis() + left * 1000u;
+                                    else { id(kt_end) = 0; id(kt_left) = 0; }
+                                  } else {
+                                    id(kt_left) = std::max(id(kt_left) - 60, 0);
+                                  }
+                              - script.execute: clock_show
+                        - button:
+                            x: 141
+                            y: 150
+                            width: 126
+                            height: 80
+                            radius: 20
+                            bg_color: 0x263038
+                            shadow_width: 0
+                            widgets:
+                              - label:
+                                  align: CENTER
+                                  text_font: font_mid
+                                  text: "+1"
                             on_click:
                               - lambda: if (id(kt_end)) id(kt_end) += 1 * 60000u; else id(kt_left) += 1 * 60;
                               - script.execute: clock_show
                         - button:
-                            x: 190
+                            x: 282
                             y: 150
-                            width: 170
+                            width: 126
                             height: 80
                             radius: 20
                             bg_color: 0x263038
@@ -3503,14 +3912,14 @@ lvgl:
                               - label:
                                   align: CENTER
                                   text_font: font_mid
-                                  text: "+5 min"
+                                  text: "+5"
                             on_click:
                               - lambda: if (id(kt_end)) id(kt_end) += 5 * 60000u; else id(kt_left) += 5 * 60;
                               - script.execute: clock_show
                         - button:
-                            x: 380
+                            x: 423
                             y: 150
-                            width: 170
+                            width: 126
                             height: 80
                             radius: 20
                             bg_color: 0x263038
@@ -3519,11 +3928,12 @@ lvgl:
                               - label:
                                   align: CENTER
                                   text_font: font_mid
-                                  text: "+10 min"
+                                  text: "+10"
                             on_click:
                               - lambda: if (id(kt_end)) id(kt_end) += 10 * 60000u; else id(kt_left) += 10 * 60;
                               - script.execute: clock_show
                         - button:
+                            id: btn_kt_go
                             x: 0
                             y: 245
                             width: 265
@@ -3560,6 +3970,7 @@ lvgl:
                                   text_font: font_mid
                                   text: "Reset"
                             on_click:
+                              - script.stop: ring_chime
                               - lambda: id(kt_end) = 0; id(kt_left) = 0;
                               - script.execute: clock_show
                   - obj:
@@ -3579,6 +3990,7 @@ lvgl:
                             text_font: font_mid
                             text: "Off"
                         - button:
+                            id: slp_0
                             x: 0
                             y: 130
                             width: 100
@@ -3586,6 +3998,9 @@ lvgl:
                             radius: 20
                             bg_color: 0x263038
                             shadow_width: 0
+                            checked:
+                              bg_color: 0x4FC3F7
+                              text_color: 0x101418
                             widgets:
                               - label:
                                   align: CENTER
@@ -3596,6 +4011,7 @@ lvgl:
                                   id: sleep_timer
                                   option: "Off"
                         - button:
+                            id: slp_1
                             x: 112
                             y: 130
                             width: 100
@@ -3603,6 +4019,9 @@ lvgl:
                             radius: 20
                             bg_color: 0x263038
                             shadow_width: 0
+                            checked:
+                              bg_color: 0x4FC3F7
+                              text_color: 0x101418
                             widgets:
                               - label:
                                   align: CENTER
@@ -3613,6 +4032,7 @@ lvgl:
                                   id: sleep_timer
                                   option: "15 min"
                         - button:
+                            id: slp_2
                             x: 224
                             y: 130
                             width: 100
@@ -3620,6 +4040,9 @@ lvgl:
                             radius: 20
                             bg_color: 0x263038
                             shadow_width: 0
+                            checked:
+                              bg_color: 0x4FC3F7
+                              text_color: 0x101418
                             widgets:
                               - label:
                                   align: CENTER
@@ -3630,6 +4053,7 @@ lvgl:
                                   id: sleep_timer
                                   option: "30 min"
                         - button:
+                            id: slp_3
                             x: 336
                             y: 130
                             width: 100
@@ -3637,6 +4061,9 @@ lvgl:
                             radius: 20
                             bg_color: 0x263038
                             shadow_width: 0
+                            checked:
+                              bg_color: 0x4FC3F7
+                              text_color: 0x101418
                             widgets:
                               - label:
                                   align: CENTER
@@ -3647,6 +4074,7 @@ lvgl:
                                   id: sleep_timer
                                   option: "60 min"
                         - button:
+                            id: slp_4
                             x: 448
                             y: 130
                             width: 100
@@ -3654,6 +4082,9 @@ lvgl:
                             radius: 20
                             bg_color: 0x263038
                             shadow_width: 0
+                            checked:
+                              bg_color: 0x4FC3F7
+                              text_color: 0x101418
                             widgets:
                               - label:
                                   align: CENTER
@@ -3694,35 +4125,60 @@ lvgl:
                       y: 180
                       text_font: font_big
                       text: "--"
+                  - label:
+                      x: 60
+                      y: 288
+                      styles: muted
+                      text: "Arm"
                   - button:
                       x: 40
                       y: 330
-                      width: 260
+                      width: 192
                       height: 120
-                      radius: 30
+                      radius: 26
                       bg_color: 0x5D4037
+                      shadow_width: 0
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_mid
-                            text: "Arm home"
+                            text: "Home"
                       on_click:
                         - homeassistant.action:
                             action: alarm_control_panel.alarm_arm_home
                             data:
                               entity_id: alarm_control_panel.alarmo
                   - button:
-                      x: 320
+                      x: 246
                       y: 330
-                      width: 260
+                      width: 192
                       height: 120
-                      radius: 30
-                      bg_color: 0x8E2C2C
+                      radius: 26
+                      bg_color: 0x37474F
+                      shadow_width: 0
                       widgets:
                         - label:
                             align: CENTER
                             text_font: font_mid
-                            text: "Arm away"
+                            text: "Night"
+                      on_click:
+                        - homeassistant.action:
+                            action: alarm_control_panel.alarm_arm_night
+                            data:
+                              entity_id: alarm_control_panel.alarmo
+                  - button:
+                      x: 452
+                      y: 330
+                      width: 192
+                      height: 120
+                      radius: 26
+                      bg_color: 0x8E2C2C
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: CENTER
+                            text_font: font_mid
+                            text: "Away"
                       on_click:
                         - homeassistant.action:
                             action: alarm_control_panel.alarm_arm_away
@@ -3884,9 +4340,12 @@ lvgl:
                       widgets:
                         - label:
                             align: CENTER
-                            text_font: font_big
-                            text: "C"
-                      on_click:
+                            text_font: font_icon
+                            text: "󰭜"
+                      on_short_click:
+                        - lambda: if (!id(pin).empty()) id(pin).pop_back();
+                        - script.execute: pin_show
+                      on_long_press:
                         - lambda: id(pin).clear();
                         - script.execute: pin_show
                   - button:
@@ -3927,13 +4386,33 @@ lvgl:
               - id: tile_infra
                 name: "Infra"
                 widgets:
-                  - label:
-                      id: inf_head
-                      x: 40
-                      y: 20
-                      text_font: font_mid
-                      text_color: 0x8A949E
-                      text: "Checking status.kleinbem.dev ..."
+                  - button:
+                      x: 20
+                      y: 8
+                      width: 1240
+                      height: 62
+                      bg_opa: TRANSP
+                      shadow_width: 0
+                      pad_all: 12
+                      on_click:
+                        - lvgl.label.update:
+                            id: inf_head
+                            text: "Refreshing status.kleinbem.dev…"
+                        - script.execute: inf_fetch
+                      widgets:
+                        - label:
+                            id: inf_head
+                            align: LEFT_MID
+                            x: 8
+                            text_font: font_mid
+                            text_color: 0x8A949E
+                            text: "Checking status.kleinbem.dev ..."
+                        - label:
+                            align: RIGHT_MID
+                            x: -8
+                            text_font: font_icon_small
+                            text_color: 0x8A949E
+                            text: "󰑐"
                   - obj:
                       id: inf_grid
                       x: 20
@@ -4090,6 +4569,50 @@ lvgl:
                       text_font: font_small
                       text_color: 0xC8D0D8
                       text: "..."
+                  - button:
+                      x: 40
+                      y: 595
+                      width: 280
+                      height: 74
+                      radius: 22
+                      bg_color: 0x1E242B
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: LEFT_MID
+                            x: 16
+                            text_font: font_icon_small
+                            text_color: 0x4FC3F7
+                            text: "󰋩"
+                        - label:
+                            align: LEFT_MID
+                            x: 68
+                            text_font: font_small
+                            text: "Photo frame"
+                      on_click:
+                        - script.execute: photo_start
+                  - button:
+                      x: 340
+                      y: 595
+                      width: 310
+                      height: 74
+                      radius: 22
+                      bg_color: 0x2A2020
+                      shadow_width: 0
+                      widgets:
+                        - label:
+                            align: LEFT_MID
+                            x: 16
+                            text_font: font_icon_small
+                            text_color: 0xEF5350
+                            text: "󰜉"
+                        - label:
+                            align: LEFT_MID
+                            x: 68
+                            text_font: font_small
+                            text: "Hold to restart"
+                      on_long_press:
+                        - lambda: App.safe_reboot();
     - id: photo_page
       bg_color: 0x000000
       widgets:
@@ -4098,10 +4621,18 @@ lvgl:
             align: CENTER
             src: photo
         - label:
+            id: lbl_photo_date
+            align: BOTTOM_LEFT
+            x: 44
+            y: -112
+            text_font: font_mid
+            text_color: 0xE6EAEE
+            text: ""
+        - label:
             id: lbl_photo_clock
             align: BOTTOM_LEFT
             x: 40
-            y: -30
+            y: -26
             text_font: font_big
             text_color: 0xFFFFFF
             shadow_width: 24
@@ -4122,7 +4653,11 @@ lvgl:
 interval:
   - interval: 1min
     then:
-      - script.execute: inf_fetch
+      - if:
+          condition:
+            not: lvgl.is_paused
+          then:
+            - script.execute: inf_fetch
   - interval: 30min
     then:
       - script.execute: fc_fetch
@@ -4150,12 +4685,7 @@ interval:
                   - online_image.set_url:
                       id: photo
                       url: !lambda return std::string("${photo_url}&t=") + to_string(millis());
-                  - lvgl.label.update:
-                      id: lbl_photo_clock
-                      text: !lambda |-
-                        auto t = id(ha_time).now();
-                        float c = id(ha_weather_temp).state;
-                        return t.strftime("%H:%M") + (std::isnan(c) ? std::string("") : str_sprintf("   %.0f°", c));
+                  - script.execute: photo_clock_sync
   # The Orbi can lose its forwarding entry for the panel: wired hosts (Home
   # Assistant) can't reach it while Wi-Fi clients still can, and rejoining the
   # same AP doesn't help. Steering a reconnect to another AP does.
@@ -4228,7 +4758,8 @@ interval:
                        id(wifi_ip_now).state + ", MAC " + id(info_mac).state + "\n";
                   t += "Access point:  " + id(info_bssid).state + ",  power save " + id(info_psm).state +
                        ",  Home Assistant " + (api::global_api_server->is_connected(true) ? "connected" : "not connected") + "\n";
-                  t += str_sprintf("Uptime:  %ud %02uh %02um", up / 86400, (up / 3600) % 24, (up / 60) % 60) +
+                  t += str_sprintf("Uptime:  %ud %02uh %02um", (unsigned) (up / 86400), (unsigned) ((up / 3600) % 24),
+                                   (unsigned) ((up / 60) % 60)) +
                        ",  last reset: " + id(info_reset).state + "\n";
                   t += "Memory free:  heap " + num(id(info_heap), "%.0f B") + ",  PSRAM " + num(id(info_psram), "%.0f B") +
                        ",  loop " + num(id(info_loop), "%.0f ms") + "\n";
