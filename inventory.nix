@@ -801,7 +801,10 @@ in
         domain = "revue.kleinbem.dev";
         meshOnly = true;
         publicCert = true;
-        auth = false; # Webhook requests authenticate via HMAC signatures
+        # The dashboard and read API have no login and show reviews of private
+        # repos. Webhooks can't log in; revue checks their HMAC signature.
+        auth = true;
+        authExcludePaths = [ "/webhook" ];
         meta = {
           name = "Revue AI Reviewer";
           category = "Dev";

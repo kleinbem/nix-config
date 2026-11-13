@@ -2015,7 +2015,7 @@ services:
     external_port: 443
     domain: revue.kleinbem.dev
     public: false
-    auth: None (Internal / Anonymous)
+    auth: Cloudflare Access / SSO
     mtls: false
     upstream_preset: nix-presets/containers/revue.nix
     persistence_path: /var/lib/machines/revue
