@@ -55,7 +55,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.backup`
 
-- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:304`
+- **Declared:** `nix-presets/nixosModules/backup-engine/default.nix:324`
 - **Sub-options:** `bulk.checkOpts`, `bulk.passwordFile`, `bulk.pruneOpts`, `bulk.schedule`, `destinations`, `enable`, `freshness.maxAgeHours`, `freshness.schedule`, `heartbeat.baseUrl`, `heartbeat.pingKeyFile`, `hostName`, `items`, `jobs`, `notify.command`, `secure.agePlugins`, `secure.recipients`, `secure.schedule`, `stateDir`, `warnIfDisabled`
 - **Configured in:** `host:container-factory`, `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`, `preset:nix-presets/checks/backup-engine.nix`, `preset:nix-presets/containers/authentik.nix`, `preset:nix-presets/containers/buzz.nix`, `preset:nix-presets/containers/caddy/default.nix`, `preset:nix-presets/containers/caido.nix`, `preset:nix-presets/containers/dev-db.nix`, `preset:nix-presets/containers/ente.nix`, `preset:nix-presets/containers/forgejo.nix`, `preset:nix-presets/containers/home-assistant.nix`, `preset:nix-presets/containers/miniflux.nix`, `preset:nix-presets/containers/music-assistant.nix`, `preset:nix-presets/containers/n8n.nix`, `preset:nix-presets/containers/open-webui.nix`, `preset:nix-presets/containers/paperless.nix`, `preset:nix-presets/containers/qbittorrent.nix`, `preset:nix-presets/containers/revue.nix`, `preset:nix-presets/containers/stalwart.nix`, `preset:nix-presets/containers/vaultwarden.nix`, `preset:nix-presets/nixosModules/backup-engine/default.nix`, `preset:nix-presets/nixosModules/photo-frame/default.nix`
 
@@ -463,6 +463,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ## `my.services`
 
+### `my.services.cadre`
+
+- **Declared:** `nix-config/modules/nixos/services/cadre.nix:20`
+- **Sub-options:** `autoStart`, `backend`, `enable`, `extraArgs`, `goose.enable`, `joinTokenSecret`, `meshPort`, `models`, `package`, `web.enable`, `web.listenAddress`, `web.port`
+- **Configured in:** `host:nixos-nvme`, `host:orin-nano`
+
 ### `my.services.cloudflareTunnel`
 
 - **Declared:** `nix-config/modules/nixos/services/cloudflare-tunnel.nix:18`
@@ -474,12 +480,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/services/github-notify.nix:97`
 - **Sub-options:** `enable`, `githubTokenFile`, `interval`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `quietOwnerReasons`, `quietOwners`, `reasons`
 - **Configured in:** `host:core-pi`
-
-### `my.services.meshLlm`
-
-- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:24`
-- **Sub-options:** `autoStart`, `enable`, `extraArgs`, `joinTokenSecret`, `meshPort`, `models`, `package`
-- **Configured in:** `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.photo-frame`
 

@@ -73,10 +73,14 @@ in
               configured = true;
               model = "current";
             };
-            # The fleet mesh (my.services.meshLlm, hosts/nixos-nvme/ai.nix):
-            # OpenAI-compatible on this host, no key (goose sends no auth header
-            # without one). `goose session --provider openai` or
-            # GOOSE_PROVIDER=openai picks it for a session.
+            # The fleet mesh (my.services.cadre, hosts/nixos-nvme/ai.nix):
+            # custom provider `cadre` comes from services.cadre below; `openai`
+            # stays configured against the same local node at :9337.
+            cadre = {
+              enabled = true;
+              configured = true;
+              model = "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M";
+            };
             openai = {
               enabled = true;
               configured = true;
@@ -434,6 +438,7 @@ in
     enable = true;
     desktop.enable = true;
     backend = "mesh";
+    models = [ "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M" ];
     autoStart = false;
   };
 
