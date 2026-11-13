@@ -55,6 +55,7 @@
         enable = true;
         package = pkgs.mesh-llm-cuda;
         models = [ "Qwen3-4B-Q4_K_M" ];
+        extraArgs = [ "--listen-all" ];
       };
 
       container-updater = {

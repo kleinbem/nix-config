@@ -66,39 +66,21 @@
       enable = true;
       internalInterfaces = [ "cbr0" ];
       externalInterface = "enP8p1s0";
-      forwardPorts = [
-        {
-          sourcePort = 11434;
-          destination = "10.85.46.126:11434";
-          proto = "tcp";
-        }
-      ];
-      # Hairpin NAT and mesh forwarding for llama-cpp over NetBird/LAN
-      extraCommands = ''
-        iptables -w -t nat -A PREROUTING -p tcp --dport 11434 -j DNAT --to-destination 10.85.46.126:11434
-        iptables -w -t nat -A POSTROUTING -d 10.85.46.126 -p tcp --dport 11434 -j MASQUERADE
-        iptables -w -t filter -A FORWARD -d 10.85.46.126 -p tcp --dport 11434 -j ACCEPT
-      '';
-      extraStopCommands = ''
-        iptables -w -t nat -D PREROUTING -p tcp --dport 11434 -j DNAT --to-destination 10.85.46.126:11434 2>/dev/null || true
-        iptables -w -t nat -D POSTROUTING -d 10.85.46.126 -p tcp --dport 11434 -j MASQUERADE 2>/dev/null || true
-        iptables -w -t filter -D FORWARD -d 10.85.46.126 -p tcp --dport 11434 -j ACCEPT 2>/dev/null || true
-      '';
     };
     firewall = {
       enable = true;
       backend = "iptables";
       package = pkgs.iptables-legacy;
       trustedInterfaces = [ "cbr0" ];
-      # SSH only over NetBird — not exposed on LAN
+      # SSH and MeshLLM API over NetBird
       interfaces."wt0".allowedTCPPorts = [
         22
-        11434
+        9337
       ];
-      # Also allow SSH on LAN for emergency access (e.g. before NetBird is running)
+      # Allow SSH and MeshLLM API on LAN
       interfaces."enP8p1s0".allowedTCPPorts = [
         22
-        11434
+        9337
       ];
     };
   };
