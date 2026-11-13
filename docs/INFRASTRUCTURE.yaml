@@ -1266,17 +1266,15 @@ hosts:
       netbird: null
     mesh_group: personal-devices
     storage_and_boot:
-      framework: Disko
-      root_filesystem: tmpfs (impermanence, wiped on boot)
-      persist_paths:
-      - /persist
-      bootloader: systemd-boot (UEFI)
-      encryption: LUKS with Clevis initrd NBDE Tang unlock
+      framework: Nix-on-Droid (proot userland)
+      storage_type: Android internal storage (/data/data/com.termux.nix)
+      bootloader: Android bootloader
     imports:
     - '[module] modules/nix-on-droid/dashboard.nix'
     enabled_subsystems: {}
     containers_hosted: []
     secrets_consumed: []
+    hardware_profile: Android mobile device (Nix-on-Droid / Termux userland)
   tablet:
     tier: mobile
     system: aarch64-linux
@@ -1290,17 +1288,15 @@ hosts:
       netbird: null
     mesh_group: personal-devices
     storage_and_boot:
-      framework: Disko
-      root_filesystem: tmpfs (impermanence, wiped on boot)
-      persist_paths:
-      - /persist
-      bootloader: systemd-boot (UEFI)
-      encryption: LUKS with Clevis initrd NBDE Tang unlock
+      framework: Nix-on-Droid (proot userland)
+      storage_type: Android internal storage (/data/data/com.termux.nix)
+      bootloader: Android bootloader
     imports:
     - '[module] modules/nix-on-droid/dashboard.nix'
     enabled_subsystems: {}
     containers_hosted: []
     secrets_consumed: []
+    hardware_profile: Android mobile device (Nix-on-Droid / Termux userland)
 ssh_known_hosts:
   core-pi:
     host_names:
