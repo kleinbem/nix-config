@@ -7,27 +7,12 @@ pkgs.testers.runNixOSTest {
     { config, ... }:
     {
       imports = [
+        ./base.nix
         inputs.nix-presets.nixosModules.code-server
       ];
 
-      # Mock dependencies for a headless test
-      options.my.username = pkgs.lib.mkOption {
-        type = pkgs.lib.types.str;
-        default = "testuser";
-      };
-
-      options.my.network = {
-        bridge = pkgs.lib.mkOption {
-          type = pkgs.lib.types.str;
-          default = "cbr0";
-        };
-        hostAddress = pkgs.lib.mkOption {
-          type = pkgs.lib.types.str;
-          default = "10.88.0.1";
-        };
-      };
-
       config = {
+        my.network.hostAddress = "10.88.0.1";
         users.users.testuser = {
           isNormalUser = true;
           uid = 1000;
