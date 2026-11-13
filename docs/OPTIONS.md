@@ -253,8 +253,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.containers.miniflux`
 
-- **Declared:** `nix-presets/containers/miniflux.nix:23`
-- **Sub-options:** `adminCredentialsFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `pollingFrequency`, `port`
+- **Declared:** `nix-presets/containers/miniflux.nix:27`
+- **Sub-options:** `adminCredentialsFile`, `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `oidc`, `pollingFrequency`, `port`
 - **Configured in:** `host:nasbook`
 
 ### `my.containers.monitoring`
