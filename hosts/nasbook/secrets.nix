@@ -39,6 +39,23 @@ in
           keys = [ "oauth_client_secret" ];
         }
       )
+    )
+    // lib.optionalAttrs config.my.containers.stalwart.enable (
+      secretHelpers.mkPerContainerSecrets {
+        container = "stalwart";
+        keys = [ "admin_password_hash" ];
+      }
+    )
+    // lib.optionalAttrs config.my.containers.forgejo.enable (
+      lib.mapAttrs (_: s: s // { uid = 990; }) (
+        secretHelpers.mkPerContainerSecrets {
+          container = "forgejo";
+          keys = [
+            "admin_password"
+            "oauth_client_secret"
+          ];
+        }
+      )
     );
   };
 }

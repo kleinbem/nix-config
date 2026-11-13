@@ -54,20 +54,20 @@
 
 ### mac-mini
 
-- 🌳 **Forgejo** (`forgejo`) `10.85.50.4:3000` → `git.kleinbem.dev` — Self-hosted Git forge with mirrors of the GitHub repos. _[src: nix-presets/containers/forgejo.nix:27]_
 - 🪽 **Hermes Agent** (`hermes`) `10.85.50.7` — Nous Research self-improving agent (Discord gateway, local LLM backend). [AIRLOCK: Restricted Egress] _[src: nix-presets/containers/hermes.nix:14]_
 - 📊 **Monitoring** (`monitoring`) `10.85.50.2:3000` → `grafana.kleinbem.dev` — VictoriaMetrics + Grafana Stack. _[src: nix-presets/containers/monitoring.nix:16]_
 - 🤖 **Open WebUI** (`open-webui`) `10.85.50.3:8080` → `chat.kleinbem.dev` — AI Chat interface via Ollama. _[src: nix-presets/containers/open-webui.nix:20]_
 - 📦 **persona-runtime** (`persona-runtime`) _[src: nix-presets/containers/persona-runtime.nix:155]_
-- 📬 **Stalwart Mail** (`stalwart`) `10.85.50.8:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:27]_
 
 ### nasbook
 
+- 🌳 **Forgejo** (`forgejo`) `10.85.47.136:3000` → `git.kleinbem.dev` — Self-hosted Git forge with mirrors of the GitHub repos. _[src: nix-presets/containers/forgejo.nix:27]_
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
 - 📰 **Miniflux** (`miniflux`) `10.85.47.135:8080` → `news.kleinbem.dev` — Minimalist and opinionated feed reader. _[src: nix-presets/containers/miniflux.nix:27]_
 - 📄 **Paperless-ngx** (`paperless`) `10.85.47.131:28981` → `paperless.kleinbem.dev` — Document management system with OCR. _[src: nix-presets/containers/paperless.nix:14]_
 - 📥 **qBittorrent** (`qbittorrent`) `10.85.47.134:8080` → `torrents.kleinbem.dev` — Headless torrent downloader with WebUI. _[src: nix-presets/containers/qbittorrent.nix:16]_
 - 🗄️ **Qdrant DB** (`qdrant`) `10.85.47.105:6333` — Vector database for AI context. _[src: nix-presets/containers/qdrant.nix:14]_
+- 📬 **Stalwart Mail** (`stalwart`) `10.85.47.137:8080` → `mail.kleinbem.dev` — Persona-fleet mail server (SMTP/IMAP/JMAP). _[src: nix-presets/containers/stalwart.nix:27]_
 - 🔄 **Syncthing (Nasbook)** (`syncthing`) `10.85.47.127:8384` → `syncthing.kleinbem.dev` — File synchronization for the Fleet (Nasbook). _[src: nix-presets/containers/syncthing.nix:12]_
 
 ### nixos-nvme

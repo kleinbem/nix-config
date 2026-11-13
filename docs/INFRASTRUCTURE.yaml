@@ -567,15 +567,6 @@ hosts:
       - anythingllm.llmUrl
       - anythingllm.memoryLimit
       - anythingllm.modelName
-      - forgejo
-      - forgejo.admin.passwordFile
-      - forgejo.domain
-      - forgejo.enable
-      - forgejo.ip
-      - forgejo.memoryLimit
-      - forgejo.oidc
-      - forgejo.oidc.clientSecretFile
-      - forgejo.oidc.enable
       - hermes
       - hermes.discord.enable
       - hermes.enable
@@ -612,13 +603,6 @@ hosts:
       - persona-runtime.personas
       - persona-runtime.secretsEnvFile
       - persona-runtime.signingKeyFile
-      - stalwart
-      - stalwart.adminPasswordFile
-      - stalwart.domain
-      - stalwart.enable
-      - stalwart.hostDataDir
-      - stalwart.ip
-      - stalwart.memoryLimit
       deploy:
       - autoUpgrade.enable
       - comin
@@ -643,17 +627,12 @@ hosts:
       - libvirtd.enable
       - podman.enable
     containers_hosted:
-    - forgejo
     - hermes
     - monitoring
     - open-webui
     - persona-runtime
-    - stalwart
     secrets_consumed:
-    - forgejo_admin_password
-    - forgejo_oauth_client_secret
     - ntfy_deploy_topic
-    - stalwart_admin_password_hash
     hardware_profile: Apple Mac Mini Mid-2011 (Intel Core i5-2415M, x86_64)
   nasbook:
     tier: nas
@@ -719,6 +698,15 @@ hosts:
       - agent-team
       - agent-team.enable
       - agent-team.ip
+      - forgejo
+      - forgejo.admin.passwordFile
+      - forgejo.domain
+      - forgejo.enable
+      - forgejo.ip
+      - forgejo.memoryLimit
+      - forgejo.oidc
+      - forgejo.oidc.clientSecretFile
+      - forgejo.oidc.enable
       - loki
       - loki.enable
       - loki.hostDataDir
@@ -751,6 +739,13 @@ hosts:
       - qdrant.hostDataDir
       - qdrant.ip
       - qdrant.memoryLimit
+      - stalwart
+      - stalwart.adminPasswordFile
+      - stalwart.domain
+      - stalwart.enable
+      - stalwart.hostDataDir
+      - stalwart.ip
+      - stalwart.memoryLimit
       - syncthing
       - syncthing.enable
       - syncthing.hostDataDir
@@ -782,16 +777,21 @@ hosts:
       - libvirtd.enable
       - podman.enable
     containers_hosted:
+    - forgejo
     - loki
     - miniflux
     - paperless
     - qbittorrent
     - qdrant
+    - stalwart
     - syncthing
     secrets_consumed:
     - attic_pull_token
+    - forgejo_admin_password
+    - forgejo_oauth_client_secret
     - miniflux_oauth_client_secret
     - paperless_password
+    - stalwart_admin_password_hash
     hardware_profile: x86_64 Laptop/NAS with dedicated Btrfs /data storage pool
   nixos-nvme:
     tier: workstation
@@ -1615,8 +1615,8 @@ services:
   forgejo:
     name: Forgejo
     category: Dev
-    host: mac-mini
-    ip: 10.85.50.4
+    host: nasbook
+    ip: 10.85.47.136
     port: 3000
     external_port: 443
     domain: git.kleinbem.dev
@@ -2021,8 +2021,8 @@ services:
   stalwart:
     name: Stalwart Mail
     category: Infrastructure
-    host: mac-mini
-    ip: 10.85.50.8
+    host: nasbook
+    ip: 10.85.47.137
     port: 8080
     external_port: 443
     domain: mail.kleinbem.dev

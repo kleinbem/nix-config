@@ -35,7 +35,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `mac-mini`
 
 - **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
-- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:forgejo`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:sandboxed-apps`, `nix-presets:stalwart`
+- **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:sandboxed-apps`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
 - **Local:** `./disko.nix`, `./secrets.nix`
@@ -43,7 +43,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 ### `nasbook`
 
 - **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/data-disk.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
-- **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:syncthing`
+- **Presets:** `nix-presets:agent-team`, `nix-presets:backup`, `nix-presets:forgejo`, `nix-presets:herdr-remote-client`, `nix-presets:loki`, `nix-presets:miniflux`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:paperless`, `nix-presets:qbittorrent`, `nix-presets:qdrant`, `nix-presets:stalwart`, `nix-presets:syncthing`
 - **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
 - **Local:** `./data-disk.nix`, `./disko.nix`, `./secrets.nix`
 
@@ -146,7 +146,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:dashboard-foyer` ← container-factory, core-pi
 - `nix-presets:dev-db` ← container-factory
 - `nix-presets:ente` ← container-factory, core-pi
-- `nix-presets:forgejo` ← container-factory, mac-mini
+- `nix-presets:forgejo` ← container-factory, nasbook
 - `nix-presets:frigate` ← container-factory, orin-nano
 - `nix-presets:garage-ui` ← container-factory
 - `nix-presets:gatus` ← container-factory, core-pi
@@ -176,7 +176,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `nix-presets:qdrant` ← container-factory, nasbook
 - `nix-presets:revue` ← container-factory
 - `nix-presets:sandboxed-apps` ← mac-mini
-- `nix-presets:stalwart` ← container-factory, mac-mini
+- `nix-presets:stalwart` ← container-factory, nasbook
 - `nix-presets:syncthing` ← container-factory, nasbook, orin-nano
 - `nix-presets:vaultwarden` ← container-factory, core-pi
 - `revue:default` ← nixos-nvme

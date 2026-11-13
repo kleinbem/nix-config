@@ -145,15 +145,15 @@ let
     home-assistant.ip = "${myInventory.network.nodes.home-assistant.ip}/24"; # hass-pi
     paperless.ip = "${myInventory.network.nodes.paperless.ip}/24"; # nasbook
     stalwart = {
-      ip = "${myInventory.network.nodes.stalwart.ip}/24"; # mac-mini
+      ip = "${myInventory.network.nodes.stalwart.ip}/24"; # nasbook
       hostDataDir = dataDir "stalwart";
       # Non-null so the closure includes the fallback-admin block.
       adminPasswordFile = "/run/secrets/factory-dummy";
     };
     forgejo = {
-      ip = "${myInventory.network.nodes.forgejo.ip}/24"; # mac-mini, real address like stalwart
+      ip = "${myInventory.network.nodes.forgejo.ip}/24"; # nasbook, real address like stalwart
       hostDataDir = dataDir "forgejo";
-      # Must match mac-mini: the admin and OIDC settings change the
+      # Must match nasbook: the admin and OIDC settings change the
       # bootstrap unit, so they change the closure. Paths are bind mounts
       # supplied by the deploying host.
       admin.passwordFile = "/run/secrets/factory-dummy";
