@@ -463,6 +463,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ## `my.services`
 
+### `my.services.cadre`
+
+- **Declared:** `nix-config/modules/nixos/services/cadre.nix:20`
+- **Sub-options:** `autoStart`, `backend`, `enable`, `extraArgs`, `goose.enable`, `joinTokenSecret`, `meshPort`, `models`, `package`, `web.enable`, `web.listenAddress`, `web.port`
+- **Configured in:** `host:nixos-nvme`, `host:orin-nano`
+
 ### `my.services.cloudflareTunnel`
 
 - **Declared:** `nix-config/modules/nixos/services/cloudflare-tunnel.nix:18`
@@ -474,12 +480,6 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Declared:** `nix-config/modules/nixos/services/github-notify.nix:97`
 - **Sub-options:** `enable`, `githubTokenFile`, `interval`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `quietOwnerReasons`, `quietOwners`, `reasons`
 - **Configured in:** `host:core-pi`
-
-### `my.services.meshLlm`
-
-- **Declared:** `nix-config/modules/nixos/services/mesh-llm.nix:24`
-- **Sub-options:** `autoStart`, `enable`, `extraArgs`, `joinTokenSecret`, `meshPort`, `models`, `package`
-- **Configured in:** `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.services.photo-frame`
 

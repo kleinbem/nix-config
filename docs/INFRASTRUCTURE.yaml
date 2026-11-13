@@ -1066,15 +1066,17 @@ hosts:
       security:
       - ai-hardening.enable
       services:
+      - cadre
+      - cadre.autoStart
+      - cadre.enable
+      - cadre.models
+      - cadre.web
+      - cadre.web.enable
       - container-updater
       - container-updater.allEnabled
       - container-updater.containers
       - container-updater.enable
       - container-updater.manifestUrl
-      - meshLlm
-      - meshLlm.autoStart
-      - meshLlm.enable
-      - meshLlm.models
       - printing.enable
       - snapper.enable
       - tang.enable
@@ -1232,16 +1234,16 @@ hosts:
       security:
       - ai-hardening.enable
       services:
+      - cadre
+      - cadre.enable
+      - cadre.extraArgs
+      - cadre.models
+      - cadre.package
       - container-updater
       - container-updater.allEnabled
       - container-updater.containers
       - container-updater.enable
       - container-updater.manifestUrl
-      - meshLlm
-      - meshLlm.enable
-      - meshLlm.extraArgs
-      - meshLlm.models
-      - meshLlm.package
       - meshLlmGpuRunner.enable
       - tang.enable
     containers_hosted:

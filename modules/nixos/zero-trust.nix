@@ -142,6 +142,24 @@ let
       dport = 8123;
       comment = "Music Assistant -> Home Assistant (via host LAN DNAT)";
     }
+    {
+      src = inv.nodes.home-assistant.ip;
+      dst = inv.nodes.music-assistant.ip;
+      dport = 8095;
+      comment = "Home Assistant -> Music Assistant API (via host LAN DNAT)";
+    }
+    {
+      src = inv.nodes.home-assistant.ip;
+      dst = inv.nodes.music-assistant.ip;
+      dport = 8097;
+      comment = "Home Assistant -> Music Assistant stream (via host LAN DNAT)";
+    }
+    {
+      src = inv.nodes.home-assistant.ip;
+      dst = inv.nodes.music-assistant.ip;
+      dport = 8927;
+      comment = "Home Assistant -> Music Assistant Sendspin (via host LAN DNAT)";
+    }
   ];
 
   # Generate nftables rules from the flow list

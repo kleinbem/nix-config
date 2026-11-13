@@ -49,9 +49,9 @@
       # Nightly GPU half of the nix-packages mesh-llm canary; it serves on its
       # own ports (29337/23131/27842), so it coexists with the node below.
       meshLlmGpuRunner.enable = true;
-      # The fleet's MeshLLM node that creates the mesh (always on, CUDA).
+      # The fleet's Cadre/MeshLLM node that creates the mesh (always on, CUDA).
       # Qwen3-4B because goose needs tool calling.
-      meshLlm = {
+      cadre = {
         enable = true;
         package = pkgs.mesh-llm-cuda;
         models = [ "Qwen3-4B-Q4_K_M" ];
@@ -83,7 +83,7 @@
         memoryLimit = "6G";
       };
       llama-cpp = {
-        enable = false; # Replaced by my.services.meshLlm above
+        enable = false; # Replaced by my.services.cadre above
         enableCuda = true;
         ip = "10.85.46.126/24";
         modelPath = "/mnt/models/gemma-3-4b-it-Q4_K_M.gguf"; # Gemma 3 4B — fits 8GB unified mem with headroom
