@@ -799,9 +799,14 @@ in
         port = 8383;
         externalPort = 443;
         domain = "revue.kleinbem.dev";
-        meshOnly = true;
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         publicCert = true;
-        auth = false; # Webhook requests authenticate via HMAC signatures
+        auth = true; # Authentik forward-auth for the web dashboard
+        # Webhooks come from GitHub/Forgejo and authenticate via HMAC signatures
+        authExcludePaths = [
+          "/webhook"
+          "/health"
+        ];
         meta = {
           name = "Revue AI Reviewer";
           category = "Dev";
