@@ -278,6 +278,29 @@ let
     deployedContainers == null
     || builtins.elem name deployedContainers
     || lib.any (n: builtins.elem n deployedContainers) (realContainerNames.${name} or [ ]);
+  cargoLibsOverlay = _final: prev: {
+    # nixpkgs cargoUseSystemLibs sets JEMALLOC_OVERRIDE to a non-existent
+    # sentinel path; stalwart_0_15 needs rust-jemalloc-sys in buildInputs
+    # (no-link: nixpkgs cargoUseSystemLibs regression, not yet filed upstream).
+    stalwart_0_15 =
+      if lib.elem prev.rust-jemalloc-sys (prev.stalwart_0_15.buildInputs or [ ]) then
+        prev.stalwart_0_15
+      else
+        prev.stalwart_0_15.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or [ ]) ++ [ prev.rust-jemalloc-sys ];
+        });
+
+    # nixpkgs cargoUseSystemLibs sets ZSTD_SYS_USE_PKG_CONFIG=1; qdrant has
+    # pkg-config but is missing zstd in buildInputs
+    # (no-link: nixpkgs cargoUseSystemLibs regression, not yet filed upstream).
+    qdrant =
+      if lib.elem prev.zstd (prev.qdrant.buildInputs or [ ]) then
+        prev.qdrant
+      else
+        prev.qdrant.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or [ ]) ++ [ prev.zstd ];
+        });
+  };
 in
 {
   imports = [
@@ -338,7 +361,11 @@ in
     (inputs.nix-detour-fleet.lib.mkOverlay {
       extraOverlays = [ inputs.nix-packages.overlays.default ];
     })
+    cargoLibsOverlay
   ];
+
+  # Standalone containers evaluate their own nixpkgs; stalwart uses container pkgs.
+  containers.stalwart.config.nixpkgs.overlays = [ cargoLibsOverlay ];
 
   # Minimal host scaffolding to satisfy NixOS assertions during evaluation.
   fileSystems."/" = {
