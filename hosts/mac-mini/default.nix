@@ -434,8 +434,9 @@ in
         script = ''
           setpci="${lib.getExe' pkgs.pciutils "setpci"}"
           cur="$("$setpci" -s 00:1f.0 0xa4.b)"
-          next=$(printf '%02x' $(( 0x$cur & ~1 )))
-          if [ "$cur" != "$next" ]; then
+          if [ $(( 0x$cur & 1 )) -ne 0 ]; then
+            # Clear bit 1 (PWR_FLR, write-1-to-clear) in the outgoing value so the write preserves it.
+            next=$(printf '%02x' $(( 0x$cur & ~3 )))
             "$setpci" -s 00:1f.0 0xa4.b="$next"
           fi
         '';
