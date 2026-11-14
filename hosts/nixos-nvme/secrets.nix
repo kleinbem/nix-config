@@ -18,6 +18,8 @@ let
   hasHassCliToken = hasKey "hass_cli_token";
   hasSkillsRefreshToken = hasKey "skills_refresh_token";
   hasRevueWebhookSecret = config.services.revue.enable && hasKey "revue_webhook_secret";
+  hasRevueApiKey = config.services.revue.enable && hasKey "revue_api_key";
+  hasRevueSecrets = hasRevueWebhookSecret || hasRevueApiKey;
   # Plus the opencode module that reads it.
   opencodeGemini =
     config.home-manager.users.martin.modules.opencode.enable && hasKey "gemini_api_key";
@@ -55,8 +57,13 @@ in
         owner = "martin";
         mode = "0400";
       };
-      # Webhook HMAC secret for the Revue PR review daemon.
+      # Webhook HMAC secret and non-loopback API key for the Revue PR review daemon.
       revue_webhook_secret = lib.mkIf hasRevueWebhookSecret {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
+      revue_api_key = lib.mkIf hasRevueApiKey {
         sopsFile = hostSops;
         owner = "martin";
         mode = "0400";
@@ -340,22 +347,27 @@ in
         '';
       };
     }
-    // lib.optionalAttrs hasRevueWebhookSecret {
+    // lib.optionalAttrs hasRevueSecrets {
       "revue.env" = {
         owner = "martin";
         group = "users";
         mode = "0400";
-        content = ''
-          REVUE_WEBHOOK_SECRET=${config.sops.placeholder.revue_webhook_secret}
-          GITHUB_TOKEN=${config.sops.placeholder.github_pat}
-        '';
+        restartUnits = [ "revue.service" ];
+        content =
+          lib.optionalString hasRevueWebhookSecret ''
+            REVUE_WEBHOOK_SECRET=${config.sops.placeholder.revue_webhook_secret}
+          ''
+          + lib.optionalString hasRevueApiKey ''
+            REVUE_API_KEY=${config.sops.placeholder.revue_api_key}
+          ''
+          + ''
+            GITHUB_TOKEN=${config.sops.placeholder.github_pat}
+          '';
       };
     };
   };
 
-  services.revue.environmentFile =
-    lib.mkIf hasRevueWebhookSecret
-      config.sops.templates."revue.env".path;
+  services.revue.environmentFile = lib.mkIf hasRevueSecrets config.sops.templates."revue.env".path;
 
   home-manager.users.martin.modules.opencode.googleApiKeyFile =
     lib.mkIf opencodeGemini config.sops.secrets.gemini_api_key.path;
