@@ -264,6 +264,12 @@ def scan_host_disko(nix_config: Path) -> dict[str, dict[str, Any]]:
                 "bootloader": "RPi EEPROM + UEFI Direct Boot",
                 "encryption": "LUKS with Clevis initrd NBDE Tang unlock",
             }
+        elif h_name in ("phone", "tablet"):
+            info = {
+                "framework": "Nix-on-Droid (proot userland)",
+                "storage_type": "Android internal storage (/data/data/com.termux.nix)",
+                "bootloader": "Android bootloader",
+            }
         elif h_name == "orin-nano":
             info = {
                 "framework": "Disko",
@@ -360,6 +366,10 @@ def build_host_matrix(
         if h_name == "nixos-nvme":
             host_entry["hardware_profile"] = (
                 "Intel Core Desktop (Zotac) + renderD128 QuickSync + FIDO2/YubiKey"
+            )
+        elif h_name in ("phone", "tablet"):
+            host_entry["hardware_profile"] = (
+                "Android mobile device (Nix-on-Droid / Termux userland)"
             )
         elif h_name == "orin-nano":
             host_entry["hardware_profile"] = (
