@@ -2263,11 +2263,11 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1794646960,
-        "narHash": "sha256-lRdkN/DD3i1vkR4vQVGABhiU/MY/66pF18+k6XLUUxo=",
+        "lastModified": 1794657652,
+        "narHash": "sha256-tcjHGnwJx59ud1atC6teB9ldLcaLW3Ph4THev2zFRX8=",
         "owner": "kleinbem",
         "repo": "nix-packages",
-        "rev": "0dbba7d171a14e006bf598388bf35e1bc50afe1a",
+        "rev": "661127842b4b2e8b9b0a65344427a33d66af4ca3",
         "type": "github"
       },
       "original": {
