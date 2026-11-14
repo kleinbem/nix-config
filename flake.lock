@@ -2197,11 +2197,11 @@
         "omarchy-src": "omarchy-src"
       },
       "locked": {
-        "lastModified": 1794671863,
-        "narHash": "sha256-yF9JNmAUH/0e71vuFbb2IEeSo5v19xND5KSBlvTSHW4=",
+        "lastModified": 1794687624,
+        "narHash": "sha256-71puD2B2UBKtsT5LKNZ5FSRFBk9oHXZQbgjrOQg9iac=",
         "owner": "kleinbem",
         "repo": "nix-omarchy",
-        "rev": "13bf0d55702af4e832cce112292b6b17e417b7ee",
+        "rev": "817b9a9c5d8ff08e22cbd9a9499ad2a0b01c8a35",
         "type": "github"
       },
       "original": {

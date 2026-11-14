@@ -307,9 +307,6 @@ in
         ];
       };
 
-      # Disable excluded Fcitx5 user unit so it cannot launch into graphical sessions
-      systemd.user.services.omarchy-fcitx5.enable = false;
-
       # GDM manages logins and offers session switching between GNOME and Omarchy
       services.displayManager.sddm.enable = lib.mkForce false;
 
