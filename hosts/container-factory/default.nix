@@ -365,7 +365,9 @@ in
   ];
 
   # Standalone containers evaluate their own nixpkgs; stalwart uses container pkgs.
-  containers.stalwart.config.nixpkgs.overlays = [ cargoLibsOverlay ];
+  containers = lib.optionalAttrs (wanted "stalwart") {
+    stalwart.config.nixpkgs.overlays = [ cargoLibsOverlay ];
+  };
 
   # Minimal host scaffolding to satisfy NixOS assertions during evaluation.
   fileSystems."/" = {
