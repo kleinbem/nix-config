@@ -66,6 +66,10 @@ repo_atlas:
     path: github-config/
     url: git@github.com:kleinbem/github-config.git
     role: OpenTofu-managed GitHub organization settings, repositories, and rulesets.
+  hf-bench:
+    path: hf-bench/
+    url: git@github.com:kleinbem/hf-bench.git
+    role: Supporting repository.
   jj-toolbox:
     path: jj-toolbox/
     url: git@github.com:kleinbem/jj-toolbox.git
