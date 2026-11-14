@@ -123,17 +123,6 @@ in
       podman.enable = true;
     };
 
-    # Sets my.network.subnet/.hostAddress plus container-updater and
-    # persistence wiring; externalInterface stays set above.
-    container-host = {
-      enable = true;
-      subnet = "10.85.47.0/24";
-      hostAddress = "10.85.47.1";
-      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry defaults this off (it needs impermanence); this fleet has it.
-      enablePersistence = true;
-    };
-
     # ─── Data & Analytics Hub Services ───────────────────────
     containers = {
       paperless = {
@@ -246,6 +235,17 @@ in
 
   # ─── Networking & Security ──────────────────────────────────
   services = {
+    # Sets my.network.subnet/.hostAddress plus updater and persistence wiring;
+    # externalInterface stays set above.
+    nix-gantry.host = {
+      enable = true;
+      subnet = "10.85.47.0/24";
+      hostAddress = "10.85.47.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry defaults this off (it needs impermanence); this fleet has it.
+      enablePersistence = true;
+    };
+
     netbird.enable = true;
     fstrim.enable = true;
 

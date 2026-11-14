@@ -121,16 +121,6 @@ in
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
     };
 
-    # ─── Container Hosting (via reusable module) ────────────────
-    container-host = {
-      enable = true;
-      subnet = "10.85.49.0/24";
-      hostAddress = "10.85.49.1";
-      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry defaults this to false; this fleet always has impermanence.
-      enablePersistence = true;
-    };
-
     services.tang.enable = true;
     # Random photos for the ESPHome panels' slideshow.
     services.photo-frame = {
@@ -168,11 +158,6 @@ in
         mediaDir = "/var/lib/music";
       };
     };
-
-    # ─── Container auto-update (ADR 002) ────────────────────────
-    # Configured via container-host module (see above).
-    # HA is decoupled from the host generation and refreshed nightly from
-    # the CI-published manifest — eval-free on the Pi.
   };
 
   # ─── Direct LAN access to Home Assistant ────────────────────
@@ -183,7 +168,7 @@ in
 
   # ─── Persistence ─────────────────────────────────────────────
   # Container hostDataDirs (home-assistant, openclaw) get persistence entries from
-  # the container-host module; listing them here too trips impermanence's
+  # services.nix-gantry.host; listing them here too trips impermanence's
   # duplicate-directory assertion.
   environment.persistence."/nix/persist" = {
     directories = [
@@ -220,6 +205,15 @@ in
 
   # ─── Native Services (Replacing HassOS Add-ons) ─────────────
   services = {
+    nix-gantry.host = {
+      enable = true;
+      subnet = "10.85.49.0/24";
+      hostAddress = "10.85.49.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry defaults this to false; this fleet always has impermanence.
+      enablePersistence = true;
+    };
+
     node-red = {
       enable = true;
       openFirewall = true;

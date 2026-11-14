@@ -314,7 +314,7 @@ jobs:
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
           echo "📣 Fleet notified via ntfy — subscribed hosts upgrade now." >> "$GITHUB_STEP_SUMMARY"
 
-      # Rolling release asset read by my.services.container-updater. If the
+      # Rolling release asset read by services.nix-gantry.updater. If the
       # manifest step failed, the previous asset stays and containers hold.
       - name: Download manifest artifact
         id: dl-manifest
@@ -334,7 +334,7 @@ jobs:
           gh release view container-manifest --repo "${{ github.repository }}" >/dev/null 2>&1 || \
             gh release create container-manifest --repo "${{ github.repository }}" \
               --title "Container manifest (rolling)" \
-              --notes "Rolling manifest consumed by my.services.container-updater. Regenerated on every production promotion." \
+              --notes "Rolling manifest consumed by services.nix-gantry.updater. Regenerated on every production promotion." \
               --latest=false
           gh release upload container-manifest /tmp/manifest.json --clobber --repo "${{ github.repository }}"
           echo "📦 container manifest published for $(jq -r .rev /tmp/manifest.json)" >> "$GITHUB_STEP_SUMMARY"

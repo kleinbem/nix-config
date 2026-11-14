@@ -330,7 +330,7 @@ jobs:
       # new one instead of a reopen.
       - name: Commit the lock and open or update its PR
         if: github.ref == 'refs/heads/main' && steps.pr-base.outputs.skip != 'true'
-        uses: kleinbem/actions/lock-pr@872d4ed3eeb3da51d0bbe60e5ef3cbf6ece91e8e # v1.6.1
+        uses: kleinbem/actions/lock-pr@8e2e0953476f4ca6ed3f5b7fbe5d6825f20a2e09 # v1.9.1
         with:
           token: ${{ steps.app-token.outputs.token }}
           working-directory: nix-config
