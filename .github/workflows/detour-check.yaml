@@ -48,7 +48,7 @@ jobs:
 
       - name: What this PR breaks
         id: holds
-        uses: kleinbem-dev/nix-detour/update@0ae1443289a75d93a717cbade8cea290b125eed3 # main after #67: skip-unmoved, unreached
+        uses: kleinbem-dev/nix-detour/update@31a0e6f79d7d6082f1d47c16d25e2d4a2bd31dba # v0.4.0
         with:
           token: ${{ steps.app-token.outputs.token }}
           directory: nix-config
