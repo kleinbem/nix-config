@@ -31,6 +31,17 @@
     orin_frigate_crypt /dev/disk/by-partlabel/disk-second-frigate /nix/persist/etc/crypt/frigate.key luks,discard,nofail,x-systemd.requires=nix.mount,x-systemd.after=nix.mount
   '';
 
+  services.nix-gantry.updater = {
+    enable = true;
+    manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+    containers =
+      let
+        excludeFromUpdater = [ "llama-cpp" ];
+        allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+      in
+      lib.subtractLists excludeFromUpdater allEnabled;
+  };
+
   # ─── AI Edge Services ──────────────────────────────────────
   my = {
     boot.clevis-initrd = {
@@ -56,17 +67,6 @@
         package = pkgs.mesh-llm-cuda;
         models = [ "Qwen3-4B-Q4_K_M" ];
         extraArgs = [ "--listen-all" ];
-      };
-
-      container-updater = {
-        enable = true;
-        manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-        containers =
-          let
-            excludeFromUpdater = [ "llama-cpp" ];
-            allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
-          in
-          lib.subtractLists excludeFromUpdater allEnabled;
       };
     };
     # Off because the Orin runs no airlocked AI webapps.

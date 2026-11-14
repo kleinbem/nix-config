@@ -34,7 +34,7 @@ let
               allowUnfreePredicate = _: true;
               android_sdk.accept_license = true;
               # No insecure-package acks here: they sit next to what needs them
-              # (openclaw's in nix-gantry lib/factory.nix, the container's own
+              # (openclaw's in nix-presets flake.nix, the container's own
               # nixpkgs), so a stray host-level reference still fails to eval.
             };
           };
@@ -45,7 +45,7 @@ let
 
   # ── Deployment-driven factory enables (ADR 002) ──────────────────────────
   # Factories build the containers that real hosts of the same arch register
-  # with my.services.container-updater, plus a pre-warm list. Only this fixed
+  # with services.nix-gantry.updater, plus a pre-warm list. Only this fixed
   # list is scanned; scanning the factories would recurse into themselves.
   deploySources = [
     "nixos-nvme"
@@ -65,7 +65,7 @@ let
           host = self.nixosConfigurations.${name};
         in
         if host.pkgs.stdenv.hostPlatform.system == system then
-          host.config.my.services.container-updater.containers or [ ]
+          host.config.services.nix-gantry.updater.containers or [ ]
         else
           [ ]
       ) deploySources

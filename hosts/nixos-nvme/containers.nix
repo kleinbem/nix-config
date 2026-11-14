@@ -6,26 +6,24 @@
 }:
 
 {
+  services.nix-gantry.updater = {
+    enable = true;
+    manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+    # Auto-derive from actually-enabled containers, minus an explicit exclude
+    # list, to avoid cron-time failures for undeployed containers.
+    containers =
+      let
+        excludeFromUpdater = [
+          "caddy" # reverse proxy — restart briefly kills every other container's traffic
+          "github-runner" # opt-in debug runner — build embedded so `runners` cfg applies directly
+        ];
+        allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
+      in
+      lib.subtractLists excludeFromUpdater allEnabled;
+  };
+
   my = {
-    services = {
-      container-updater = {
-        enable = true;
-        manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-        # Auto-derive from actually-enabled containers,
-        # minus an explicit exclude list. Avoids cron-time failures for containers
-        # that aren't deployed on this host.
-        containers =
-          let
-            excludeFromUpdater = [
-              "caddy" # reverse proxy — restart briefly kills every other container's traffic
-              "github-runner" # opt-in debug runner — build embedded so `runners` cfg applies directly
-            ];
-            allEnabled = lib.attrNames (lib.filterAttrs (_: v: v.enable or false) config.my.containers);
-          in
-          lib.subtractLists excludeFromUpdater allEnabled;
-      };
-      printing.enable = true; # Re-enabled to restore local printer drivers
-    };
+    services.printing.enable = true; # Re-enabled to restore local printer drivers
 
     containers = {
       n8n = {

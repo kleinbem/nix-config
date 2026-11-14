@@ -288,15 +288,6 @@ hosts:
       - clevis-initrd.hostIp
       - clevis-initrd.luksDevice
       - clevis-initrd.secretFile
-      container-host:
-      - enable
-      - enablePersistence
-      - excludeFromStandalone
-      - excludeFromUpdater
-      - hostAddress
-      - journal.maxUseFor.caddy
-      - manifestUrl
-      - subnet
       containers:
       - attic
       - attic.autoReap.enable
@@ -453,12 +444,6 @@ hosts:
       - clevis-initrd.hostIp
       - clevis-initrd.luksDevice
       - clevis-initrd.secretFile
-      container-host:
-      - enable
-      - enablePersistence
-      - hostAddress
-      - manifestUrl
-      - subnet
       containers:
       - home-assistant
       - home-assistant.enable
@@ -547,13 +532,6 @@ hosts:
       - clevis-initrd.fallbackMessage
       - clevis-initrd.luksDevice
       - clevis-initrd.secretFile
-      container-host:
-      - enable
-      - enablePersistence
-      - excludeFromStandalone
-      - hostAddress
-      - manifestUrl
-      - subnet
       containers:
       - agent-zero
       - agent-zero.enable
@@ -688,12 +666,6 @@ hosts:
       - clevis-initrd.hostIp
       - clevis-initrd.luksDevice
       - clevis-initrd.secretFile
-      container-host:
-      - enable
-      - enablePersistence
-      - hostAddress
-      - manifestUrl
-      - subnet
       containers:
       - agent-team
       - agent-team.enable
@@ -1072,11 +1044,6 @@ hosts:
       - cadre.models
       - cadre.web
       - cadre.web.enable
-      - container-updater
-      - container-updater.allEnabled
-      - container-updater.containers
-      - container-updater.enable
-      - container-updater.manifestUrl
       - printing.enable
       - snapper.enable
       - tang.enable
@@ -1239,11 +1206,6 @@ hosts:
       - cadre.extraArgs
       - cadre.models
       - cadre.package
-      - container-updater
-      - container-updater.allEnabled
-      - container-updater.containers
-      - container-updater.enable
-      - container-updater.manifestUrl
       - meshLlmGpuRunner.enable
       - tang.enable
     containers_hosted:

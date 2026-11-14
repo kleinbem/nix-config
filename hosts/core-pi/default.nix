@@ -235,7 +235,7 @@ in
 
     firewall = {
       # Without backend + filterForward, extraForwardRules below (and
-      # container-host.nix's bridge-accept fragment) are silently ignored.
+      # nix-gantry's bridge-accept fragment) are silently ignored.
       backend = "nftables";
       filterForward = true;
       # Open all ports that Caddy is proxying to allow external access
@@ -275,26 +275,6 @@ in
     herdr-remote-client = {
       enable = true;
       serverIp = "10.0.0.5"; # nixos-nvme physical LAN IP (inventory.nix)
-    };
-
-    # ─── Container Hosting (via reusable module) ────────────────
-    container-host = {
-      enable = true;
-      subnet = "10.85.48.0/24";
-      hostAddress = "10.85.48.1";
-      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry defaults this off to avoid requiring impermanence; this
-      # fleet always imports it.
-      enablePersistence = true;
-      excludeFromStandalone = [
-        "caddy"
-      ];
-      excludeFromUpdater = [
-        "attic"
-        "crowdsec"
-      ];
-      # caddy logs every request: 256M held about a day of it.
-      journal.maxUseFor.caddy = "1G";
     };
 
     services = {
@@ -488,24 +468,35 @@ in
     # local caddy container — traffic to its own NetBird IP never traverses the
     # wt0 PREROUTING DNAT (see modules/nixos/attic-pull.nix).
     atticPull.cacheHostIp = myInventory.network.nodes.caddy.ip;
-
-    # ─── Container auto-update (ADR 002) ────────────────────────
-    # Configured via container-host module's excludeFromUpdater list (see above).
-    # Containers are decoupled from the host generation and refreshed nightly
-    # from the CI-published manifest — eval-free on the Pi.
   };
 
-  # ─── Persistence (Additional) ───────────────────────────────
-  # container-host module handles container data persistence
-  # (auto-derived from each enabled container's hostDataDir, incl.
-  # /var/lib/ente). Add only non-container directories here.
+  services = {
+    nix-gantry.host = {
+      enable = true;
+      subnet = "10.85.48.0/24";
+      hostAddress = "10.85.48.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry defaults this off to avoid requiring impermanence; this
+      # fleet always imports it.
+      enablePersistence = true;
+      excludeFromStandalone = [
+        "caddy"
+      ];
+      excludeFromUpdater = [
+        "attic"
+        "crowdsec"
+      ];
+      # caddy logs every request: 256M held about a day of it.
+      journal.maxUseFor.caddy = "1G";
+    };
 
-  services.crowdsec-firewall-bouncer = {
-    enable = true;
-    secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
-    settings = {
-      api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
-      api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
+    crowdsec-firewall-bouncer = {
+      enable = true;
+      secrets.apiKeyPath = "/var/lib/images/crowdsec/bouncer-key";
+      settings = {
+        api_url = "http://${myInventory.network.nodes.crowdsec.ip}:8080/";
+        api_keyfile = "/var/lib/images/crowdsec/bouncer-key";
+      };
     };
   };
 

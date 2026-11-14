@@ -193,22 +193,6 @@ in
     # "wlo1", which doesn't exist here.
     network.externalInterface = "enp2s0f0";
 
-    container-host = {
-      enable = true;
-      subnet = "10.85.50.0/24";
-      hostAddress = "10.85.50.1";
-      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
-      # nix-gantry defaults this off (it needs impermanence); this fleet has it.
-      enablePersistence = true;
-      # persona-runtime can't go through container-factory (its attrsOf
-      # `personas` option recurses there), so it's built on this host.
-      # excludeFromStandalone, not excludeFromUpdater: the updater would
-      # otherwise look for a manifest entry that never exists.
-      excludeFromStandalone = [
-        "persona-runtime"
-      ];
-    };
-
     containers = {
       # Here rather than core-pi for RAM headroom (core-pi swapped, this host
       # has 15GB mostly idle).
@@ -335,6 +319,22 @@ in
 
   # All services.* in one block (statix).
   services = {
+    nix-gantry.host = {
+      enable = true;
+      subnet = "10.85.50.0/24";
+      hostAddress = "10.85.50.1";
+      manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
+      # nix-gantry defaults this off (it needs impermanence); this fleet has it.
+      enablePersistence = true;
+      # persona-runtime stays embedded here rather than in container-factory
+      # (its attrsOf `personas` option recurses there), so excludeFromStandalone
+      # keeps the updater from looking for a manifest entry that never exists.
+      # no-link: fleet preset architecture choice, not an external upstream bug.
+      excludeFromStandalone = [
+        "persona-runtime"
+      ];
+    };
+
     adguardhome = {
       enable = true;
       openFirewall = true;
@@ -472,7 +472,7 @@ in
         # System RDP credentials and TLS cert; otherwise they regenerate every boot.
         "/var/lib/gnome-remote-desktop"
 
-        # my.containers hostDataDirs are persisted by container-host
+        # my.containers hostDataDirs are persisted by services.nix-gantry.host
         # automatically; listing them again trips impermanence's duplicate check.
 
         # Homarr was removed (home.kleinbem.dev is the dashboard); its old data

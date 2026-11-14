@@ -220,8 +220,8 @@ ls -la /var/lib/images/<container>/
 **Solutions:**
 
 1. **Data dir not persisted:**
-   - With `my.container-host.enablePersistence = true`, nix-gantry persists each container's `hostDataDir` itself. Don't add it to `environment.persistence` again: impermanence fails on duplicates.
-   - On hosts without `my.container-host`, add the directory to the host's persistence list.
+   - With `services.nix-gantry.host.enablePersistence = true`, nix-gantry persists each container's `hostDataDir` itself. Don't add it to `environment.persistence` again: impermanence fails on duplicates.
+   - On hosts without `services.nix-gantry.host`, add the directory to the host's persistence list.
 
 2. **Container-updater is resetting state:**
    - Add to `excludeFromUpdater` if it's critical
@@ -338,7 +338,7 @@ systemd-nspawn -i <image> /bin/bash
 
 1. **Image not found:**
    - Check if container preset is imported
-   - Pull from cache: `systemctl restart services-container-updater`
+   - Pull from cache: `systemctl start update-container@<name>.service` (works for nightly-excluded containers such as `attic` and `crowdsec` too)
 
 2. **Port conflict:**
    - Check if port is already in use: `ss -tlnp | grep :<port>`
