@@ -17,6 +17,9 @@ let
     key: builtins.pathExists hostSops && lib.hasInfix "\n${key}:" ("\n" + builtins.readFile hostSops);
   hasHassCliToken = hasKey "hass_cli_token";
   hasSkillsRefreshToken = hasKey "skills_refresh_token";
+  hasRevueWebhookSecret = config.services.revue.enable && hasKey "revue_webhook_secret";
+  hasRevueApiKey = config.services.revue.enable && hasKey "revue_api_key";
+  hasRevueSecrets = hasRevueWebhookSecret || hasRevueApiKey;
   # Plus the opencode module that reads it.
   opencodeGemini =
     config.home-manager.users.martin.modules.opencode.enable && hasKey "gemini_api_key";
@@ -50,6 +53,17 @@ in
       # Fine-grained PAT for kleinbem/skills only (contents + pull requests
       # write), read by skills' `just refresh-skills` instead of the gh login.
       skills_refresh_token = lib.mkIf hasSkillsRefreshToken {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
+      # Webhook HMAC secret and non-loopback API key for the Revue PR review daemon.
+      revue_webhook_secret = lib.mkIf hasRevueWebhookSecret {
+        sopsFile = hostSops;
+        owner = "martin";
+        mode = "0400";
+      };
+      revue_api_key = lib.mkIf hasRevueApiKey {
         sopsFile = hostSops;
         owner = "martin";
         mode = "0400";
@@ -332,8 +346,28 @@ in
           # servers, apiKeyEnvVar = null, nothing needed here for them yet.
         '';
       };
+    }
+    // lib.optionalAttrs hasRevueSecrets {
+      "revue.env" = {
+        owner = "martin";
+        group = "users";
+        mode = "0400";
+        restartUnits = [ "revue.service" ];
+        content =
+          lib.optionalString hasRevueWebhookSecret ''
+            REVUE_WEBHOOK_SECRET=${config.sops.placeholder.revue_webhook_secret}
+          ''
+          + lib.optionalString hasRevueApiKey ''
+            REVUE_API_KEY=${config.sops.placeholder.revue_api_key}
+          ''
+          + ''
+            GITHUB_TOKEN=${config.sops.placeholder.github_pat}
+          '';
+      };
     };
   };
+
+  services.revue.environmentFile = lib.mkIf hasRevueSecrets config.sops.templates."revue.env".path;
 
   home-manager.users.martin.modules.opencode.googleApiKeyFile =
     lib.mkIf opencodeGemini config.sops.secrets.gemini_api_key.path;

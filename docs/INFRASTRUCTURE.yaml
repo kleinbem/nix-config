@@ -1976,7 +1976,7 @@ services:
     port: 8383
     external_port: 443
     domain: revue.kleinbem.dev
-    public: false
+    public: true
     auth: Cloudflare Access / SSO
     mtls: false
     upstream_preset: nix-presets/containers/revue.nix
