@@ -421,6 +421,25 @@ in
         requires = [ "gnome-remote-desktop-system-rdp-setup.service" ];
         wantedBy = [ "graphical.target" ];
       };
+
+      # Clear AFTERG3_EN (bit 0 of Cougar Point LPC GEN_PMCON_3 at 00:1f.0+0xa4)
+      # so the Mac Mini powers back on automatically when AC returns.
+      mac-mini-auto-power-on = {
+        description = "Enable automatic power-on after AC power loss (Macmini5,x LPC GEN_PMCON_3)";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          setpci="${lib.getExe' pkgs.pciutils "setpci"}"
+          cur="$("$setpci" -s 00:1f.0 0xa4.b)"
+          next=$(printf '%02x' $(( 0x$cur & ~1 )))
+          if [ "$cur" != "$next" ]; then
+            "$setpci" -s 00:1f.0 0xa4.b="$next"
+          fi
+        '';
+      };
     };
   };
 
