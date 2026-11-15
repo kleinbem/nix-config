@@ -1977,11 +1977,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1794573950,
-        "narHash": "sha256-b4cyErmCqVlMORjWHiPDHjQRtZp8hyNiEgGBI6+1Ioo=",
+        "lastModified": 1794740987,
+        "narHash": "sha256-/Yo6GYdell1kJLh5p9Y/Obkws42ZbkmKJG/7XABfsXI=",
         "owner": "kleinbem",
         "repo": "nix-devshells",
-        "rev": "a32da7019770a2ce96eac3ca191ae7e6fc91ed9c",
+        "rev": "76979daecba009347b475940388f8ff48a1f41e6",
         "type": "github"
       },
       "original": {
