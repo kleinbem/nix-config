@@ -42,6 +42,7 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository)
     permissions:
       contents: read
+      actions: read # the sibling-revs artifact of the build-all run
     outputs:
       sha: ${{ steps.target.outputs.sha }}
     steps:
@@ -78,11 +79,35 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # Re-resolving the siblings' main here would miss any sibling merge
+      # since build-all ran: changed containers would then look uncached and
+      # drop out of the manifest.
+      - name: Sibling revs build-all used
+        id: siblings
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build-all.yaml/runs?head_sha=$SHA&status=success&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')
+          fi
+          revs=""
+          if [ -n "$RUN_ID" ] &&
+            gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n sibling-revs -D "$RUNNER_TEMP/sibling-revs"; then
+            revs=$(.github/scripts/sibling-overrides.sh canonical "$(cat "$RUNNER_TEMP/sibling-revs/sibling-revs.txt")")
+            echo "Sibling revs from build-all run $RUN_ID: $revs"
+          else
+            echo "::warning::No sibling-revs artifact for $SHA (build-all run ${RUN_ID:-none}); resolving sibling mains now, so containers changed since the build may drop from the manifest."
+          fi
+          echo "revs=$revs" >> "$GITHUB_OUTPUT"
+
       - name: Nix fleet setup (pull-only)
         # Wires up NetBird + Attic as a SUBSTITUTER with the pull token and
-        # sets NIX_OVERRIDES to the same
-        # github: sibling refs build-all used — so the closure we evaluate here
-        # matches the one that was cached.
+        # pins NIX_OVERRIDES to the sibling revs build-all used, so the
+        # closures evaluated here are the ones it cached.
         uses: ./.github/actions/nix-fleet-setup
         with:
           # Ephemeral key only: runner peers land in ci-runners (cache-only
@@ -90,6 +115,7 @@ jobs:
           netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
           attic-token: ${{ secrets.ATTIC_PULL_TOKEN }}
           free-disk-space: 'false'
+          sibling-revs: ${{ steps.siblings.outputs.revs }}
 
       # Lock-honesty gate: $NIX_OVERRIDES floats siblings to main, but devices
       # resolve only the committed lock, so a stale flake.lock can pass every

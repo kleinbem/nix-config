@@ -55,9 +55,38 @@ jobs:
           echo "code=$([ -n "$code" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "Changed outside docs: ${code:-none}"
 
+  # Each sibling's main, resolved once: both matrix jobs and promote (via the
+  # artifact) evaluate the same revs, so a sibling merge mid-run can't change
+  # the store paths between build and promote.
+  siblings:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      revs: ${{ steps.resolve.outputs.revs }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Resolve sibling mains
+        id: resolve
+        run: |
+          set -euo pipefail
+          revs=$(.github/scripts/sibling-overrides.sh canonical "$(.github/scripts/sibling-overrides.sh resolve)")
+          echo "revs=$revs" >> "$GITHUB_OUTPUT"
+          echo "$revs" > sibling-revs.txt
+          echo "Sibling revs: $revs"
+      - name: Upload sibling revs for promote
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sibling-revs
+          path: sibling-revs.txt
+
   build-all:
     name: "Build (${{ matrix.system }})"
-    needs: changes
+    needs: [changes, siblings]
     if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
@@ -99,6 +128,7 @@ jobs:
           attic-token: ${{ github.event_name == 'pull_request' && secrets.ATTIC_PULL_TOKEN || github.event_name != 'pull_request' && secrets.ATTIC_PUSH_TOKEN || '' }}
           configure-auto-gc: 'true'
           free-disk-space: 'true'
+          sibling-revs: ${{ needs.siblings.outputs.revs }}
 
       - name: Initialize Commit Statuses for best-effort builds
         if: steps.cache.outputs.push_cache == 'true'
@@ -491,7 +521,7 @@ jobs:
   # "Build (x86_64-linux)" itself can't be required.
   build:
     name: Build
-    needs: [changes, build-all]
+    needs: [changes, siblings, build-all]
     if: always()
     runs-on: ubuntu-latest
     permissions: {}
@@ -499,7 +529,9 @@ jobs:
       - name: Builds passed or were skipped
         env:
           CHANGES: ${{ needs.changes.result }}
+          SIBLINGS: ${{ needs.siblings.result }}
           BUILD: ${{ needs.build-all.result }}
         run: |
-          echo "changes=$CHANGES build-all=$BUILD"
-          [ "$CHANGES" = success ] && { [ "$BUILD" = success ] || [ "$BUILD" = skipped ]; }
+          echo "changes=$CHANGES siblings=$SIBLINGS build-all=$BUILD"
+          [ "$CHANGES" = success ] && [ "$SIBLINGS" = success ] &&
+            { [ "$BUILD" = success ] || [ "$BUILD" = skipped ]; }
