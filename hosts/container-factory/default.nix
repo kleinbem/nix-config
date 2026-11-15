@@ -279,15 +279,18 @@ let
     || builtins.elem name deployedContainers
     || lib.any (n: builtins.elem n deployedContainers) (realContainerNames.${name} or [ ]);
   cargoLibsOverlay = _final: prev: {
-    # nixpkgs cargoUseSystemLibs sets JEMALLOC_OVERRIDE to a non-existent
-    # sentinel path; stalwart_0_15 needs rust-jemalloc-sys in buildInputs
+    # Using rust-jemalloc-sys segfaults on x86_64 (see stalwart_0_16/package.nix),
+    # and cargoUseSystemLibs sets JEMALLOC_OVERRIDE to a non-existent sentinel.
+    # Unset it after cargoUseSystemLibs so jemalloc-sys builds its static lib
     # (no-link: nixpkgs cargoUseSystemLibs regression, not yet filed upstream).
     stalwart_0_15 =
-      if lib.elem prev.rust-jemalloc-sys (prev.stalwart_0_15.buildInputs or [ ]) then
+      if lib.hasInfix "unset JEMALLOC_OVERRIDE" (prev.stalwart_0_15.postConfigure or "") then
         prev.stalwart_0_15
       else
         prev.stalwart_0_15.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or [ ]) ++ [ prev.rust-jemalloc-sys ];
+          postConfigure = (old.postConfigure or "") + ''
+            unset JEMALLOC_OVERRIDE
+          '';
         });
 
     # nixpkgs cargoUseSystemLibs sets ZSTD_SYS_USE_PKG_CONFIG=1; qdrant has
