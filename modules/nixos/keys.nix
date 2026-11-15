@@ -108,7 +108,7 @@ rec {
   # core-pi and push-cache's local filter), so it holds only what no
   # public cache has. Add a new public cache here, not in core.nix.
   upstreamCaches = [
-    "cache.nixos.org-1:Ik/ZBziETSRre3nCpv7l4WwhDD5OhoOx9LG/mIJV6Hg="
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
     cachix.nix-community
     cachix.devenv
     cachix.anduril
