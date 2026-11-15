@@ -21,6 +21,15 @@ inputs:
     description: 'Reclaim ~20 GiB by deleting preinstalled toolchains. Set true for big-closure jobs (NixOS System); leave false for containers/devshells/packages — saves ~30s of overhead per job.'
     required: false
     default: 'false'
+  sibling-revs:
+    description: 'Sibling revs to pin NIX_OVERRIDES to ("repo=sha ..."). Empty resolves each sibling main now. Promote passes the revs build-all used.'
+    required: false
+    default: ''
+
+outputs:
+  sibling-revs:
+    description: 'The "repo=sha ..." revs NIX_OVERRIDES is pinned to.'
+    value: ${{ steps.overrides.outputs.revs }}
 
 runs:
   using: 'composite'
@@ -30,25 +39,21 @@ runs:
       run: ./.github/scripts/setup-dummy-secrets.sh
 
     - name: Set Nix input overrides
+      id: overrides
       shell: bash
-      run: |
+      env:
+        SIBLING_REVS: ${{ inputs.sibling-revs }}
+      run: | # zizmor: ignore[github-env] canonical keeps only five validated 40-hex SHAs
         # Checks, container builds and PR host builds evaluate against each
         # sibling's main branch, as an early warning for cross-repo breakage.
         # Host toplevels on main and promote's cache gate don't use these:
         # devices resolve the committed lock with no overrides, so those do too.
-        echo "NIX_OVERRIDES=\
-          --override-input kleinbem-secrets /tmp/dummy-secrets \
-          --override-input nix-devshells github:kleinbem/nix-devshells \
-          --override-input nix-hardware github:kleinbem/nix-hardware \
-          --override-input nix-hardware/nix-devshells github:kleinbem/nix-devshells \
-          --override-input nix-packages github:kleinbem/nix-packages \
-          --override-input nix-packages/nix-devshells github:kleinbem/nix-devshells \
-          --override-input nix-presets github:kleinbem/nix-presets \
-          --override-input nix-presets/nix-devshells github:kleinbem/nix-devshells \
-          --override-input nix-presets/nix-packages github:kleinbem/nix-packages \
-          --override-input nix-presets/nix-packages/nix-devshells github:kleinbem/nix-devshells \
-          --override-input nix-templates github:kleinbem/nix-templates \
-          --override-input nix-templates/nix-devshells github:kleinbem/nix-devshells" >> "$GITHUB_ENV"
+        set -euo pipefail
+        revs=$(./.github/scripts/sibling-overrides.sh canonical \
+          "${SIBLING_REVS:-$(./.github/scripts/sibling-overrides.sh resolve)}")
+        echo "NIX_OVERRIDES=$(./.github/scripts/sibling-overrides.sh flags "$revs")" >> "$GITHUB_ENV"
+        echo "revs=$revs" >> "$GITHUB_OUTPUT"
+        echo "Sibling revs: $revs"
 
     - name: Nix setup
       uses: kleinbem/actions/nix-setup@7ec628296d5194e6e10031706387b992a10a1638 # v1.0.1
