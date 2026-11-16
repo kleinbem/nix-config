@@ -19,6 +19,7 @@
       "/var/lib/sops"
       "/var/lib/NetworkManager"
       "/var/lib/fprint"
+      "/var/lib/faillock" # login lockout tally (security/smartcard.nix)
       # "/var/lib/waydroid"
       "/var/lib/docker"
       "/var/lib/flatpak"
