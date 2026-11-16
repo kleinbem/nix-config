@@ -4,6 +4,19 @@
   lib,
   ...
 }:
+let
+  faillockRule = {
+    enable = true;
+    modulePath = "${config.security.pam.package}/lib/security/pam_faillock.so";
+  };
+  # Tally on disk (persisted): /var/run would reset the lockout on every reboot.
+  faillockDir = "/var/lib/faillock";
+  faillockArgs = [
+    "deny=5"
+    "unlock_time=300"
+    "dir=${faillockDir}"
+  ];
+in
 {
   options.my.security.loginNeedsPasswordAndKey = lib.mkEnableOption ''
     password plus YubiKey touch for local login (tty and GDM, incl. its lock screen).
@@ -44,12 +57,41 @@
           u2fAuth = true;
           # Second factor, not a replacement. nouserok: a missing sops authfile falls back
           # to the password instead of locking everyone out. sudo keeps touch-only.
-          rules.auth.u2f = lib.mkIf config.my.security.loginNeedsPasswordAndKey {
-            control = lib.mkForce "required";
-            settings.nouserok = true;
+          rules = lib.mkIf config.my.security.loginNeedsPasswordAndKey {
+            auth = {
+              u2f = {
+                control = lib.mkForce "required";
+                settings.nouserok = true;
+              };
+              # Lockout for a short password: 5 wrong tries lock the account for 5 minutes.
+              faillock-preauth = faillockRule // {
+                order = config.security.pam.services.login.rules.auth.u2f.order - 10;
+                control = "requisite";
+                args = [ "preauth" ] ++ faillockArgs;
+              };
+              faillock-authfail = faillockRule // {
+                order = config.security.pam.services.login.rules.auth.unix.order + 10;
+                control = "[default=die]";
+                args = [ "authfail" ] ++ faillockArgs;
+              };
+            };
+            # Resets the counter after a successful login.
+            account.faillock = faillockRule // {
+              order = config.security.pam.services.login.rules.account.unix.order - 10;
+              control = "required";
+              args = [ "dir=${faillockDir}" ];
+            };
           };
         };
         sudo.u2fAuth = true;
+        # Same tally and limits for the fingerprint login GDM offers alongside.
+        gdm-fingerprint.rules.auth.faillock.settings =
+          lib.mkIf (config.my.security.loginNeedsPasswordAndKey && config.services.fprintd.enable)
+            {
+              deny = 5;
+              unlock_time = 300;
+              dir = faillockDir;
+            };
       };
 
       # U2F / YubiKey Configuration (PAM level)
@@ -61,6 +103,10 @@
         };
       };
     };
+
+    systemd.tmpfiles.rules = lib.mkIf config.my.security.loginNeedsPasswordAndKey [
+      "d ${faillockDir} 0700 root root -"
+    ];
 
     boot.initrd.systemd.storePaths = [ pkgs.pcsclite.lib ];
   };

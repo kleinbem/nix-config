@@ -57,6 +57,9 @@ in
         owner = "martin";
         mode = "0400";
       };
+      # Own short login password on this host (fleet password elsewhere); the YubiKey
+      # touch is required too (my.security.loginNeedsPasswordAndKey).
+      martin_password = lib.mkIf (hasKey "martin_password_hash") { sopsFile = hostSops; };
       # Webhook HMAC secret and non-loopback API key for the Revue PR review daemon.
       revue_webhook_secret = lib.mkIf hasRevueWebhookSecret {
         sopsFile = hostSops;
