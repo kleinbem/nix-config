@@ -115,6 +115,8 @@
 
   my = {
     security.ai-hardening.enable = true;
+    # Touch-only GDM logins left the login keyring locked (smartcard.nix).
+    security.loginNeedsPasswordAndKey = true;
     monitoring.node.enable = true;
     services = {
       snapper.enable = true;
