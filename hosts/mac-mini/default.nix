@@ -99,7 +99,8 @@ in
       # desktop bundle. Not firejailed (see modules/nixos/firejail.nix).
       packages = [
         (pkgs.google-chrome.override {
-          commandLineArgs = "--enable-features=WaylandWindowDecorations";
+          # libsecret pin: same reason as nix-presets desktop.nix.
+          commandLineArgs = "--enable-features=WaylandWindowDecorations --password-store=gnome-libsecret";
         })
       ];
     };
