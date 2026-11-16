@@ -11,7 +11,7 @@
 - **nixpkgs**: [`d5cc6833`](https://github.com/NixOS/nixpkgs/commit/d5cc6833)
 - **home-manager**: `a1293da7`
 - **sops-nix**: `11e5885d`
-- **devenv**: `3293d163`
+- **devenv**: `fa46b707`
 - **nix-packages**: `bdb08ff6`
 - **nix-hardware**: `2a5824de`
 - **nix-presets**: `c88be61e`
