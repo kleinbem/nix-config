@@ -171,6 +171,9 @@ let
     dashboard = {
       ip = "${myInventory.network.nodes.dashboard.ip}/24"; # core-pi
       hostBridgeIp = "10.85.48.1";
+      # Non-null so the cached closure serves the mount; core-pi supplies the file.
+      configFile = "/run/secrets/factory-dummy";
+      gatusUrl = "http://${myInventory.network.nodes.gatus.ip}:${toString myInventory.network.nodes.gatus.port}";
     };
     ente = {
       ip = "${myInventory.network.nodes.ente.ip}/24"; # core-pi

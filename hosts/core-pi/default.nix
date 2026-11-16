@@ -41,113 +41,118 @@ let
       ++ lib.optional (hasFallback && e.name == "ntfy") { type = "custom"; };
     };
   nodes = myInventory.network.nodes;
+  gatusEndpoints = [
+    {
+      name = "kleinbem.dev";
+      group = "Public";
+      url = "https://kleinbem.dev";
+      interval = "3m";
+      conditions = [
+        "[STATUS] < 500"
+        "[RESPONSE_TIME] < 3000"
+      ];
+    }
+    {
+      name = "Dashboard";
+      group = "Public";
+      url = "https://home.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] < 500" ];
+    }
+    {
+      # meshOnly: public DNS sends hass.kleinbem.dev to Cloudflare, which
+      # answers 404 without a tunnel route. Probe the container directly.
+      name = "Home Assistant";
+      group = "Apps";
+      url = "http://${nodes.home-assistant.ip}:${toString nodes.home-assistant.port}/manifest.json";
+      interval = "3m";
+      conditions = [
+        "[STATUS] == 200"
+        "[BODY].name == Home Assistant"
+      ];
+    }
+    {
+      name = "Vaultwarden";
+      group = "Identity";
+      url = "https://vault.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] < 500" ];
+    }
+    {
+      # museum's own liveness endpoint, end to end through the tunnel.
+      name = "Ente Auth API";
+      group = "Identity";
+      url = "https://2fa-api.kleinbem.dev/ping";
+      interval = "3m";
+      conditions = [
+        "[STATUS] == 200"
+        "[BODY].message == pong"
+      ];
+    }
+    {
+      name = "Ente Auth Web";
+      group = "Identity";
+      url = "https://2fa.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] == 200" ];
+    }
+    {
+      name = "Authentik";
+      group = "Identity";
+      # Not `/` or /-/health/*: those answer even when the Django server
+      # behind the Rust front is down. This endpoint only returns 200 when
+      # the real server is serving.
+      url = "https://auth.kleinbem.dev/api/v3/root/config/";
+      interval = "3m";
+      conditions = [
+        "[STATUS] == 200"
+        "[RESPONSE_TIME] < 3000"
+      ];
+    }
+    {
+      name = "Grafana";
+      group = "Infrastructure";
+      url = "https://grafana.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] < 500" ];
+    }
+    {
+      name = "ntfy";
+      group = "Infrastructure";
+      url = "https://ntfy.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] < 500" ];
+    }
+    {
+      # meshOnly like Home Assistant above; atticd serves this page itself.
+      name = "Attic cache";
+      group = "Infrastructure";
+      url = "http://${nodes.attic.ip}:${toString nodes.attic.port}/";
+      interval = "3m";
+      conditions = [ "[STATUS] == 200" ];
+    }
+    {
+      name = "n8n";
+      group = "Apps";
+      url = "https://n8n.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] < 500" ];
+    }
+    {
+      name = "Chat";
+      group = "Apps";
+      url = "https://chat.kleinbem.dev";
+      interval = "3m";
+      conditions = [ "[STATUS] < 500" ];
+    }
+  ];
   gatusEndpointsFile = (pkgs.formats.yaml { }).generate "gatus-endpoints.yaml" {
-    endpoints = map withAlerts [
-      {
-        name = "kleinbem.dev";
-        group = "Public";
-        url = "https://kleinbem.dev";
-        interval = "3m";
-        conditions = [
-          "[STATUS] < 500"
-          "[RESPONSE_TIME] < 3000"
-        ];
-      }
-      {
-        name = "Dashboard";
-        group = "Public";
-        url = "https://home.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
-      }
-      {
-        # meshOnly: public DNS sends hass.kleinbem.dev to Cloudflare, which
-        # answers 404 without a tunnel route. Probe the container directly.
-        name = "Home Assistant";
-        group = "Apps";
-        url = "http://${nodes.home-assistant.ip}:${toString nodes.home-assistant.port}/manifest.json";
-        interval = "3m";
-        conditions = [
-          "[STATUS] == 200"
-          "[BODY].name == Home Assistant"
-        ];
-      }
-      {
-        name = "Vaultwarden";
-        group = "Identity";
-        url = "https://vault.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
-      }
-      {
-        # museum's own liveness endpoint, end to end through the tunnel.
-        name = "Ente Auth API";
-        group = "Identity";
-        url = "https://2fa-api.kleinbem.dev/ping";
-        interval = "3m";
-        conditions = [
-          "[STATUS] == 200"
-          "[BODY].message == pong"
-        ];
-      }
-      {
-        name = "Ente Auth Web";
-        group = "Identity";
-        url = "https://2fa.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] == 200" ];
-      }
-      {
-        name = "Authentik";
-        group = "Identity";
-        # Not `/` or /-/health/*: those answer even when the Django server
-        # behind the Rust front is down. This endpoint only returns 200 when
-        # the real server is serving.
-        url = "https://auth.kleinbem.dev/api/v3/root/config/";
-        interval = "3m";
-        conditions = [
-          "[STATUS] == 200"
-          "[RESPONSE_TIME] < 3000"
-        ];
-      }
-      {
-        name = "Grafana";
-        group = "Infrastructure";
-        url = "https://grafana.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
-      }
-      {
-        name = "ntfy";
-        group = "Infrastructure";
-        url = "https://ntfy.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
-      }
-      {
-        # meshOnly like Home Assistant above; atticd serves this page itself.
-        name = "Attic cache";
-        group = "Infrastructure";
-        url = "http://${nodes.attic.ip}:${toString nodes.attic.port}/";
-        interval = "3m";
-        conditions = [ "[STATUS] == 200" ];
-      }
-      {
-        name = "n8n";
-        group = "Apps";
-        url = "https://n8n.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
-      }
-      {
-        name = "Chat";
-        group = "Apps";
-        url = "https://chat.kleinbem.dev";
-        interval = "3m";
-        conditions = [ "[STATUS] < 500" ];
-      }
-    ];
+    endpoints = map withAlerts gatusEndpoints;
   };
+
+  foyerConfigFile = pkgs.writeText "foyer-config.json" (
+    builtins.toJSON (import ./foyer.nix { inherit lib myInventory gatusEndpoints; })
+  );
 
   # attic-ui ships neutral upstream defaults; layer fleet settings via /config.json.
   atticUiRoot = pkgs.symlinkJoin {
@@ -445,6 +450,7 @@ in
         ip = "${myInventory.network.nodes.dashboard.ip}/24";
         hostBridgeIp = "10.0.0.22"; # core-pi IP
         memoryLimit = "128M";
+        configFile = foyerConfigFile;
       };
 
       cups = {
@@ -473,7 +479,7 @@ in
   services = {
     nix-gantry.host = {
       enable = true;
-      subnet = "10.85.48.0/24";
+      subnet = myInventory.hosts.core-pi.containerSubnet;
       hostAddress = "10.85.48.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       # nix-gantry defaults this off to avoid requiring impermanence; this

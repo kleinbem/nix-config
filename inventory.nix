@@ -40,6 +40,7 @@ in
   hosts = {
     nixos-nvme = {
       ip = "10.85.46.1"; # Container bridge IP
+      containerSubnet = "10.85.46.0/24";
       physicalIp = "10.0.0.5"; # LAN IP for routing
       netbirdIp = "100.117.212.232"; # Mesh IP (stable per enrollment; re-enrolling mints a new one)
       # NetBird suffixed the DNS label (name clash at enrollment).
@@ -93,6 +94,7 @@ in
     };
     core-pi = {
       ip = "10.0.0.22";
+      containerSubnet = "10.85.48.0/24";
       netbirdIp = "100.117.146.201"; # Mesh IP — THE cache entrypoint (caddy/attic); attic-pull.nix + infra/netbird/dns.tf point here
       system = "aarch64-linux";
       deployType = "ssh";
@@ -103,6 +105,7 @@ in
     };
     hass-pi = {
       ip = "10.0.0.21"; # Raspberry Pi
+      containerSubnet = "10.85.49.0/24";
       netbirdIp = "100.117.163.227"; # Mesh IP (stable per enrollment)
       system = "aarch64-linux";
       deployType = "ssh";
@@ -133,6 +136,7 @@ in
     };
     nasbook = {
       ip = "10.0.0.30"; # infra VLAN — NAS + Tang mesh member (fleet is all-10.x)
+      containerSubnet = "10.85.47.0/24";
       netbirdIp = "100.117.39.136"; # Mesh IP (stable per enrollment)
       system = "x86_64-linux";
       deployType = "ssh";
@@ -144,6 +148,7 @@ in
     };
     mac-mini = {
       ip = "10.0.0.16"; # LAN IP, static
+      containerSubnet = "10.85.50.0/24";
       netbirdIp = "100.117.93.197"; # Mesh IP (stable per enrollment)
       system = "x86_64-linux"; # Mid-2011 Mac Mini (Macmini5,x) — Intel, real 64-bit EFI
       deployType = "ssh";
