@@ -64,6 +64,52 @@ in
         gnome-remote-desktop.enable = true;
       };
 
+      # Chromium-based apps pick their key store from XDG_CURRENT_DESKTOP: GNOME gets the
+      # login keyring, Hyprland and Sway a plaintext fallback, so logins break on a switch.
+      # no-link: documented Chromium behaviour (--password-store), not a bug.
+      # mkAfter: runs after the nix-packages overlay that defines the Antigravity apps.
+      nixpkgs.overlays = lib.mkAfter [
+        (
+          final: prev:
+          let
+            pin = "--password-store=gnome-libsecret";
+            # symlinkJoin, not overrideAttrs: no rebuild of the app itself.
+            pinWrapped =
+              pkg: bins:
+              final.symlinkJoin {
+                inherit (pkg) pname version meta;
+                name = "${pkg.pname}-${pkg.version}";
+                paths = [ pkg ];
+                nativeBuildInputs = [ final.makeWrapper ];
+                postBuild = lib.concatMapStrings (b: ''
+                  wrapProgram $out/bin/${b} --add-flags "${pin}"
+                '') bins;
+              };
+          in
+          {
+            google-chrome = prev.google-chrome.override { commandLineArgs = pin; };
+            obsidian = prev.obsidian.override { commandLineArgs = pin; };
+            bitwarden-desktop = pinWrapped prev.bitwarden-desktop [ "bitwarden" ];
+            google-antigravity = pinWrapped prev.google-antigravity [ "antigravity" ];
+            google-antigravity-ide-no-fhs = pinWrapped prev.google-antigravity-ide-no-fhs [
+              "antigravity-ide"
+            ];
+          }
+        )
+      ];
+
+      # Same Secret portal in every session; the Hyprland and Sway defaults have none.
+      xdg.portal.config = {
+        hyprland = {
+          default = [
+            "hyprland"
+            "gtk"
+          ];
+          "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+        };
+        sway."org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+      };
+
       # Disable GDM smartcard login to show normal user list when YubiKey is plugged in
       programs.dconf.profiles.gdm = {
         databases = [
