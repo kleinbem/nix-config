@@ -66,6 +66,7 @@ in
 
       # Chromium-based apps pick their key store from XDG_CURRENT_DESKTOP: GNOME gets the
       # login keyring, Hyprland and Sway a plaintext fallback, so logins break on a switch.
+      # no-link: documented Chromium behaviour (--password-store), not a bug.
       # mkAfter: runs after the nix-packages overlay that defines the Antigravity apps.
       nixpkgs.overlays = lib.mkAfter [
         (
