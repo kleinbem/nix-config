@@ -239,7 +239,7 @@ in
     # externalInterface stays set above.
     nix-gantry.host = {
       enable = true;
-      subnet = "10.85.47.0/24";
+      subnet = myInventory.hosts.nasbook.containerSubnet;
       hostAddress = "10.85.47.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       # nix-gantry defaults this off (it needs impermanence); this fleet has it.

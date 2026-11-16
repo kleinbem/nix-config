@@ -207,7 +207,7 @@ in
   services = {
     nix-gantry.host = {
       enable = true;
-      subnet = "10.85.49.0/24";
+      subnet = myInventory.hosts.hass-pi.containerSubnet;
       hostAddress = "10.85.49.1";
       manifestUrl = "https://github.com/kleinbem/nix-config/releases/download/container-manifest/manifest.json";
       # nix-gantry defaults this to false; this fleet always has impermanence.
