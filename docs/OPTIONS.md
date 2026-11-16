@@ -409,7 +409,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop.claude`
 
-- **Declared:** `nix-presets/nixosModules/claude.nix:39`
+- **Declared:** `nix-presets/nixosModules/claude.nix:47`
 - **Sub-options:** `enable`
 - **Configured in:** `host:nixos-nvme`
 
