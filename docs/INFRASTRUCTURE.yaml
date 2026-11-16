@@ -327,6 +327,7 @@ hosts:
       - cups.enable
       - cups.ip
       - dashboard
+      - dashboard.configFile
       - dashboard.enable
       - dashboard.hostBridgeIp
       - dashboard.ip
