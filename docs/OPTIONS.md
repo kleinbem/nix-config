@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 80  
-**Consumer files scanned:** 38
+**Declarations indexed:** 81  
+**Consumer files scanned:** 39
 
 ---
 
@@ -159,7 +159,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/containers/dashboard/options.nix:6`
 - **Sub-options:** `enable`, `hostBridgeIp`, `ip`, `memoryLimit`, `secretsFile`
-- **Configured in:** `host:core-pi`
+- **Configured in:** `host:core-pi`, `preset:nix-presets/checks/dashboard-foyer.nix`
+
+### `my.containers.dashboard`
+
+- **Declared:** `nix-presets/containers/dashboard/foyer/default.nix:25`
+- **Sub-options:** `configFile`, `gatusUrl`
+- **Configured in:** `host:core-pi`, `preset:nix-presets/checks/dashboard-foyer.nix`
 
 ### `my.containers.dev-db`
 
