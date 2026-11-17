@@ -116,7 +116,6 @@
 
       "org/gnome/desktop/wm/preferences" = {
         button-layout = "appmenu:minimize,maximize,close";
-        center-new-windows = true;
         focus-mode = "click";
         action-double-click-titlebar = "toggle-maximize";
       };

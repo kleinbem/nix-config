@@ -133,7 +133,7 @@ let
       hostIP = myInventory.network.nodes.caddy.ip;
       proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
       authUpstream = "${myInventory.network.nodes.authentik.ip}:${toString myInventory.network.nodes.authentik.port}";
-      globalMaintenance = myInventory.globalMaintenance or false;
+      globalMaintenance = myInventory.network.globalMaintenance;
       # Must match core-pi's staticSites: the vhosts are built here, core-pi
       # only bind-mounts the content.
       staticSites."mta-sts.kleinbem.dev" = {
