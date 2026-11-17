@@ -216,6 +216,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Fork branch with the flake-parts attach fix; back to SPTApyo/nix-app-center
+    # once upstream: SPTApyo/nix-app-center#37 is released.
+    nix-app-center = {
+      url = "github:kleinbem/Nix-App-Center/fix/attach-flake-parts";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Omarchy desktop vendored and rewired for NixOS
     nix-omarchy = {
       url = "github:kleinbem/nix-omarchy";
@@ -245,6 +252,13 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
+      ];
+
+      # The apps kept in Nix App Center. It only counts itself attached when
+      # flake.nix names its two files, so they are listed here.
+      flake.nixosModules.nix-app-center-kept.imports = [
+        ./nix-app-center-home.nix
+        ./nix-app-center-system.nix
       ];
     };
 }
