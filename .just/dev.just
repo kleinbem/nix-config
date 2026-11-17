@@ -331,3 +331,99 @@ lint-python *args="":
 [group("Development")]
 fmt-python *args="":
     @nix shell nixpkgs#ruff --command ruff format ./scripts/ {{args}}
+
+# Trigger package build(s) on GitHub Actions and push them to Attic.
+[group("Development")]
+remote-build *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set -- {{args}}
+
+    TARGETS=()
+    SYSTEM=""
+    HOST="auto"
+    FREE_DISK="false"
+    NOTIFY="true"
+    REF="main"
+    WATCH=0
+
+    show_help() {
+        cat <<'HELP'
+    Usage: just dev::remote-build TARGET [TARGET...] [FLAGS]
+
+    Build one or more packages on GitHub Actions and push them to Attic (system).
+    Streams completed dependencies to Attic in the background so partial progress
+    is preserved even if a later step fails or times out.
+
+    Arguments:
+      TARGET            One or more package attrs (e.g. ollama llama-cpp) or
+                        flake installables (e.g. nixpkgs#blender,
+                        .#nixosConfigurations.nixos-nvme.pkgs.ollama).
+
+    Flags:
+      --system ARCH     Target architecture: x86_64-linux, aarch64-linux, or
+                        both (default: current machine's architecture).
+      --host HOST       Host pkgs to resolve bare names against (default: auto;
+                        use "none" for raw nixpkgs).
+      --free-disk       Reclaim ~20 GiB on the runner (for huge builds).
+      --no-notify       Disable the ntfy phone alert on completion.
+      --ref BRANCH      Git ref to run the workflow on (default: main).
+      --watch           Wait and stream the GitHub Actions run logs.
+      -h, --help        Print this help and exit.
+
+    Examples:
+      just dev::remote-build ollama
+      just dev::remote-build ollama llama-cpp --watch
+      just dev::remote-build python3Packages.torch --free-disk
+      just dev::remote-build ollama --system both
+      just dev::remote-build nixpkgs#blender
+    HELP
+    }
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help) show_help; exit 0 ;;
+            --system) SYSTEM="${2:?--system requires a value}"; shift 2 ;;
+            --host) HOST="${2:?--host requires a value}"; shift 2 ;;
+            --free-disk) FREE_DISK="true"; shift ;;
+            --no-notify) NOTIFY="false"; shift ;;
+            --ref) REF="${2:?--ref requires a value}"; shift 2 ;;
+            --watch) WATCH=1; shift ;;
+            -*) echo "Unknown flag: $1" >&2; exit 1 ;;
+            *) TARGETS+=("$1"); shift ;;
+        esac
+    done
+
+    if [ "${#TARGETS[@]}" -eq 0 ]; then
+        show_help
+        exit 1
+    fi
+
+    if [ -z "$SYSTEM" ]; then
+        case "$(uname -m)" in
+            x86_64) SYSTEM="x86_64-linux" ;;
+            aarch64|arm64) SYSTEM="aarch64-linux" ;;
+            *) echo "Unsupported architecture: $(uname -m) — pass --system" >&2; exit 1 ;;
+        esac
+    fi
+
+    TARGET_STR="${TARGETS[*]}"
+    echo "🚀 Dispatching build-package.yaml on $REF ($SYSTEM): $TARGET_STR"
+    gh workflow run build-package.yaml \
+        --repo kleinbem/nix-config \
+        --ref "$REF" \
+        -f "target=$TARGET_STR" \
+        -f "system=$SYSTEM" \
+        -f "host=$HOST" \
+        -f "free_disk_space=$FREE_DISK" \
+        -f "notify=$NOTIFY"
+
+    if [ "$WATCH" -eq 1 ]; then
+        sleep 3
+        run_id=$(gh run list --repo kleinbem/nix-config --workflow build-package.yaml --branch "$REF" --limit 1 --json databaseId --jq '.[0].databaseId')
+        if [ -n "$run_id" ]; then
+            gh run watch --repo kleinbem/nix-config "$run_id"
+        fi
+    else
+        echo "   View runs: gh run list --repo kleinbem/nix-config --workflow build-package.yaml"
+    fi
