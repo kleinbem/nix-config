@@ -87,11 +87,10 @@ update name host="":
         echo "🚀 Activating updated container '{{ name }}'..."
         sudo systemctl start "update-container-activate@{{ name }}.service"
         echo "✅ Done. Active generation:"
-        ls -l "/var/lib/machines/{{ name }}/current" || true
+        sudo ls -l "/var/lib/machines/{{ name }}/current" || true
     else
-        ssh -t "$TARGET" "sudo systemctl start 'update-container-stage@{{ name }}.service' && sudo systemctl start 'update-container-activate@{{ name }}.service'"
-        echo "✅ Done on $TARGET. Active generation:"
-        ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
+        # One session: /var/lib/machines is root-only, and sudo is still cached.
+        ssh -t "$TARGET" "sudo systemctl start 'update-container-stage@{{ name }}.service' && sudo systemctl start 'update-container-activate@{{ name }}.service' && echo '✅ Done on $TARGET. Active generation:' && sudo ls -l '/var/lib/machines/{{ name }}/current'"
     fi
 
 # Roll back a container to its previous generation
@@ -104,11 +103,9 @@ rollback name host="":
     if [ -z "$TARGET" ] || [ "$TARGET" = "$(hostname)" ] || [ "$TARGET" = "localhost" ]; then
         sudo systemctl start "update-container-rollback@{{ name }}.service"
         echo "✅ Done. Active generation:"
-        ls -l "/var/lib/machines/{{ name }}/current" || true
+        sudo ls -l "/var/lib/machines/{{ name }}/current" || true
     else
-        ssh -t "$TARGET" "sudo systemctl start 'update-container-rollback@{{ name }}.service'"
-        echo "✅ Done on $TARGET. Active generation:"
-        ssh "$TARGET" "ls -l '/var/lib/machines/{{ name }}/current' || true"
+        ssh -t "$TARGET" "sudo systemctl start 'update-container-rollback@{{ name }}.service' && echo '✅ Done on $TARGET. Active generation:' && sudo ls -l '/var/lib/machines/{{ name }}/current'"
     fi
 
 # The tofu provider has no admin-token resource, so this recipe makes it.
