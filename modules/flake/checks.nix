@@ -63,7 +63,7 @@
                 name: host:
                 lib.nameValuePair "container-parity-${name}" (
                   policy.mkCheck inputs.nixpkgs.legacyPackages.${system} "container-parity-${name}" (
-                    import ../../lib/policy/container-parity.nix { inherit lib; } {
+                    (import ../../lib/policy/container-parity.nix { inherit lib; }).check {
                       hosts.${name} = host;
                       factory = self.nixosConfigurations.${factoryName};
                       realNames = import ../../hosts/container-factory/real-names.nix;
@@ -188,6 +188,19 @@
           };
         }
         // hostChecks
-        // parityChecks;
+        // parityChecks
+        # Reads every host regardless of system, like the policy checks.
+        // lib.optionalAttrs (system == "x86_64-linux") {
+          container-parity-known =
+            (import ../../lib/policy/common.nix { inherit lib; }).mkCheck
+              inputs.nixpkgs.legacyPackages.${system}
+              "container-parity-known"
+              (
+                (import ../../lib/policy/container-parity.nix { inherit lib; }).staleKnown {
+                  hosts = self.nixosConfigurations;
+                  known = import ../../hosts/container-factory/known-mismatches.nix;
+                }
+              );
+        };
     };
 }
