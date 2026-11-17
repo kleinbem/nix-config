@@ -1831,6 +1831,27 @@
         "type": "github"
       }
     },
+    "nix-app-center": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794921258,
+        "narHash": "sha256-ttIcDAxxZ1xeMTPpwmZBWyE1E0/IMK7Wc0/P0q+xPlY=",
+        "owner": "kleinbem",
+        "repo": "Nix-App-Center",
+        "rev": "7553e0016adf211ccc65e56f06c35a9dbf7466f7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kleinbem",
+        "ref": "fix/attach-flake-parts",
+        "repo": "Nix-App-Center",
+        "type": "github"
+      }
+    },
     "nix-detour": {
       "inputs": {
         "nixpkgs": [
@@ -3447,6 +3468,7 @@
         "kleinbem-secrets": "kleinbem-secrets",
         "kleinbem-skills": "kleinbem-skills",
         "lanzaboote": "lanzaboote",
+        "nix-app-center": "nix-app-center",
         "nix-detour-fleet": "nix-detour-fleet",
         "nix-devshells": "nix-devshells",
         "nix-flatpak": "nix-flatpak",

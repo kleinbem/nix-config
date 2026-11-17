@@ -26,6 +26,7 @@
     "${self}/modules/nixos/persistence.nix"
     ./secrets.nix
     "${self}/modules/nixos/apps.nix"
+    self.nixosModules.nix-app-center-kept
     ./disko.nix
     "${self}/modules/nixos/data-disk.nix"
     inputs.disko.nixosModules.disko
@@ -143,6 +144,7 @@
     desktop = {
       gnome.enable = true;
       omarchy.enable = true;
+      nixAppCenter.enable = true;
       claude.enable = true;
       # Windows apps via Bottles (ntsync, 32-bit graphics; no gaming tweaks)
       bottles.enable = true;

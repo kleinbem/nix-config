@@ -6,7 +6,7 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 81  
+**Declarations indexed:** 82  
 **Consumer files scanned:** 40
 
 ---
@@ -411,6 +411,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-presets/nixosModules/claude.nix:47`
 - **Sub-options:** `enable`
+- **Configured in:** `host:nixos-nvme`
+
+### `my.desktop.nixAppCenter`
+
+- **Declared:** `nix-config/modules/nixos/nix-app-center.nix:35`
+- **Sub-options:** `applyCommand`, `configDir`, `enable`
 - **Configured in:** `host:nixos-nvme`
 
 ### `my.desktop.sandboxedApps`

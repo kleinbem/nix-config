@@ -86,6 +86,9 @@
         {
           pre-commit-check = inputs.git-hooks.lib.${system}.run {
             src = ../../.;
+            # Rewritten by Nix App Center in its own layout, so no hook runs on
+            # them. no-link: generated output, not a bug.
+            excludes = [ "^nix-app-center-(home|system)\\.nix$" ];
             hooks = {
               nixfmt.enable = true;
               statix.enable = true;
