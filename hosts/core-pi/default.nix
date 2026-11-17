@@ -27,20 +27,47 @@ let
   # (bind-mounted into the container at runtime — see nix-presets'
   # containers/gatus.nix for why this can't be baked into the preset
   # itself: container-factory builds that closure once, centrally).
-  # Every endpoint alerts to ntfy (provider set up by the preset's alerting.ntfy).
+  # Every endpoint alerts to ntfy (provider set up by the preset's alerting.ntfy),
+  # unless it says `alert = false`.
   # The ntfy probe also alerts on the public fallback: it fails exactly when the
   # tunnel, Caddy or ntfy is down, i.e. when the main route can't deliver.
   hasFallback = config.sops.secrets ? ntfy_fallback_topic;
   withAlerts =
     e:
-    e
-    // {
+    # `service` and `alert` are ours, not Gatus fields.
+    removeAttrs e [
+      "service"
+      "alert"
+    ]
+    // lib.optionalAttrs (e.alert or true) {
       alerts = [
         { type = "ntfy"; }
       ]
       ++ lib.optional (hasFallback && e.name == "ntfy") { type = "custom"; };
     };
   nodes = myInventory.network.nodes;
+  # Probe a container directly: Gatus resolves public DNS only, and behind
+  # forward-auth Caddy would answer for a dead backend. `service` ties the
+  # probe to its inventory node for Foyer.
+  direct =
+    id: path: conditions:
+    let
+      n = nodes.${id};
+    in
+    {
+      inherit (n.meta) name;
+      service = id;
+      group = n.meta.category;
+      url = "http://${n.ip}:${toString n.port}${path}";
+      interval = "3m";
+      inherit conditions;
+    };
+  up = [ "[STATUS] == 200" ];
+  # A refused connection has status 0, which would pass "< 500" alone.
+  answers = [
+    "[CONNECTED] == true"
+    "[STATUS] < 500"
+  ];
   gatusEndpoints = [
     {
       name = "kleinbem.dev";
@@ -145,6 +172,41 @@ let
       interval = "3m";
       conditions = [ "[STATUS] < 500" ];
     }
+    {
+      # Through the tunnel: tells whether the status page is reachable.
+      name = "Status";
+      group = "Public";
+      url = "https://${nodes.gatus.domain}/health";
+      interval = "3m";
+      conditions = up;
+    }
+    {
+      name = "Miniflux";
+      group = "Media";
+      url = "https://${nodes.miniflux.domain}/healthcheck";
+      interval = "3m";
+      conditions = up;
+    }
+    (direct "cadre" "/health" up)
+    (direct "revue" "/" up)
+    (direct "code-server" "/healthz" up)
+    (direct "forgejo" "/api/healthz" [
+      "[STATUS] == 200"
+      "[BODY].status == pass"
+    ])
+    (direct "stalwart" "/healthz/live" up)
+  ]
+  # Not yet seen passing from core-pi: no alerts until they are.
+  ++ map (e: e // { alert = false; }) [
+    (direct "alertmanager" "/-/healthy" up)
+    (direct "paperless" "/" answers)
+    (direct "syncthing" "/rest/noauth/health" up)
+    (direct "frigate" "/api/version" up)
+    (direct "garage-ui" "/" answers)
+    (direct "buzz" "/" answers)
+    (direct "nix-detour" "/" answers)
+    # The admin API's health page: the S3 port answers 403 without a key.
+    (direct "garage" "/" [ "[STATUS] == 200" ] // { url = "http://${nodes.garage.ip}:3903/health"; })
   ];
   gatusEndpointsFile = (pkgs.formats.yaml { }).generate "gatus-endpoints.yaml" {
     endpoints = map withAlerts gatusEndpoints;
