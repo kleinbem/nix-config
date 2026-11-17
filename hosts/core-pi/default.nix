@@ -195,12 +195,13 @@ let
       "[BODY].status == pass"
     ])
     (direct "stalwart" "/healthz/live" up)
-  ]
-  # Not yet seen passing from core-pi: no alerts until they are.
-  ++ map (e: e // { alert = false; }) [
     (direct "alertmanager" "/-/healthy" up)
     (direct "paperless" "/" answers)
     (direct "syncthing" "/rest/noauth/health" up)
+  ]
+  # Failing since the probes were added: no alerts until each is fixed or
+  # dropped, so ntfy only reports changes.
+  ++ map (e: e // { alert = false; }) [
     (direct "frigate" "/api/version" up)
     (direct "garage-ui" "/" answers)
     (direct "buzz" "/" answers)
