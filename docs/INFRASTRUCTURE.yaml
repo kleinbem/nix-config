@@ -1049,6 +1049,7 @@ hosts:
       - cadre.autoStart
       - cadre.enable
       - cadre.models
+      - cadre.package
       - cadre.web
       - cadre.web.enable
       - printing.enable

@@ -33,8 +33,8 @@ in
       type = lib.types.package;
       default = pkgs.mesh-llm;
       defaultText = lib.literalExpression "pkgs.mesh-llm";
-      example = lib.literalExpression "pkgs.mesh-llm-cuda";
-      description = "mesh-llm with the native runtimes this host's GPU needs (Vulkan is always bundled).";
+      example = lib.literalExpression "pkgs.mesh-llm-vulkan";
+      description = "mesh-llm with the native runtime this host's GPU needs: `pkgs.mesh-llm-vulkan`, `pkgs.mesh-llm-cuda` or `pkgs.mesh-llm-rocm`. The default runs on the CPU.";
     };
 
     models = lib.mkOption {
