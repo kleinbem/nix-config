@@ -216,11 +216,12 @@ in
 
     node-red = {
       enable = true;
-      openFirewall = true;
       # The editor has no login by default and its exec nodes run commands,
-      # so adminAuth turns on once `node_red_admin_hash` (bcrypt, from
-      # `node-red admin hash-pw`) is in nix/per-host/hass-pi.yaml. Gated on
-      # the key name because sops-nix fails activation on a missing key.
+      # so the port only opens together with adminAuth, once
+      # `node_red_admin_hash` (bcrypt, from `node-red admin hash-pw`) is in
+      # nix/per-host/hass-pi.yaml. Until then: ssh -L 1880:localhost:1880.
+      # Gated on the key name because sops-nix fails activation on a missing key.
+      openFirewall = hasNodeRedAdminHash;
       configFile = pkgs.writeText "node-red-settings.js" ''
         const base = require("${config.services.node-red.package}/lib/node_modules/node-red/packages/node_modules/node-red/settings.js");
         ${lib.optionalString hasNodeRedAdminHash ''

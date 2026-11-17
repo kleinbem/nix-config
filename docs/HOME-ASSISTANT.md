@@ -36,7 +36,7 @@ Version pins that must go away eventually (both commented in the preset): paho-m
 | Service | Port | Notes |
 |---------|------|-------|
 | ESPHome device builder | 6052 | sidebar dashboard in HA; configs from this repo, secrets.yaml is state |
-| Node-RED | 1880 | sidebar dashboard in HA |
+| Node-RED | 1880 | sidebar dashboard in HA; the port opens only once `node_red_admin_hash` is set (editor login) |
 | matterjs-server | 5580 (bridge only) | HA's Matter config entry points at `ws://10.85.49.1:5580/ws`; python-matter-server is archived upstream, don't go back |
 | openthread-border-router | 8081 (bridge only) | armed for the SkyConnect dongle; `otbr-agent` stays inactive (ConditionPathExists) until the device appears |
 | Wyoming piper / faster-whisper | 10200 / 10300 | voice pipeline backends; configure the Wyoming integrations in HA's UI |
