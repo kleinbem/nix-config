@@ -23,12 +23,13 @@ let
       || (h.physicalIp or h.ip or null) == node.ip
     ) "fleet" (lib.attrNames hosts));
 
-  # Probes use the public domain, or the container directly for mesh-only ones.
+  # Probes name their node, use the public domain, or hit the container directly.
   gatusEndpointOf =
-    node:
+    id: node:
     lib.findFirst (
       e:
-      lib.hasPrefix "https://${node.domain}" e.url
+      (e.service or null) == id
+      || lib.hasPrefix "https://${node.domain}" e.url
       || lib.hasPrefix "http://${node.ip}:${toString (node.port or 0)}/" e.url
     ) null gatusEndpoints;
 
@@ -40,7 +41,7 @@ let
   mkService =
     id: node:
     let
-      endpoint = gatusEndpointOf node;
+      endpoint = gatusEndpointOf id node;
     in
     {
       inherit id;
