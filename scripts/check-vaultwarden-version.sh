@@ -41,7 +41,9 @@ REL_BODY=$(jq -r '.body // ""' <<<"$REL_JSON")
 log "latest upstream:    $LATEST"
 
 # ── 3. Verdict ─────────────────────────────────────────────────────────────
-emit_summary() { [[ -n ${GITHUB_STEP_SUMMARY:-} ]] && echo -e "$1" >>"$GITHUB_STEP_SUMMARY"; }
+emit_summary() {
+  if [[ -n ${GITHUB_STEP_SUMMARY:-} ]]; then echo -e "$1" >>"$GITHUB_STEP_SUMMARY"; fi
+}
 
 if [[ $CURRENT == "$LATEST" ]]; then
   echo "OK: Vaultwarden $CURRENT is current."

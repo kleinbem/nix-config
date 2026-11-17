@@ -305,7 +305,7 @@ in
     # query. The activation script runs after every successful switch.
     system.activationScripts.deployLog = lib.stringAfter [ "users" ] ''
       ${pkgs.systemd}/bin/systemd-cat -t nix-config-deploy -p info <<EOF
-      event=switch host=${cfg.hostName} system=$(readlink -f /run/current-system) flake=${cfg.flakeRef}
+      event=switch host=${cfg.hostName} system=$(readlink -f "$systemConfig") flake=${cfg.flakeRef}
       EOF
     '';
   };

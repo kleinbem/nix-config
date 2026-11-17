@@ -59,7 +59,7 @@
         ip = "${myInventory.network.nodes.caddy.ip}/24";
         hostIP = myInventory.network.nodes.caddy.ip;
         proxyTargets = lib.filterAttrs (_: v: v ? externalPort) myInventory.network.nodes;
-        globalMaintenance = myInventory.globalMaintenance or false;
+        globalMaintenance = myInventory.network.globalMaintenance;
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
         tls = {

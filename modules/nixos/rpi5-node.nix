@@ -264,8 +264,9 @@ in
   nix = {
     # distributedBuilds disabled because Orin Nano is offline
     settings = {
-      cores = lib.mkDefault 2; # Limit cores to prevent OOM during kernel builds
-      max-jobs = lib.mkDefault 1;
+      # mkForce: core.nix sets the workstation values at normal priority.
+      cores = lib.mkForce 2; # Limit cores to prevent OOM during kernel builds
+      max-jobs = lib.mkForce 1;
     };
   };
 

@@ -163,7 +163,7 @@ in
         # "current generation per host" query keeps working across both.
         system.activationScripts.deployLog = lib.stringAfter [ "users" ] ''
           ${pkgs.systemd}/bin/systemd-cat -t nix-config-deploy -p info <<EOF
-          event=switch host=${cfg.hostName} system=$(readlink -f /run/current-system) flake=${cfg.url}#${cfg.branch}
+          event=switch host=${cfg.hostName} system=$(readlink -f "$systemConfig") flake=${cfg.url}#${cfg.branch}
           EOF
         '';
       }

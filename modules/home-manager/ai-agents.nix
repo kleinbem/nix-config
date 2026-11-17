@@ -197,9 +197,9 @@ let
       echo
       echo '```'
       if [ -n "$prog" ]; then
-        ${pkgs.systemd}/bin/coredumpctl info "$prog" 2>&1 | head -300
+        ${pkgs.systemd}/bin/coredumpctl info "$prog" 2>&1 | head -300 || true
       else
-        ${pkgs.systemd}/bin/coredumpctl info 2>&1 | head -300
+        ${pkgs.systemd}/bin/coredumpctl info 2>&1 | head -300 || true
       fi
       echo '```'
     } > "$report"

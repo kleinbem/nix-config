@@ -94,8 +94,7 @@
       };
     };
 
-    extraConfigLua = ''
-      vim.g.mapleader = " "
-    '';
+    # As a global, not extraConfigLua: that runs after the keymaps are bound.
+    globals.mapleader = " ";
   };
 }

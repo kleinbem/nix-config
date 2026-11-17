@@ -402,7 +402,7 @@ in
               }
             );
         authUpstream = "${myInventory.network.nodes.authentik.ip}:${toString myInventory.network.nodes.authentik.port}";
-        globalMaintenance = myInventory.globalMaintenance or false;
+        globalMaintenance = myInventory.network.globalMaintenance;
         hostDataDir = "/var/lib/caddy";
         memoryLimit = "512M";
         # CLOUDFLARE_API_TOKEN for publicCert vhosts (secrets.nix).
