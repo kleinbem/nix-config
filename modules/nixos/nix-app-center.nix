@@ -10,6 +10,16 @@
 let
   cfg = config.my.desktop.nixAppCenter;
 
+  hm = config.home-manager.users.${config.my.username};
+
+  # In a terminal: dev::apply asks for sudo itself, which the app can't answer.
+  apply = pkgs.writeShellScript "nix-app-center-apply" ''
+    cd ${lib.escapeShellArg cfg.configDir} && direnv exec . just dev::apply
+    status=$?
+    read -r -p "Enter closes this window. " _
+    exit "$status"
+  '';
+
   settings = pkgs.writeText "nix-app-center-settings.json" (
     builtins.toJSON {
       config_dir = cfg.configDir;
@@ -31,8 +41,7 @@ in
     };
     applyCommand = lib.mkOption {
       type = lib.types.str;
-      # In a terminal: dev::apply asks for sudo itself, which the app can't answer.
-      default = "xdg-terminal-exec bash -c 'cd ${cfg.configDir} && direnv exec . just dev::apply; read -r -p \"Enter closes this window. \" _'";
+      default = "xdg-terminal-exec ${apply}";
       description = "What the app runs for Apply.";
     };
   };
@@ -44,7 +53,7 @@ in
     home-manager.users.${config.my.username}.home.activation.nixAppCenterSettings =
       inputs.home-manager.lib.hm.dag.entryAfter [ "writeBoundary" ]
         ''
-          f="$HOME/.config/nix-app-center/settings.json"
+          f=${lib.escapeShellArg "${hm.xdg.configHome}/nix-app-center/settings.json"}
           if [ -s "$f" ] && ${pkgs.jq}/bin/jq -e 'type == "object"' "$f" >/dev/null 2>&1; then
             tmp=$(mktemp)
             ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$f" ${settings} > "$tmp"
