@@ -2,6 +2,7 @@
   config,
   lib,
   myInventory,
+  pkgs,
   ...
 }:
 
@@ -13,6 +14,9 @@
     services.cadre = {
       enable = true;
       autoStart = false;
+      # MeshLLM 0.80 bundles one runtime and is CPU-only by default; the `or`
+      # covers a lock from before nix-packages had the Vulkan build.
+      package = pkgs.mesh-llm-vulkan or pkgs.mesh-llm;
       models = [ "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M" ];
       web = {
         enable = true;
