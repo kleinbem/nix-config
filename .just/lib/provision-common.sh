@@ -280,17 +280,24 @@ pc_install_closure() {
 pc_append_initrd_secrets() {
   local host="$1" initrd="$2"
   shift 2
-  local base appender
-  base=$(nix build --no-link --print-out-paths \
-    ".#nixosConfigurations.${host}.config.system.build.initialRamdiskSecretAppender" \
-    "$@" 2>/dev/null || true)
-  appender="${base}/bin/append-initrd-secrets"
-  if [ -n "$base" ] && [ -x "$appender" ]; then
-    echo "🔐 Appending initrd secrets to ${initrd}..."
-    sudo "$appender" "$initrd"
-  else
-    echo "ℹ️  No initrd-secrets appender for ${host} (no boot.initrd.secrets) — skipping."
+  local count base appender
+  # Ask the config first, so a failed build can't pass for "no secrets":
+  # an initrd without them boots into emergency mode.
+  count=$(nix eval ".#nixosConfigurations.${host}.config.boot.initrd.secrets" \
+    --apply 's: builtins.length (builtins.attrNames s)' "$@")
+  if [ "$count" = "0" ]; then
+    echo "ℹ️  ${host} has no boot.initrd.secrets — nothing to append."
+    return 0
   fi
+  base=$(nix build --no-link --print-out-paths \
+    ".#nixosConfigurations.${host}.config.system.build.initialRamdiskSecretAppender" "$@")
+  appender="${base}/bin/append-initrd-secrets"
+  [ -x "$appender" ] || {
+    echo "❌ ${host} has ${count} initrd secret(s) but $appender is missing. NOT continuing." >&2
+    exit 1
+  }
+  echo "🔐 Appending ${count} initrd secret(s) to ${initrd}..."
+  sudo "$appender" "$initrd"
 }
 
 # ── host identity ─────────────────────────────────────────────────────────────
