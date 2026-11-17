@@ -179,6 +179,29 @@ let
       lib.filterAttrs (_: type: type == "directory") (builtins.readDir "${haSkillsRepo}/skills")
     );
 
+  # Agents write their own settings file, so it stays a real file: deep-merge
+  # the declared keys over it on every activation (lists are replaced).
+  mergeJsonSettings =
+    name: relPath: settings:
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settingsPath="${config.home.homeDirectory}/${relPath}"
+      declared=${pkgs.writeText "${name}-settings.json" (builtins.toJSON settings)}
+      if [ -L "$settingsPath" ]; then
+        run rm -f "$settingsPath"
+      fi
+      if [ -s "$settingsPath" ] && ${pkgs.jq}/bin/jq -e 'type == "object"' "$settingsPath" >/dev/null 2>&1; then
+        tmp=$(mktemp)
+        ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$settingsPath" "$declared" > "$tmp"
+        run install -m644 "$tmp" "$settingsPath"
+        rm -f "$tmp"
+      else
+        if [ -e "$settingsPath" ]; then
+          run mv "$settingsPath" "$settingsPath.invalid"
+        fi
+        run install -Dm644 "$declared" "$settingsPath"
+      fi
+    '';
+
   # `agent` — launch the configured default agent. Omarchy calls its
   # equivalent `a`; we ship both.
   agentBin = pkgs.writeShellScriptBin "agent" ''
@@ -413,25 +436,18 @@ in
     # Same reason as herdr's config.toml (nix-presets/herdr.nix): a store
     # symlink would make Claude Code's own writes fail, so merge instead.
     home.activation.claudeSettings = lib.mkIf (cfg.claude.settings != { }) (
-      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        settingsPath="${config.home.homeDirectory}/.claude/settings.json"
-        declared=${pkgs.writeText "claude-settings.json" (builtins.toJSON cfg.claude.settings)}
-        if [ -L "$settingsPath" ]; then
-          run rm -f "$settingsPath"
-        fi
-        if [ -s "$settingsPath" ] && ${pkgs.jq}/bin/jq -e 'type == "object"' "$settingsPath" >/dev/null 2>&1; then
-          tmp=$(mktemp)
-          ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$settingsPath" "$declared" > "$tmp"
-          run install -m644 "$tmp" "$settingsPath"
-          rm -f "$tmp"
-        else
-          if [ -e "$settingsPath" ]; then
-            run mv "$settingsPath" "$settingsPath.invalid"
-          fi
-          run install -Dm644 "$declared" "$settingsPath"
-        fi
-      ''
+      mergeJsonSettings "claude" ".claude/settings.json" cfg.claude.settings
     );
+
+    # Gemini CLI reads only GEMINI.md by default; repos carry AGENTS.md.
+    # Set even when gemini isn't installed here: devshells and `just agent`
+    # bring their own gemini, which still reads ~/.gemini.
+    home.activation.geminiSettings = mergeJsonSettings "gemini" ".gemini/settings.json" {
+      context.fileName = [
+        "AGENTS.md"
+        "GEMINI.md"
+      ];
+    };
 
     # Same merge for goose's config.yaml (YAML, so yq instead of jq).
     modules.ai-agents.goose.finalSettings = gooseFinalSettings;
