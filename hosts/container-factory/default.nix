@@ -270,13 +270,7 @@ let
     # with runtime image pulling and produce no static factory closure to cache.
   };
 
-  # Hosts register real container names, the catalogue uses option names.
-  # List the real names here where a preset's container name differs.
-  realContainerNames = {
-    dashboard = [
-      "dashboard-foyer"
-    ];
-  };
+  realContainerNames = import ./real-names.nix;
   wanted =
     name:
     deployedContainers == null
