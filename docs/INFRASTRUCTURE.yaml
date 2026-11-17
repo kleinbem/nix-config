@@ -272,6 +272,7 @@ hosts:
     - '[other] nix-gantry:updater'
     - '[module] modules/nixos/rpi5-disko.nix'
     - '[local] ./secrets.nix'
+    - '[local] ./foyer-attention.nix'
     - '[preset] nix-presets:dashboard-foyer'
     - '[preset] nix-presets:ente'
     - '[preset] nix-presets:vaultwarden'
@@ -280,7 +281,6 @@ hosts:
     - '[preset] nix-presets:cups'
     - '[preset] nix-presets:attic'
     - '[preset] nix-presets:ntfy'
-    - '[preset] nix-presets:caddy'
     enabled_subsystems:
       atticPull:
       - cacheHostIp
@@ -329,6 +329,7 @@ hosts:
       - dashboard
       - dashboard.configFile
       - dashboard.enable
+      - dashboard.feedDir
       - dashboard.hostBridgeIp
       - dashboard.ip
       - dashboard.memoryLimit

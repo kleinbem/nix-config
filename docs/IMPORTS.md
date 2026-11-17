@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 101
+**Distinct imports:** 102
 
 ---
 
@@ -23,7 +23,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - **Modules:** `modules/nixos/rpi5-disko.nix`, `modules/nixos/rpi5-node.nix`, `modules/nixos/services/cloudflare-tunnel.nix`
 - **Presets:** `nix-presets:attic`, `nix-presets:authentik`, `nix-presets:caddy`, `nix-presets:crowdsec`, `nix-presets:cups`, `nix-presets:dashboard-foyer`, `nix-presets:ente`, `nix-presets:gatus`, `nix-presets:herdr-remote-client`, `nix-presets:ntfy`, `nix-presets:vaultwarden`
 - **Other inputs:** `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
-- **Local:** `./secrets.nix`
+- **Local:** `./foyer-attention.nix`, `./secrets.nix`
 
 ### `hass-pi`
 
@@ -87,6 +87,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `./data-disk.nix` ← nasbook
 - `./disko.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano, orin-nano-bootstrap
 - `./esphome-secrets.nix` ← hass-pi
+- `./foyer-attention.nix` ← core-pi
 - `./garage.nix` ← nixos-nvme
 - `./hardware-boot.nix` ← nixos-nvme
 - `./hardware.nix` ← orin-nano
