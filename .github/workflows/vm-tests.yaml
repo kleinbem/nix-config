@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - 'tests/**'
+      - 'hosts/core-pi/foyer-attention.*'
       - 'modules/**'
       - 'flake.nix'
       - 'flake.lock'
@@ -30,6 +31,7 @@ jobs:
         test:
           - caddy-test
           - code-server-test
+          - foyer-attention-test
           - mobile-link-test
           - recovery-test
     runs-on: ubuntu-latest
