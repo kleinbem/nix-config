@@ -11,11 +11,11 @@
 - **nixpkgs**: [`d5cc6833`](https://github.com/NixOS/nixpkgs/commit/d5cc6833)
 - **home-manager**: `5b76c5b8`
 - **sops-nix**: `7c637afd`
-- **devenv**: `fa46b707`
-- **nix-packages**: `cde46ae7`
+- **devenv**: `8efcb88c`
+- **nix-packages**: `a00098f9`
 - **nix-hardware**: `33d3bb1c`
-- **nix-presets**: `39929b7b`
-- **nix-devshells**: `76979dae`
+- **nix-presets**: `26b36b95`
+- **nix-devshells**: `ccaa760a`
 - **nix-gantry**: `e266390e`
 
 ## 🖥️ Managed Hosts
