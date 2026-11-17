@@ -133,6 +133,23 @@
               )
             );
 
+          # Host and factory settings of every deployed container build the
+          # same closure (lib/policy/container-parity.nix). Not a policy-*
+          # check: it evaluates each container twice, too slow for ci.yml.
+          container-parity =
+            let
+              policy = import ../../lib/policy/common.nix { inherit lib; };
+              factoryName = if system == "x86_64-linux" then "container-factory" else "container-factory-aarch64";
+            in
+            policy.mkCheck inputs.nixpkgs.legacyPackages.${system} "container-parity" (
+              import ../../lib/policy/container-parity.nix { inherit lib; } {
+                hosts = systemHosts;
+                factory = self.nixosConfigurations.${factoryName};
+                realNames = import ../../hosts/container-factory/real-names.nix;
+                known = import ../../hosts/container-factory/known-mismatches.nix;
+              }
+            );
+
           code-server-test = import ../../tests/code-server.nix {
             pkgs = inputs.nixpkgs.legacyPackages.${system};
             inherit inputs;
