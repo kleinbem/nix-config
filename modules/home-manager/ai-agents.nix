@@ -179,27 +179,74 @@ let
       lib.filterAttrs (_: type: type == "directory") (builtins.readDir "${haSkillsRepo}/skills")
     );
 
-  # Agents write their own settings file, so it stays a real file: deep-merge
-  # the declared keys over it on every activation (lists are replaced).
+  # Deep-merges declared keys into a JSON settings file (lists are replaced).
+  # Reads comments, as Gemini CLI does (strip-json-comments). Exit 3 = nothing
+  # to change, so a commented file isn't rewritten; 2 = unparseable.
+  jsonSettingsMerge =
+    pkgs.writers.writePython3 "json-settings-merge"
+      {
+        libraries = [ pkgs.python3Packages.json5 ];
+      }
+      ''
+        import json
+        import sys
+
+        import json5
+
+        current_path, declared_path, out_path = sys.argv[1:]
+        try:
+            with open(current_path) as f:
+                current = json5.load(f)
+        except (ValueError, OSError):
+            sys.exit(2)
+        if not isinstance(current, dict):
+            sys.exit(2)
+        with open(declared_path) as f:
+            declared = json.load(f)
+
+
+        def merge(old, new):
+            out = dict(old)
+            for key, value in new.items():
+                if isinstance(out.get(key), dict) and isinstance(value, dict):
+                    out[key] = merge(out[key], value)
+                else:
+                    out[key] = value
+            return out
+
+
+        merged = merge(current, declared)
+        with open(out_path, "w") as f:
+            json.dump(merged, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        sys.exit(3 if merged == current else 0)
+      '';
+
+  # Agents write their own settings file, so it stays a real file, merged on
+  # every activation. A symlink is read first, then replaced by a real file.
   mergeJsonSettings =
     name: relPath: settings:
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       settingsPath="${config.home.homeDirectory}/${relPath}"
       declared=${pkgs.writeText "${name}-settings.json" (builtins.toJSON settings)}
-      if [ -L "$settingsPath" ]; then
+      tmp=$(mktemp)
+      rc=0
+      if [ -e "$settingsPath" ]; then
+        ${jsonSettingsMerge} "$settingsPath" "$declared" "$tmp" || rc=$?
+      else
+        rc=4 # absent, or a dangling link
+      fi
+      if [ "$rc" -eq 2 ]; then
+        run mv "$settingsPath" "$settingsPath.invalid"
+      elif [ -L "$settingsPath" ]; then
         run rm -f "$settingsPath"
       fi
-      if [ -s "$settingsPath" ] && ${pkgs.jq}/bin/jq -e 'type == "object"' "$settingsPath" >/dev/null 2>&1; then
-        tmp=$(mktemp)
-        ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$settingsPath" "$declared" > "$tmp"
-        run install -m644 "$tmp" "$settingsPath"
-        rm -f "$tmp"
-      else
-        if [ -e "$settingsPath" ]; then
-          run mv "$settingsPath" "$settingsPath.invalid"
-        fi
+      if [ "$rc" -eq 0 ] || { [ "$rc" -eq 3 ] && [ ! -e "$settingsPath" ]; }; then
+        run install -Dm644 "$tmp" "$settingsPath"
+      elif [ "$rc" -ne 3 ]; then
         run install -Dm644 "$declared" "$settingsPath"
       fi
+      rm -f "$tmp"
     '';
 
   # `agent` — launch the configured default agent. Omarchy calls its
@@ -456,9 +503,6 @@ in
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         settingsPath="${config.home.homeDirectory}/.config/goose/config.yaml"
         declared=${pkgs.writeText "goose-config.yaml" (builtins.toJSON gooseFinalSettings)}
-        if [ -L "$settingsPath" ]; then
-          run rm -f "$settingsPath"
-        fi
         if [ -s "$settingsPath" ] && ${pkgs.yq-go}/bin/yq -e 'type == "!!map"' "$settingsPath" >/dev/null 2>&1; then
           tmp=$(mktemp)
           # Declared keys win, except an extension's `enabled`: goose's own
@@ -470,10 +514,16 @@ in
             | with(select(.extensions != null);
                 .extensions |= with_entries(.key as $k | .value.enabled = ($old.extensions[$k].enabled // .value.enabled)))
           ' "$settingsPath" "$declared" > "$tmp"
+          # A symlinked config was read above; now replace the link itself.
+          if [ -L "$settingsPath" ]; then
+            run rm -f "$settingsPath"
+          fi
           run install -m644 "$tmp" "$settingsPath"
           rm -f "$tmp"
         else
-          if [ -e "$settingsPath" ]; then
+          if [ -L "$settingsPath" ] && [ ! -e "$settingsPath" ]; then
+            run rm -f "$settingsPath"
+          elif [ -e "$settingsPath" ]; then
             run mv "$settingsPath" "$settingsPath.invalid"
           fi
           tmp=$(mktemp)
