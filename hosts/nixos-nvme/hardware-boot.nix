@@ -74,7 +74,9 @@ in
       kernelModules = [
         "usbhid"
         "hid_generic"
-        "e1000e" # Intel Ethernet — must load eagerly so networkd can bring up eno2 for Tang
+        # Ethernet must load eagerly so networkd can bring the link up for Tang.
+        "e1000e" # Intel, ZBOX
+        "r8169" # Realtek 2.5G, DeskMini X600
       ];
       network = {
         enable = true;
@@ -148,7 +150,9 @@ in
   # boot.binfmt.registrations."aarch64-linux".fixBinary = true; # Required for disko-install chroot
 
   hardware = {
+    # Both vendors, so the disk boots in the ZBOX and in the DeskMini X600.
     cpu.intel.updateMicrocode = true;
+    cpu.amd.updateMicrocode = true;
     enableRedistributableFirmware = true;
     graphics = {
       enable = true;
