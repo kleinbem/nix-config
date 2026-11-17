@@ -48,6 +48,36 @@
             name: host: lib.nameValuePair "host-${name}" host.config.system.build.toplevel
           ) systemHosts;
 
+          # Host and factory settings of every deployed container build the
+          # same closure (lib/policy/container-parity.nix). One check per host:
+          # each evaluates its containers twice, and all of them in one
+          # evaluation don't fit a CI runner's memory. Not policy-* checks for
+          # the same reason: too slow for ci.yml.
+          parityChecks =
+            let
+              policy = import ../../lib/policy/common.nix { inherit lib; };
+              factoryName = if system == "x86_64-linux" then "container-factory" else "container-factory-aarch64";
+            in
+            lib.mapAttrs'
+              (
+                name: host:
+                lib.nameValuePair "container-parity-${name}" (
+                  policy.mkCheck inputs.nixpkgs.legacyPackages.${system} "container-parity-${name}" (
+                    import ../../lib/policy/container-parity.nix { inherit lib; } {
+                      hosts.${name} = host;
+                      factory = self.nixosConfigurations.${factoryName};
+                      realNames = import ../../hosts/container-factory/real-names.nix;
+                      known = import ../../hosts/container-factory/known-mismatches.nix;
+                    }
+                  )
+                )
+              )
+              (
+                lib.filterAttrs (
+                  _: host: host.config.services.nix-gantry.updater.containers or [ ] != [ ]
+                ) systemHosts
+              );
+
           # No host-phone check: nix-on-droid pins proot-static as a bare store
           # path, which pure eval rejects. It builds on-device only
           # (nixOnDroidConfigurations.phone).
@@ -133,23 +163,6 @@
               )
             );
 
-          # Host and factory settings of every deployed container build the
-          # same closure (lib/policy/container-parity.nix). Not a policy-*
-          # check: it evaluates each container twice, too slow for ci.yml.
-          container-parity =
-            let
-              policy = import ../../lib/policy/common.nix { inherit lib; };
-              factoryName = if system == "x86_64-linux" then "container-factory" else "container-factory-aarch64";
-            in
-            policy.mkCheck inputs.nixpkgs.legacyPackages.${system} "container-parity" (
-              import ../../lib/policy/container-parity.nix { inherit lib; } {
-                hosts = systemHosts;
-                factory = self.nixosConfigurations.${factoryName};
-                realNames = import ../../hosts/container-factory/real-names.nix;
-                known = import ../../hosts/container-factory/known-mismatches.nix;
-              }
-            );
-
           code-server-test = import ../../tests/code-server.nix {
             pkgs = inputs.nixpkgs.legacyPackages.${system};
             inherit inputs;
@@ -174,6 +187,7 @@
             pkgs = inputs.nixpkgs.legacyPackages.${system};
           };
         }
-        // hostChecks;
+        // hostChecks
+        // parityChecks;
     };
 }

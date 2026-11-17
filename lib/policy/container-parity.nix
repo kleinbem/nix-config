@@ -6,7 +6,7 @@
 # gates on a secret.
 { lib }:
 {
-  # hosts, factory: evaluated nixosConfigurations (one system).
+  # hosts, factory: evaluated nixosConfigurations of one system.
   # realNames: option name -> container names, where they differ.
   # known: "<host>/<container>" pairs that differ today.
   hosts,

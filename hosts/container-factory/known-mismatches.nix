@@ -1,5 +1,5 @@
 # Deployed containers whose host settings build a different closure than the
-# factory (checks.<system>.container-parity). Remove an entry when its
+# factory (checks.<system>.container-parity-<host>). Remove an entry when its
 # container is fixed. tracking: kleinbem/nix-config#860
 [
   "core-pi/attic"
