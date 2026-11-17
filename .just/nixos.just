@@ -120,6 +120,7 @@ test-integration name="all" *args="":
         {{LOCK_CMD}} {{TIMER}} nix build --no-link -L \
             .#checks.x86_64-linux.caddy-test \
             .#checks.x86_64-linux.code-server-test \
+            .#checks.x86_64-linux.foyer-attention-test \
             .#checks.x86_64-linux.mobile-link-test \
             .#checks.x86_64-linux.recovery-test \
             {{OVERRIDES}} {{args}}

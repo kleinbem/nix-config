@@ -152,6 +152,10 @@
             pkgs = inputs.nixpkgs.legacyPackages.${system};
             inherit inputs;
           };
+
+          foyer-attention-test = import ../../tests/foyer-attention.nix {
+            pkgs = inputs.nixpkgs.legacyPackages.${system};
+          };
         }
         // hostChecks;
     };

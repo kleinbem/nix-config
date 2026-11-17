@@ -262,6 +262,7 @@ in
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/rpi5-disko.nix"
     ./secrets.nix
+    ./foyer-attention.nix
     inputs.nix-presets.nixosModules.dashboard-foyer
     inputs.nix-presets.nixosModules.ente
     inputs.nix-presets.nixosModules.vaultwarden
