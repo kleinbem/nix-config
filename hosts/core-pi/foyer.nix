@@ -78,6 +78,9 @@ in
   welcomeSubtitle = "Every service of the fleet, with live health from Gatus.";
   # Proxied by the dashboard container (my.containers.dashboard.gatusUrl).
   gatusUrl = "/";
+  # Written by foyer-attention.nix, served from the dashboard's feed directory.
+  attentionUrl = "/feed/attention.json";
+  typeToSearch = true;
   weather = {
     latitude = 53.35;
     longitude = -6.26;
