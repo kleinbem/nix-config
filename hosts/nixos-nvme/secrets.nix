@@ -17,6 +17,7 @@ let
     key: builtins.pathExists hostSops && lib.hasInfix "\n${key}:" ("\n" + builtins.readFile hostSops);
   hasHassCliToken = hasKey "hass_cli_token";
   hasSkillsRefreshToken = hasKey "skills_refresh_token";
+  hasLoginPin = hasKey "martin_login_pin_hash";
   hasRevueWebhookSecret = config.services.revue.enable && hasKey "revue_webhook_secret";
   hasRevueApiKey = config.services.revue.enable && hasKey "revue_api_key";
   hasRevueSecrets = hasRevueWebhookSecret || hasRevueApiKey;
@@ -57,9 +58,8 @@ in
         owner = "martin";
         mode = "0400";
       };
-      # Own short login password on this host (fleet password elsewhere); the YubiKey
-      # touch is required too (my.security.loginNeedsPasswordAndKey).
-      martin_password = lib.mkIf (hasKey "martin_password_hash") { sopsFile = hostSops; };
+      # Short login PIN next to the fleet password (security/smartcard.nix).
+      martin_login_pin_hash = lib.mkIf hasLoginPin { sopsFile = hostSops; };
       # Webhook HMAC secret and non-loopback API key for the Revue PR review daemon.
       revue_webhook_secret = lib.mkIf hasRevueWebhookSecret {
         sopsFile = hostSops;
@@ -369,6 +369,8 @@ in
       };
     };
   };
+
+  my.security.loginPinHashFile = lib.mkIf hasLoginPin config.sops.secrets.martin_login_pin_hash.path;
 
   services.revue.environmentFile = lib.mkIf hasRevueSecrets config.sops.templates."revue.env".path;
 

@@ -16,11 +16,29 @@ let
     "unlock_time=300"
     "dir=${faillockDir}"
   ];
+  pinHashFile = config.my.security.loginPinHashFile;
+  # pam_exec hands the typed secret on stdin, ended by a NUL.
+  checkPin = pkgs.writers.writePerl "login-pin-check" { } ''
+    my $pin = do { local $/; <STDIN> } // "";
+    $pin =~ s/\0.*//s;
+    exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
+    open(my $fh, "<", $ARGV[0]) or exit 1;
+    chomp(my $hash = <$fh> // "");
+    exit((length $hash && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
+  '';
 in
 {
   options.my.security.loginNeedsPasswordAndKey = lib.mkEnableOption ''
     password plus YubiKey touch for local login (tty and GDM, incl. its lock screen).
     A touch alone never hands PAM a password, so the login keyring would stay locked'';
+
+  options.my.security.loginPinHashFile = lib.mkOption {
+    type = lib.types.nullOr lib.types.str;
+    default = null;
+    description = ''
+      crypt(3) hash of a short PIN martin can log in with instead of his password (with
+      loginNeedsPasswordAndKey, so the touch stays required). Login only; sudo ignores it.'';
+  };
 
   config = {
     environment.systemPackages = with pkgs; [
@@ -68,6 +86,18 @@ in
                 order = config.security.pam.services.login.rules.auth.u2f.order - 10;
                 control = "requisite";
                 args = [ "preauth" ] ++ faillockArgs;
+              };
+              # Either the password or the PIN; a wrong one falls through to authfail.
+              login-pin = lib.mkIf (pinHashFile != null) {
+                order = config.security.pam.services.login.rules.auth.unix.order + 5;
+                control = "sufficient";
+                modulePath = "${config.security.pam.package}/lib/security/pam_exec.so";
+                args = [
+                  "quiet"
+                  "expose_authtok"
+                  "${checkPin}"
+                  pinHashFile
+                ];
               };
               faillock-authfail = faillockRule // {
                 order = config.security.pam.services.login.rules.auth.unix.order + 10;
