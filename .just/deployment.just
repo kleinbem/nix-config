@@ -496,6 +496,8 @@ orin-update-usb device="/dev/sdb":
     sudo -v
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
+    pc_assert_safe_target "{{device}}"
+
     echo "🔓 Mounting existing SSD via disko (enter the Orin LUKS passphrase when prompted)..."
     sudo nix run github:nix-community/disko -- \
         --mode mount \
@@ -503,6 +505,9 @@ orin-update-usb device="/dev/sdb":
         --arg secondDiskDevice null \
         --root-mountpoint /mnt/orin \
         ./hosts/orin-nano/disko.nix
+    # The partlabels also exist on the workstation; never write to its disk.
+    pc_assert_luks_on_target orin_crypt "{{device}}" /mnt/orin
+    pc_assert_esp_on_target /mnt/orin "{{device}}"
 
     echo "🏗️ Building orin-nano closure..."
     nix build .#nixosConfigurations.orin-nano.config.system.build.toplevel \
@@ -695,12 +700,17 @@ mac-mini-update-usb device:
     sudo -v
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
+    pc_assert_safe_target "{{device}}"
+
     echo "🔓 Mounting existing SSD via disko (enter the mac-mini LUKS passphrase when prompted)..."
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
         --root-mountpoint /mnt/mac-mini \
         ./hosts/mac-mini/disko.nix
+    # The partlabels also exist on the workstation; never write to its disk.
+    pc_assert_luks_on_target mac_mini_crypt "{{device}}" /mnt/mac-mini
+    pc_assert_esp_on_target /mnt/mac-mini "{{device}}"
 
     echo "🏗️ Building mac-mini closure..."
     nix build .#nixosConfigurations.mac-mini.config.system.build.toplevel \
@@ -965,12 +975,17 @@ nasbook-update-usb device:
     sudo -v
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
+    pc_assert_safe_target "{{device}}"
+
     echo "🔓 Mounting existing SSD via disko (enter the nasbook LUKS passphrase when prompted)..."
     sudo nix run github:nix-community/disko -- \
         --mode mount \
         --argstr device {{device}} \
         --root-mountpoint /mnt/nasbook \
         ./hosts/nasbook/disko.nix
+    # The partlabels also exist on the workstation; never write to its disk.
+    pc_assert_luks_on_target nasbook_crypt "{{device}}" /mnt/nasbook
+    pc_assert_esp_on_target /mnt/nasbook "{{device}}"
 
     echo "🏗️ Building nasbook closure..."
     nix build .#nixosConfigurations.nasbook.config.system.build.toplevel \
