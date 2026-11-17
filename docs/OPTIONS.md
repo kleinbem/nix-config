@@ -415,7 +415,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop.nixAppCenter`
 
-- **Declared:** `nix-config/modules/nixos/nix-app-center.nix:25`
+- **Declared:** `nix-config/modules/nixos/nix-app-center.nix:35`
 - **Sub-options:** `applyCommand`, `configDir`, `enable`
 - **Configured in:** `host:nixos-nvme`
 
