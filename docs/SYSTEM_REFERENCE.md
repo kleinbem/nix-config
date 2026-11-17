@@ -13,7 +13,7 @@
 - **sops-nix**: `7c637afd`
 - **devenv**: `8efcb88c`
 - **nix-packages**: `a00098f9`
-- **nix-hardware**: `33d3bb1c`
+- **nix-hardware**: `54f0eaf9`
 - **nix-presets**: `26b36b95`
 - **nix-devshells**: `ccaa760a`
 - **nix-gantry**: `e266390e`
