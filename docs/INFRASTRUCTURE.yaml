@@ -802,10 +802,10 @@ hosts:
     - '[module] modules/nixos/persistence.nix'
     - '[local] ./secrets.nix'
     - '[module] modules/nixos/apps.nix'
+    - '[other] self.nixosModules.nix-app-center-kept'
     - '[local] ./disko.nix'
     - '[module] modules/nixos/data-disk.nix'
     - '[other] disko:disko'
-    - '[local] ./ai.nix'
     enabled_subsystems:
       android:
       - enable
@@ -1035,6 +1035,7 @@ hosts:
       - bottles.enable
       - claude.enable
       - gnome.enable
+      - nixAppCenter.enable
       - omarchy.enable
       - sandboxedApps.enable
       machineId:
@@ -2175,6 +2176,11 @@ modules_system:
     file: nix-config/modules/nixos/networking.nix
     purpose: NixOS system module.
     declared_options: []
+  nix-app-center.nix:
+    file: nix-config/modules/nixos/nix-app-center.nix
+    purpose: NixOS system module.
+    declared_options:
+    - my.desktop.nixAppCenter
   options.nix:
     file: nix-config/modules/nixos/options.nix
     purpose: Root Switchboard schema declaration for options.my.
