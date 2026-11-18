@@ -179,6 +179,89 @@ let
       lib.filterAttrs (_: type: type == "directory") (builtins.readDir "${haSkillsRepo}/skills")
     );
 
+  # Deep-merges declared keys into a JSON settings file (lists are replaced).
+  # Reads comments, as Gemini CLI does (strip-json-comments). Exit 3 = nothing
+  # to change, so a commented file isn't rewritten; 2 = unparseable.
+  jsonSettingsMerge =
+    pkgs.writers.writePython3 "json-settings-merge"
+      {
+        libraries = [ pkgs.python3Packages.json5 ];
+      }
+      ''
+        import json
+        import sys
+
+        import json5
+
+        current_path, declared_path, out_path = sys.argv[1:]
+        try:
+            with open(current_path) as f:
+                current = json5.load(f)
+        except (ValueError, OSError):
+            sys.exit(2)
+        if not isinstance(current, dict):
+            sys.exit(2)
+        with open(declared_path) as f:
+            declared = json.load(f)
+
+
+        def merge(old, new):
+            out = dict(old)
+            for key, value in new.items():
+                if isinstance(out.get(key), dict) and isinstance(value, dict):
+                    out[key] = merge(out[key], value)
+                else:
+                    out[key] = value
+            return out
+
+
+        merged = merge(current, declared)
+        with open(out_path, "w") as f:
+            json.dump(merged, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        # Python's == treats false and 0 as equal; JSON doesn't.
+        same = json.dumps(merged, sort_keys=True) == json.dumps(
+            current, sort_keys=True
+        )
+        sys.exit(3 if same else 0)
+      '';
+
+  # Agents write their own settings file, so it stays a real file, merged on
+  # every activation. A symlink is read first, then replaced by a real file.
+  mergeJsonSettings =
+    name: relPath: settings:
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settingsPath="${config.home.homeDirectory}/${relPath}"
+      declared=${pkgs.writeText "${name}-settings.json" (builtins.toJSON settings)}
+      tmp=$(mktemp)
+      rc=0
+      if [ -e "$settingsPath" ]; then
+        ${jsonSettingsMerge} "$settingsPath" "$declared" "$tmp" || rc=$?
+      else
+        rc=4 # absent, or a dangling link
+      fi
+      case "$rc" in
+        0 | 3) # merged; 3 = nothing changed, only a symlink needs replacing
+          if [ "$rc" -eq 0 ] || [ -L "$settingsPath" ]; then
+            if [ -L "$settingsPath" ]; then run rm -f "$settingsPath"; fi
+            run install -Dm644 "$tmp" "$settingsPath"
+          fi
+          ;;
+        2) # not a JSON object: keep it aside, start from the declared keys
+          run mv "$settingsPath" "$settingsPath.invalid"
+          run install -Dm644 "$declared" "$settingsPath"
+          ;;
+        4)
+          if [ -L "$settingsPath" ]; then run rm -f "$settingsPath"; fi
+          run install -Dm644 "$declared" "$settingsPath"
+          ;;
+        *) # the merger crashed (e.g. a full /tmp): keep the user's file
+          warnEcho "cannot merge $settingsPath (status $rc), left unchanged"
+          ;;
+      esac
+      rm -f "$tmp"
+    '';
+
   # `agent` — launch the configured default agent. Omarchy calls its
   # equivalent `a`; we ship both.
   agentBin = pkgs.writeShellScriptBin "agent" ''
@@ -413,25 +496,18 @@ in
     # Same reason as herdr's config.toml (nix-presets/herdr.nix): a store
     # symlink would make Claude Code's own writes fail, so merge instead.
     home.activation.claudeSettings = lib.mkIf (cfg.claude.settings != { }) (
-      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        settingsPath="${config.home.homeDirectory}/.claude/settings.json"
-        declared=${pkgs.writeText "claude-settings.json" (builtins.toJSON cfg.claude.settings)}
-        if [ -L "$settingsPath" ]; then
-          run rm -f "$settingsPath"
-        fi
-        if [ -s "$settingsPath" ] && ${pkgs.jq}/bin/jq -e 'type == "object"' "$settingsPath" >/dev/null 2>&1; then
-          tmp=$(mktemp)
-          ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$settingsPath" "$declared" > "$tmp"
-          run install -m644 "$tmp" "$settingsPath"
-          rm -f "$tmp"
-        else
-          if [ -e "$settingsPath" ]; then
-            run mv "$settingsPath" "$settingsPath.invalid"
-          fi
-          run install -Dm644 "$declared" "$settingsPath"
-        fi
-      ''
+      mergeJsonSettings "claude" ".claude/settings.json" cfg.claude.settings
     );
+
+    # Gemini CLI reads only GEMINI.md by default; repos carry AGENTS.md.
+    # Set even when gemini isn't installed here: devshells and `just agent`
+    # bring their own gemini, which still reads ~/.gemini.
+    home.activation.geminiSettings = mergeJsonSettings "gemini" ".gemini/settings.json" {
+      context.fileName = [
+        "AGENTS.md"
+        "GEMINI.md"
+      ];
+    };
 
     # Same merge for goose's config.yaml (YAML, so yq instead of jq).
     modules.ai-agents.goose.finalSettings = gooseFinalSettings;
@@ -440,9 +516,6 @@ in
       lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         settingsPath="${config.home.homeDirectory}/.config/goose/config.yaml"
         declared=${pkgs.writeText "goose-config.yaml" (builtins.toJSON gooseFinalSettings)}
-        if [ -L "$settingsPath" ]; then
-          run rm -f "$settingsPath"
-        fi
         if [ -s "$settingsPath" ] && ${pkgs.yq-go}/bin/yq -e 'type == "!!map"' "$settingsPath" >/dev/null 2>&1; then
           tmp=$(mktemp)
           # Declared keys win, except an extension's `enabled`: goose's own
@@ -454,10 +527,16 @@ in
             | with(select(.extensions != null);
                 .extensions |= with_entries(.key as $k | .value.enabled = ($old.extensions[$k].enabled // .value.enabled)))
           ' "$settingsPath" "$declared" > "$tmp"
+          # A symlinked config was read above; now replace the link itself.
+          if [ -L "$settingsPath" ]; then
+            run rm -f "$settingsPath"
+          fi
           run install -m644 "$tmp" "$settingsPath"
           rm -f "$tmp"
         else
-          if [ -e "$settingsPath" ]; then
+          if [ -L "$settingsPath" ] && [ ! -e "$settingsPath" ]; then
+            run rm -f "$settingsPath"
+          elif [ -e "$settingsPath" ]; then
             run mv "$settingsPath" "$settingsPath.invalid"
           fi
           tmp=$(mktemp)
