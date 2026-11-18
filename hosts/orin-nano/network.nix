@@ -58,9 +58,9 @@
       address = "10.0.0.1";
       interface = "enP8p1s0";
     };
-    # JetPack 6's defconfig left out NFT_CT, NFT_REDIR and NFT_FIB_*. The kernel
-    # builds them since kleinbem/nix-hardware#71, but nftables stays off (legacy
-    # iptables) until it is tested on the device. no-link: vendor defconfig.
+    # The kernel has NFT_CT, NFT_REDIR and NFT_FIB_* (kleinbem/nix-hardware#71),
+    # but nftables stays off (legacy iptables) until it is tested on the device.
+    # no-link: our own pending test, nothing upstream.
     nftables.enable = false;
     nat = {
       enable = true;

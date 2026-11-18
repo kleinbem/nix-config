@@ -99,9 +99,9 @@
         detector = "cpu"; # temp — bundled CPU model; target is "tensorrt"
         enableGPU = false; # temp — no GPU passthrough during the smoke test
         jetson = false; # temp — no Tegra /dev/nv* binds (target is true)
-        # The preset default binds nodes this board (JetPack 6 / r36) lacks, and
-        # a missing node fails container start. On r36 the iGPU lives under
-        # /dev/nvgpu/igpu0/*. The minimal TensorRT set is still unconfirmed.
+        # The preset default binds nodes this board lacks (nvhost-ctrl, -nvdec,
+        # -vic, -nvjpg), and a missing node fails container start. The iGPU lives
+        # under /dev/nvgpu/igpu0/*. The minimal TensorRT set is still unconfirmed.
         jetsonDevices = [
           "/dev/nvhost-ctrl-gpu"
           "/dev/nvhost-gpu"

@@ -177,12 +177,9 @@ in
         // {
           nvidia-jetpack = withoutOotDepmod (withRandstructSeedScript prev.nvidia-jetpack);
         }
-        // lib.optionalAttrs (config.hardware.nvidia-jetpack.majorVersion == "6") {
-          cudaPackages = final.cudaPackages_12_6;
-        }
-        // lib.optionalAttrs (config.hardware.nvidia-jetpack.majorVersion == "7") {
-          # CUDA 13 on Tegra/aarch64 has no upstream cuda_compat package (driver 595 is base).
-          # Stub cuda_compat in _cuda extensions to prevent unpackPhase failure on null $src in auto-add-cuda-compat-runpath-hook.
+        // {
+          # CUDA 13 has no cuda_compat for Tegra (driver 595 is the base); the stub
+          # stops auto-add-cuda-compat-runpath-hook unpacking a null $src.
           _cuda = prev._cuda.extend (
             _: prevCuda: {
               extensions = prevCuda.extensions ++ [
