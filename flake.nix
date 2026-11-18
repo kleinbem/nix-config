@@ -216,10 +216,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Fork branch with the flake-parts attach fix; back to SPTApyo/nix-app-center
-    # once upstream: SPTApyo/nix-app-center#37 is released.
     nix-app-center = {
-      url = "github:kleinbem/Nix-App-Center/fix/attach-flake-parts";
+      url = "github:SPTApyo/Nix-App-Center";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
