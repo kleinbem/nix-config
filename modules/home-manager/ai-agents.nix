@@ -219,7 +219,11 @@ let
         with open(out_path, "w") as f:
             json.dump(merged, f, indent=2, ensure_ascii=False)
             f.write("\n")
-        sys.exit(3 if merged == current else 0)
+        # Python's == treats false and 0 as equal; JSON doesn't.
+        same = json.dumps(merged, sort_keys=True) == json.dumps(
+            current, sort_keys=True
+        )
+        sys.exit(3 if same else 0)
       '';
 
   # Agents write their own settings file, so it stays a real file, merged on
@@ -236,16 +240,25 @@ let
       else
         rc=4 # absent, or a dangling link
       fi
-      if [ "$rc" -eq 2 ]; then
-        run mv "$settingsPath" "$settingsPath.invalid"
-      elif [ -L "$settingsPath" ]; then
-        run rm -f "$settingsPath"
-      fi
-      if [ "$rc" -eq 0 ] || { [ "$rc" -eq 3 ] && [ ! -e "$settingsPath" ]; }; then
-        run install -Dm644 "$tmp" "$settingsPath"
-      elif [ "$rc" -ne 3 ]; then
-        run install -Dm644 "$declared" "$settingsPath"
-      fi
+      case "$rc" in
+        0 | 3) # merged; 3 = nothing changed, only a symlink needs replacing
+          if [ "$rc" -eq 0 ] || [ -L "$settingsPath" ]; then
+            if [ -L "$settingsPath" ]; then run rm -f "$settingsPath"; fi
+            run install -Dm644 "$tmp" "$settingsPath"
+          fi
+          ;;
+        2) # not a JSON object: keep it aside, start from the declared keys
+          run mv "$settingsPath" "$settingsPath.invalid"
+          run install -Dm644 "$declared" "$settingsPath"
+          ;;
+        4)
+          if [ -L "$settingsPath" ]; then run rm -f "$settingsPath"; fi
+          run install -Dm644 "$declared" "$settingsPath"
+          ;;
+        *) # the merger crashed (e.g. a full /tmp): keep the user's file
+          warnEcho "cannot merge $settingsPath (status $rc), left unchanged"
+          ;;
+      esac
       rm -f "$tmp"
     '';
 
