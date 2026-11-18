@@ -157,8 +157,9 @@ jobs:
       - name: Run nix-fast-build
         run: |
           set -o pipefail
-          # --eval-workers 2: the nproc default OOM-kills the 7 GiB hosted
-          # runner ("hosted runner lost communication").
+          # --eval-workers 2: the nproc default OOM-kills the hosted runner
+          # ("hosted runner lost communication"). 2 x 5 GiB: container-parity-nasbook
+          # peaks near 8.4 GiB, over the 2 x 4096 MiB default budget.
           # Checks are listed via `nix eval` + attrNames, not `nix flake show`,
           # which on Determinate Nix printed `"checks": null` and silently
           # built nothing. An empty list is always an enumeration bug.
@@ -181,6 +182,7 @@ jobs:
             "--no-nom"
             "--skip-cached"
             "--eval-workers" "2"
+            "--eval-max-memory-size" "5120"
             "--systems" "$SYSTEM"
             # Retry failed builds twice — the Attic push rides NetBird, so a
             # transient network/SSH hiccup retries instead of failing the target.

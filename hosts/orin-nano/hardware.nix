@@ -27,7 +27,9 @@ in
     # not anduril.cachix.org (built against our nixpkgs, hashes differ).
     # Skip it for one deploy with JETPACK_NIXOS_SKIP_CAPSULE_UPDATE=1.
     nvidia-jetpack = {
-      # majorVersion = "7"; # Switch when QSPI firmware is flashed over USB-C
+      # JetPack 7 = L4T r39 / CUDA 13. r39 firmware sets a floor: going back
+      # to JetPack 6 needs a USB-C recovery flash.
+      majorVersion = "7";
       firmware.autoUpdate = true;
       super = true; # Enable 25W "Super Mode" for Orin Nano Plus
       maxClock = true; # Always run at maximum clock speed
