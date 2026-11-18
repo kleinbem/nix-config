@@ -23,8 +23,6 @@ let
   settings = pkgs.writeText "nix-app-center-settings.json" (
     builtins.toJSON {
       config_dir = cfg.configDir;
-      # The app can't find the hosts itself: they are declared outside flake.nix.
-      host = config.networking.hostName;
       apply_command = cfg.applyCommand;
     }
   );
