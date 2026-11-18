@@ -1864,11 +1864,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794580310,
-        "narHash": "sha256-KYatb4WZpfHlAmVAvb6LxjEpq3BA/i3GHPO6hxtmXFU=",
+        "lastModified": 1794969439,
+        "narHash": "sha256-JxC+AZt81JV/+G+Nm19pd8bPZtxA1NAgZc+Ns3+fs6Q=",
         "owner": "kleinbem-dev",
         "repo": "nix-detour",
-        "rev": "31a0e6f79d7d6082f1d47c16d25e2d4a2bd31dba",
+        "rev": "55caed8429c359966cfb5078c5f6272d3abdeb3b",
         "type": "github"
       },
       "original": {
@@ -1891,11 +1891,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794839535,
-        "narHash": "sha256-uL69O4YTrHoO4saVcbeinG0dZB6081stBfk6T+NKvpg=",
+        "lastModified": 1794970572,
+        "narHash": "sha256-7NukoKYVCOJuzoUGiJYderji8msgei+pQdtpb2PlVqc=",
         "owner": "kleinbem",
         "repo": "nix-detour-fleet",
-        "rev": "7c1a311c9b2417c8e69b6dce965b75dbf51f7997",
+        "rev": "5e26f0e1df946cd81779b9e6ab932db5a4b43fc7",
         "type": "github"
       },
       "original": {
