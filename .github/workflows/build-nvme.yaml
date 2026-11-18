@@ -35,20 +35,32 @@ jobs:
     permissions:
       statuses: write
       contents: read
+    outputs:
+      cause: ${{ steps.nvme-build.outputs.cause }}
     steps:
+      # After a nixpkgs bump the whole ~57 GiB closure lands on the runner,
+      # more than / holds even after free-disk-space. Pool / and /mnt into a
+      # compressed btrfs /nix before Nix is installed. 16 GiB stays on / for
+      # the swapfile below and the runner's own logs.
+      - name: Make room for /nix
+        uses: wimpysworld/nothing-but-nix@b2574ec1cf1462bee0a34de0fb6ff11ad3c43cb2 # v12
+        with:
+          root-safe-haven: '16384'
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      # free-disk-space stays off: nothing-but-nix already purges in the
+      # background and both deleting the same trees would race.
       - name: Nix fleet setup
         uses: ./.github/actions/nix-fleet-setup
         with:
           netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
           attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
           configure-auto-gc: 'true'
-          free-disk-space: 'true'
 
       - name: Initialize commit status
         env:
@@ -83,7 +95,7 @@ jobs:
           free -h
 
       # No continue-on-error: the run shows red when the toplevel fails. The
-      # alert and status steps below run anyway (if: always()).
+      # report job alerts and sets the status.
       - name: Build nixos-nvme toplevel (best-effort)
         id: nvme-build
         env:
@@ -108,14 +120,24 @@ jobs:
           .github/scripts/report-failed-drvs.sh nixos-nvme "$MARK" system
           exit 1
 
+  # Own job: a runner that dies (disk full) skips its remaining steps even
+  # with if: always(), so the alert and status never fired from inside it.
+  report:
+    name: "Report nixos-nvme build"
+    needs: build-nvme
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
       # Same alerting as the matrix job's best-effort steps: a red build here
       # must reach the phone, not hide behind a green run.
       - name: Alert build failure via ntfy
-        if: always() && steps.nvme-build.outcome == 'failure'
+        if: needs.build-nvme.result == 'failure'
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
-          CAUSE: ${{ steps.nvme-build.outputs.cause }}
+          CAUSE: ${{ needs.build-nvme.outputs.cause }}
         run: |
           set -euo pipefail
           if [ -z "$NTFY_TOPIC" ]; then
@@ -130,13 +152,13 @@ jobs:
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       - name: Update commit status
-        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CAUSE: ${{ steps.nvme-build.outputs.cause }}
+          CAUSE: ${{ needs.build-nvme.outputs.cause }}
+          RESULT: ${{ needs.build-nvme.result }}
         run: |
           set -euo pipefail
-          case "${{ steps.nvme-build.outcome }}" in
+          case "$RESULT" in
             success) state="success"; desc="Workstation toplevel build succeeded" ;;
             # The cause is what `just dev::apply` shows before a local build.
             failure) state="failure"; desc="Workstation toplevel build failed${CAUSE:+: $CAUSE}" ;;
