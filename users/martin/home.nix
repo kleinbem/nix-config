@@ -438,6 +438,9 @@ in
     enable = true;
     desktop.enable = true;
     backend = "mesh";
+    # The host's GPU build where the system runs cadre too, so the host builds
+    # mesh-llm once (the default is a second, CPU-only build).
+    package = lib.mkIf (osConfig.my.services.cadre.enable or false) osConfig.my.services.cadre.package;
     models = [ "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M" ];
     autoStart = false;
   };
