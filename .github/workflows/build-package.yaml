@@ -1,0 +1,223 @@
+name: "Build Package(s) to Attic"
+run-name: "Build Package(s) to Attic${{ inputs.run_tag != '' && format(' [{0}]', inputs.run_tag) || '' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Space/comma-separated package attrs (e.g. "ollama llama-cpp") or flake installables (e.g. "nixpkgs#blender")'
+        required: true
+        type: string
+      system:
+        description: 'Target system architecture'
+        required: false
+        type: choice
+        default: x86_64-linux
+        options:
+          - x86_64-linux
+          - aarch64-linux
+          - both
+      host:
+        description: 'Host pkgs to resolve bare package names against (auto = nixos-nvme/core-pi; none = raw nixpkgs; ignored when target contains #)'
+        required: false
+        type: string
+        default: auto
+      free_disk_space:
+        description: 'Reclaim ~20 GiB disk space (enable for huge builds like LLVM, Chromium, PyTorch, kernels)'
+        required: false
+        type: boolean
+        default: false
+      notify:
+        description: 'Send ntfy phone alert when the build finishes'
+        required: false
+        type: boolean
+        default: true
+      run_tag:
+        description: 'Optional correlation tag used by just dev::remote-build --watch'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  build-package:
+    name: "Build (${{ matrix.system }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        system: ${{ inputs.system == 'both' && fromJSON('["x86_64-linux", "aarch64-linux"]') || fromJSON(format('["{0}"]', inputs.system)) }}
+    runs-on: ${{ matrix.system == 'aarch64-linux' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Nix fleet setup
+        uses: ./.github/actions/nix-fleet-setup
+        with:
+          netbird-setup-key: ${{ secrets.NETBIRD_SETUP_KEY_EPHEMERAL }}
+          attic-token: ${{ secrets.ATTIC_PUSH_TOKEN }}
+          configure-auto-gc: 'true'
+          free-disk-space: ${{ inputs.free_disk_space && 'true' || 'false' }}
+
+      - name: Mint GitHub App token for kleinbem-secrets
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: |
+            kleinbem-secrets
+          permission-contents: read
+
+      - name: Add swap for eval
+        run: |
+          sudo fallocate -l 12G /swapfile-ci
+          sudo chmod 600 /swapfile-ci
+          sudo mkswap /swapfile-ci
+          sudo swapon /swapfile-ci
+          free -h
+
+      - name: Build package(s) and push to Attic
+        id: build
+        env:
+          NIX_CONFIG: "access-tokens = github.com=${{ steps.app-token.outputs.token }}"
+          RAW_TARGETS: ${{ inputs.target }}
+          SYSTEM: ${{ matrix.system }}
+          HOST: ${{ inputs.host }}
+        run: |
+          set -euo pipefail
+
+          # Split on whitespace; only split on commas when there is no Nix
+          # output selector (`^out,dev`) in the token.
+          TARGETS=()
+          for word in $RAW_TARGETS; do
+            if [[ "$word" == *"^"* ]]; then
+              TARGETS+=("$word")
+            else
+              IFS=',' read -ra parts <<<"$word"
+              for p in "${parts[@]}"; do
+                [ -n "$p" ] && TARGETS+=("$p")
+              done
+            fi
+          done
+          if [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "::error::No targets specified."
+            exit 1
+          fi
+
+          HOST=$(echo "$HOST" | xargs)
+          if [ "$HOST" = "auto" ]; then
+            if [ "$SYSTEM" = "aarch64-linux" ]; then
+              HOST="core-pi"
+            else
+              HOST="nixos-nvme"
+            fi
+          fi
+
+          # Stream finished store paths to Attic while builds run so partial
+          # progress survives a later failure or runner timeout.
+          attic watch-store system &
+          WATCH_PID=$!
+          trap 'kill "$WATCH_PID" 2>/dev/null || true; wait "$WATCH_PID" 2>/dev/null || true' EXIT
+
+          succeeded=()
+          failed=()
+          pushed_paths=()
+
+          for t in "${TARGETS[@]}"; do
+            EXTRA_ARGS=()
+            if [[ "$t" == *"#"* ]] || [[ "$t" =~ ^(github|gitlab|sourcehut|flake|path|tarball|file|https?|git\+[a-z+]+): ]]; then
+              INSTALLABLE="$t"
+              if [[ "$t" == nixpkgs#* ]]; then
+                EXTRA_ARGS+=(--inputs-from .)
+              fi
+            elif [ "$HOST" = "none" ] || [ -z "$HOST" ]; then
+              INSTALLABLE="nixpkgs#${t}"
+              EXTRA_ARGS+=(--inputs-from .)
+            else
+              INSTALLABLE=".#nixosConfigurations.${HOST}.pkgs.${t}"
+            fi
+
+            echo "::group::Building $INSTALLABLE ($SYSTEM)"
+            if mapfile -t OUT_PATHS < <(nix build --no-link --keep-going --print-out-paths -L "${EXTRA_ARGS[@]}" "$INSTALLABLE"); then
+              if [ "${#OUT_PATHS[@]}" -gt 0 ]; then
+                echo "Built ${#OUT_PATHS[@]} output path(s); ensuring Attic push:"
+                printf '  %s\n' "${OUT_PATHS[@]}"
+                attic push system "${OUT_PATHS[@]}"
+                succeeded+=("$INSTALLABLE")
+                pushed_paths+=("${OUT_PATHS[@]}")
+              else
+                echo "::warning::$INSTALLABLE produced no output paths"
+                failed+=("$INSTALLABLE")
+              fi
+            else
+              echo "::error::Build failed for $INSTALLABLE"
+              failed+=("$INSTALLABLE")
+            fi
+            echo "::endgroup::"
+          done
+
+          {
+            echo "## Attic Build Summary (\`$SYSTEM\`)"
+            echo "- **Cache**: \`system\`"
+            if [ "${#succeeded[@]}" -gt 0 ]; then
+              echo "- **Succeeded**: ${succeeded[*]}"
+            fi
+            if [ "${#failed[@]}" -gt 0 ]; then
+              echo "- **Failed**: ${failed[*]} *(dependencies built before failure were still streamed to Attic)*"
+            fi
+            if [ "${#pushed_paths[@]}" -gt 0 ]; then
+              echo ""
+              echo "### Output paths"
+              for p in "${pushed_paths[@]}"; do
+                echo "- \`$p\`"
+              done
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "summary=$(printf '%s, ' "${TARGETS[@]}" | sed 's/, $//')" >> "$GITHUB_OUTPUT"
+          [ "${#failed[@]}" -eq 0 ]
+
+      - name: Notify via ntfy
+        if: always() && inputs.notify
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+          NTFY_TOKEN: ${{ secrets.NTFY_CI_TOKEN }}
+          OUTCOME: ${{ steps.build.outcome }}
+          SUMMARY: ${{ steps.build.outputs.summary }}
+          RAW_TARGETS: ${{ inputs.target }}
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_ALERT_TOPIC secret not set — skipping alert."
+            exit 0
+          fi
+          NAME="${SUMMARY:-$RAW_TARGETS}"
+          if [ "$OUTCOME" = "success" ]; then
+            TITLE="Attic build succeeded ($SYSTEM)"
+            TAGS="white_check_mark"
+            PRIORITY="default"
+            BODY="$NAME is now in Attic (system). Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            TITLE="Attic build failed ($SYSTEM)"
+            TAGS="x"
+            PRIORITY="high"
+            BODY="$NAME failed ($OUTCOME); completed deps were streamed to Attic. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -fsS --max-time 15 \
+            ${NTFY_TOKEN:+-H "Authorization: Bearer $NTFY_TOKEN"} \
+            -H "Title: $TITLE" \
+            -H "Tags: $TAGS" \
+            -H "Priority: $PRIORITY" \
+            -d "$BODY" \
+            "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
