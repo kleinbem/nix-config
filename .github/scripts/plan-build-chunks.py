@@ -3,8 +3,9 @@
 
 Reads `heavy <drv>` lines (scripts/heavy-drvs.sh) on stdin and prints a JSON
 array of space-separated drv lists for a GitHub matrix. Drvs that share an
-uncached dependency land in one chunk, so no two jobs build the same thing;
-only the roots are listed, as their jobs build the rest anyway.
+uncached dependency land in one chunk, so no two jobs build the same thing.
+Every drv stays a target: a cached intermediate can hide a requisite, so
+building only the roots may skip it.
 """
 
 import json
@@ -44,20 +45,17 @@ for drv, ds in deps.items():
     for d in ds:
         parent[find(d)] = find(drv)
 
-needed = set().union(*deps.values())
 groups = {}
 for drv in heavy:
-    groups.setdefault(find(drv), {"roots": [], "size": 0})
-    g = groups[find(drv)]
+    g = groups.setdefault(find(drv), {"drvs": [], "size": 0})
     g["size"] += 1
-    if drv not in needed:
-        g["roots"].append(drv)
+    g["drvs"].append(drv)
 
 # Largest groups first, each into the currently smallest chunk.
 chunks = [{"drvs": [], "size": 0} for _ in range(min(MAX_CHUNKS, len(groups)))]
 for g in sorted(groups.values(), key=lambda g: -g["size"]):
     c = min(chunks, key=lambda c: c["size"])
-    c["drvs"] += g["roots"]
+    c["drvs"] += g["drvs"]
     c["size"] += g["size"]
 
 for c in chunks:

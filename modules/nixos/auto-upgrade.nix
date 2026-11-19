@@ -52,23 +52,37 @@ let
   };
 
   # localAssembly: the host builds the assembly steps, but any package missing
-  # from the cache skips the cycle instead of compiling here.
-  packageGate = pkgs.writeShellScript "autoupgrade-package-gate" ''
-    out=$(${config.nix.package}/bin/nix build --no-link --dry-run --refresh \
-      --option always-allow-substitutes true \
-      "${cfg.flakeRef}#nixosConfigurations.${cfg.hostName}.config.system.build.toplevel" 2>&1) || {
-      echo "$out"
-      echo "auto-upgrade: dry-run failed; skipping this cycle"
-      exit 1
-    }
-    heavy=$(${lib.getExe heavyDrvs} <<<"$out" | ${pkgs.gnused}/bin/sed -n 's/^heavy //p')
-    if [ -n "$heavy" ]; then
-      echo "auto-upgrade: packages not in the cache yet (CI build-nvme still running or failed):"
-      echo "$heavy"
-      echo "auto-upgrade: skipping this cycle rather than compiling them here"
-      exit 1
-    fi
-  '';
+  # from the cache skips the cycle instead of compiling here. The ref is
+  # resolved once, so a tag moving mid-run can't slip uncached packages past.
+  pinnedUpgrade = pkgs.writeShellApplication {
+    name = "autoupgrade-pinned";
+    runtimeInputs = [
+      config.nix.package
+      pkgs.jq
+      pkgs.gnused
+      heavyDrvs
+    ];
+    text = ''
+      pin=$(nix flake metadata --refresh --json "${cfg.flakeRef}" | jq -er .url)
+      echo "auto-upgrade: ${cfg.flakeRef} is $pin"
+      if ! out=$(nix build --no-link --dry-run --option always-allow-substitutes true \
+        "$pin#nixosConfigurations.${cfg.hostName}.config.system.build.toplevel" 2>&1); then
+        echo "$out"
+        echo "auto-upgrade: dry-run failed; skipping this cycle"
+        exit 1
+      fi
+      classified=$(heavy-drvs <<<"$out")
+      heavy=$(sed -n 's/^heavy //p' <<<"$classified")
+      if [ -n "$heavy" ]; then
+        echo "auto-upgrade: packages not in the cache yet (CI build-nvme still running or failed):"
+        echo "$heavy"
+        echo "auto-upgrade: skipping this cycle rather than compiling them here"
+        exit 1
+      fi
+      ${config.system.build.nixos-rebuild}/bin/nixos-rebuild ${config.system.autoUpgrade.operation} -L \
+        --option always-allow-substitutes true --flake "$pin#${cfg.hostName}"
+    '';
+  };
 in
 {
   options.my.deploy.autoUpgrade = {
@@ -147,7 +161,7 @@ in
           2. add a pre-flight probe that waits up to ~2min for the binary
              cache (`cacheUrl`) to become reachable and aborts the cycle if
              it can't be reached (instead of building the closure locally),
-          3. cap the run with `RuntimeMaxSec = maxRuntime` so a cache miss
+          3. cap the run with `TimeoutStartSec = maxRuntime` so a cache miss
              that slips past the probe can't run away into a multi-hour
              on-device build — the run is killed and retried next cycle,
           4. run `nixos-rebuild` with `--max-jobs 0` (plus
@@ -172,9 +186,10 @@ in
         With `requireCache`, build the system-assembly steps (etc, units,
         the toplevel) on the host instead of requiring them in the cache,
         for hosts whose CI builds only the packages (build-nvme.yaml).
-        Drops `--max-jobs 0`; a pre-flight dry-run
-        (scripts/heavy-drvs.sh) skips the cycle while any package is
-        still missing from the cache.
+        Drops `--max-jobs 0`; the upgrade resolves `flakeRef` once, and a
+        dry-run of that revision (scripts/heavy-drvs.sh) skips the cycle
+        while any package is still missing from the cache. Not with
+        `allowReboot`.
       '';
     };
 
@@ -191,7 +206,8 @@ in
       type = lib.types.str;
       default = "30min";
       description = ''
-        `RuntimeMaxSec` for `nixos-upgrade.service` when `requireCache`
+        `TimeoutStartSec` for `nixos-upgrade.service` (a oneshot, which
+        ignores `RuntimeMaxSec`) when `requireCache`
         is set. A build-free substitute-only pull finishes in well under
         a minute; this cap exists to kill a runaway local build (kernel
         recompile) rather than let it hammer the host for hours. Raise it
@@ -246,13 +262,20 @@ in
           Minimum seconds between triggered upgrade starts. Bounds the
           damage of message spam to one upgrade attempt per window —
           and `nixos-upgrade` itself is further gated by `requireCache`
-          and `RuntimeMaxSec` on cache-dependent hosts.
+          and `TimeoutStartSec` on cache-dependent hosts.
         '';
       };
     };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.localAssembly -> (cfg.requireCache && !cfg.allowReboot);
+        message = "my.deploy.autoUpgrade.localAssembly needs requireCache and replaces the upgrade script, which allowReboot needs.";
+      }
+    ];
+
     system.autoUpgrade = {
       enable = true;
       flake = "${cfg.flakeRef}#${cfg.hostName}";
@@ -281,7 +304,7 @@ in
 
     # Cache-dependent hosts: order after the mesh, gate on cache reachability,
     # and cap runtime. The cap is the last line of defence; `--max-jobs 0`
-    # (or the package gate, with localAssembly) stops a miss from building.
+    # (or the pinned package gate, with localAssembly) stops a miss from building.
     systemd.services.nixos-upgrade = lib.mkIf cfg.requireCache {
       after = [
         "network-online.target"
@@ -289,9 +312,10 @@ in
       ];
       wants = [ "network-online.target" ];
       serviceConfig = {
-        ExecStartPre = [ "${cacheProbe}" ] ++ lib.optional cfg.localAssembly "${packageGate}";
-        RuntimeMaxSec = cfg.maxRuntime;
+        ExecStartPre = [ "${cacheProbe}" ];
+        TimeoutStartSec = cfg.maxRuntime;
       };
+      script = lib.mkIf cfg.localAssembly (lib.mkForce (lib.getExe pinnedUpgrade));
     };
 
     # Long-poll the secret ntfy topic and start nixos-upgrade on any message.

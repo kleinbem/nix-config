@@ -14,7 +14,9 @@ prefer_local=$(nix derivation show "${built[@]}" 2>/dev/null |
   jq -r '(.derivations // .) | to_entries[]
     | select(.value.env.preferLocalBuild == "1" or .value.structuredAttrs.preferLocalBuild == true)
     | .key | sub(".*/"; "")')
-assembly='^(nixos-system-.*|activate|dry-activate|etc|system-units|user-units|unit-.*|manifest(-for-users)?\.json|boot\.json|append-initrd-secrets|check-.*)$'
+assembly='^(nixos-system-.*|activate|dry-activate|etc|system-units|user-units|unit-.*|manifest(-for-users)?\.json|boot\.json|append-initrd-secrets|check-(sshd-config|dconf-db|link-targets\.sh|mountpoints))$'
+# Only named checks: `check-0.15.2` is a real package. An unknown assembly step
+# counts as heavy, so CI builds it; that is the safe side.
 
 for drv in "${built[@]}"; do
   base=${drv##*/}

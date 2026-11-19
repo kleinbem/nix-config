@@ -119,7 +119,7 @@ in
         # Read-only pull token — activates modules/nixos/attic-pull.nix (netrc
         # Bearer auth + NetBird routing). Without it the host gets 401 from the
         # private cache and the nightly upgrade rebuilds the linux-rpi kernel
-        # on-device until RuntimeMaxSec kills it.
+        # on-device until TimeoutStartSec kills it.
         attic_pull_token = { };
 
         # Included into nix.conf by modules/nixos/core.nix so the daemon can

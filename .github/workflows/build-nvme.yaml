@@ -168,7 +168,13 @@ jobs:
           watch=$!
           trap 'kill "$watch" 2>/dev/null || true; wait "$watch" 2>/dev/null || true' EXIT
           MARK=$(mktemp) # failure report scopes to logs written after this
-          nix build --no-link --keep-going -L "${drvs[@]/%/^*}" && exit 0
+          # watch-store streams uploads; the explicit push is what makes the
+          # job green, so a lost upload can't pass as "cached".
+          if outs=$(nix build --no-link --keep-going --print-out-paths -L "${drvs[@]/%/^*}"); then
+            mapfile -t outs <<<"$outs"
+            attic push system "${outs[@]}"
+            exit 0
+          fi
           .github/scripts/report-failed-drvs.sh nixos-nvme "$MARK" system
           exit 1
 
