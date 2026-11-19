@@ -134,9 +134,10 @@
     };
     deploy.autoUpgrade = {
       enable = true;
-      # CI builds this toplevel (build-nvme.yaml), so a cache miss should
-      # abort and retry next cycle rather than compile the closure locally.
+      # CI builds this host's packages (build-nvme.yaml), the host only
+      # assembles the system; a missing package skips the cycle.
       requireCache = true;
+      localAssembly = true;
     };
     # Claude Code's permission and auto-mode policy, as read-only managed
     # settings (modules/nixos/claude-code.nix).

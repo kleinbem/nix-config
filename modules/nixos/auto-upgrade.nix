@@ -39,6 +39,36 @@ let
     echo "auto-upgrade: cache $url unreachable after ~2min; skipping this cycle (catches up next run)"
     exit 1
   '';
+
+  heavyDrvs = pkgs.writeShellApplication {
+    name = "heavy-drvs";
+    runtimeInputs = [
+      config.nix.package
+      pkgs.jq
+      pkgs.gnused
+      pkgs.gnugrep
+    ];
+    text = builtins.readFile ../../scripts/heavy-drvs.sh;
+  };
+
+  # localAssembly: the host builds the assembly steps, but any package missing
+  # from the cache skips the cycle instead of compiling here.
+  packageGate = pkgs.writeShellScript "autoupgrade-package-gate" ''
+    out=$(${config.nix.package}/bin/nix build --no-link --dry-run --refresh \
+      --option always-allow-substitutes true \
+      "${cfg.flakeRef}#nixosConfigurations.${cfg.hostName}.config.system.build.toplevel" 2>&1) || {
+      echo "$out"
+      echo "auto-upgrade: dry-run failed; skipping this cycle"
+      exit 1
+    }
+    heavy=$(${lib.getExe heavyDrvs} <<<"$out" | ${pkgs.gnused}/bin/sed -n 's/^heavy //p')
+    if [ -n "$heavy" ]; then
+      echo "auto-upgrade: packages not in the cache yet (CI build-nvme still running or failed):"
+      echo "$heavy"
+      echo "auto-upgrade: skipping this cycle rather than compiling them here"
+      exit 1
+    fi
+  '';
 in
 {
   options.my.deploy.autoUpgrade = {
@@ -135,6 +165,19 @@ in
       '';
     };
 
+    localAssembly = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        With `requireCache`, build the system-assembly steps (etc, units,
+        the toplevel) on the host instead of requiring them in the cache,
+        for hosts whose CI builds only the packages (build-nvme.yaml).
+        Drops `--max-jobs 0`; a pre-flight dry-run
+        (scripts/heavy-drvs.sh) skips the cycle while any package is
+        still missing from the cache.
+      '';
+    };
+
     cacheUrl = lib.mkOption {
       type = lib.types.str;
       default = "https://cache.kleinbem.dev/system";
@@ -221,9 +264,11 @@ in
       # always-allow-substitutes: nixpkgs marks cheap derivations
       # `allowSubstitutes = false` (system-path, etc, writeText*), which
       # max-jobs 0 then can't build at all, though CI cached them.
-      ++ lib.optionals cfg.requireCache [
+      ++ lib.optionals (cfg.requireCache && !cfg.localAssembly) [
         "--max-jobs"
         "0"
+      ]
+      ++ lib.optionals cfg.requireCache [
         "--option"
         "always-allow-substitutes"
         "true"
@@ -236,7 +281,7 @@ in
 
     # Cache-dependent hosts: order after the mesh, gate on cache reachability,
     # and cap runtime. The cap is the last line of defence; `--max-jobs 0`
-    # above is what actually stops a cache miss from turning into a build.
+    # (or the package gate, with localAssembly) stops a miss from building.
     systemd.services.nixos-upgrade = lib.mkIf cfg.requireCache {
       after = [
         "network-online.target"
@@ -244,7 +289,7 @@ in
       ];
       wants = [ "network-online.target" ];
       serviceConfig = {
-        ExecStartPre = [ "${cacheProbe}" ];
+        ExecStartPre = [ "${cacheProbe}" ] ++ lib.optional cfg.localAssembly "${packageGate}";
         RuntimeMaxSec = cfg.maxRuntime;
       };
     };
