@@ -1030,6 +1030,7 @@ hosts:
       deploy:
       - autoUpgrade
       - autoUpgrade.enable
+      - autoUpgrade.localAssembly
       - autoUpgrade.requireCache
       desktop:
       - bottles.enable

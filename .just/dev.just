@@ -6,7 +6,7 @@ set working-directory := ".."
 
 # Probe cache coverage; exit 0 = cached, 1 = would build locally, 2 = probe failed.
 # Assembly-only drvs (activation, units, sops manifests, preferLocalBuild) count
-# as covered: CI's placeholder secrets mean they never match its cache.
+# as covered (scripts/heavy-drvs.sh): CI never builds them for the host.
 [group("Development")]
 attic-coverage host="$(hostname)":
     #!/usr/bin/env bash
@@ -20,26 +20,16 @@ attic-coverage host="$(hostname)":
         echo "$output" | grep -iE 'error' | head -5
         exit 2
     fi
-    mapfile -t built < <(echo "$output" | sed -n '/will be built:/,/will be fetched\|^$/p' | grep -oE '/nix/store/[^ ]+\.drv')
-    if [ "${#built[@]}" -eq 0 ]; then
+    if ! classified=$(echo "$output" | scripts/heavy-drvs.sh); then
+        echo "❌ Coverage probe failed: couldn't classify the build plan."
+        exit 2
+    fi
+    if [ -z "$classified" ]; then
         echo "✓ Closure fully covered by Attic + cache.nixos.org — apply will only download."
         exit 0
     fi
-    prefer_local=$(nix derivation show "${built[@]}" 2>/dev/null \
-        | jq -r '(.derivations // .) | to_entries[] | select(.value.env.preferLocalBuild == "1" or .value.structuredAttrs.preferLocalBuild == true) | .key | sub(".*/"; "")')
-    assembly='^(nixos-system-.*|activate|dry-activate|etc|system-units|user-units|unit-.*|manifest(-for-users)?\.json|boot\.json|append-initrd-secrets|check-.*)$'
-    heavy=()
-    small=0
-    for drv in "${built[@]}"; do
-        base=${drv##*/}
-        name=${base:33}
-        name=${name%.drv}
-        if [[ "$name" =~ $assembly ]] || grep -qxF "$base" <<<"$prefer_local"; then
-            small=$((small + 1))
-        else
-            heavy+=("$drv")
-        fi
-    done
+    mapfile -t heavy < <(sed -n 's/^heavy //p' <<<"$classified")
+    small=$(grep -c '^small ' <<<"$classified" || true)
     if [ "${#heavy[@]}" -eq 0 ]; then
         echo "✓ Covered except $small small system-assembly steps (build locally in seconds)."
         exit 0
