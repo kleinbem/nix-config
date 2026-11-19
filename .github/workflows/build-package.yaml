@@ -1,4 +1,5 @@
 name: "Build Package(s) to Attic"
+run-name: "Build Package(s) to Attic${{ inputs.run_tag != '' && format(' [{0}]', inputs.run_tag) || '' }}"
 
 on:
   workflow_dispatch:
@@ -31,6 +32,11 @@ on:
         required: false
         type: boolean
         default: true
+      run_tag:
+        description: 'Optional correlation tag used by just dev::remote-build --watch'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -89,8 +95,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Split on commas or whitespace.
-          read -ra TARGETS <<<"${RAW_TARGETS//,/ }"
+          # Split on whitespace; only split on commas when there is no Nix
+          # output selector (`^out,dev`) in the token.
+          TARGETS=()
+          for word in $RAW_TARGETS; do
+            if [[ "$word" == *"^"* ]]; then
+              TARGETS+=("$word")
+            else
+              IFS=',' read -ra parts <<<"$word"
+              for p in "${parts[@]}"; do
+                [ -n "$p" ] && TARGETS+=("$p")
+              done
+            fi
+          done
           if [ "${#TARGETS[@]}" -eq 0 ]; then
             echo "::error::No targets specified."
             exit 1
@@ -117,7 +134,7 @@ jobs:
 
           for t in "${TARGETS[@]}"; do
             EXTRA_ARGS=()
-            if [[ "$t" == *"#"* ]]; then
+            if [[ "$t" == *"#"* ]] || [[ "$t" =~ ^(github|gitlab|sourcehut|flake|path|tarball|file|https?|git\+[a-z+]+): ]]; then
               INSTALLABLE="$t"
               if [[ "$t" == nixpkgs#* ]]; then
                 EXTRA_ARGS+=(--inputs-from .)

@@ -334,10 +334,10 @@ fmt-python *args="":
 
 # Trigger package build(s) on GitHub Actions and push them to Attic.
 [group("Development")]
+[positional-arguments]
 remote-build *args="":
     #!/usr/bin/env bash
     set -euo pipefail
-    set -- {{args}}
 
     TARGETS=()
     SYSTEM=""
@@ -407,6 +407,7 @@ remote-build *args="":
         esac
     fi
 
+    RUN_TAG="rb-$(date +%s)-$$"
     TARGET_STR="${TARGETS[*]}"
     echo "🚀 Dispatching build-package.yaml on $REF ($SYSTEM): $TARGET_STR"
     gh workflow run build-package.yaml \
@@ -416,13 +417,20 @@ remote-build *args="":
         -f "system=$SYSTEM" \
         -f "host=$HOST" \
         -f "free_disk_space=$FREE_DISK" \
-        -f "notify=$NOTIFY"
+        -f "notify=$NOTIFY" \
+        -f "run_tag=$RUN_TAG"
 
     if [ "$WATCH" -eq 1 ]; then
-        sleep 3
-        run_id=$(gh run list --repo kleinbem/nix-config --workflow build-package.yaml --branch "$REF" --limit 1 --json databaseId --jq '.[0].databaseId')
+        run_id=""
+        for _ in $(seq 1 15); do
+            run_id=$(gh run list --repo kleinbem/nix-config --workflow build-package.yaml --branch "$REF" --limit 10 --json databaseId,displayTitle --jq ".[] | select(.displayTitle | contains(\"$RUN_TAG\")) | .databaseId" | head -n 1)
+            [ -n "$run_id" ] && break
+            sleep 2
+        done
         if [ -n "$run_id" ]; then
             gh run watch --repo kleinbem/nix-config "$run_id"
+        else
+            echo "⚠️  Timed out waiting for run $RUN_TAG to appear; check: gh run list --repo kleinbem/nix-config --workflow build-package.yaml" >&2
         fi
     else
         echo "   View runs: gh run list --repo kleinbem/nix-config --workflow build-package.yaml"
