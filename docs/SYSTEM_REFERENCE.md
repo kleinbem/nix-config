@@ -12,9 +12,9 @@
 - **home-manager**: `2b13c9cb`
 - **sops-nix**: `7c637afd`
 - **devenv**: `8efcb88c`
-- **nix-packages**: `0e090cf8`
-- **nix-hardware**: `56ba03e3`
-- **nix-presets**: `3c96cc36`
+- **nix-packages**: `d8297f30`
+- **nix-hardware**: `e599aebf`
+- **nix-presets**: `822438af`
 - **nix-devshells**: `e0bf0436`
 - **nix-gantry**: `facc072a`
 
