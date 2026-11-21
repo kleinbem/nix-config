@@ -17,7 +17,7 @@ let
     key: builtins.pathExists hostSops && lib.hasInfix "\n${key}:" ("\n" + builtins.readFile hostSops);
   hasHassCliToken = hasKey "hass_cli_token";
   hasSkillsRefreshToken = hasKey "skills_refresh_token";
-  hasLoginPin = hasKey "martin_login_pin_hash";
+  hasLoginPin = config.my.security.loginNeedsPasswordAndKey && hasKey "martin_login_pin_hash";
   hasRevueWebhookSecret = config.services.revue.enable && hasKey "revue_webhook_secret";
   hasRevueApiKey = config.services.revue.enable && hasKey "revue_api_key";
   hasRevueSecrets = hasRevueWebhookSecret || hasRevueApiKey;
