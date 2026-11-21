@@ -17,11 +17,14 @@ let
     "dir=${faillockDir}"
   ];
   pinHashFile = config.my.security.loginPinHashFile;
-  # pam_exec hands the typed secret on stdin, ended by a NUL.
+  # pam_exec hands the typed secret on stdin, ended by a NUL. ARGV: hash file, u2f authfile.
+  # No key mapping for martin means pam_u2f's nouserok skipped the touch: refuse the PIN then.
   checkPin = pkgs.writers.writePerl "login-pin-check" { } ''
     my $pin = do { local $/; <STDIN> } // "";
     $pin =~ s/\0.*//s;
     exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
+    open(my $keys, "<", $ARGV[1]) or exit 1;
+    exit 1 unless grep { /^martin:./ } <$keys>;
     open(my $fh, "<", $ARGV[0]) or exit 1;
     my $hash = <$fh> // "";
     $hash =~ s/\s+\z//;
@@ -35,7 +38,7 @@ in
       A touch alone never hands PAM a password, so the login keyring would stay locked'';
 
     loginPinHashFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
+      type = lib.types.nullOr (lib.types.strMatching "^/[^[:space:]]+$");
       default = null;
       description = ''
         crypt(3) hash of a short PIN martin can log in with instead of his password (with
@@ -108,6 +111,7 @@ in
                   "expose_authtok"
                   "${checkPin}"
                   pinHashFile
+                  config.security.pam.u2f.settings.authfile
                 ];
               };
               faillock-authfail = faillockRule // {
