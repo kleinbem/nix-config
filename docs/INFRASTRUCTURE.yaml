@@ -86,6 +86,10 @@ repo_atlas:
     path: kleinbem-site/
     url: git@github.com:kleinbem/kleinbem-site.git
     role: kleinbem.dev personal portfolio website.
+  mesh-dev-plugin:
+    path: mesh-dev-plugin/
+    url: git@github.com:kleinbem/mesh-dev-plugin.git
+    role: Supporting repository.
   mesh-llm-ci:
     path: mesh-llm-ci/
     url: git@github.com:kleinbem/mesh-llm-ci.git
