@@ -20,13 +20,20 @@ let
   # pam_exec hands the typed secret on stdin, ended by a NUL. ARGV: hash file, u2f authfile.
   # No full KeyHandle,UserKey,CoseType,Options mapping for martin means pam_u2f's nouserok
   # may have skipped the touch: refuse the PIN then.
-  checkPin = pkgs.writers.writePerl "login-pin-check" { } ''
+  checkPin = pkgs.writeScript "login-pin-check" ''
+    #!${lib.getExe pkgs.perl} -T
+    use strict;
+    use warnings;
+
     my $pin = do { local $/; <STDIN> } // "";
     $pin =~ s/\0.*//s;
     exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
-    open(my $keys, "<", $ARGV[1]) or exit 1;
-    exit 1 unless grep { /^martin:[^\s,:]+,[^\s,:]+,[^\s,:]+,/ } <$keys>;
-    open(my $fh, "<", $ARGV[0]) or exit 1;
+    my ($hash_file) = ($ARGV[0] // "") =~ m{^(/[^\s]+)\z};
+    my ($keys_file) = ($ARGV[1] // "") =~ m{^(/[^\s]+)\z};
+    exit 1 unless defined $hash_file && defined $keys_file;
+    open(my $keys, "<", $keys_file) or exit 1;
+    exit 1 unless grep { /^martin:(?:[^\s,:]+,){3}[^\s,:]+(?::(?:[^\s,:]+,){3}[^\s,:]+)*\s*\z/ } <$keys>;
+    open(my $fh, "<", $hash_file) or exit 1;
     my $hash = <$fh> // "";
     $hash =~ s/\s+\z//;
     exit(($hash =~ /^\$y\$/ && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
@@ -42,9 +49,10 @@ in
       type = lib.types.nullOr (lib.types.strMatching "^/[^[:space:]]+$");
       default = null;
       description = ''
-        crypt(3) hash of a short PIN martin can log in with instead of his password (with
-        loginNeedsPasswordAndKey, so the touch stays required). Login only; sudo ignores it.
-        The login keyring then needs the PIN as its password.'';
+        yescrypt ($y$) hash (e.g. mkpasswd -m yescrypt) of a short PIN martin can log in with
+        instead of his password (with loginNeedsPasswordAndKey, so the touch stays required).
+        Login only; sudo ignores it. The login keyring then needs the PIN as its password (stored
+        in the user keyring without hardware or faillock backing).'';
     };
   };
 
@@ -108,6 +116,8 @@ in
                 control = "requisite";
                 args = [ "preauth" ] ++ faillockArgs;
               };
+              # Avoid pam_unix's ~2s failure delay before login-pin runs on valid PIN logins.
+              unix.settings.nodelay = lib.mkIf (pinHashFile != null) (lib.mkForce true);
               # Either the password or the PIN; a wrong one falls through to authfail.
               login-pin = lib.mkIf (pinHashFile != null) {
                 order = config.security.pam.services.login.rules.auth.unix.order + 5;
