@@ -266,7 +266,6 @@ in
           alsa.enable = true;
           alsa.support32Bit = true;
           pulse.enable = true;
-          jack.enable = true;
         };
         dbus.enable = true;
       };
@@ -319,6 +318,8 @@ in
           qt6.qtwayland
           bleachbit
           just
+          # pw-jack wrapper (replaces deprecated services.pipewire.jack.enable)
+          pipewire.jack
         ];
       };
 
