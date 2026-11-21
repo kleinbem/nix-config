@@ -1046,6 +1046,7 @@ hosts:
       security:
       - ai-hardening.enable
       - loginNeedsPasswordAndKey
+      - loginPinHashFile
       services:
       - cadre
       - cadre.autoStart
@@ -1077,6 +1078,7 @@ hosts:
     - github_runner_pat
     - hass_cli_token
     - langfuse_db_password
+    - martin_login_pin_hash
     - mode
     - ntfy_agents_token
     - ntfy_agents_topic
