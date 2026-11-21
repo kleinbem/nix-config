@@ -11,9 +11,9 @@
 - **nixpkgs**: [`0bb82723`](https://github.com/NixOS/nixpkgs/commit/0bb82723)
 - **home-manager**: `2b13c9cb`
 - **sops-nix**: `7c637afd`
-- **devenv**: `8efcb88c`
+- **devenv**: `ba35fb71`
 - **nix-packages**: `5e2edcd0`
-- **nix-hardware**: `c66534bc`
+- **nix-hardware**: `8381089d`
 - **nix-presets**: `b0d559d3`
 - **nix-devshells**: `e0bf0436`
 - **nix-gantry**: `cc9183b5`
