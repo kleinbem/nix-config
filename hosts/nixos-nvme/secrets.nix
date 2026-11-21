@@ -162,6 +162,7 @@ in
 
       github_app_private_key = {
         owner = "martin";
+        restartUnits = lib.mkIf hasRevueSecrets [ "revue.service" ];
       };
 
       # Backup Secrets
@@ -364,7 +365,8 @@ in
             REVUE_API_KEY=${config.sops.placeholder.revue_api_key}
           ''
           + ''
-            GITHUB_TOKEN=${config.sops.placeholder.github_pat}
+            GITHUB_APP_ID=${config.sops.placeholder.github_app_id}
+            GITHUB_APP_PRIVATE_KEY_FILE=${config.sops.secrets.github_app_private_key.path}
           '';
       };
     };
