@@ -373,6 +373,7 @@ in
   };
 
   services.revue.environmentFile = lib.mkIf hasRevueSecrets config.sops.templates."revue.env".path;
+  systemd.services.revue.after = lib.mkIf hasRevueSecrets [ "sops-install-secrets.service" ];
 
   home-manager.users.martin.modules.opencode.googleApiKeyFile =
     lib.mkIf opencodeGemini config.sops.secrets.gemini_api_key.path;
