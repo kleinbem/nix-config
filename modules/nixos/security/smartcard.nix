@@ -18,13 +18,14 @@ let
   ];
   pinHashFile = config.my.security.loginPinHashFile;
   # pam_exec hands the typed secret on stdin, ended by a NUL. ARGV: hash file, u2f authfile.
-  # No key mapping for martin means pam_u2f's nouserok skipped the touch: refuse the PIN then.
+  # No full KeyHandle,UserKey,CoseType,Options mapping for martin means pam_u2f's nouserok
+  # may have skipped the touch: refuse the PIN then.
   checkPin = pkgs.writers.writePerl "login-pin-check" { } ''
     my $pin = do { local $/; <STDIN> } // "";
     $pin =~ s/\0.*//s;
     exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
     open(my $keys, "<", $ARGV[1]) or exit 1;
-    exit 1 unless grep { /^martin:[^\s,:]+,[^\s,:]+/ } <$keys>;
+    exit 1 unless grep { /^martin:[^\s,:]+,[^\s,:]+,[^\s,:]+,/ } <$keys>;
     open(my $fh, "<", $ARGV[0]) or exit 1;
     my $hash = <$fh> // "";
     $hash =~ s/\s+\z//;
@@ -54,7 +55,7 @@ in
         message = "my.security.loginPinHashFile needs my.security.loginNeedsPasswordAndKey (the PIN must never work without the YubiKey touch).";
       }
       {
-        assertion = pinHashFile == null || config.security.pam.u2f.settings.authfile != null;
+        assertion = pinHashFile == null || (config.security.pam.u2f.settings.authfile or null) != null;
         message = "my.security.loginPinHashFile needs security.pam.u2f.settings.authfile: the PIN check reads the key mappings from it.";
       }
     ];
