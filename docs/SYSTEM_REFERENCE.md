@@ -1,6 +1,6 @@
 # 🏗️ System Reference (Auto-generated)
 
-*Pin: nixpkgs `0bb82723` · home-manager `2b13c9cb` · sops-nix `7c637afd`*
+*Pin: nixpkgs `2786a2a7` · home-manager `6857c7f7` · sops-nix `7c637afd`*
 
 > [!IMPORTANT]
 > This file contains the "ground truth" for the current NixOS infrastructure.
@@ -8,8 +8,8 @@
 
 ## 📦 Core Revisions
 
-- **nixpkgs**: [`0bb82723`](https://github.com/NixOS/nixpkgs/commit/0bb82723)
-- **home-manager**: `2b13c9cb`
+- **nixpkgs**: [`2786a2a7`](https://github.com/NixOS/nixpkgs/commit/2786a2a7)
+- **home-manager**: `6857c7f7`
 - **sops-nix**: `7c637afd`
 - **devenv**: `ba35fb71`
 - **nix-packages**: `0d37d39c`
