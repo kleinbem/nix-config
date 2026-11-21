@@ -56,7 +56,7 @@ runs:
         echo "Sibling revs: $revs"
 
     - name: Nix setup
-      uses: kleinbem/actions/nix-setup@7ec628296d5194e6e10031706387b992a10a1638 # v1.0.1
+      uses: kleinbem/actions/nix-setup@f1b4f5fc52ea31b1f9e53ca29170570fe4651c7d # v1.7.1
       with:
         netbird-setup-key: ${{ inputs.netbird-setup-key }}
         attic-token: ${{ inputs.attic-token }}
