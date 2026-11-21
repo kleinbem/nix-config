@@ -23,24 +23,35 @@ let
     $pin =~ s/\0.*//s;
     exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
     open(my $fh, "<", $ARGV[0]) or exit 1;
-    chomp(my $hash = <$fh> // "");
-    exit((length $hash && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
+    my $hash = <$fh> // "";
+    $hash =~ s/\s+\z//;
+    exit(($hash =~ /^\$/ && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
   '';
 in
 {
-  options.my.security.loginNeedsPasswordAndKey = lib.mkEnableOption ''
-    password plus YubiKey touch for local login (tty and GDM, incl. its lock screen).
-    A touch alone never hands PAM a password, so the login keyring would stay locked'';
+  options.my.security = {
+    loginNeedsPasswordAndKey = lib.mkEnableOption ''
+      password plus YubiKey touch for local login (tty and GDM, incl. its lock screen).
+      A touch alone never hands PAM a password, so the login keyring would stay locked'';
 
-  options.my.security.loginPinHashFile = lib.mkOption {
-    type = lib.types.nullOr lib.types.str;
-    default = null;
-    description = ''
-      crypt(3) hash of a short PIN martin can log in with instead of his password (with
-      loginNeedsPasswordAndKey, so the touch stays required). Login only; sudo ignores it.'';
+    loginPinHashFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        crypt(3) hash of a short PIN martin can log in with instead of his password (with
+        loginNeedsPasswordAndKey, so the touch stays required). Login only; sudo ignores it.
+        The login keyring then needs the PIN as its password.'';
+    };
   };
 
   config = {
+    assertions = [
+      {
+        assertion = pinHashFile == null || config.my.security.loginNeedsPasswordAndKey;
+        message = "my.security.loginPinHashFile needs my.security.loginNeedsPasswordAndKey (the PIN must never work without the YubiKey touch).";
+      }
+    ];
+
     environment.systemPackages = with pkgs; [
       # Smartcard (PKCS#11 PIV)
       opensc
