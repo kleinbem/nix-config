@@ -7,7 +7,7 @@
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
 **Declarations indexed:** 82  
-**Consumer files scanned:** 40
+**Consumer files scanned:** 41
 
 ---
 
