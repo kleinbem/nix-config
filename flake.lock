@@ -1740,11 +1740,11 @@
     "kleinbem-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1795292515,
-        "narHash": "sha256-VZAaFC6FBtVYcWladhXP31Tq0/QJ8FinXCBFGtTtKes=",
+        "lastModified": 1795303146,
+        "narHash": "sha256-go4DUlcDhgl/cwU4HehMkYjwqOFNNfiEf/L+5bb0Jfc=",
         "owner": "kleinbem",
         "repo": "skills",
-        "rev": "446fe7fc93efc690eb366bec5ddb764f433b1d12",
+        "rev": "bc6d8121f54b60045c28c0d3830e95c93612205f",
         "type": "github"
       },
       "original": {
