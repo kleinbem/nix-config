@@ -469,7 +469,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.security`
 
-- **Declared:** `nix-config/modules/nixos/security/smartcard.nix:32`
+- **Declared:** `nix-config/modules/nixos/security/smartcard.nix:35`
 - **Sub-options:** `loginNeedsPasswordAndKey`, `loginPinHashFile`
 - **Configured in:** `host:nixos-nvme`, `host:orin-nano`
 
