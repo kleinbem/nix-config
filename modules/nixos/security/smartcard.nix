@@ -24,7 +24,7 @@ let
     $pin =~ s/\0.*//s;
     exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
     open(my $keys, "<", $ARGV[1]) or exit 1;
-    exit 1 unless grep { /^martin:./ } <$keys>;
+    exit 1 unless grep { /^martin:[^\s,:]+,[^\s,:]+/ } <$keys>;
     open(my $fh, "<", $ARGV[0]) or exit 1;
     my $hash = <$fh> // "";
     $hash =~ s/\s+\z//;
@@ -52,6 +52,10 @@ in
       {
         assertion = pinHashFile == null || config.my.security.loginNeedsPasswordAndKey;
         message = "my.security.loginPinHashFile needs my.security.loginNeedsPasswordAndKey (the PIN must never work without the YubiKey touch).";
+      }
+      {
+        assertion = pinHashFile == null || config.security.pam.u2f.settings.authfile != null;
+        message = "my.security.loginPinHashFile needs security.pam.u2f.settings.authfile: the PIN check reads the key mappings from it.";
       }
     ];
 
@@ -89,10 +93,12 @@ in
           u2fAuth = true;
           # Second factor, not a replacement. nouserok: a missing sops authfile falls back
           # to the password instead of locking everyone out. sudo keeps touch-only.
+          # requisite: without a touch, stop before any password or PIN is checked, so
+          # guesses made without the key are never evaluated.
           rules = lib.mkIf config.my.security.loginNeedsPasswordAndKey {
             auth = {
               u2f = {
-                control = lib.mkForce "required";
+                control = lib.mkForce "requisite";
                 settings.nouserok = true;
               };
               # Lockout for a short password: 5 wrong tries lock the account for 5 minutes.
