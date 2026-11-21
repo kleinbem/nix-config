@@ -20,9 +20,9 @@ META := if trim_end_match(file_name(parent_directory(ROOT)), ".ws") == file_name
 SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*' -type d -not -name 'nix-config' -not -name 'nix-secrets*' -not -name 'nix-toolbox' -not -name 'nix-detour' -not -name 'nix-revue' -not -name '*.ws' -printf '%f\n' 2>/dev/null | xargs echo -n")
 
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,
-# plus kleinbem-secrets explicitly since its directory name doesn't match
-# the "nix-*" glob SIBLING_REPOS uses.
-OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input kleinbem-secrets git+file://" + META + "/kleinbem-secrets"
+# plus kleinbem-secrets and kleinbem-skills explicitly since their directory
+# names don't match the "nix-*" glob SIBLING_REPOS uses.
+OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input kleinbem-secrets git+file://" + META + "/kleinbem-secrets" + " --override-input kleinbem-skills git+file://" + META + "/skills"
 
 KEEP      := "3"
 TIMER     := "time "
