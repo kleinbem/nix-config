@@ -28,7 +28,7 @@ let
     open(my $fh, "<", $ARGV[0]) or exit 1;
     my $hash = <$fh> // "";
     $hash =~ s/\s+\z//;
-    exit(($hash =~ /^\$/ && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
+    exit(($hash =~ /^\$y\$/ && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
   '';
 in
 {
