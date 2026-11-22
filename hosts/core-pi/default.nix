@@ -201,10 +201,6 @@ let
     (direct "frigate" "/api/version" answers)
     # The admin API's health page: the S3 port answers 403 without a key.
     (direct "garage" "/" [ "[STATUS] == 200" ] // { url = "http://${nodes.garage.ip}:3903/health"; })
-  ]
-  # Failing since the probes were added: no alerts until each is fixed or
-  # dropped, so ntfy only reports changes.
-  ++ map (e: e // { alert = false; }) [
     (direct "garage-ui" "/" answers)
     (direct "buzz" "/" answers)
   ];
