@@ -151,6 +151,8 @@ in
       comin = {
         enable = true;
         requireCache = true;
+        # CI caches only the packages; the host assembles the system.
+        localAssembly = true;
       };
     };
 

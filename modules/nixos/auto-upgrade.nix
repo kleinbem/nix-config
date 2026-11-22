@@ -40,16 +40,7 @@ let
     exit 1
   '';
 
-  heavyDrvs = pkgs.writeShellApplication {
-    name = "heavy-drvs";
-    runtimeInputs = [
-      config.nix.package
-      pkgs.jq
-      pkgs.gnused
-      pkgs.gnugrep
-    ];
-    text = builtins.readFile ../../scripts/heavy-drvs.sh;
-  };
+  heavyDrvs = pkgs.callPackage ../../scripts/heavy-drvs.nix { nix = config.nix.package; };
 
   # localAssembly: the host builds the assembly steps, but any package missing
   # from the cache skips the cycle instead of compiling here. The ref is

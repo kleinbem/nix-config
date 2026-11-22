@@ -26,6 +26,82 @@ let
       ]
     )
   );
+
+  # localAssembly: comin waits for confirmation after each evaluation and
+  # keeps max-jobs = 0. comin-assemble checks the evaluated drv: when no
+  # package is missing from the cache (scripts/heavy-drvs.sh) it builds the
+  # assembly steps and confirms, and comin's build then finds everything.
+  heavyDrvs = pkgs.callPackage ../../scripts/heavy-drvs.nix { nix = config.nix.package; };
+  stateDir = "/run/comin-assemble";
+  alertAfterSec = 3 * 3600;
+  hasAlertTopic = config.sops.secrets ? ntfy_alert_topic;
+
+  assemble = pkgs.writeShellApplication {
+    name = "comin-assemble";
+    runtimeInputs = [
+      config.nix.package
+      config.services.comin.package
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.gnused
+      pkgs.jq
+      heavyDrvs
+    ];
+    text = ''
+      st=$(comin status --json)
+      uuid=$(jq -r '.build_confirmer.submitted' <<<"$st")
+      [ -n "$uuid" ] || exit 0
+      sha=$(jq -r '.builder.generation.source.git.selected_commit_id' <<<"$st")
+
+      # One alert when a generation waits too long, whatever holds it.
+      mkdir -p ${stateDir}
+      [ -e "${stateDir}/$uuid" ] || touch "${stateDir}/$uuid"
+      waited=$(($(date +%s) - $(stat -c %Y "${stateDir}/$uuid")))
+      if [ "$waited" -ge ${toString alertAfterSec} ] && [ ! -e "${stateDir}/$uuid.alerted" ]; then
+        touch "${stateDir}/$uuid.alerted"
+        ${lib.optionalString hasAlertTopic ''
+          topic=$(cat ${config.sops.secrets.ntfy_alert_topic.path} 2>/dev/null || true)
+          auth=()
+          if [ -r /run/secrets/ntfy_alert_token ]; then
+            auth=(-H "Authorization: Bearer $(cat /run/secrets/ntfy_alert_token)")
+          fi
+          [ -z "$topic" ] || curl -fsS --max-time 15 "''${auth[@]}" \
+            -H "Title: ${cfg.hostName}: deploy stuck" -H "Tags: warning" \
+            -d "comin has waited $((waited / 3600)) h to build $sha; see journalctl -u comin-assemble." \
+            "https://ntfy.kleinbem.dev/$topic" >/dev/null || true
+        ''}
+      fi
+
+      if [ "$(jq -r '.builder.generation.uuid' <<<"$st")" != "$uuid" ] ||
+        [ "$(jq -r '.builder.generation.eval_status' <<<"$st")" != evaluated ]; then
+        exit 0
+      fi
+      drv=$(jq -r '.builder.generation.drv_path' <<<"$st")
+      # Negative TTL 0: see a package as soon as CI pushes it.
+      if ! out=$(nix build --no-link --dry-run --option always-allow-substitutes true \
+        --option narinfo-cache-negative-ttl 0 "$drv^*" 2>&1); then
+        echo "$out"
+        echo "comin-assemble: dry-run of $drv ($sha) failed"
+        exit 1
+      fi
+      classified=$(heavy-drvs <<<"$out")
+      heavy=$(sed -n 's/^heavy //p' <<<"$classified")
+      if [ -n "$heavy" ]; then
+        echo "comin-assemble: $sha waits for $(wc -l <<<"$heavy") packages from CI, e.g. $(head -1 <<<"$heavy")"
+        exit 0
+      fi
+      mapfile -t small < <(sed -n 's/^small //p' <<<"$classified")
+      if [ "''${#small[@]}" -gt 0 ]; then
+        echo "comin-assemble: building ''${#small[@]} assembly steps for $sha"
+        nix build --no-link -L --option always-allow-substitutes true "''${small[@]/%/^*}"
+      fi
+      # accept takes no id: confirm only if the generation checked here still
+      # waits. A newer one slipping in would still fail on max-jobs = 0.
+      [ "$(comin status --json | jq -r '.build_confirmer.submitted')" = "$uuid" ] || exit 0
+      comin confirmation accept
+      rm -f "${stateDir}/$uuid" "${stateDir}/$uuid.alerted"
+    '';
+  };
 in
 {
   imports = [ inputs.comin.nixosModules.comin ];
@@ -97,6 +173,19 @@ in
       '';
     };
 
+    localAssembly = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        With `requireCache`, build the system-assembly steps (etc, units,
+        the toplevel) on the host, so CI only has to cache the packages.
+        comin waits for confirmation (buildConfirmer manual) and keeps
+        max-jobs = 0; comin-assemble confirms once no package is missing
+        from the cache (scripts/heavy-drvs.sh) and the assembly steps are
+        built. A generation waiting over 3 h sends one ntfy alert.
+      '';
+    };
+
     buildTimeout = lib.mkOption {
       type = lib.types.int;
       default = 1800;
@@ -121,6 +210,10 @@ in
     lib.mkMerge [
       {
         assertions = [
+          {
+            assertion = cfg.localAssembly -> cfg.requireCache;
+            message = "my.deploy.comin.localAssembly only applies with requireCache.";
+          }
           {
             assertion = !config.my.deploy.autoUpgrade.enable;
             message = "my.deploy.comin and my.deploy.autoUpgrade would both switch this host; enable one.";
@@ -167,6 +260,28 @@ in
           EOF
         '';
       }
+
+      (lib.mkIf cfg.localAssembly {
+        services.comin.buildConfirmer.mode = "manual";
+        systemd.services.comin-assemble = {
+          description = "Assemble and confirm the generation comin waits on";
+          after = [ "comin.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = lib.getExe assemble;
+            TimeoutStartSec = cfg.buildTimeout;
+            Nice = 19;
+            IOSchedulingClass = "idle";
+          };
+        };
+        systemd.timers.comin-assemble = {
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "2min";
+            OnUnitInactiveSec = "2min";
+          };
+        };
+      })
 
       # comin's state (last deployed commit, deployment history behind the
       # boot entries it manages) must outlive the tmpfs root.
