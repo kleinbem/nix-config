@@ -187,6 +187,7 @@
       enable = true;
       user = "martin";
       listen = "0.0.0.0:8383";
+      workspaceRoot = "/home/martin/Develop/github.com/kleinbem";
     };
   };
 

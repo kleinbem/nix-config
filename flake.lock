@@ -3431,11 +3431,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795303663,
-        "narHash": "sha256-JORRPHhQ/ejDqNXbV1fNrMcTQIaUwOZFmKixhGlyeMM=",
+        "lastModified": 1795315360,
+        "narHash": "sha256-0cBSM7xjo4uJQ7lfvKyoQEk+zcvWSK9BhoDHvzp+4BY=",
         "owner": "kleinbem-dev",
         "repo": "revue",
-        "rev": "b926507fbab20675d2ea6489b3490ae6dabfc5b5",
+        "rev": "3db00fb7c72068cc474ea5451f7aa8a877d52d06",
         "type": "github"
       },
       "original": {
