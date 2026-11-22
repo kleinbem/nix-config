@@ -186,7 +186,24 @@ jobs:
               continue
             fi
             echo "$out" | grep -vE '^(evaluation warning|warning):' || true
-            if echo "$out" | grep -qE 'will be built|do.?n.?t know how to build'; then
+            # Hosts in .github/local-assembly-hosts build their assembly steps
+            # (etc, units, toplevel) themselves: only a missing package blocks.
+            # An unknown path blocks every host; the dry-run still exits 0.
+            if echo "$out" | grep -qE 'do.?n.?t know how to build'; then
+              echo "::error::$h: the dry-run names paths that are neither cached nor buildable. Blocking promotion."
+              fail=1
+            elif grep -qxF "$h" .github/local-assembly-hosts; then
+              if ! classified=$(scripts/heavy-drvs.sh <<<"$out"); then
+                echo "::error::$h: could not classify the dry-run. Blocking promotion."
+                fail=1
+              elif grep -q '^heavy ' <<<"$classified"; then
+                grep '^heavy ' <<<"$classified"
+                echo "::error::$h: packages are NOT cached — the device would wait for them. Blocking promotion."
+                fail=1
+              else
+                echo "✅ $h: all packages cached; $(grep -c '^small ' <<<"$classified" || true) assembly steps left to the host."
+              fi
+            elif echo "$out" | grep -qE 'will be built|do.?n.?t know how to build'; then
               echo "::error::$h closure is NOT fully cached — the device's --max-jobs 0 upgrade would fail. Blocking promotion."
               fail=1
             else
