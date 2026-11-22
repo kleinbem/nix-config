@@ -218,6 +218,8 @@ in
     defaultGateway.address = "10.0.0.1";
     firewall = {
       enable = true;
+      backend = "nftables";
+      filterForward = true;
       interfaces."end0".allowedTCPPorts = [ 22 ];
       interfaces."wt0".allowedTCPPorts = [ 22 ];
     };
@@ -252,6 +254,8 @@ in
 
   # ─── Common Services ────────────────────────────────────────
   services = {
+    # Per-interface SSH rules live on end0 and wt0 above; keep 22 closed elsewhere.
+    openssh.openFirewall = false;
     netbird.enable = true;
     fstrim.enable = true;
   };

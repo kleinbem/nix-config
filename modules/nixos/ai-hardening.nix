@@ -78,7 +78,7 @@ in
 
           # Populate nftables set 'ai_whitelisted_ips' in table 'inet ai-airlock'
           # Format: nftset=/<domain>/[<domain>/...]<family>#<table>#<set>
-          nftset = map (domain: "/${domain}/4#ai-airlock#ai_whitelisted_ips") allDomains;
+          nftset = map (domain: "/${domain}/4#inet#ai-airlock#ai_whitelisted_ips") allDomains;
 
           # Hardened DNS Resolution: Don't read /etc/resolv.conf (avoid loops)
           # Use explicit privacy-focused upstreams
@@ -132,7 +132,10 @@ in
 
         chain forward {
           type filter hook forward priority filter; policy accept;
-          
+
+          # Allow replies for established/related sessions before blocking new egress
+          ct state { established, related } accept
+
           # Allow traffic to dynamically whitelisted IPs
           ip daddr @ai_whitelisted_ips accept comment "Airlock 2.0: Dynamic Whitelist"
 
@@ -140,9 +143,6 @@ in
           ${lib.concatMapStringsSep "\n          " (
             ip: ''ip saddr ${ip} oifname "${net.externalInterface}" log prefix "AI-AIRLOCK-EXT-DENY: " drop''
           ) cfg.airlockIPs}
-          
-          # Allow local container-to-container if already established
-          ct state { established, related } accept
         }
       '';
     };

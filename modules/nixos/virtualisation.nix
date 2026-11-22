@@ -127,6 +127,9 @@ in
       firewall = {
         trustedInterfaces = lib.optional cfg.libvirtd.enable "virbr0";
         extraForwardRules = ''
+          # Containers can read the host /nix/store (which carries every host's
+          # clevis JWE), so block forwarded Tang requests before the egress allow.
+          iifname "${config.my.network.bridge}" tcp dport 7654 drop
           # Container Bridge
           iifname "${config.my.network.bridge}" oifname "${config.my.network.externalInterface}" accept
           iifname "${config.my.network.externalInterface}" oifname "${config.my.network.bridge}" ct state { established, related } accept

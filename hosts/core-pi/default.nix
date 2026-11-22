@@ -302,10 +302,6 @@ in
     };
 
     firewall = {
-      # Without backend + filterForward, extraForwardRules below (and
-      # nix-gantry's bridge-accept fragment) are silently ignored.
-      backend = "nftables";
-      filterForward = true;
       # Open all ports that Caddy is proxying to allow external access
       allowedTCPPorts = lib.unique caddyPortsList;
       interfaces."wt0".allowedTCPPorts = [ 22 ] ++ lib.unique caddyPortsList;

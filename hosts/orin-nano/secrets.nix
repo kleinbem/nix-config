@@ -8,12 +8,9 @@
     # Use a persistent host key for decryption
     age.keyFile = "/nix/persist/var/lib/sops/age/host.txt";
 
-    # We only need the user password for now
+    # headless.nix wires martin_password (key martin_password_hash);
+    # only secrets actually consumed on orin-nano live here.
     secrets = {
-      martin_password_hash = {
-        neededForUsers = true;
-      };
-      u2f_keys = { };
       github_read_all_token = {
         mode = "0440";
         group = "wheel";
@@ -27,22 +24,6 @@
         sopsFile = secretFile "nix/per-host/orin-nano.yaml";
         # attic-login stores the token once for the post-build hook.
         restartUnits = [ "attic-login.service" ];
-      };
-      github_pat = {
-        owner = "martin";
-      };
-      brave_api_key = {
-        owner = "martin";
-      };
-      github_app_id = {
-        owner = "martin";
-      };
-      github_app_installation_id = {
-        owner = "martin";
-      };
-
-      github_app_private_key = {
-        owner = "martin";
       };
     };
   };

@@ -292,7 +292,8 @@ in
         dconf.enable = true;
         weylus = {
           enable = true;
-          openFirewall = true;
+          # android.nix opens port 1701 on wt0 only; opening globally exposes it on Wi-Fi.
+          openFirewall = false;
           users = [ config.my.username ];
         };
         xwayland.enable = true;
