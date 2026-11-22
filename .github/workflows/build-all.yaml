@@ -199,6 +199,7 @@ jobs:
           # Toplevels are named explicitly because bare `.#nixosConfigurations`
           # doesn't build them.
           TARGETS=()
+          KEEP=()
           for c in "${CI_CHECKS[@]}"; do
             TARGETS+=(".#checks.$SYSTEM.$c")
           done
@@ -227,11 +228,32 @@ jobs:
             fi
           fi
 
+          # Hosts in .github/local-assembly-hosts: packages only (the host
+          # assembles the system), via build-host-packages.sh below.
+          mapfile -t LOCAL_ASSEMBLY < <(grep -vE '^\s*(#|$)' .github/local-assembly-hosts)
+          ASSEMBLE_HERE=()
+          for t in "${TARGETS[@]}"; do
+            for h in "${LOCAL_ASSEMBLY[@]}"; do
+              if [ "$t" = ".#nixosConfigurations.$h.config.system.build.toplevel" ]; then
+                ASSEMBLE_HERE+=("$h")
+                continue 2
+              fi
+            done
+            KEEP+=("$t")
+          done
+          TARGETS=("${KEEP[@]}")
+
           rc=0
           for t in "${TARGETS[@]}"; do
             echo "::group::nix-fast-build $t"
             # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
             nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" --flake "$t" $NIX_OVERRIDES || rc=1
+            echo "::endgroup::"
+          done
+          for h in "${ASSEMBLE_HERE[@]}"; do
+            echo "::group::packages $h"
+            # shellcheck disable=SC2086 # NIX_OVERRIDES is a list of flags
+            .github/scripts/build-host-packages.sh "$h" $NIX_OVERRIDES || rc=1
             echo "::endgroup::"
           done
           exit $rc
@@ -282,9 +304,14 @@ jobs:
           fi
           rc=0
           for h in "${HOSTS[@]}"; do
-            echo "::group::nix-fast-build (committed lock) $h"
-            nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
-              --flake ".#nixosConfigurations.$h.config.system.build.toplevel" || rc=1
+            if grep -qxF "$h" .github/local-assembly-hosts; then
+              echo "::group::packages (committed lock) $h"
+              .github/scripts/build-host-packages.sh "$h" --push || rc=1
+            else
+              echo "::group::nix-fast-build (committed lock) $h"
+              nix run github:Mic92/nix-fast-build -- "${COMMON[@]}" \
+                --flake ".#nixosConfigurations.$h.config.system.build.toplevel" || rc=1
+            fi
             echo "::endgroup::"
           done
           exit $rc
