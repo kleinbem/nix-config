@@ -2,3 +2,4 @@
 # the host assembles etc, units and the toplevel (my.deploy.comin.localAssembly).
 # Read by build-all.yaml and promote-production.yaml. One host per line.
 nasbook
+mac-mini
