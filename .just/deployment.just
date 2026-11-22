@@ -10,7 +10,8 @@ deploy-fleet:
     set -euo pipefail
     
     echo "🚀 Deploying to entire fleet via Colmena..."
-    if [ "$(jj log -r @ --no-graph -T 'if(empty, "clean", "dirty")')" != "clean" ]; then
+    wc_state="$(jj log -r @ --no-graph -T 'if(empty, "clean", "dirty")')"
+    if [ "$wc_state" != "clean" ]; then
         echo "❌ ERROR: Your working copy is dirty!"
         echo "   Colmena evaluates your local dirty tree. Since dirty changes haven't been pushed,"
         echo "   CI hasn't built them, and you will suffer massive local cross-compilation times."
@@ -1040,7 +1041,7 @@ pi-install-usb host device="/dev/sdc":
     pc_sudo_keepalive
 
     echo "🔄 Syncing with origin so closure hashes match the CI cache..."
-    just -f "{{META}}/justfile" jj::pull-all
+    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; else just -f "{{META}}/justfile" jj::pull-all; fi
 
     pc_require_block_device "$DEV"
     pc_assert_safe_target "$DEV"
@@ -1122,7 +1123,7 @@ pi-update-usb host device="/dev/sdc":
     fi
 
     echo "🔄 Syncing with origin to ensure closure hashes match the CI cache..."
-    just -f "{{META}}/justfile" jj::pull-all
+    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; else just -f "{{META}}/justfile" jj::pull-all; fi
 
     if [ ! -b "{{device}}" ]; then
         echo "❌ Error: Target {{device}} is not a valid block device! Please check lsblk."

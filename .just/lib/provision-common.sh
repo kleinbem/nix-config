@@ -337,6 +337,7 @@ pc_host_identity() {
 pc_sops_add_and_reencrypt() {
   local age_pub="$1" label="$2"
   local secrets_dir="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+  secrets_dir="${secrets_dir%/}"
   local sops_yaml="$secrets_dir/.sops.yaml"
   local anchor="${label//-/_}"
   if grep -qF "$age_pub" "$sops_yaml"; then

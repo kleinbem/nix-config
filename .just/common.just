@@ -13,7 +13,7 @@ META := if trim_end_match(file_name(parent_directory(ROOT)), ".ws") == file_name
     absolute_path(ROOT / "../..")
 }
 
-export KLEINBEM_SECRETS := META / "kleinbem-secrets"
+export KLEINBEM_SECRETS := env("KLEINBEM_SECRETS", META / "kleinbem-secrets")
 
 # Sibling nix-* checkouts used as input overrides. Excluded: nix-toolbox,
 # nix-detour (sub-input of nix-detour-fleet), nix-revue, and *.ws dirs
