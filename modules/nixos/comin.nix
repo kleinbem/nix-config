@@ -276,10 +276,9 @@ in
         };
         systemd.timers.comin-assemble = {
           wantedBy = [ "timers.target" ];
-          timerConfig = {
-            OnBootSec = "2min";
-            OnUnitInactiveSec = "2min";
-          };
+          # Calendar, not OnBootSec + OnUnitInactiveSec: with a run that ends
+          # in under a second that pair re-fired at once and hit the start limit.
+          timerConfig.OnCalendar = "*:0/2";
         };
       })
 
