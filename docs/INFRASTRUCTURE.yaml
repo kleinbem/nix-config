@@ -373,6 +373,7 @@ hosts:
       - autoUpgrade.enable
       - comin
       - comin.enable
+      - comin.localAssembly
       - comin.requireCache
       heartbeat:
       - enable
@@ -476,6 +477,7 @@ hosts:
       - autoUpgrade.enable
       - comin
       - comin.enable
+      - comin.localAssembly
       - comin.requireCache
       heartbeat:
       - enable
@@ -595,6 +597,7 @@ hosts:
       - autoUpgrade.enable
       - comin
       - comin.enable
+      - comin.localAssembly
       - comin.requireCache
       desktop:
       - gnome.enable
@@ -742,6 +745,7 @@ hosts:
       - autoUpgrade.enable
       - comin
       - comin.enable
+      - comin.localAssembly
       - comin.requireCache
       heartbeat:
       - enable
