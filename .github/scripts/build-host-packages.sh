@@ -28,10 +28,23 @@ fi
 classified=$(scripts/heavy-drvs.sh <<<"$out")
 mapfile -t heavy < <(sed -n 's/^heavy //p' <<<"$classified")
 echo "$host: ${#heavy[@]} packages to build, $(grep -c '^small ' <<<"$classified" || true) assembly steps left to the host"
+# Two retries, as nix-fast-build had: fetches and the Attic push ride NetBird.
+retry() {
+  local i
+  for i in 1 2 3; do
+    "$@" && return 0
+    if [ "$i" -lt 3 ]; then
+      echo "attempt $i failed: $1; retrying in $((i * 5))s" >&2
+      sleep $((i * 5))
+    fi
+  done
+  return 1
+}
+
 rc=0
 if [ "${#heavy[@]}" -gt 0 ]; then
   # Every heavy drv is a target: a cached intermediate can hide a requisite.
-  nix build --no-link --keep-going -L "${heavy[@]/%/^*}" || rc=1
+  retry nix build --no-link --keep-going -L "${heavy[@]/%/^*}" || rc=1
 fi
 
 if $push; then
@@ -42,6 +55,6 @@ if $push; then
   drv=$(nix path-info --derivation "$attr" "$@")
   mapfile -t paths < <(nix-store --query --requisites "$drv" | grep '\.drv$' |
     xargs nix-store --query --outputs | while read -r p; do [ -e "$p" ] && echo "$p"; done)
-  [ "${#paths[@]}" -eq 0 ] || attic push system "${paths[@]}"
+  [ "${#paths[@]}" -eq 0 ] || retry attic push system "${paths[@]}"
 fi
 exit $rc
