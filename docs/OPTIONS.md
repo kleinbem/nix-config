@@ -375,7 +375,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.dataDisk`
 
-- **Declared:** `nix-config/modules/nixos/data-disk.nix:13`
+- **Declared:** `nix-config/modules/nixos/data-disk.nix:14`
 - **Sub-options:** `cryptName`, `crypttabExtraOpts`, `device`, `enable`, `label`, `mountpoint`, `stage2KeyFile`
 - **Configured in:** `host:nasbook`, `host:nixos-nvme`
 

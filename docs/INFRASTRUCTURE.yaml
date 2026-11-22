@@ -689,6 +689,7 @@ hosts:
       - items.paperless-documents.paths
       - items.qdrant
       - items.qdrant.paths
+      - items.qdrant.stopUnits
       - items.qdrant.tier
       - items.syncthing
       - items.syncthing.exclude
@@ -1164,6 +1165,7 @@ hosts:
       - enable
       - items.frigate
       - items.frigate.paths
+      - items.frigate.stopUnits
       - items.frigate.tier
       boot:
       - clevis-initrd
