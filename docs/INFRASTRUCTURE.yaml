@@ -844,6 +844,7 @@ hosts:
       backup:
       - enable
       - items.garage
+      - items.garage.exclude
       - items.garage.paths
       - items.garage.tier
       boot:
