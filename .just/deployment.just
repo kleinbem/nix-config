@@ -188,7 +188,7 @@ push-cache +args:
         if [ -r /run/secrets/attic_push_token ]; then
             token=$(cat /run/secrets/attic_push_token) || return 1
         else
-            token=$(sops -d --extract '["attic_push_token"]' "{{META}}/kleinbem-secrets/nix/per-host/nixos-nvme.yaml") || return 1
+            token=$(sops -d --extract '["attic_push_token"]' "{{KLEINBEM_SECRETS}}/nix/per-host/nixos-nvme.yaml") || return 1
         fi
         ATTIC_BIN=$(nix build nixpkgs#attic-client --no-link --print-out-paths)/bin/attic || return 1
         ATTIC_CFG=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}") || return 1
@@ -597,7 +597,7 @@ mac-mini-install-usb device:
     # (flakes only see tracked files); jj::save-all commits it later.
     echo "🔑 Generating Tang JWE with the new passphrase..."
     LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh mac-mini
-    git -C "{{META}}/kleinbem-secrets" add initrd/cryptroot_mac-mini.jwe
+    git -C "{{KLEINBEM_SECRETS}}" add initrd/cryptroot_mac-mini.jwe
 
     echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
@@ -617,7 +617,7 @@ mac-mini-install-usb device:
     pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
     # Stage whatever the re-encryption touched (.sops.yaml and any file with
     # the mac_mini recipient) so the git+file:// override sees it.
-    git -C "{{META}}/kleinbem-secrets" add -u
+    git -C "{{KLEINBEM_SECRETS}}" add -u
 
     # Clevis is gated on the JWE existing, which it now does, so one build
     # comes out clevis-enabled with the rotated secrets.
@@ -882,7 +882,7 @@ nasbook-install-usb device:
     # gated on this file existing, so the build below needs to see it.
     echo "🔑 Generating Tang JWE with the new passphrase..."
     LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh nasbook
-    git -C "{{META}}/kleinbem-secrets" add initrd/cryptroot_nasbook.jwe
+    git -C "{{KLEINBEM_SECRETS}}" add initrd/cryptroot_nasbook.jwe
 
     echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
@@ -903,7 +903,7 @@ nasbook-install-usb device:
     pc_sops_add_and_reencrypt "$AGE_PUB" nasbook
     # {{OVERRIDES}} resolves inputs.kleinbem-secrets to this local checkout,
     # which only sees tracked/staged files — stage whatever the reencrypt touched.
-    git -C "{{META}}/kleinbem-secrets" add -u
+    git -C "{{KLEINBEM_SECRETS}}" add -u
 
     SYSTEM="$(pc_build_toplevel nasbook {{OVERRIDES}})"
     [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ nasbook closure build failed."; exit 1; }

@@ -210,7 +210,7 @@ attic *args:
     mkdir -p "$cfg/attic"
     {
         printf 'default-server = "kleinbem"\n[servers.kleinbem]\nendpoint = "https://cache.kleinbem.dev/"\ntoken = "'
-        sops -d --extract '["attic_admin_token"]' "{{META}}/kleinbem-secrets/nix/per-host/nixos-nvme.yaml"
+        sops -d --extract '["attic_admin_token"]' "{{KLEINBEM_SECRETS}}/nix/per-host/nixos-nvme.yaml"
         printf '"\n'
     } >"$cfg/attic/config.toml"
     XDG_CONFIG_HOME="$cfg" nix run nixpkgs#attic-client -- {{args}}

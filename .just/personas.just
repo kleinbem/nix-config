@@ -16,7 +16,7 @@ list:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "🎭 Personas declared in personas.nix:"
-    CONTACT_PATH="{{META}}/kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
+    CONTACT_PATH="{{KLEINBEM_SECRETS}}/personas/contact.nix" nix eval --raw --impure --expr \
         'let
             lib = (import <nixpkgs> {}).lib;
             contactPath = builtins.getEnv "CONTACT_PATH";
@@ -33,23 +33,23 @@ team:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "👥 Regenerating team page in kleinbem-secrets/docs/ (private)..."
-    mkdir -p "{{META}}/kleinbem-secrets/docs"
-    CONTACT_PATH="{{META}}/kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
+    mkdir -p "{{KLEINBEM_SECRETS}}/docs"
+    CONTACT_PATH="{{KLEINBEM_SECRETS}}/personas/contact.nix" nix eval --raw --impure --expr \
         'let
             lib = (import <nixpkgs> {}).lib;
             contactPath = builtins.getEnv "CONTACT_PATH";
             contact = if contactPath != "" then import contactPath else {};
             p = import ./lib/personas.nix { inherit lib contact; };
          in p.teamMarkdown' \
-        > "{{META}}/kleinbem-secrets/docs/TEAM.md.new"
+        > "{{KLEINBEM_SECRETS}}/docs/TEAM.md.new"
     # Only replace TEAM.md once the eval succeeded.
-    mv "{{META}}/kleinbem-secrets/docs/TEAM.md.new" "{{META}}/kleinbem-secrets/docs/TEAM.md"
+    mv "{{KLEINBEM_SECRETS}}/docs/TEAM.md.new" "{{KLEINBEM_SECRETS}}/docs/TEAM.md"
     nix run nixpkgs#pandoc -- \
         --from=gfm --to=html5 --standalone \
         --metadata title="kleinbem.dev — Team" \
         --css="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2em auto;padding:0 1em;line-height:1.5;color:#222;background:#fafafa}h1{border-bottom:2px solid %23000;padding-bottom:0.3em}h3{margin-top:2em;color:%23005a9c}table{border-collapse:collapse;margin:1em 0}td{padding:4px 12px;border-bottom:1px solid %23ddd}td:first-child{font-weight:600;background:%23eef}hr{border:0;border-top:1px dashed %23ccc;margin:2em 0}code{background:%23eef;padding:2px 6px;border-radius:3px}" \
-        "{{META}}/kleinbem-secrets/docs/TEAM.md" -o "{{META}}/kleinbem-secrets/docs/TEAM.html"
-    echo "✅ Wrote $(wc -l < "{{META}}/kleinbem-secrets/docs/TEAM.md") lines to kleinbem-secrets/docs/TEAM.{md,html}"
+        "{{KLEINBEM_SECRETS}}/docs/TEAM.md" -o "{{KLEINBEM_SECRETS}}/docs/TEAM.html"
+    echo "✅ Wrote $(wc -l < "{{KLEINBEM_SECRETS}}/docs/TEAM.md") lines to kleinbem-secrets/docs/TEAM.{md,html}"
 
 # Scaffold a persona end-to-end: signing key + sops + keys.nix patch +
 # GitHub upload + mailbox. See scripts/persona-scaffold.sh for what runs.
