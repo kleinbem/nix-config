@@ -15,6 +15,13 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || { [ "$#" -eq 2 ] && [ "$2" != "--new-pass
 fi
 HOST="$1"
 NEW_PASSPHRASE="${2:-}"
+if [ -n "${KLEINBEM_SECRETS:-}" ]; then
+  if [ -d "$KLEINBEM_SECRETS" ]; then
+    KLEINBEM_SECRETS="$(cd "$KLEINBEM_SECRETS" && pwd)"
+  elif [[ $KLEINBEM_SECRETS != /* ]]; then
+    KLEINBEM_SECRETS="$PWD/$KLEINBEM_SECRETS"
+  fi
+fi
 _repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$_repo"
 if [ -z "${KLEINBEM_SECRETS:-}" ]; then

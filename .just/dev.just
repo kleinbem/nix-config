@@ -272,7 +272,7 @@ check host="":
     #!/usr/bin/env bash
     set -euo pipefail
     h="{{host}}"
-    [ -n "$h" ] || h="$(hostname)"
+    [ -n "$h" ] || { h="$(hostname -s)"; [ -d "hosts/$h" ] || h="nixos-nvme"; }
     echo "✅ Verifying NixOS configuration for $h..."
     {{LOCK_CMD}} {{TIMER}} nix eval ".#nixosConfigurations.$h.config.system.build.toplevel.drvPath" {{OVERRIDES}} --impure
 

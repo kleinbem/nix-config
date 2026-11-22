@@ -10,9 +10,9 @@ deploy-fleet:
     set -euo pipefail
     
     echo "🚀 Deploying to entire fleet via Colmena..."
-    wc_state="$(jj log -r @ --no-graph -T 'if(empty, "clean", "dirty")')"
-    if [ "$wc_state" != "clean" ]; then
-        echo "❌ ERROR: Your working copy is dirty!"
+    wc_state="$(jj log -r '(trunk()..@) & ~empty()' --no-graph -T '"dirty"')"
+    if [ -n "$wc_state" ]; then
+        echo "❌ ERROR: Your working copy has unpushed changes!"
         echo "   Colmena evaluates your local dirty tree. Since dirty changes haven't been pushed,"
         echo "   CI hasn't built them, and you will suffer massive local cross-compilation times."
         echo "   Please commit and push your changes (just jj::ship), wait for CI to finish, and try again."

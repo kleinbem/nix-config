@@ -3,6 +3,13 @@
 # inventory.nix asks for (lib/tang.nix: every other host's Tang server).
 # Reads only the JWE headers (server URLs), never decrypts. Exit 1 on drift.
 set -euo pipefail
+if [ -n "${KLEINBEM_SECRETS:-}" ]; then
+  if [ -d "$KLEINBEM_SECRETS" ]; then
+    KLEINBEM_SECRETS="$(cd "$KLEINBEM_SECRETS" && pwd)"
+  elif [[ $KLEINBEM_SECRETS != /* ]]; then
+    KLEINBEM_SECRETS="$PWD/$KLEINBEM_SECRETS"
+  fi
+fi
 _repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$_repo"
 if [ -z "${KLEINBEM_SECRETS:-}" ]; then
@@ -12,6 +19,10 @@ if [ -z "${KLEINBEM_SECRETS:-}" ]; then
 fi
 secrets="$KLEINBEM_SECRETS/initrd"
 [ -d "$secrets" ] || {
+  if [ "${CI:-}" = "true" ]; then
+    echo "skip: $secrets not found in CI"
+    exit 0
+  fi
   echo "error: $secrets not found (set KLEINBEM_SECRETS)" >&2
   exit 1
 }
