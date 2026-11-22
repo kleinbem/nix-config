@@ -188,7 +188,11 @@ jobs:
             echo "$out" | grep -vE '^(evaluation warning|warning):' || true
             # Hosts in .github/local-assembly-hosts build their assembly steps
             # (etc, units, toplevel) themselves: only a missing package blocks.
-            if grep -qxF "$h" .github/local-assembly-hosts; then
+            # An unknown path blocks every host; the dry-run still exits 0.
+            if echo "$out" | grep -qE 'do.?n.?t know how to build'; then
+              echo "::error::$h: the dry-run names paths that are neither cached nor buildable. Blocking promotion."
+              fail=1
+            elif grep -qxF "$h" .github/local-assembly-hosts; then
               if ! classified=$(scripts/heavy-drvs.sh <<<"$out"); then
                 echo "::error::$h: could not classify the dry-run. Blocking promotion."
                 fail=1
