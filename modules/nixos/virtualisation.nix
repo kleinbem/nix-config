@@ -124,6 +124,19 @@ in
           '';
       };
 
+      # Drop forwarded Tang requests from the container bridge ahead of nixos-fw's
+      # established/related accept (containers can read /nix/store, which carries
+      # every host's clevis JWE).
+      nftables.tables.tang-egress-guard = lib.mkIf config.networking.nftables.enable {
+        family = "inet";
+        content = ''
+          chain forward {
+            type filter hook forward priority filter - 10; policy accept;
+            iifname "${config.my.network.bridge}" tcp dport 7654 drop
+          }
+        '';
+      };
+
       firewall = {
         trustedInterfaces = lib.optional cfg.libvirtd.enable "virbr0";
         extraForwardRules = ''

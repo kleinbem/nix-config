@@ -292,11 +292,18 @@ in
         dconf.enable = true;
         weylus = {
           enable = true;
-          openFirewall = true;
+          # Opened on wt0 below (not globally on Wi-Fi).
+          openFirewall = false;
           users = [ config.my.username ];
         };
         xwayland.enable = true;
       };
+
+      # Weylus UI (1701) and WebSocket (9001) on NetBird mesh only.
+      networking.firewall.interfaces."wt0".allowedTCPPorts = [
+        1701
+        9001
+      ];
 
       # System-wide Default Browser
       xdg.mime.defaultApplications = {

@@ -21,30 +21,27 @@ in
       startWhenNeeded = false; # Fix socket clash on port 631
       logLevel = "info";
       listenAddresses = [ "*:631" ];
-      allowFrom = [ "all" ];
+      allowFrom = [
+        "localhost"
+        "@LOCAL"
+      ];
       browsing = true;
       # no-link: cups-browsed fails to generate PPDs for printers with partial IPP attributes (missing media-col-default) and creates broken ///dev/null dummy queues
       browsed.enable = false;
+      # Access is limited by allowFrom + the bridge-only firewall; keep the queue
+      # shared so container clients on cbr0 aren't rejected as non-localhost.
       defaultShared = true;
       extraConf = ''
-        DefaultEncryption Never
-        ServerAlias *
         # no-link: permanent local policy: discard failing print jobs rather than stopping the queue indefinitely
         ErrorPolicy abort-job
       '';
       drivers = [ ricohDriver ];
     };
 
-    # Open CUPS and Printer ports
-    # Port 631 for CUPS, 9100 for AppSocket/JetDirect (Ricoh)
+    # Expose CUPS only on the container bridge (never on public Wi-Fi);
+    # outbound printing to 10.0.5.10:631/9100 needs no inbound firewall rules.
     networking = {
-      firewall = {
-        allowedTCPPorts = [
-          631
-          9100
-        ];
-        allowedUDPPorts = [ 631 ];
-      };
+      firewall.interfaces."${config.my.network.bridge}".allowedTCPPorts = [ 631 ];
 
       # Fix Routing: Ensure the PC talks directly to the 10.0.x.x subnet
       # This fixes the "Redirect Host" issue where traffic to the printer goes to the router first

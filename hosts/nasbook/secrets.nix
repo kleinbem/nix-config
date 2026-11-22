@@ -20,7 +20,6 @@ in
       ntfy_deploy_topic = { };
       paperless_password = { };
       restic_password = { };
-      restic_system_password = { };
       rclone_config = { };
       # Lets the nix daemon fetch the private kleinbem-secrets repo (core.nix
       # includes it); unauthenticated archive fetches of a private repo 404.

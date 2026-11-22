@@ -34,7 +34,7 @@ in
     openssh = {
       enable = true;
       settings = {
-        PermitRootLogin = lib.mkDefault "prohibit-password";
+        PermitRootLogin = lib.mkDefault "no";
         PasswordAuthentication = false;
         # The 120s default runs from TCP accept and isn't reset by the FIDO2
         # PIN/touch prompt, so deploys that open several connections hit

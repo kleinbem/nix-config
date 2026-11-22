@@ -79,10 +79,11 @@ let
     "${sw}/machinectl ^(start|stop|restart|reboot|poweroff|terminate) ${machine}$"
   ];
 
-  # Matches anywhere in an operate command: a root console on tty9, or
-  # single-user mode on a host nobody is sitting at.
+  # Matches anywhere in an operate command: a root console on tty9,
+  # single-user mode on a host nobody is sitting at, or stopping/disabling security units.
   operateDenied = [
     "${sw}/systemctl ^.*(debug-shell|emergency|rescue).*$"
+    "${sw}/systemctl ^(stop|kill|disable|mask|edit|revert|set-property|isolate) .*(nftables|firewall|auditd|fail2ban|usbguard|clamav|crowdsec).*$"
   ];
 
   journalArg = "(-u [A-Za-z0-9@._-]+|-f|-b|-b -?[0-9]+|-e|-x|-xe|-k|-n [0-9]+|-p [0-7a-z]+|-o (short|short-iso|cat|json)|--no-pager)";
