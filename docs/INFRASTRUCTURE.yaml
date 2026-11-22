@@ -845,7 +845,6 @@ hosts:
       - enable
       - items.garage
       - items.garage.paths
-      - items.garage.stopUnits
       - items.garage.tier
       boot:
       - clevis-initrd
