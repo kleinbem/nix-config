@@ -127,7 +127,7 @@ in
       # Drop forwarded Tang requests from the container bridge ahead of nixos-fw's
       # established/related accept (containers can read /nix/store, which carries
       # every host's clevis JWE).
-      nftables.tables.tang-egress-guard = lib.mkIf config.networking.firewall.filterForward {
+      nftables.tables.tang-egress-guard = lib.mkIf config.networking.nftables.enable {
         family = "inet";
         content = ''
           chain forward {
