@@ -48,7 +48,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Nix
-        uses: kleinbem/actions/nix-setup@7ec628296d5194e6e10031706387b992a10a1638 # v1.0.1
+        uses: kleinbem/actions/nix-setup@d5aec5d8fbed30867e0b2c1d781992844240ee1e # v1.10.0
         with:
           github-token: ${{ steps.app-token.outputs.token }}
 
@@ -330,7 +330,7 @@ jobs:
       # new one instead of a reopen.
       - name: Commit the lock and open or update its PR
         if: github.ref == 'refs/heads/main' && steps.pr-base.outputs.skip != 'true'
-        uses: kleinbem/actions/lock-pr@8e2e0953476f4ca6ed3f5b7fbe5d6825f20a2e09 # v1.9.1
+        uses: kleinbem/actions/lock-pr@d5aec5d8fbed30867e0b2c1d781992844240ee1e # v1.10.0
         with:
           token: ${{ steps.app-token.outputs.token }}
           working-directory: nix-config
