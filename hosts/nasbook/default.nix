@@ -92,6 +92,7 @@ in
         qdrant = {
           tier = "bulk";
           paths = [ "/var/lib/images/qdrant" ];
+          stopUnits = [ "container@qdrant.service" ];
         };
         # Merges with the paperless preset's item, which adds hostDataDir
         # (/mnt/data/Archive/Paperless): that is what these excludes trim.

@@ -4,6 +4,7 @@
 {
   config,
   lib,
+  utils,
   ...
 }:
 let
@@ -103,6 +104,7 @@ in
       interval = lib.mkDefault "weekly";
       fileSystems = [ cfg.mountpoint ];
     };
-    systemd.timers."btrfs-scrub@".timerConfig.RandomizedDelaySec = lib.mkDefault "1h";
+    systemd.timers."btrfs-scrub-${utils.escapeSystemdPath cfg.mountpoint}".timerConfig.RandomizedDelaySec =
+      lib.mkDefault "1h";
   };
 }

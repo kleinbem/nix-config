@@ -71,5 +71,5 @@
     interval = "weekly";
     fileSystems = [ "/nix" ];
   };
-  systemd.timers."btrfs-scrub@".timerConfig.RandomizedDelaySec = "1h";
+  systemd.timers.btrfs-scrub-nix.timerConfig.RandomizedDelaySec = "1h";
 }

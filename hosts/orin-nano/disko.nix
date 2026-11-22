@@ -153,5 +153,5 @@
     interval = "weekly";
     fileSystems = [ "/mnt/data" ];
   };
-  systemd.timers."btrfs-scrub@".timerConfig.RandomizedDelaySec = "1h";
+  systemd.timers.btrfs-scrub-mnt-data.timerConfig.RandomizedDelaySec = "1h";
 }

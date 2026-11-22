@@ -92,6 +92,7 @@ in
         tier = "bulk";
         # Config and SQLite DB only; /mnt/data/frigate video clips are excluded.
         paths = [ "/nix/persist/var/lib/frigate" ];
+        stopUnits = [ "container@frigate.service" ];
       };
     };
   };
