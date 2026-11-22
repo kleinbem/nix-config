@@ -49,31 +49,50 @@ let
     ];
     text = ''
       st=$(comin status --json)
-      uuid=$(jq -r '.build_confirmer.submitted' <<<"$st")
+      uuid=$(jq -r '.build_confirmer.submitted // ""' <<<"$st")
       [ -n "$uuid" ] || exit 0
-      sha=$(jq -r '.builder.generation.source.git.selected_commit_id' <<<"$st")
+      # The builder may already hold a newer generation; name the commit
+      # only when it is the one waiting.
+      current=false
+      if [ "$(jq -r '.builder.generation.uuid // ""' <<<"$st")" = "$uuid" ]; then
+        current=true
+        what=$(jq -r '.builder.generation.source.git.selected_commit_id // ""' <<<"$st")
+      else
+        what="generation $uuid"
+      fi
 
       # One alert when a generation waits too long, whatever holds it.
       mkdir -p ${stateDir}
       [ -e "${stateDir}/$uuid" ] || touch "${stateDir}/$uuid"
       waited=$(($(date +%s) - $(stat -c %Y "${stateDir}/$uuid")))
       if [ "$waited" -ge ${toString alertAfterSec} ] && [ ! -e "${stateDir}/$uuid.alerted" ]; then
-        touch "${stateDir}/$uuid.alerted"
-        ${lib.optionalString hasAlertTopic ''
-          topic=$(cat ${config.sops.secrets.ntfy_alert_topic.path} 2>/dev/null || true)
-          auth=()
-          if [ -r /run/secrets/ntfy_alert_token ]; then
-            auth=(-H "Authorization: Bearer $(cat /run/secrets/ntfy_alert_token)")
-          fi
-          [ -z "$topic" ] || curl -fsS --max-time 15 "''${auth[@]}" \
-            -H "Title: ${cfg.hostName}: deploy stuck" -H "Tags: warning" \
-            -d "comin has waited $((waited / 3600)) h to build $sha; see journalctl -u comin-assemble." \
-            "https://ntfy.kleinbem.dev/$topic" >/dev/null || true
-        ''}
+        ${
+          if hasAlertTopic then
+            ''
+              topic=$(cat ${config.sops.secrets.ntfy_alert_topic.path} 2>/dev/null || true)
+              auth=()
+              if [ -r /run/secrets/ntfy_alert_token ]; then
+                auth=(-H "Authorization: Bearer $(cat /run/secrets/ntfy_alert_token)")
+              fi
+              # Marked sent only on success, so the next run retries.
+              if [ -n "$topic" ] && curl -fsS --max-time 15 "''${auth[@]}" \
+                -H "Title: ${cfg.hostName}: deploy stuck" -H "Tags: warning" \
+                -d "comin has waited $((waited / 3600)) h to build $what; see journalctl -u comin-assemble." \
+                "https://ntfy.kleinbem.dev/$topic" >/dev/null; then
+                touch "${stateDir}/$uuid.alerted"
+              else
+                echo "comin-assemble: stuck-deploy alert for $what not sent; retrying next run"
+              fi
+            ''
+          else
+            ''
+              echo "comin-assemble: $what has waited $((waited / 3600)) h; no ntfy_alert_topic on this host"
+              touch "${stateDir}/$uuid.alerted"
+            ''
+        }
       fi
 
-      if [ "$(jq -r '.builder.generation.uuid' <<<"$st")" != "$uuid" ] ||
-        [ "$(jq -r '.builder.generation.eval_status' <<<"$st")" != evaluated ]; then
+      if [ "$current" != true ] || [ "$(jq -r '.builder.generation.eval_status' <<<"$st")" != evaluated ]; then
         exit 0
       fi
       drv=$(jq -r '.builder.generation.drv_path' <<<"$st")
@@ -81,23 +100,23 @@ let
       if ! out=$(nix build --no-link --dry-run --option always-allow-substitutes true \
         --option narinfo-cache-negative-ttl 0 "$drv^*" 2>&1); then
         echo "$out"
-        echo "comin-assemble: dry-run of $drv ($sha) failed"
+        echo "comin-assemble: dry-run of $drv ($what) failed"
         exit 1
       fi
       classified=$(heavy-drvs <<<"$out")
       heavy=$(sed -n 's/^heavy //p' <<<"$classified")
       if [ -n "$heavy" ]; then
-        echo "comin-assemble: $sha waits for $(wc -l <<<"$heavy") packages from CI, e.g. $(head -1 <<<"$heavy")"
+        echo "comin-assemble: $what waits for $(wc -l <<<"$heavy") packages from CI, e.g. $(head -1 <<<"$heavy")"
         exit 0
       fi
       mapfile -t small < <(sed -n 's/^small //p' <<<"$classified")
       if [ "''${#small[@]}" -gt 0 ]; then
-        echo "comin-assemble: building ''${#small[@]} assembly steps for $sha"
+        echo "comin-assemble: building ''${#small[@]} assembly steps for $what"
         nix build --no-link -L --option always-allow-substitutes true "''${small[@]/%/^*}"
       fi
       # accept takes no id: confirm only if the generation checked here still
       # waits. A newer one slipping in would still fail on max-jobs = 0.
-      [ "$(comin status --json | jq -r '.build_confirmer.submitted')" = "$uuid" ] || exit 0
+      [ "$(comin status --json | jq -r '.build_confirmer.submitted // ""')" = "$uuid" ] || exit 0
       comin confirmation accept
       rm -f "${stateDir}/$uuid" "${stateDir}/$uuid.alerted"
     '';
@@ -272,8 +291,6 @@ in
             Type = "oneshot";
             ExecStart = lib.getExe assemble;
             TimeoutStartSec = cfg.buildTimeout;
-            Nice = 19;
-            IOSchedulingClass = "idle";
           };
         };
         systemd.timers.comin-assemble = {
