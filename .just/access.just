@@ -4,6 +4,8 @@
 # Re-running replaces the grant, which is how you extend or shorten it. The
 # expiry is computed on the target, in the timezone its sshd enforces.
 
+import 'common.just'
+
 set working-directory := ".."
 
 # Public half of keys.ssh.fido2-notouch, read from modules/nixos/keys.nix.

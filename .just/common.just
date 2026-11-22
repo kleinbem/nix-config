@@ -13,6 +13,12 @@ META := if trim_end_match(file_name(parent_directory(ROOT)), ".ws") == file_name
     absolute_path(ROOT / "../..")
 }
 
+export KLEINBEM_SECRETS := if env("KLEINBEM_SECRETS", "") != "" {
+    absolute_path(env("KLEINBEM_SECRETS", ""))
+} else {
+    META / "kleinbem-secrets"
+}
+
 # Sibling nix-* checkouts used as input overrides. Excluded: nix-toolbox,
 # nix-detour (sub-input of nix-detour-fleet), nix-revue, and *.ws dirs
 # (not direct inputs, so nix warns), and nix-secrets* leftovers (a dot in the
@@ -22,7 +28,7 @@ SIBLING_REPOS := shell("find '" + META + "' -mindepth 1 -maxdepth 1 -name 'nix-*
 # `--override-input nix-X git+file:///abs/meta/nix-X` for every sibling,
 # plus kleinbem-secrets explicitly since its directory name doesn't match
 # the "nix-*" glob SIBLING_REPOS uses.
-OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input kleinbem-secrets git+file://" + META + "/kleinbem-secrets"
+OVERRIDES := shell("echo '" + SIBLING_REPOS + "' | sed -E 's|([^ ]+)|--override-input \\1 git+file://" + META + "/\\1|g'") + " --override-input kleinbem-secrets git+file://" + KLEINBEM_SECRETS
 
 KEEP      := "3"
 TIMER     := "time "

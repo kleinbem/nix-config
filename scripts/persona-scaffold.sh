@@ -217,7 +217,7 @@ echo
 echo "✅ Persona $NAME scaffolded."
 echo
 echo "Verify with a test commit:"
-echo "  just jj::as $NAME save-all \"feat: smoke test as $PERSONA_FULLNAME\""
+echo "  just as $NAME save-all \"feat: smoke test as $PERSONA_FULLNAME\""
 echo
 echo "Remember to commit + push the keys.nix update and kleinbem-secrets:"
 echo "  just jj::save-all \"chore(keys): register signing key for $PERSONA_FULLNAME\" nix-config kleinbem-secrets"

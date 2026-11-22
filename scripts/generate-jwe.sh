@@ -15,7 +15,21 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || { [ "$#" -eq 2 ] && [ "$2" != "--new-pass
 fi
 HOST="$1"
 NEW_PASSPHRASE="${2:-}"
-SECRETS_DIR="${KLEINBEM_SECRETS:-../kleinbem-secrets}/initrd"
+if [ -n "${KLEINBEM_SECRETS:-}" ]; then
+  if [ -d "$KLEINBEM_SECRETS" ]; then
+    KLEINBEM_SECRETS="$(cd "$KLEINBEM_SECRETS" && pwd)"
+  elif [[ $KLEINBEM_SECRETS != /* ]]; then
+    KLEINBEM_SECRETS="$PWD/$KLEINBEM_SECRETS"
+  fi
+fi
+_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$_repo"
+if [ -z "${KLEINBEM_SECRETS:-}" ]; then
+  _meta="$(dirname "$_repo")"
+  case "$_meta" in *.ws) _meta="$(dirname "$_meta")" ;; esac
+  KLEINBEM_SECRETS="$_meta/kleinbem-secrets"
+fi
+SECRETS_DIR="$KLEINBEM_SECRETS/initrd"
 JWE_FILE="$SECRETS_DIR/cryptroot_${HOST}.jwe"
 
 [ -d "hosts/$HOST" ] || {

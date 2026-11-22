@@ -72,5 +72,5 @@ if [ "$found_broken" = false ]; then
   echo "✅ No broken launchers found."
 elif [ "$DRY_RUN" = true ]; then
   echo ""
-  echo "💡 Run with 'just clean-launchers --apply' to actually delete these files."
+  echo "💡 Run with 'just maintenance::clean-launchers --apply' to actually delete these files."
 fi

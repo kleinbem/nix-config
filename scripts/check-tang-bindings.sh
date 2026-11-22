@@ -3,10 +3,28 @@
 # inventory.nix asks for (lib/tang.nix: every other host's Tang server).
 # Reads only the JWE headers (server URLs), never decrypts. Exit 1 on drift.
 set -euo pipefail
-secrets="${KLEINBEM_SECRETS:-../kleinbem-secrets}/initrd"
+if [ -n "${KLEINBEM_SECRETS:-}" ]; then
+  if [ -d "$KLEINBEM_SECRETS" ]; then
+    KLEINBEM_SECRETS="$(cd "$KLEINBEM_SECRETS" && pwd)"
+  elif [[ $KLEINBEM_SECRETS != /* ]]; then
+    KLEINBEM_SECRETS="$PWD/$KLEINBEM_SECRETS"
+  fi
+fi
+_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$_repo"
+if [ -z "${KLEINBEM_SECRETS:-}" ]; then
+  _meta="$(dirname "$_repo")"
+  case "$_meta" in *.ws) _meta="$(dirname "$_meta")" ;; esac
+  KLEINBEM_SECRETS="$_meta/kleinbem-secrets"
+fi
+secrets="$KLEINBEM_SECRETS/initrd"
 [ -d "$secrets" ] || {
-  echo "skip: $secrets not found"
-  exit 0
+  if [ "${CI:-}" = "true" ]; then
+    echo "skip: $secrets not found in CI"
+    exit 0
+  fi
+  echo "error: $secrets not found (set KLEINBEM_SECRETS)" >&2
+  exit 1
 }
 
 hdr() { # decode a compact JWE's protected header

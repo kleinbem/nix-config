@@ -335,7 +335,10 @@ pc_host_identity() {
 # since any of them may reference the anchor.
 # $1=age-public-key  $2=host-label ("mac-mini" -> anchor "mac_mini")
 pc_sops_add_and_reencrypt() {
-  local age_pub="$1" label="$2" sops_yaml="../kleinbem-secrets/.sops.yaml"
+  local age_pub="$1" label="$2"
+  local secrets_dir="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+  secrets_dir="${secrets_dir%/}"
+  local sops_yaml="$secrets_dir/.sops.yaml"
   local anchor="${label//-/_}"
   if grep -qF "$age_pub" "$sops_yaml"; then
     echo "   Age key already in .sops.yaml — skipping re-encryption."
@@ -352,18 +355,19 @@ pc_sops_add_and_reencrypt() {
   # age1PLACEHOLDER_NASBOOK and leaves a corrupt recipient.
   sed -i -E "s|(&${anchor}[[:space:]]+)age1[^[:space:]]+|\\1${age_pub}|" "$sops_yaml"
   echo "🔐 Re-encrypting every real content file (YubiKey touch may be required per file)..."
-  local f
+  local f rel
   while IFS= read -r -d '' f; do
+    rel="${f#"$secrets_dir"/}"
     # Some matches are plain (personas/contact.nix), and updatekeys dies on
     # them; real sops files carry a top-level `sops:` block.
     if ! grep -q '^sops:' "$f"; then
-      echo "   skip (not sops-encrypted): ${f#../kleinbem-secrets/}"
+      echo "   skip (not sops-encrypted): $rel"
       continue
     fi
-    echo "   updatekeys: ${f#../kleinbem-secrets/}"
-    (cd ../kleinbem-secrets && sops updatekeys --yes "${f#../kleinbem-secrets/}")
-  done < <(find ../kleinbem-secrets \
-    \( -path '../kleinbem-secrets/.git' -o -path '../kleinbem-secrets/.jj' -o -path '../kleinbem-secrets/keys.d' \) -prune -o \
+    echo "   updatekeys: $rel"
+    (cd "$secrets_dir" && sops updatekeys --yes "$rel")
+  done < <(find "$secrets_dir" \
+    \( -path "$secrets_dir/.git" -o -path "$secrets_dir/.jj" -o -path "$secrets_dir/keys.d" \) -prune -o \
     -type f \( -name '*.yaml' -o -name '*.nix' \) ! -name '.sops.yaml' -print0)
   echo "✅ Secrets updated — remember to commit kleinbem-secrets + nix-config."
 }

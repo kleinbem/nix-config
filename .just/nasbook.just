@@ -13,7 +13,7 @@ shell:
     @ssh martin@nasbook.local
 
 [group("NASbook")]
-logs service="paperless":
+logs service="container@paperless":
     @ssh martin@nasbook.local "journalctl -u {{service}} -n 50 --no-pager"
 
 # Forward a Wayland app from nasbook to your local display via SSH.
