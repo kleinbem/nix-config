@@ -167,6 +167,14 @@ in
       admin.api_bind_addr = "[::]:3903";
     };
   };
+
+  my.backup.items.garage = {
+    tier = "secure";
+    paths = [ "/mnt/data/garage/meta" ];
+    # db_engine is sqlite; stop briefly for a consistent metadata snapshot.
+    # /mnt/data/garage/data is omitted (holds the backups bucket itself).
+    stopUnits = [ "garage.service" ];
+  };
 }
 # One-time init on the host after the first deploy (the `garage` wrapper loads
 # the RPC secret + admin token):

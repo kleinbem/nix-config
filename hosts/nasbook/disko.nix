@@ -100,4 +100,11 @@
       };
     };
   };
+
+  services.btrfs.autoScrub = {
+    enable = true;
+    interval = "weekly";
+    fileSystems = [ "/nix" ];
+  };
+  systemd.timers."btrfs-scrub@".timerConfig.RandomizedDelaySec = "1h";
 }

@@ -86,7 +86,14 @@ in
     # modules/nixos/backup.nix. tang registers its own secure item.
     # Secrets: backup_r2_rclone_config (nix/per-host/orin-nano.yaml),
     # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
-    backup.enable = true;
+    backup = {
+      enable = true;
+      items.frigate = {
+        tier = "bulk";
+        # Config and SQLite DB only; /mnt/data/frigate video clips are excluded.
+        paths = [ "/nix/persist/var/lib/frigate" ];
+      };
+    };
   };
 
   nixpkgs = {

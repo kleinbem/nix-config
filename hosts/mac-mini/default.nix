@@ -177,7 +177,19 @@ in
     # Fleet backups (modules/nixos/backup.nix); tang, open-webui and stalwart
     # register their own items. Needs backup_r2_rclone_config in
     # nix/per-host/mac-mini.yaml.
-    backup.enable = true;
+    backup = {
+      enable = true;
+      items = {
+        hermes = {
+          tier = "secure";
+          paths = [ "/var/lib/hermes" ];
+        };
+        adguardhome = {
+          tier = "bulk";
+          paths = [ "/var/lib/private/AdGuardHome" ];
+        };
+      };
+    };
 
     # Tang auto-unlock is mandatory here: with no keyboard or screen a LUKS
     # prompt would hang forever. Gated on the JWE existing, which can only be
