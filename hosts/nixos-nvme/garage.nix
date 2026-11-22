@@ -174,8 +174,11 @@ in
   my.backup.items.garage = {
     tier = "secure";
     # Default metadata_snapshots_dir = <metadata_dir>/snapshots.
-    # /mnt/data/garage/data is omitted (holds the backups bucket itself).
-    paths = [ "/mnt/data/garage/meta/snapshots" ];
+    # Back up meta/ (node_key, cluster_layout, peer_list, snapshots/) while
+    # excluding the live SQLite DB; /mnt/data/garage/data is omitted (holds the
+    # backups bucket itself).
+    paths = [ "/mnt/data/garage/meta" ];
+    exclude = [ "/mnt/data/garage/meta/db.sqlite*" ];
   };
 }
 # One-time init on the host after the first deploy (the `garage` wrapper loads
