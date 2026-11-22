@@ -266,6 +266,8 @@ in
         systemd.services.comin-assemble = {
           description = "Assemble and confirm the generation comin waits on";
           after = [ "comin.service" ];
+          # Runs every 2 min, more than the default 5 starts per interval.
+          unitConfig.StartLimitIntervalSec = 0;
           serviceConfig = {
             Type = "oneshot";
             ExecStart = lib.getExe assemble;
@@ -276,8 +278,6 @@ in
         };
         systemd.timers.comin-assemble = {
           wantedBy = [ "timers.target" ];
-          # Calendar, not OnBootSec + OnUnitInactiveSec: with a run that ends
-          # in under a second that pair re-fired at once and hit the start limit.
           timerConfig.OnCalendar = "*:0/2";
         };
       })
