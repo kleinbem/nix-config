@@ -15,8 +15,10 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || { [ "$#" -eq 2 ] && [ "$2" != "--new-pass
 fi
 HOST="$1"
 NEW_PASSPHRASE="${2:-}"
+_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$_repo"
 if [ -z "${KLEINBEM_SECRETS:-}" ]; then
-  _meta="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  _meta="$(dirname "$_repo")"
   case "$_meta" in *.ws) _meta="$(dirname "$_meta")" ;; esac
   KLEINBEM_SECRETS="$_meta/kleinbem-secrets"
 fi

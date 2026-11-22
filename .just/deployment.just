@@ -1041,7 +1041,7 @@ pi-install-usb host device="/dev/sdc":
     pc_sudo_keepalive
 
     echo "🔄 Syncing with origin so closure hashes match the CI cache..."
-    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; else just -f "{{META}}/justfile" jj::pull-all; fi
+    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; elif [ -f "{{META}}/justfile" ]; then just -f "{{META}}/justfile" jj::pull-all; fi
 
     pc_require_block_device "$DEV"
     pc_assert_safe_target "$DEV"
@@ -1123,7 +1123,7 @@ pi-update-usb host device="/dev/sdc":
     fi
 
     echo "🔄 Syncing with origin to ensure closure hashes match the CI cache..."
-    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; else just -f "{{META}}/justfile" jj::pull-all; fi
+    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; elif [ -f "{{META}}/justfile" ]; then just -f "{{META}}/justfile" jj::pull-all; fi
 
     if [ ! -b "{{device}}" ]; then
         echo "❌ Error: Target {{device}} is not a valid block device! Please check lsblk."
