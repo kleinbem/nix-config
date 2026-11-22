@@ -133,8 +133,10 @@ in
         chain forward {
           type filter hook forward priority filter; policy accept;
 
-          # Allow replies for established/related sessions before blocking new egress
-          ct state { established, related } accept
+          # Allow replies to LAN-initiated sessions and local (non-external) established flows,
+          # while keeping outbound container-initiated flows subject to whitelist expiry below.
+          ct state { established, related } ct direction reply accept
+          oifname != "${net.externalInterface}" ct state { established, related } accept
 
           # Allow traffic to dynamically whitelisted IPs
           ip daddr @ai_whitelisted_ips accept comment "Airlock 2.0: Dynamic Whitelist"

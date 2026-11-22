@@ -88,7 +88,8 @@ in
     networking.firewall.interfaces."wt0" = {
       allowedTCPPorts =
         lib.optionals cfg.weylus [
-          1701 # Weylus stylus/touch
+          1701 # Weylus stylus/touch UI
+          9001 # Weylus WebSocket (video/input)
           3389 # GNOME RDP virtual display
         ]
         ++ lib.optionals cfg.loopbackCam [

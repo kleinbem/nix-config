@@ -28,7 +28,9 @@ in
       browsing = true;
       # no-link: cups-browsed fails to generate PPDs for printers with partial IPP attributes (missing media-col-default) and creates broken ///dev/null dummy queues
       browsed.enable = false;
-      defaultShared = false;
+      # Access is limited by allowFrom + the bridge-only firewall; keep the queue
+      # shared so container clients on cbr0 aren't rejected as non-localhost.
+      defaultShared = true;
       extraConf = ''
         # no-link: permanent local policy: discard failing print jobs rather than stopping the queue indefinitely
         ErrorPolicy abort-job

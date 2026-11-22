@@ -90,9 +90,12 @@ in
         10200 # wyoming-piper
         10300 # wyoming-faster-whisper
       ];
-      # Hairpin DNAT from containers to 10.0.0.21 (hass-dnat above) stays on cbr0.
+      # Hairpin DNAT from containers to 10.0.0.21 (hass-dnat above) stays on cbr0;
+      # openthread-border-router forwards Thread IPv6 between wpan0 and end0.
       extraForwardRules = ''
         iifname "cbr0" oifname "cbr0" ct status dnat accept
+        iifname "wpan0" oifname "end0" accept
+        iifname "end0" oifname "wpan0" accept
       '';
     };
   };
