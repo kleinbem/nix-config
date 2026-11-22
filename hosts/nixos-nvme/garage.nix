@@ -166,7 +166,20 @@ in
       # container, and every call needs the admin token. (Binding the bridge
       # IP itself would race cbr0 coming up at boot.)
       admin.api_bind_addr = "[::]:3903";
+      # Garage writes consistent sqlite snapshots itself; back those up instead of
+      # stopping the S3 endpoint (backups/tofu-state buckets) during the job.
+      metadata_auto_snapshot_interval = "6h";
     };
+  };
+
+  my.backup.items.garage = {
+    tier = "secure";
+    # Default metadata_snapshots_dir = <metadata_dir>/snapshots.
+    # Back up meta/ (node_key, cluster_layout, peer_list, snapshots/) while
+    # excluding the live SQLite DB; /mnt/data/garage/data is omitted (holds the
+    # backups bucket itself).
+    paths = [ "/mnt/data/garage/meta" ];
+    exclude = [ "/mnt/data/garage/meta/db.sqlite*" ];
   };
 }
 # One-time init on the host after the first deploy (the `garage` wrapper loads

@@ -4,6 +4,7 @@
 {
   config,
   lib,
+  utils,
   ...
 }:
 let
@@ -97,5 +98,13 @@ in
         lib.concatStringsSep "," ([ "luks" ] ++ cfg.crypttabExtraOpts)
       }\n";
     };
+
+    services.btrfs.autoScrub = {
+      enable = true;
+      interval = lib.mkDefault "weekly";
+      fileSystems = [ cfg.mountpoint ];
+    };
+    systemd.timers."btrfs-scrub-${utils.escapeSystemdPath cfg.mountpoint}".timerConfig.RandomizedDelaySec =
+      lib.mkDefault "1h";
   };
 }

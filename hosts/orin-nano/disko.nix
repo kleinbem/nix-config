@@ -147,4 +147,11 @@
       };
     };
   };
+
+  services.btrfs.autoScrub = {
+    enable = true;
+    interval = "weekly";
+    fileSystems = [ "/mnt/data" ];
+  };
+  systemd.timers.btrfs-scrub-mnt-data.timerConfig.RandomizedDelaySec = "1h";
 }

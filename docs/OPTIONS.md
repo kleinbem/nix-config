@@ -7,7 +7,7 @@
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
 **Declarations indexed:** 83  
-**Consumer files scanned:** 41
+**Consumer files scanned:** 42
 
 ---
 
@@ -375,7 +375,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.dataDisk`
 
-- **Declared:** `nix-config/modules/nixos/data-disk.nix:13`
+- **Declared:** `nix-config/modules/nixos/data-disk.nix:14`
 - **Sub-options:** `cryptName`, `crypttabExtraOpts`, `device`, `enable`, `label`, `mountpoint`, `stage2KeyFile`
 - **Configured in:** `host:nasbook`, `host:nixos-nvme`
 

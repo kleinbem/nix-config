@@ -54,6 +54,7 @@
       "/var/lib/private/tang" # Tang NBDE keys (DynamicUser → /var/lib/private)
       "/var/lib/systemd/pstore" # Kernel panic/oops dumps archived from EFI pstore — useless if lost on reboot
       "/var/lib/systemd/timers" # Persistent= timer stamps; without them catch-up after downtime never works
+      "/var/lib/btrfs" # btrfs-scrub StateDirectory
     ];
     files = [
       "/etc/ssh/ssh_host_ed25519_key"

@@ -9,7 +9,6 @@ let
   disposable = {
     "*:/var/lib/systemd/linger" = "linger-users recreates it from users.users.*.linger at boot";
     "*:/var/lib/geoclue" = "location cache, refetched";
-    "nixos-nvme:/var/lib/btrfs" = "btrfs-scrub status files only";
     "nixos-nvme:/var/lib/dnsmasq" = "ai-hardening.nix's DNS forwarder; no DHCP leases";
     "orin-nano:/var/lib/github-runner/mesh-llm-gpu" = "ephemeral runner, registers again for every job";
   };

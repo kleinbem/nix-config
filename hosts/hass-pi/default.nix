@@ -130,10 +130,37 @@ in
       openFirewallOn = [ "end0" ];
     };
     # Backups: nix-presets' backup-engine, fleet wiring in
-    # modules/nixos/backup.nix. home-assistant and tang register their own
-    # items. Secrets: backup_r2_rclone_config (nix/per-host/hass-pi.yaml),
-    # rclone_config/restic_password/ntfy_alert_topic (nix/shared.yaml).
-    backup.enable = true;
+    # modules/nixos/backup.nix. home-assistant, music-assistant, photo-frame
+    # and tang register their own items. Secrets: backup_r2_rclone_config
+    # (nix/per-host/hass-pi.yaml), rclone_config/restic_password/ntfy_alert_topic
+    # (nix/shared.yaml).
+    backup = {
+      enable = true;
+      items = {
+        matterjs-server = {
+          tier = "secure";
+          paths = [ "/var/lib/private/matterjs-server" ];
+        };
+        thread = {
+          tier = "secure";
+          paths = [ "/var/lib/thread" ];
+        };
+        node-red = {
+          tier = "secure";
+          paths = [ "/var/lib/node-red" ];
+          exclude = [ "/var/lib/node-red/node_modules" ];
+        };
+        esphome = {
+          tier = "secure";
+          paths = [ "/var/lib/esphome" ];
+          exclude = [
+            "/var/lib/esphome/.esphome"
+            "/var/lib/esphome/.platformio"
+            "/var/lib/esphome/.cache"
+          ];
+        };
+      };
+    };
 
     # ─── Containers ──────────────────────────────────────────────
     containers = {
