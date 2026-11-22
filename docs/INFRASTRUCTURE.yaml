@@ -448,6 +448,21 @@ hosts:
     enabled_subsystems:
       backup:
       - enable
+      - items
+      - items.esphome
+      - items.esphome.exclude
+      - items.esphome.paths
+      - items.esphome.tier
+      - items.matterjs-server
+      - items.matterjs-server.paths
+      - items.matterjs-server.tier
+      - items.node-red
+      - items.node-red.exclude
+      - items.node-red.paths
+      - items.node-red.tier
+      - items.thread
+      - items.thread.paths
+      - items.thread.tier
       boot:
       - clevis-initrd
       - clevis-initrd.enable
@@ -536,6 +551,13 @@ hosts:
     enabled_subsystems:
       backup:
       - enable
+      - items
+      - items.adguardhome
+      - items.adguardhome.paths
+      - items.adguardhome.tier
+      - items.hermes
+      - items.hermes.paths
+      - items.hermes.tier
       boot:
       - clevis-initrd
       - clevis-initrd.enable
@@ -665,6 +687,9 @@ hosts:
       - items.paperless-documents
       - items.paperless-documents.exclude
       - items.paperless-documents.paths
+      - items.qdrant
+      - items.qdrant.paths
+      - items.qdrant.tier
       - items.syncthing
       - items.syncthing.exclude
       - items.syncthing.paths
@@ -817,6 +842,10 @@ hosts:
       - jabra.preferred
       backup:
       - enable
+      - items.garage
+      - items.garage.paths
+      - items.garage.stopUnits
+      - items.garage.tier
       boot:
       - clevis-initrd
       - clevis-initrd.enable
@@ -1133,6 +1162,9 @@ hosts:
       - tokenFile
       backup:
       - enable
+      - items.frigate
+      - items.frigate.paths
+      - items.frigate.tier
       boot:
       - clevis-initrd
       - clevis-initrd.enable
