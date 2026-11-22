@@ -151,7 +151,11 @@ in
         esphome = {
           tier = "secure";
           paths = [ "/var/lib/esphome" ];
-          exclude = [ "/var/lib/esphome/.esphome" ];
+          exclude = [
+            "/var/lib/esphome/.esphome"
+            "/var/lib/esphome/.platformio"
+            "/var/lib/esphome/.cache"
+          ];
         };
       };
     };
