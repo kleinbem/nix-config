@@ -1235,8 +1235,9 @@ hosts:
     secrets_consumed:
     - attic_push_token
     - frigate_rtsp_env
-    - martin_password_hash
-    - neededForUsers
+    - github_read_all_token
+    - group
+    - mode
     hardware_profile: NVIDIA Jetson Orin Nano (6-core ARM Cortex-A78AE, Ampere GPU, TensorRT/CUDA)
   phone:
     tier: mobile
