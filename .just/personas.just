@@ -16,7 +16,7 @@ list:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "🎭 Personas declared in personas.nix:"
-    CONTACT_PATH="../kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
+    CONTACT_PATH="{{META}}/kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
         'let
             lib = (import <nixpkgs> {}).lib;
             contactPath = builtins.getEnv "CONTACT_PATH";
@@ -33,23 +33,23 @@ team:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "👥 Regenerating team page in kleinbem-secrets/docs/ (private)..."
-    mkdir -p ../kleinbem-secrets/docs
-    CONTACT_PATH="../kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
+    mkdir -p "{{META}}/kleinbem-secrets/docs"
+    CONTACT_PATH="{{META}}/kleinbem-secrets/personas/contact.nix" nix eval --raw --impure --expr \
         'let
             lib = (import <nixpkgs> {}).lib;
             contactPath = builtins.getEnv "CONTACT_PATH";
             contact = if contactPath != "" then import contactPath else {};
             p = import ./lib/personas.nix { inherit lib contact; };
          in p.teamMarkdown' \
-        > ../kleinbem-secrets/docs/TEAM.md.new
+        > "{{META}}/kleinbem-secrets/docs/TEAM.md.new"
     # Only replace TEAM.md once the eval succeeded.
-    mv ../kleinbem-secrets/docs/TEAM.md.new ../kleinbem-secrets/docs/TEAM.md
+    mv "{{META}}/kleinbem-secrets/docs/TEAM.md.new" "{{META}}/kleinbem-secrets/docs/TEAM.md"
     nix run nixpkgs#pandoc -- \
         --from=gfm --to=html5 --standalone \
         --metadata title="kleinbem.dev — Team" \
         --css="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2em auto;padding:0 1em;line-height:1.5;color:#222;background:#fafafa}h1{border-bottom:2px solid %23000;padding-bottom:0.3em}h3{margin-top:2em;color:%23005a9c}table{border-collapse:collapse;margin:1em 0}td{padding:4px 12px;border-bottom:1px solid %23ddd}td:first-child{font-weight:600;background:%23eef}hr{border:0;border-top:1px dashed %23ccc;margin:2em 0}code{background:%23eef;padding:2px 6px;border-radius:3px}" \
-        ../kleinbem-secrets/docs/TEAM.md -o ../kleinbem-secrets/docs/TEAM.html
-    echo "✅ Wrote $(wc -l < ../kleinbem-secrets/docs/TEAM.md) lines to kleinbem-secrets/docs/TEAM.{md,html}"
+        "{{META}}/kleinbem-secrets/docs/TEAM.md" -o "{{META}}/kleinbem-secrets/docs/TEAM.html"
+    echo "✅ Wrote $(wc -l < "{{META}}/kleinbem-secrets/docs/TEAM.md") lines to kleinbem-secrets/docs/TEAM.{md,html}"
 
 # Scaffold a persona end-to-end: signing key + sops + keys.nix patch +
 # GitHub upload + mailbox. See scripts/persona-scaffold.sh for what runs.
@@ -63,7 +63,7 @@ add name:
 # Apply only the mail DNS records in nix/infra (via nix/tools/tf-apply.sh)
 [group("Personas")]
 tf-apply: tf-export
-    @cd ../nix && tools/tf-apply.sh -- \
+    @cd "{{META}}/nix" && tools/tf-apply.sh -- \
         -target=cloudflare_dns_record.mail_mx \
         -target=cloudflare_dns_record.mail_spf \
         -target=cloudflare_dns_record.mail_dmarc \
@@ -76,7 +76,7 @@ tf-apply: tf-export
 # infrastructure delta after editing personas.nix.
 [group("Personas")]
 tf-plan: tf-export
-    @cd ../nix && tools/tf-apply.sh --plan-only
+    @cd "{{META}}/nix" && tools/tf-apply.sh --plan-only
 
 # Regenerate nix/infra/{personas,inventory}.json from personas.nix ⊕
 # contact.nix + inventory.nix so OpenTofu consumes the same source of truth.
@@ -84,4 +84,4 @@ tf-plan: tf-export
 [group("Personas")]
 [private]
 tf-export:
-    @../nix/tools/gen-iac-data.sh
+    @"{{META}}/nix/tools/gen-iac-data.sh"

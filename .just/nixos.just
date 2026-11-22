@@ -210,7 +210,7 @@ attic *args:
     mkdir -p "$cfg/attic"
     {
         printf 'default-server = "kleinbem"\n[servers.kleinbem]\nendpoint = "https://cache.kleinbem.dev/"\ntoken = "'
-        sops -d --extract '["attic_admin_token"]' ../kleinbem-secrets/nix/per-host/nixos-nvme.yaml
+        sops -d --extract '["attic_admin_token"]' "{{META}}/kleinbem-secrets/nix/per-host/nixos-nvme.yaml"
         printf '"\n'
     } >"$cfg/attic/config.toml"
     XDG_CONFIG_HOME="$cfg" nix run nixpkgs#attic-client -- {{args}}
@@ -226,24 +226,9 @@ attic-rotate:
 attic-mint file key *args:
     @bash scripts/attic-mint.sh {{ file }} {{ key }} {{ args }}
 
-[group("System")]
-attic-token:
-    @echo "🔑 Generating new Attic Admin Token (Valid for 1y)..."
-    #!/usr/bin/env bash
-    ssh core-pi "sudo nixos-container run attic -- sh -c ' \\
-      set -a; \\
-      . /etc/atticd-env; \\
-      if [ -z \"\$ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64\" ]; then \\
-        export ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=\"\$ATTIC_SERVER_TOKEN_RS256_SECRET\"; \\
-      fi; \\
-      ATTICADM=\$(ls -1 /nix/store/*-attic-*/bin/atticadm | head -n 1); \\
-      CONFIG=\$(ls -1 /nix/store/*-checked-attic-server.toml | head -n 1); \\
-      \$ATTICADM -f \$CONFIG make-token --sub \"admin\" --validity \"1y\" --pull \"*\" --push \"*\" --create-cache \"*\" --configure-cache \"*\" --configure-cache-retention \"*\" --destroy-cache \"*\" \\
-    '"
-
-# For CI's ATTIC_PUSH_TOKEN (not the admin token above), e.g.:
+# For CI's ATTIC_PUSH_TOKEN (not an admin token), e.g.:
 #   TOKEN=$(just nixos::attic-ci-token | grep '^eyJ')
-#   printf %s "$TOKEN" | jq -Rs . | sops set --value-stdin ../kleinbem-secrets/nix/per-host/orin-nano.yaml '["attic_push_token"]'
+#   printf %s "$TOKEN" | jq -Rs . | sops set --value-stdin "$KLEINBEM_SECRETS/nix/per-host/orin-nano.yaml" '["attic_push_token"]'
 
 # Mint a push/pull-only Attic token for one cache (no create/configure/destroy).
 [group("System")]

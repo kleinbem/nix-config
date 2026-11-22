@@ -15,7 +15,12 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || { [ "$#" -eq 2 ] && [ "$2" != "--new-pass
 fi
 HOST="$1"
 NEW_PASSPHRASE="${2:-}"
-SECRETS_DIR="${KLEINBEM_SECRETS:-../kleinbem-secrets}/initrd"
+if [ -z "${KLEINBEM_SECRETS:-}" ]; then
+  _meta="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  case "$_meta" in *.ws) _meta="$(dirname "$_meta")" ;; esac
+  KLEINBEM_SECRETS="$_meta/kleinbem-secrets"
+fi
+SECRETS_DIR="$KLEINBEM_SECRETS/initrd"
 JWE_FILE="$SECRETS_DIR/cryptroot_${HOST}.jwe"
 
 [ -d "hosts/$HOST" ] || {

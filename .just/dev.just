@@ -154,7 +154,7 @@ apply *args="":
     fi
 
     # 1. Align with CI's last green build (fetch + rebase every sub-repo)
-    if [ -f ../nix/justfile ]; then just -f ../nix/justfile jj::pull-all; elif [ -f ../justfile ]; then just -f ../justfile jj::pull-all; fi
+    if [ -f "{{META}}/nix/justfile" ]; then just -f "{{META}}/nix/justfile" jj::pull-all; elif [ -f "{{META}}/justfile" ]; then just -f "{{META}}/justfile" jj::pull-all; fi
 
     # No lockfile re-pin: builds pass OVERRIDES and CI bumps the sibling pins on
     # main; uncommitted re-pins conflict on the next pull. By hand if needed:
@@ -268,9 +268,13 @@ preflight:
 # (`nix eval` of the toplevel itself prints evaluation errors inline and exits 0.)
 # Evaluate the host's derivation path, so evaluation errors fail.
 [group("Development")]
-check:
-    @echo "✅ Verifying NixOS configuration..."
-    @{{LOCK_CMD}} {{TIMER}} nix eval .#nixosConfigurations.nixos-nvme.config.system.build.toplevel.drvPath {{OVERRIDES}} --impure
+check host="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    h="{{host}}"
+    [ -n "$h" ] || h="$(hostname)"
+    echo "✅ Verifying NixOS configuration for $h..."
+    {{LOCK_CMD}} {{TIMER}} nix eval ".#nixosConfigurations.$h.config.system.build.toplevel.drvPath" {{OVERRIDES}} --impure
 
 [group("Development")]
 check-hosts *args="--impure":

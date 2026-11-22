@@ -16,7 +16,12 @@
 # then `just nixos::attic cache configure system --private`.
 set -euo pipefail
 
-S="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+if [ -z "${KLEINBEM_SECRETS:-}" ]; then
+  _meta="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  case "$_meta" in *.ws) _meta="$(dirname "$_meta")" ;; esac
+  KLEINBEM_SECRETS="$_meta/kleinbem-secrets"
+fi
+S="$KLEINBEM_SECRETS"
 for f in nix/per-host/core-pi.yaml nix/shared.yaml nix/per-host/orin-nano.yaml infra/terraform.yaml nix/per-host/nixos-nvme.yaml; do
   [ -f "$S/$f" ] || {
     echo "missing $S/$f" >&2
@@ -77,14 +82,16 @@ ci_pull=$(mint --sub github-ci-pull --pull system)
 admin=$(mint --sub admin --pull '*' --push '*' --delete '*' --create-cache '*' --configure-cache '*' \
   --configure-cache-retention '*' --destroy-cache '*')
 
-echo "📝 Writing the signing key and tokens to sops (YubiKey prompts follow)..."
-put nix/per-host/core-pi.yaml attic_server_token_rs256 "$signing_key"
+# Write the tokens before the signing key so a YubiKey timeout midway doesn't
+# commit a new server signing key while consumers still hold old tokens.
+echo "📝 Writing tokens and signing key to sops (YubiKey prompts follow)..."
 put nix/shared.yaml attic_pull_token "$pull"
 put nix/per-host/orin-nano.yaml attic_push_token "$orin"
 put nix/per-host/nixos-nvme.yaml attic_push_token "$nvme"
 put infra/terraform.yaml attic_ci_push_token "$ci_push"
 put infra/terraform.yaml attic_ci_pull_token "$ci_pull"
 put nix/per-host/nixos-nvme.yaml attic_admin_token "$admin"
+put nix/per-host/core-pi.yaml attic_server_token_rs256 "$signing_key"
 unset pull orin nvme ci_push ci_pull admin
 unset signing_key
 

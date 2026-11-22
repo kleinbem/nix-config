@@ -33,5 +33,3 @@ clean:
         echo "🧹 Pruning Nested Langfuse Podman Cache..."; \
         sudo machinectl shell langfuse /run/current-system/sw/bin/podman system prune -f; \
     fi
-    @echo "🧹 Cleaning Old System Generations..."
-    sudo nix-collect-garbage --delete-older-than 3d

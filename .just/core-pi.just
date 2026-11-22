@@ -13,7 +13,7 @@ shell:
     @ssh martin@core-pi.local
 
 [group("core-pi")]
-logs service="ollama":
+logs service="container@caddy":
     @ssh martin@core-pi.local "journalctl -u {{service}} -n 50 --no-pager"
 
 # Forward a Wayland app from core-pi to your local display via SSH.

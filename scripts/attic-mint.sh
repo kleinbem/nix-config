@@ -14,7 +14,12 @@ set -euo pipefail
 file=$1 key=$2
 shift 2
 
-S="${KLEINBEM_SECRETS:-../kleinbem-secrets}"
+if [ -z "${KLEINBEM_SECRETS:-}" ]; then
+  _meta="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  case "$_meta" in *.ws) _meta="$(dirname "$_meta")" ;; esac
+  KLEINBEM_SECRETS="$_meta/kleinbem-secrets"
+fi
+S="$KLEINBEM_SECRETS"
 for f in nix/per-host/core-pi.yaml "$file"; do
   [ -f "$S/$f" ] || {
     echo "missing $S/$f" >&2

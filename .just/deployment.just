@@ -10,8 +10,8 @@ deploy-fleet:
     set -euo pipefail
     
     echo "🚀 Deploying to entire fleet via Colmena..."
-    if ! git diff-index --quiet HEAD -- || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-        echo "❌ ERROR: Your git tree is dirty!"
+    if [ "$(jj log -r @ --no-graph -T 'if(empty, "clean", "dirty")')" != "clean" ]; then
+        echo "❌ ERROR: Your working copy is dirty!"
         echo "   Colmena evaluates your local dirty tree. Since dirty changes haven't been pushed,"
         echo "   CI hasn't built them, and you will suffer massive local cross-compilation times."
         echo "   Please commit and push your changes (just jj::ship), wait for CI to finish, and try again."
@@ -187,7 +187,7 @@ push-cache +args:
         if [ -r /run/secrets/attic_push_token ]; then
             token=$(cat /run/secrets/attic_push_token) || return 1
         else
-            token=$(sops -d --extract '["attic_push_token"]' ../kleinbem-secrets/nix/per-host/nixos-nvme.yaml) || return 1
+            token=$(sops -d --extract '["attic_push_token"]' "{{META}}/kleinbem-secrets/nix/per-host/nixos-nvme.yaml") || return 1
         fi
         ATTIC_BIN=$(nix build nixpkgs#attic-client --no-link --print-out-paths)/bin/attic || return 1
         ATTIC_CFG=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}") || return 1
@@ -596,7 +596,7 @@ mac-mini-install-usb device:
     # (flakes only see tracked files); jj::save-all commits it later.
     echo "🔑 Generating Tang JWE with the new passphrase..."
     LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh mac-mini
-    git -C ../kleinbem-secrets add initrd/cryptroot_mac-mini.jwe
+    git -C "{{META}}/kleinbem-secrets" add initrd/cryptroot_mac-mini.jwe
 
     echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
@@ -616,7 +616,7 @@ mac-mini-install-usb device:
     pc_sops_add_and_reencrypt "$AGE_PUB" mac-mini
     # Stage whatever the re-encryption touched (.sops.yaml and any file with
     # the mac_mini recipient) so the git+file:// override sees it.
-    git -C ../kleinbem-secrets add -u
+    git -C "{{META}}/kleinbem-secrets" add -u
 
     # Clevis is gated on the JWE existing, which it now does, so one build
     # comes out clevis-enabled with the rotated secrets.
@@ -662,7 +662,7 @@ mac-mini-install-usb device:
     echo "        (the JWE + rotated .sops.yaml/per-host+personas files were already"
     echo "        'git add'-ed above so the build could see them — this gives"
     echo "        them a proper commit through jj)"
-    echo "   2. nix flake lock --update-input kleinbem-secrets   (from nix-config's"
+    echo "   2. nix flake update kleinbem-secrets   (from nix-config's"
     echo "        root. THEN commit the flake.lock bump too — every OTHER deploy path, e.g. 'just"
     echo "        deployment::deploy mac-mini' later, builds against this pin,"
     echo "        not the local kleinbem-secrets checkout this recipe pointed at"
@@ -881,7 +881,7 @@ nasbook-install-usb device:
     # gated on this file existing, so the build below needs to see it.
     echo "🔑 Generating Tang JWE with the new passphrase..."
     LUKS_PASSPHRASE="$PASSPHRASE" ./scripts/generate-jwe.sh nasbook
-    git -C ../kleinbem-secrets add initrd/cryptroot_nasbook.jwe
+    git -C "{{META}}/kleinbem-secrets" add initrd/cryptroot_nasbook.jwe
 
     echo "💽 Formatting via disko (non-interactive — passphrase generated above)..."
     sudo nix run github:nix-community/disko -- \
@@ -902,7 +902,7 @@ nasbook-install-usb device:
     pc_sops_add_and_reencrypt "$AGE_PUB" nasbook
     # {{OVERRIDES}} resolves inputs.kleinbem-secrets to this local checkout,
     # which only sees tracked/staged files — stage whatever the reencrypt touched.
-    git -C ../kleinbem-secrets add -u
+    git -C "{{META}}/kleinbem-secrets" add -u
 
     SYSTEM="$(pc_build_toplevel nasbook {{OVERRIDES}})"
     [ -n "$SYSTEM" ] && [ -e "$SYSTEM" ] || { echo "❌ nasbook closure build failed."; exit 1; }
@@ -945,7 +945,7 @@ nasbook-install-usb device:
     echo "   1. just jj::save-all 'feat: nasbook onboarding' nasbook kleinbem-secrets"
     echo "        (the rotated .sops.yaml/nix/shared.yaml were already 'git add'-ed"
     echo "        above so the build could see them — this gives them a real commit)"
-    echo "   2. nix flake lock --update-input kleinbem-secrets   (from nix-config's"
+    echo "   2. nix flake update kleinbem-secrets   (from nix-config's"
     echo "        root, THEN commit the flake.lock bump — every other deploy path"
     echo "        builds against this pin, not the local checkout this recipe used)"
     echo "   3. Physically move the SSD into the QNAP TBS-453A and boot it. It should"
@@ -1040,7 +1040,7 @@ pi-install-usb host device="/dev/sdc":
     pc_sudo_keepalive
 
     echo "🔄 Syncing with origin so closure hashes match the CI cache..."
-    just -f ../justfile jj::pull-all
+    just -f "{{META}}/justfile" jj::pull-all
 
     pc_require_block_device "$DEV"
     pc_assert_safe_target "$DEV"
@@ -1122,7 +1122,7 @@ pi-update-usb host device="/dev/sdc":
     fi
 
     echo "🔄 Syncing with origin to ensure closure hashes match the CI cache..."
-    just -f ../justfile jj::pull-all
+    just -f "{{META}}/justfile" jj::pull-all
 
     if [ ! -b "{{device}}" ]; then
         echo "❌ Error: Target {{device}} is not a valid block device! Please check lsblk."
@@ -1223,14 +1223,9 @@ pi-update-usb host device="/dev/sdc":
 
 
 [group("Router")]
-router-secrets file="site.yml":
-    @echo "🔐 Editing OpenWrt secrets: {{file}}..."
-    @cd ../openwrt-secrets && sops {{file}}
-
-[group("Router")]
 router-provision:
     @echo "⚙️  Provisioning OpenWrt routers via Ansible..."
-    @cd ../openwrt-config && just provision
+    @cd "{{META}}/openwrt-config" && just provision
 
 
 [group("Provisioning")]
