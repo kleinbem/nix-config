@@ -162,6 +162,7 @@ in
 
       github_app_private_key = {
         owner = "martin";
+        restartUnits = lib.mkIf hasRevueSecrets [ "revue.service" ];
       };
 
       # Backup Secrets
@@ -364,13 +365,15 @@ in
             REVUE_API_KEY=${config.sops.placeholder.revue_api_key}
           ''
           + ''
-            GITHUB_TOKEN=${config.sops.placeholder.github_pat}
+            GITHUB_APP_ID=${config.sops.placeholder.github_app_id}
+            GITHUB_APP_PRIVATE_KEY_FILE=${config.sops.secrets.github_app_private_key.path}
           '';
       };
     };
   };
 
   services.revue.environmentFile = lib.mkIf hasRevueSecrets config.sops.templates."revue.env".path;
+  systemd.services.revue.after = lib.mkIf hasRevueSecrets [ "sops-install-secrets.service" ];
 
   home-manager.users.martin.modules.opencode.googleApiKeyFile =
     lib.mkIf opencodeGemini config.sops.secrets.gemini_api_key.path;
