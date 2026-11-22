@@ -16,13 +16,58 @@ let
     "unlock_time=300"
     "dir=${faillockDir}"
   ];
+  pinHashFile = config.my.security.loginPinHashFile;
+  # pam_exec hands the typed secret on stdin, ended by a NUL. ARGV: hash file, u2f authfile.
+  # No full KeyHandle,UserKey,CoseType,Options mapping for martin means pam_u2f's nouserok
+  # may have skipped the touch: refuse the PIN then.
+  checkPin = pkgs.writeScript "login-pin-check" ''
+    #!${lib.getExe pkgs.perl} -T
+    use strict;
+    use warnings;
+
+    my $pin = do { local $/; <STDIN> } // "";
+    $pin =~ s/\0.*//s;
+    exit 1 unless ($ENV{PAM_USER} // "") eq "martin" && length $pin;
+    my ($hash_file) = ($ARGV[0] // "") =~ m{^(/[^\s]+)\z};
+    my ($keys_file) = ($ARGV[1] // "") =~ m{^(/[^\s]+)\z};
+    exit 1 unless defined $hash_file && defined $keys_file;
+    open(my $keys, "<", $keys_file) or exit 1;
+    exit 1 unless grep { /^martin:(?:[^\s,:]+,){3}[^\s,:]+(?::(?:[^\s,:]+,){3}[^\s,:]+)*\s*\z/ } <$keys>;
+    open(my $fh, "<", $hash_file) or exit 1;
+    my $hash = <$fh> // "";
+    $hash =~ s/\s+\z//;
+    exit(($hash =~ /^\$y\$/ && (crypt($pin, $hash) // "") eq $hash) ? 0 : 1);
+  '';
 in
 {
-  options.my.security.loginNeedsPasswordAndKey = lib.mkEnableOption ''
-    password plus YubiKey touch for local login (tty and GDM, incl. its lock screen).
-    A touch alone never hands PAM a password, so the login keyring would stay locked'';
+  options.my.security = {
+    loginNeedsPasswordAndKey = lib.mkEnableOption ''
+      password plus YubiKey touch for local login (tty and GDM, incl. its lock screen).
+      A touch alone never hands PAM a password, so the login keyring would stay locked'';
+
+    loginPinHashFile = lib.mkOption {
+      type = lib.types.nullOr (lib.types.strMatching "^/[^[:space:]]+$");
+      default = null;
+      description = ''
+        yescrypt ($y$) hash (e.g. mkpasswd -m yescrypt) of a short PIN martin can log in with
+        instead of his password (with loginNeedsPasswordAndKey, so the touch stays required).
+        Login only; sudo ignores it. The login keyring then needs the PIN as its password (stored
+        in the user keyring without hardware or faillock backing).'';
+    };
+  };
 
   config = {
+    assertions = [
+      {
+        assertion = pinHashFile == null || config.my.security.loginNeedsPasswordAndKey;
+        message = "my.security.loginPinHashFile needs my.security.loginNeedsPasswordAndKey (the PIN must never work without the YubiKey touch).";
+      }
+      {
+        assertion = pinHashFile == null || (config.security.pam.u2f.settings.authfile or null) != null;
+        message = "my.security.loginPinHashFile needs security.pam.u2f.settings.authfile: the PIN check reads the key mappings from it.";
+      }
+    ];
+
     environment.systemPackages = with pkgs; [
       # Smartcard (PKCS#11 PIV)
       opensc
@@ -57,10 +102,12 @@ in
           u2fAuth = true;
           # Second factor, not a replacement. nouserok: a missing sops authfile falls back
           # to the password instead of locking everyone out. sudo keeps touch-only.
+          # requisite: without a touch, stop before any password or PIN is checked, so
+          # guesses made without the key are never evaluated.
           rules = lib.mkIf config.my.security.loginNeedsPasswordAndKey {
             auth = {
               u2f = {
-                control = lib.mkForce "required";
+                control = lib.mkForce "requisite";
                 settings.nouserok = true;
               };
               # Lockout for a short password: 5 wrong tries lock the account for 5 minutes.
@@ -68,6 +115,21 @@ in
                 order = config.security.pam.services.login.rules.auth.u2f.order - 10;
                 control = "requisite";
                 args = [ "preauth" ] ++ faillockArgs;
+              };
+              # Avoid pam_unix's ~2s failure delay before login-pin runs on valid PIN logins.
+              unix.settings.nodelay = lib.mkIf (pinHashFile != null) (lib.mkForce true);
+              # Either the password or the PIN; a wrong one falls through to authfail.
+              login-pin = lib.mkIf (pinHashFile != null) {
+                order = config.security.pam.services.login.rules.auth.unix.order + 5;
+                control = "sufficient";
+                modulePath = "${config.security.pam.package}/lib/security/pam_exec.so";
+                args = [
+                  "quiet"
+                  "expose_authtok"
+                  "${checkPin}"
+                  pinHashFile
+                  config.security.pam.u2f.settings.authfile
+                ];
               };
               faillock-authfail = faillockRule // {
                 order = config.security.pam.services.login.rules.auth.unix.order + 10;

@@ -6,8 +6,8 @@
 
 Use this index to find (1) where an option is declared and (2) which hosts / users / presets set it (any value, `enable = false` included). Before editing a module, grep this file for the namespace to see the blast radius.
 
-**Declarations indexed:** 82  
-**Consumer files scanned:** 40
+**Declarations indexed:** 83  
+**Consumer files scanned:** 41
 
 ---
 
@@ -466,6 +466,12 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 - **Configured in:** `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.security`
+
+### `my.security`
+
+- **Declared:** `nix-config/modules/nixos/security/smartcard.nix:43`
+- **Sub-options:** `loginNeedsPasswordAndKey`, `loginPinHashFile`
+- **Configured in:** `host:nixos-nvme`, `host:orin-nano`
 
 ### `my.security.ai-hardening`
 
