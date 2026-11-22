@@ -68,9 +68,10 @@ in
   };
 
   # The garage-ui container reaches the S3 and admin APIs on the bridge
-  # address. Only that container: cbr0 otherwise only gets DNS.
+  # address, and Gatus on core-pi probes /health on 3903.
   networking.firewall.extraInputRules = ''
     iifname "${config.my.network.bridge}" ip saddr ${garageUiIp} tcp dport { 3900, 3903 } accept
+    ip saddr { ${myInventory.hosts.core-pi.ip}, ${myInventory.hosts.core-pi.netbirdIp}, ${myInventory.network.nodes.gatus.ip} } tcp dport 3903 accept comment "gatus garage health"
   '';
 
   # --- Storage dirs on /mnt/data, owned by a static garage user ---------------
