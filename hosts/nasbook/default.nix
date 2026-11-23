@@ -46,6 +46,7 @@ in
     inputs.nix-presets.nixosModules.miniflux
     inputs.nix-presets.nixosModules.stalwart
     inputs.nix-presets.nixosModules.forgejo
+    inputs.nix-presets.nixosModules.coderabbit-steward
 
     # Needs SOPS to unlock the secrets below
     ./secrets.nix
@@ -213,6 +214,17 @@ in
           clientSecretFile = lib.mkIf config.my.containers.forgejo.enable config.sops.secrets.forgejo_oauth_client_secret.path;
         };
       };
+
+      coderabbit-steward = {
+        enable = true;
+        ip = "${myInventory.network.nodes.coderabbit-steward.ip}/24";
+        hostDataDir = "/var/lib/images/coderabbit-steward";
+        mode = "observe";
+        secretsFile =
+          lib.mkIf config.my.containers.coderabbit-steward.enable
+            config.sops.templates."coderabbit-steward.env".path;
+        privateKeyFile = lib.mkIf config.my.containers.coderabbit-steward.enable config.sops.secrets.coderabbit_steward_app_private_key.path;
+      };
     };
     monitoring.node.enable = true;
   };
@@ -230,6 +242,7 @@ in
       "d /var/lib/images/miniflux - - - - -"
       "d /var/lib/images/stalwart - - - - -"
       "d /var/lib/images/forgejo - - - - -"
+      "d /var/lib/images/coderabbit-steward - - - - -"
       "d /mnt/data/Archive 0755 martin users - -"
       "d /mnt/data/Archive/Inbox 0755 martin users - -"
       "d /mnt/data/Archive/Paperless 0755 root root - -"

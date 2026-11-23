@@ -55,6 +55,24 @@ in
           ];
         }
       )
+    )
+    // lib.optionalAttrs config.my.containers.coderabbit-steward.enable (
+      secretHelpers.mkPerContainerSecrets {
+        container = "coderabbit-steward";
+        keys = [
+          "app_id"
+          "api_token"
+          "app_private_key"
+        ];
+      }
     );
+
+    templates."coderabbit-steward.env" = lib.mkIf config.my.containers.coderabbit-steward.enable {
+      mode = "0400";
+      content = ''
+        GITHUB_APP_ID=${config.sops.placeholder.coderabbit_steward_app_id}
+        CR_STEWARD_API_TOKEN=${config.sops.placeholder.coderabbit_steward_api_token}
+      '';
+    };
   };
 }

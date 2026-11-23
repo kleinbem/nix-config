@@ -914,6 +914,20 @@ in
           description = "Minimalist and opinionated feed reader.";
         };
       };
+      coderabbit-steward = {
+        ip = "10.85.47.136"; # nasbook subnet
+        port = 8484;
+        domain = "steward.kleinbem.dev";
+        meshOnly = true;
+        auth = true;
+        authExcludePaths = [ "/health" ];
+        meta = {
+          name = "CodeRabbit Steward";
+          category = "Dev";
+          icon = "🐇";
+          description = "CodeRabbit OSS budget tracker, scheduler, coverage map, and findings steward.";
+        };
+      };
     };
   };
 }
