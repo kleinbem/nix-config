@@ -104,31 +104,6 @@ in
         })
       ];
     };
-
-    # Chrome's Wayland app_id is "google-chrome-stable" but upstream ships
-    # google-chrome.desktop; without a matching desktop file the dash favorite
-    # and window grouping break.
-    xdg.desktopEntries."google-chrome-stable" = {
-      name = "Google Chrome";
-      genericName = "Web Browser";
-      exec = "google-chrome-stable %U";
-      icon = "google-chrome";
-      terminal = false;
-      categories = [
-        "Network"
-        "WebBrowser"
-      ];
-      mimeType = [
-        "text/html"
-        "application/xhtml+xml"
-        "x-scheme-handler/http"
-        "x-scheme-handler/https"
-      ];
-      settings = {
-        StartupNotify = "true";
-        StartupWMClass = "google-chrome-stable";
-      };
-    };
   };
 
   # All my.* options in one block (statix flags repeated top-level keys).

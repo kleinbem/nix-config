@@ -147,12 +147,13 @@ in
         };
         sudo.u2fAuth = true;
         # Quickshell's lock screen runs in user context via omarchy-lock-password.
-        # Allow YubiKey touch (sufficient, without nouserok) before pam_unix fallback.
+        # Allow YubiKey touch before pam_unix fallback; jump 3 lines on success
+        # so pam_env and pam_faillock authsucc still run (omitting nouserok).
         omarchy-lock-password = lib.mkIf (config.my.desktop.omarchy.enable or false) {
           text = lib.mkForce ''
             #%PAM-1.0
             auth       required                    pam_faillock.so preauth silent deny=10 unlock_time=120
-            auth       sufficient                  ${pkgs.pam_u2f}/lib/security/pam_u2f.so authfile=${config.security.pam.u2f.settings.authfile} cue
+            auth       [success=3 default=ignore]  ${pkgs.pam_u2f}/lib/security/pam_u2f.so authfile=${config.security.pam.u2f.settings.authfile} cue
             -auth      [success=2 default=ignore]  pam_systemd_home.so
             auth       [success=1 default=bad]     pam_unix.so try_first_pass nullok
             auth       [default=die]               pam_faillock.so authfail deny=10 unlock_time=120
