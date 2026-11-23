@@ -915,8 +915,9 @@ in
         };
       };
       coderabbit-steward = {
-        ip = "10.85.47.136"; # nasbook subnet
+        ip = "10.85.47.138"; # nasbook subnet
         port = 8484;
+        externalPort = 443;
         domain = "steward.kleinbem.dev";
         meshOnly = true;
         auth = true;
