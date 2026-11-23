@@ -92,7 +92,14 @@ in
         # The nix-daemon needs to be able to read this file
         group = "wheel";
       };
-      u2f_keys = { };
+      # Public U2F key handles only; root-owned so users cannot tamper with
+      # sudo/login keys, wheel-readable so Quickshell's user-context lock PAM
+      # (omarchy-lock-password) can verify YubiKey touches.
+      u2f_keys = {
+        owner = "root";
+        group = "wheel";
+        mode = "0440";
+      };
       # Buzz (Nostr relay). The S3 keys come from the one-time init at the
       # bottom of nix-presets/containers/buzz.nix.
       buzz_relay_private_key = {

@@ -207,7 +207,7 @@
         # this overrides enabled-extensions. Empty, so every switch resets it.
         disabled-extensions = [ ];
         favorite-apps = [
-          "google-chrome-stable.desktop"
+          "google-chrome.desktop"
           "org.gnome.Nautilus.desktop"
           "org.gnome.Ptyxis.desktop"
           "org.gnome.Software.desktop"
@@ -472,7 +472,6 @@
         categories = [ "WebBrowser" ];
         # The service PWA launchers declare WebBrowser; exclude the real browsers.
         excluded-apps = [
-          "google-chrome-stable.desktop"
           "google-chrome.desktop"
           "com.google.Chrome.desktop"
           "chromium-pentest.desktop"
@@ -492,7 +491,6 @@
         name = "Internet";
         categories = [ "Network" ];
         excluded-apps = [
-          "google-chrome-stable.desktop"
           "google-chrome.desktop"
           "com.google.Chrome.desktop"
           "chromium-pentest.desktop"

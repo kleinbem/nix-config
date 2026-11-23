@@ -146,6 +146,22 @@ in
           };
         };
         sudo.u2fAuth = true;
+        # Quickshell's lock screen runs in user context via omarchy-lock-password.
+        # Allow YubiKey touch (sufficient, without nouserok) before pam_unix fallback.
+        omarchy-lock-password = lib.mkIf (config.my.desktop.omarchy.enable or false) {
+          text = lib.mkForce ''
+            #%PAM-1.0
+            auth       required                    pam_faillock.so preauth silent deny=10 unlock_time=120
+            auth       sufficient                  ${pkgs.pam_u2f}/lib/security/pam_u2f.so authfile=${config.security.pam.u2f.settings.authfile} cue
+            -auth      [success=2 default=ignore]  pam_systemd_home.so
+            auth       [success=1 default=bad]     pam_unix.so try_first_pass nullok
+            auth       [default=die]               pam_faillock.so authfail deny=10 unlock_time=120
+            auth       optional                    pam_permit.so
+            auth       required                    pam_env.so
+            auth       required                    pam_faillock.so authsucc
+            account    required                    pam_unix.so
+          '';
+        };
         # Same tally and limits for the fingerprint login GDM offers alongside.
         gdm-fingerprint.rules.auth.faillock.settings =
           lib.mkIf (config.my.security.loginNeedsPasswordAndKey && config.services.fprintd.enable)
