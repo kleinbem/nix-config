@@ -61,7 +61,7 @@
 
 ### nasbook
 
-- 🐇 **CodeRabbit Steward** (`coderabbit-steward`) `10.85.47.136:8484` → `steward.kleinbem.dev` — CodeRabbit OSS budget tracker, scheduler, coverage map, and findings steward. _[src: nix-presets/containers/coderabbit-steward.nix:30]_
+- 🐇 **CodeRabbit Steward** (`coderabbit-steward`) `10.85.47.138:8484` → `steward.kleinbem.dev` — CodeRabbit OSS budget tracker, scheduler, coverage map, and findings steward. _[src: nix-presets/containers/coderabbit-steward.nix:30]_
 - 🌳 **Forgejo** (`forgejo`) `10.85.47.136:3000` → `git.kleinbem.dev` — Self-hosted Git forge with mirrors of the GitHub repos. _[src: nix-presets/containers/forgejo.nix:27]_
 - 📜 **Loki Logging** (`loki`) `10.85.47.116:3100` — Centralized Log Aggregator. _[src: nix-presets/containers/loki.nix:13]_
 - 📰 **Miniflux** (`miniflux`) `10.85.47.135:8080` → `news.kleinbem.dev` — Minimalist and opinionated feed reader. _[src: nix-presets/containers/miniflux.nix:27]_

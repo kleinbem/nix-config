@@ -1547,9 +1547,9 @@ services:
     name: CodeRabbit Steward
     category: Dev
     host: nasbook
-    ip: 10.85.47.136
+    ip: 10.85.47.138
     port: 8484
-    external_port: null
+    external_port: 443
     domain: steward.kleinbem.dev
     public: false
     auth: Cloudflare Access / SSO
