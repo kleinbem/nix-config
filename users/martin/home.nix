@@ -174,20 +174,7 @@ in
   };
 
   xdg = {
-    mimeApps = {
-      enable = true;
-      # mkForce: nix-presets/desktop.nix sets these same keys to the stock
-      # google-chrome.desktop — force wins the merge so martin gets the custom
-      # google-chrome-stable.desktop entry (with the StartupWMClass fix, see
-      # xdg.desktopEntries below) instead.
-      defaultApplications = lib.mkForce {
-        "text/html" = [ "google-chrome-stable.desktop" ];
-        "x-scheme-handler/http" = [ "google-chrome-stable.desktop" ];
-        "x-scheme-handler/https" = [ "google-chrome-stable.desktop" ];
-        "x-scheme-handler/about" = [ "google-chrome-stable.desktop" ];
-        "x-scheme-handler/unknown" = [ "google-chrome-stable.desktop" ];
-      };
-    };
+    mimeApps.enable = true;
 
     # HM defaults match the standard dirs plus ~/Projects.
     userDirs = {
@@ -393,43 +380,6 @@ in
       icon = "system-users";
       terminal = true;
       categories = [ "System" ];
-    };
-
-    # Chrome's Wayland app_id is "google-chrome-stable" but upstream's desktop
-    # file is "google-chrome.desktop" with no StartupWMClass, so GNOME can't
-    # match windows (PWAs included). This filename matches the app_id;
-    # StartupWMClass covers XWayland.
-    # no-link: Google's own package, no public report found.
-    "google-chrome-stable" = {
-      name = "Google Chrome";
-      genericName = "Web Browser";
-      exec = "google-chrome-stable %U";
-      icon = "google-chrome";
-      terminal = false;
-      categories = [
-        "Network"
-        "WebBrowser"
-      ];
-      mimeType = [
-        "text/html"
-        "application/xhtml+xml"
-        "x-scheme-handler/http"
-        "x-scheme-handler/https"
-      ];
-      settings = {
-        StartupNotify = "true";
-        StartupWMClass = "google-chrome-stable";
-      };
-    };
-
-    # Hide upstream google-chrome.desktop to prevent duplicate launcher entry
-    # (shadows nixpkgs google-chrome.desktop in favor of google-chrome-stable above)
-    "google-chrome" = {
-      name = "Google Chrome";
-      exec = "google-chrome-stable %U";
-      settings = {
-        NoDisplay = "true";
-      };
     };
   };
 
