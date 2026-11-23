@@ -358,6 +358,11 @@ in
           "superwhisper"
           "omarchy-nvim"
           "owe"
+          # Already installed and auto-updated via nix-presets / nix-config
+          # (with Firejail sandboxing for mpv and obsidian).
+          "herdr"
+          "mpv-with-scripts"
+          "obsidian"
         ];
       };
 

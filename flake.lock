@@ -2238,11 +2238,11 @@
         "omarchy-src": "omarchy-src"
       },
       "locked": {
-        "lastModified": 1795457728,
-        "narHash": "sha256-1bpYRLmISiNXOiJdJug9713WoUWVpEJyOe8r7d33eh0=",
+        "lastModified": 1795468498,
+        "narHash": "sha256-jk0i7SDleSLeslYCLeYLl2kfFpeqELg991oQDGcPRus=",
         "owner": "kleinbem",
         "repo": "nix-omarchy",
-        "rev": "71e292f5b6322838ccf66bd8eba850cc8012b564",
+        "rev": "64f882fed155ddd58d01b8c2cb685e417dbfeed2",
         "type": "github"
       },
       "original": {
