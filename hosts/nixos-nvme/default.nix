@@ -263,10 +263,11 @@
   # erroring, duplicating the restore/NVRAM logic.
 
   # Dual monitor setup for Omarchy Hyprland matching physical displays:
-  # Primary 34" Ultrawide (HDMI-A-1) + Secondary 32" QHD (DP-2) at native 75Hz
+  # Primary 34" Ultrawide (HDMI-A-1) + Secondary 32" QHD (DP-2) at native 75Hz.
+  # Use auto-right for DP-2 so fractional scaling on HDMI-A-1 never leaves a dead gap.
   omarchy.monitors = [
-    "HDMI-A-1, 3440x1440@75.05, 0x0, 1"
-    "DP-2, 2560x1440@74.93, 3440x0, 1"
+    "HDMI-A-1, 3440x1440@75.05, 0x0, 1.25"
+    "DP-2, 2560x1440@74.93, auto-right, 1"
   ];
 
   # Short boot menu label (systemd-boot truncates long generation names).
