@@ -378,6 +378,40 @@ in
         "uinput"
       ];
 
+      # Omarchy desktop utilities: Vicinae launcher/window switcher, nwg-displays
+      # monitor arranger, and hyprexpo overview plugin at a stable GC-rooted path.
+      environment = {
+        systemPackages = with pkgs; [
+          vicinae
+          nwg-displays
+        ];
+        etc."omarchy/plugins/libhyprexpo.so".source = "${
+          inputs.nix-omarchy.packages.${pkgs.stdenv.hostPlatform.system}.hyprexpo
+        }/lib/libhyprexpo.so";
+      };
+
+      systemd.user.services = {
+        vicinae = {
+          description = "Vicinae launcher and window switcher server";
+          partOf = [ "graphical-session.target" ];
+          after = [ "graphical-session.target" ];
+          wantedBy = [ "graphical-session.target" ];
+          unitConfig.ConditionEnvironment = "HYPRLAND_INSTANCE_SIGNATURE";
+          serviceConfig = {
+            ExecStart = "${pkgs.vicinae}/bin/vicinae server";
+            Restart = "on-failure";
+            RestartSec = 2;
+          };
+        };
+
+        # Prevent mako (installed for other sessions) from D-Bus-activating under
+        # Hyprland/Omarchy where Quickshell's omarchy-notifications owns the layer.
+        mako = {
+          overrideStrategy = "asDropin";
+          unitConfig.ConditionEnvironment = "!HYPRLAND_INSTANCE_SIGNATURE";
+        };
+      };
+
       # Seed per-user config and agent skills
       home-manager = {
         sharedModules = [ inputs.nix-omarchy.homeModules.default ];
