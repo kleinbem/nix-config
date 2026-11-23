@@ -406,7 +406,10 @@ in
 
         # Prevent mako (installed for other sessions) from D-Bus-activating under
         # Hyprland/Omarchy where Quickshell's omarchy-notifications owns the layer.
-        mako.unitConfig.ConditionEnvironment = "!HYPRLAND_INSTANCE_SIGNATURE";
+        mako = {
+          overrideStrategy = "asDropin";
+          unitConfig.ConditionEnvironment = "!HYPRLAND_INSTANCE_SIGNATURE";
+        };
       };
 
       # Seed per-user config and agent skills
