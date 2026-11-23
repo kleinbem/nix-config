@@ -266,6 +266,13 @@ let
         clientSecretFile = "/run/secrets/factory-dummy";
       };
     };
+    coderabbit-steward = {
+      ip = "${myInventory.network.nodes.coderabbit-steward.ip}/24"; # nasbook
+      hostDataDir = dataDir "coderabbit-steward";
+      mode = "observe";
+      secretsFile = "/run/secrets/factory-dummy";
+      privateKeyFile = "/run/secrets/factory-dummy";
+    };
     # Hybrid containers (comfyui, langflow) run Podman inside nspawn containers
     # with runtime image pulling and produce no static factory closure to cache.
   };
@@ -352,6 +359,7 @@ in
     inputs.nix-presets.nixosModules.qbittorrent
     inputs.nix-presets.nixosModules.miniflux
     inputs.nix-presets.nixosModules.revue
+    inputs.nix-presets.nixosModules.coderabbit-steward
     # dashboard-homer declares the same `my.containers.dashboard` option as
     # dashboard-foyer, so only one can be imported. Swap them to cache another variant.
   ];

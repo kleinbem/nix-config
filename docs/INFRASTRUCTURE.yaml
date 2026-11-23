@@ -713,6 +713,13 @@ hosts:
       - agent-team
       - agent-team.enable
       - agent-team.ip
+      - coderabbit-steward
+      - coderabbit-steward.enable
+      - coderabbit-steward.hostDataDir
+      - coderabbit-steward.ip
+      - coderabbit-steward.mode
+      - coderabbit-steward.privateKeyFile
+      - coderabbit-steward.secretsFile
       - forgejo
       - forgejo.admin.passwordFile
       - forgejo.domain
@@ -793,6 +800,7 @@ hosts:
       - libvirtd.enable
       - podman.enable
     containers_hosted:
+    - coderabbit-steward
     - forgejo
     - loki
     - miniflux
@@ -803,6 +811,7 @@ hosts:
     - syncthing
     secrets_consumed:
     - attic_pull_token
+    - coderabbit_steward_app_private_key
     - forgejo_admin_password
     - forgejo_oauth_client_secret
     - miniflux_oauth_client_secret
@@ -1534,6 +1543,20 @@ services:
     upstream_preset: nix-presets/containers/code-server.nix
     persistence_path: /var/lib/machines/code-server
     description: VS Code IDE in a hardened core container.
+  coderabbit-steward:
+    name: CodeRabbit Steward
+    category: Dev
+    host: nasbook
+    ip: 10.85.47.138
+    port: 8484
+    external_port: 443
+    domain: steward.kleinbem.dev
+    public: false
+    auth: Cloudflare Access / SSO
+    mtls: false
+    upstream_preset: nix-presets/containers/coderabbit-steward.nix
+    persistence_path: /var/lib/machines/coderabbit-steward
+    description: CodeRabbit OSS budget tracker, scheduler, coverage map, and findings steward.
   comfyui:
     name: ComfyUI
     category: AI Engineering
