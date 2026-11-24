@@ -183,7 +183,7 @@ local function restack_fullscreen_siblings(window)
     if (window.fullscreen or 0) > 0 then
       for i = #windows, 1, -1 do
         local other = windows[i]
-        if other.address ~= window.address then
+        if other.address ~= window.address and not other.pinned then
           hl.dispatch(hl.dsp.window.alter_zorder({ mode = "bottom", window = other }))
           restacked = true
         end
