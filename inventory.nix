@@ -919,9 +919,14 @@ in
         port = 8484;
         externalPort = 443;
         domain = "steward.kleinbem.dev";
-        meshOnly = true;
+        public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
+        publicCert = true;
+        # Dashboard & API stay behind Authentik; GitHub webhooks verify HMAC-SHA256.
         auth = true;
-        authExcludePaths = [ "/health" ];
+        authExcludePaths = [
+          "/webhook"
+          "/health"
+        ];
         meta = {
           name = "CodeRabbit Steward";
           category = "Dev";
