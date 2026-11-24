@@ -417,10 +417,18 @@ in
         };
       };
 
-      # Seed per-user config and agent skills
+      # Seed per-user config and agent skills; declaratively manage Hyprland
+      # looknfeel.lua so floating windows snap to edges and never lose their
+      # titlebars above the top bar when crossing monitors of different scales.
       home-manager = {
         sharedModules = [ inputs.nix-omarchy.homeModules.default ];
-        users.${config.my.username}.omarchy.enable = true;
+        users.${config.my.username} = {
+          omarchy.enable = true;
+          xdg.configFile."hypr/looknfeel.lua" = {
+            source = ./files/omarchy-looknfeel.lua;
+            force = true;
+          };
+        };
       };
     })
   ];
