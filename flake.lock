@@ -1761,11 +1761,11 @@
     "kleinbem-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1795309273,
-        "narHash": "sha256-1rq2lHrMVKP/yG73qCHbiqAUOXhsXVIEbSexuZjql/E=",
+        "lastModified": 1795517381,
+        "narHash": "sha256-6TsUPfzAkaazmVhw2rG253CxV8OaEXYak5q304Z34Ds=",
         "owner": "kleinbem",
         "repo": "skills",
-        "rev": "8ffab5976468aff8edd7c7030d1a1e2a040e8630",
+        "rev": "fdc6530dbd8d2cfbedde59eca9f08af412dcfa34",
         "type": "github"
       },
       "original": {
