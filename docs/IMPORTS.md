@@ -7,7 +7,7 @@
 Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md` — that one shows opted-in `my.*` options, this one shows raw module imports (including modules with no `my.*` options).
 
 **Hosts indexed:** 10  
-**Distinct imports:** 104
+**Distinct imports:** 103
 
 ---
 
@@ -34,7 +34,7 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 
 ### `mac-mini`
 
-- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/desktop.nix`, `modules/nixos/firejail.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
+- **Modules:** `modules/nixos/base.nix`, `modules/nixos/clevis-initrd.nix`, `modules/nixos/desktop.nix`, `modules/nixos/headless.nix`, `modules/nixos/hosts.nix`, `modules/nixos/persistence.nix`, `modules/nixos/pull-deploy-node.nix`
 - **Presets:** `nix-presets:agent-zero`, `nix-presets:anythingllm`, `nix-presets:herdr-remote-client`, `nix-presets:hermes`, `nix-presets:monitoring`, `nix-presets:monitoring-node`, `nix-presets:open-webui`, `nix-presets:persona-runtime`, `nix-presets:sandboxed-apps`
 - **Users:** `user:martin`
 - **Other inputs:** `disko:disko`, `nix-gantry:host`, `nix-gantry:host-persistence`, `nix-gantry:updater`
@@ -108,7 +108,6 @@ Top-level imports per host, plus a reverse index. Use this alongside `OPTIONS.md
 - `modules/nixos/data-disk.nix` ← nasbook, nixos-nvme
 - `modules/nixos/default.nix` ← nixos-nvme
 - `modules/nixos/desktop.nix` ← mac-mini
-- `modules/nixos/firejail.nix` ← mac-mini
 - `modules/nixos/headless.nix` ← mac-mini, nasbook, orin-nano
 - `modules/nixos/hosts.nix` ← mac-mini, nasbook, nixos-nvme, orin-nano
 - `modules/nixos/initrd-fan.nix` ← orin-nano

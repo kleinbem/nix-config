@@ -427,8 +427,8 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.desktop.sandboxedApps`
 
-- **Declared:** `nix-presets/nixosModules/sandboxed-apps.nix:20`
-- **Sub-options:** `apps`, `enable`
+- **Declared:** `nix-presets/nixosModules/sandboxed-apps.nix:22`
+- **Sub-options:** `apps`, `enable`, `extraApps`, `extraBindRw`
 - **Configured in:** `host:mac-mini`, `host:nixos-nvme`
 
 ## `my.hardware`

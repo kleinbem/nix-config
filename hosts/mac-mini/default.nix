@@ -45,9 +45,6 @@ in
     inputs.nix-gantry.nixosModules.host-persistence
     inputs.nix-gantry.nixosModules.updater
     "${self}/modules/nixos/desktop.nix"
-    # Normally pulled in by modules/nixos/default.nix, which this host doesn't
-    # import; my.desktop.gnome.enable alone leaves the firejail wrappers empty.
-    "${self}/modules/nixos/firejail.nix"
 
     inputs.disko.nixosModules.disko
     ./disko.nix
@@ -61,8 +58,7 @@ in
     inputs.nix-presets.nixosModules.hermes
     inputs.nix-presets.nixosModules.persona-runtime
     inputs.nix-presets.nixosModules.herdr-remote-client
-    # Discord/Element/Signal in nixpak sandboxes — successor to the
-    # firejail.nix wrappers imported above, app by app.
+    # Desktop apps in nixpak (bubblewrap) sandboxes
     inputs.nix-presets.nixosModules.sandboxed-apps
   ];
 
@@ -96,7 +92,8 @@ in
       stateVersion = "25.11";
 
       # Chrome, declared directly since this host skips the nix-presets
-      # desktop bundle. Not firejailed (see modules/nixos/firejail.nix).
+      # desktop bundle. Installed plain: its own sandbox covers the renderer,
+      # and outer sandboxes break YubiKey WebAuthn.
       packages = [
         (pkgs.google-chrome.override {
           # libsecret pin: same reason as nix-presets desktop.nix.
@@ -502,8 +499,7 @@ in
       age
       libfido2
       # Browser (google-chrome) is declared in the home-manager block above,
-      # not here — installed plain, not firejailed (see the Chrome note in
-      # modules/nixos/firejail.nix).
+      # not here — installed plain for its own sandbox and YubiKey WebAuthn.
     ];
   };
 

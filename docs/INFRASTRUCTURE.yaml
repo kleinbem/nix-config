@@ -550,10 +550,10 @@ hosts:
     - '[other] nix-gantry:host-persistence'
     - '[other] nix-gantry:updater'
     - '[module] modules/nixos/desktop.nix'
-    - '[module] modules/nixos/firejail.nix'
     - '[other] disko:disko'
     - '[local] ./disko.nix'
     - '[local] ./secrets.nix'
+    - '[preset] nix-presets:monitoring-node'
     enabled_subsystems:
       backup:
       - enable
@@ -1090,7 +1090,9 @@ hosts:
       - gnome.enable
       - nixAppCenter.enable
       - omarchy.enable
+      - sandboxedApps
       - sandboxedApps.enable
+      - sandboxedApps.extraBindRw.lmstudio
       machineId:
       - enabled
       monitoring:
@@ -2201,10 +2203,6 @@ modules_system:
     purpose: Desktop environments (GNOME, Wayland/Hyprland), display manager.
     declared_options:
     - my.desktop
-  firejail.nix:
-    file: nix-config/modules/nixos/firejail.nix
-    purpose: NixOS system module.
-    declared_options: []
   forward-auth-guard.nix:
     file: nix-config/modules/nixos/forward-auth-guard.nix
     purpose: NixOS system module.

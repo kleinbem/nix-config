@@ -1,5 +1,5 @@
 {
-  description = "AI-Augmented NixOS with COSMIC and Firejail";
+  description = "AI-Augmented NixOS with GNOME, Omarchy, and Nixpak";
 
   inputs = {
     # --- Core ---

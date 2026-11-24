@@ -18,7 +18,6 @@
     # Desktop Environment
     ./desktop.nix
     ./nix-app-center.nix
-    ./firejail.nix
 
     # User Setup
     ./users.nix

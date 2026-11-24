@@ -50,6 +50,11 @@ in
           "firefox-esr-140-bin-unwrapped"
         ];
 
+      # Opt into Zotero here, alongside its firefox-esr-140-bin-unwrapped
+      # allowlist above (kept out of sandboxed-apps' default list so consumers
+      # without that exception still evaluate).
+      my.desktop.sandboxedApps.extraApps = [ "zotero" ];
+
       services = {
         displayManager.gdm = {
           enable = true;
@@ -88,7 +93,6 @@ in
           in
           {
             google-chrome = prev.google-chrome.override { commandLineArgs = pin; };
-            obsidian = prev.obsidian.override { commandLineArgs = pin; };
             bitwarden-desktop = pinWrapped prev.bitwarden-desktop [ "bitwarden" ];
             google-antigravity = pinWrapped prev.google-antigravity [ "antigravity" ];
             google-antigravity-ide-no-fhs = pinWrapped prev.google-antigravity-ide-no-fhs [
@@ -234,7 +238,7 @@ in
         })
 
         # Password Management
-        # Plain package, not firejail-wrapped: its polkit policy (biometric
+        # Plain package, not sandboxed: its polkit policy (biometric
         # unlock) and desktop_proxy bridge (Chrome extension link) must land
         # in the system profile.
         bitwarden-desktop
@@ -359,7 +363,7 @@ in
           "omarchy-nvim"
           "owe"
           # Already installed and auto-updated via nix-presets / nix-config
-          # (with Firejail sandboxing for mpv and obsidian).
+          # (with Nixpak sandboxing for mpv and obsidian).
           "herdr"
           "mpv-with-scripts"
           "obsidian"
