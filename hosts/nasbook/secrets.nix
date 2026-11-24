@@ -63,6 +63,8 @@ in
           "app_id"
           "api_token"
           "app_private_key"
+          "user_token"
+          "webhook_secret"
         ];
       }
     );
@@ -72,6 +74,9 @@ in
       content = ''
         GITHUB_APP_ID=${config.sops.placeholder.coderabbit_steward_app_id}
         CR_STEWARD_API_TOKEN=${config.sops.placeholder.coderabbit_steward_api_token}
+        CR_STEWARD_USER_TOKEN=${config.sops.placeholder.coderabbit_steward_user_token}
+        GITHUB_WEBHOOK_SECRET=${config.sops.placeholder.coderabbit_steward_webhook_secret}
+        CR_STEWARD_NTFY_URL=https://ntfy.kleinbem.dev/${config.sops.placeholder.ntfy_deploy_topic}
       '';
     };
   };
