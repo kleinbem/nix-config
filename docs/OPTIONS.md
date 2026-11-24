@@ -140,7 +140,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 ### `my.containers.coderabbit-steward`
 
 - **Declared:** `nix-presets/containers/coderabbit-steward.nix:30`
-- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `mode`, `port`, `privateKeyFile`, `secretsFile`
+- **Sub-options:** `domain`, `enable`, `hostDataDir`, `ip`, `memoryLimit`, `mode`, `port`, `privateKeyFile`, `secretsFile`, `trustAuthentikHeader`
 - **Configured in:** `host:nasbook`
 
 ### `my.containers.comfyui`

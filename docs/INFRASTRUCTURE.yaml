@@ -720,6 +720,7 @@ hosts:
       - coderabbit-steward.mode
       - coderabbit-steward.privateKeyFile
       - coderabbit-steward.secretsFile
+      - coderabbit-steward.trustAuthentikHeader
       - forgejo
       - forgejo.admin.passwordFile
       - forgejo.domain
