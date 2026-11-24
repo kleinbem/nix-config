@@ -220,6 +220,7 @@ in
         ip = "${myInventory.network.nodes.coderabbit-steward.ip}/24";
         hostDataDir = "/var/lib/images/coderabbit-steward";
         mode = "observe";
+        trustAuthentikHeader = true;
         secretsFile =
           lib.mkIf config.my.containers.coderabbit-steward.enable
             config.sops.templates."coderabbit-steward.env".path;
@@ -306,6 +307,8 @@ in
       extraForwardRules = lib.mkBefore ''
         ip daddr ${myInventory.network.nodes.paperless.ip} tcp dport ${toString myInventory.network.nodes.paperless.port} ip saddr { ${myInventory.hosts.core-pi.ip}, 10.85.47.1 } accept
         ip daddr ${myInventory.network.nodes.paperless.ip} tcp dport ${toString myInventory.network.nodes.paperless.port} drop
+        ip daddr ${myInventory.network.nodes.coderabbit-steward.ip} tcp dport ${toString myInventory.network.nodes.coderabbit-steward.port} ip saddr { ${myInventory.hosts.core-pi.ip}, 10.85.47.1 } accept
+        ip daddr ${myInventory.network.nodes.coderabbit-steward.ip} tcp dport ${toString myInventory.network.nodes.coderabbit-steward.port} drop
       '';
     };
   };

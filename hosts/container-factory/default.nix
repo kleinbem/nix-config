@@ -270,6 +270,7 @@ let
       ip = "${myInventory.network.nodes.coderabbit-steward.ip}/24"; # nasbook
       hostDataDir = dataDir "coderabbit-steward";
       mode = "observe";
+      trustAuthentikHeader = true;
       secretsFile = "/run/secrets/factory-dummy";
       privateKeyFile = "/run/secrets/factory-dummy";
     };
