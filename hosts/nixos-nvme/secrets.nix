@@ -52,8 +52,9 @@ in
         mode = "0400";
       };
       # API bearer token read by the cr-steward wrapper in nix-devshells #workspace.
-      coderabbit_steward_api_token = {
+      cr_steward_cli_token = {
         sopsFile = secretFile "nix/per-container/coderabbit-steward.yaml";
+        key = "coderabbit_steward_api_token";
         owner = "martin";
         mode = "0400";
       };
