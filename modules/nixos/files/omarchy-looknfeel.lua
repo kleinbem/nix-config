@@ -155,7 +155,51 @@ hl.on("window.fullscreen", function(window)
   schedule_window(window, 50)
 end)
 
+-- Raise maximized/fullscreen windows above sibling floating windows on focus,
+-- and raise floating overlays cleanly when focusing them over fullscreen.
+-- tracking: omacom/omarchy#16404
+local restacking = false
+local function restack_fullscreen_siblings(window)
+  if restacking or not window or not window.workspace then
+    return
+  end
+  if not has_tag(window, WORKSPACE_TAG) then
+    return
+  end
+
+  local ws_id = tonumber(window.workspace.id)
+  if not ws_id or ws_id < 1 then
+    return
+  end
+
+  local windows = hl.get_workspace_windows(tostring(ws_id))
+  restacking = true
+  if (window.fullscreen or 0) > 0 then
+    for i = #windows, 1, -1 do
+      local other = windows[i]
+      if other.address ~= window.address then
+        hl.dispatch(hl.dsp.window.alter_zorder({ mode = "bottom", window = other }))
+      end
+    end
+  elseif window.floating and not window.pinned then
+    for _, other in ipairs(windows) do
+      if (other.fullscreen or 0) > 0 then
+        hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = window }))
+        break
+      end
+    end
+  end
+
+  -- Restacking replays the pointer, which can focus a sibling underneath it.
+  local active = hl.get_active_window()
+  if not active or active.address ~= window.address then
+    hl.dispatch(hl.dsp.focus({ window = "address:" .. window.address }))
+  end
+  restacking = false
+end
+
 hl.on("window.active", function(window)
+  restack_fullscreen_siblings(window)
   schedule_window(window, 50)
 end)
 
