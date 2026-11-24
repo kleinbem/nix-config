@@ -189,6 +189,7 @@ let
     }
     (direct "cadre" "/health" up)
     (direct "revue" "/" up)
+    (direct "coderabbit-steward" "/health" up)
     (direct "code-server" "/healthz" up)
     (direct "forgejo" "/api/healthz" [
       "[STATUS] == 200"

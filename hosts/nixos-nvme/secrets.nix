@@ -51,6 +51,12 @@ in
         owner = "martin";
         mode = "0400";
       };
+      # API bearer token read by the cr-steward wrapper in nix-devshells #workspace.
+      coderabbit_steward_api_token = {
+        sopsFile = secretFile "nix/per-container/coderabbit-steward.yaml";
+        owner = "martin";
+        mode = "0400";
+      };
       # Fine-grained PAT for kleinbem/skills only (contents + pull requests
       # write), read by skills' `just refresh-skills` instead of the gh login.
       skills_refresh_token = lib.mkIf hasSkillsRefreshToken {
