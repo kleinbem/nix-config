@@ -3,3 +3,5 @@
 # Read by build-all.yaml and promote-production.yaml. One host per line.
 nasbook
 mac-mini
+hass-pi
+core-pi
