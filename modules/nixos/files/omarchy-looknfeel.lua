@@ -2,6 +2,7 @@
 -- Prevents floating windows from losing their titlebars above the top bar
 -- (e.g. when moving from a taller logical monitor to a scaled monitor, or
 -- when dragging a window too far up).
+-- tracking: omacom/omarchy#20029
 
 -- Magnetically snap dragged floating windows to monitor edges and the top bar.
 hl.config({
