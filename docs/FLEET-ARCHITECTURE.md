@@ -243,7 +243,7 @@ Edit config (in a jj workspace)
 main (signed commits, required checks)
     ↓
 build-all builds the hosts and pushes to Attic
-(nixos-nvme in build-nvme, orin-nano best-effort)
+(nixos-nvme in build-nvme)
     ↓
 promote-production moves `production` once the closures are cached
 ```

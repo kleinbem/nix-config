@@ -1255,8 +1255,8 @@ hosts:
       deploy:
       - autoUpgrade.enable
       - comin
-      - comin.buildTimeout
       - comin.enable
+      - comin.localAssembly
       - comin.requireCache
       heartbeat:
       - enable
