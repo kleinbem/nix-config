@@ -90,9 +90,9 @@ it is not a fallback for this path; use path A instead.
   Enrol both YubiKeys once, on the Orin:
   `sudo systemd-cryptenroll --fido2-device=auto /dev/disk/by-partlabel/disk-main-luks`
   (run it twice, once per key).
-- **Later updates** arrive through comin pull-deploy. The Orin still builds
-  its kernel/L4T closure on the device, so there is no cache requirement and
-  the build timeout is 12 h.
+- **Later updates** arrive through comin pull-deploy, as on the other comin
+  hosts: CI caches the packages (JetPack kernel included) and the Orin only
+  assembles the system.
 
 ## Disk layout
 

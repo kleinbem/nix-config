@@ -167,9 +167,9 @@ jobs:
           set -euo pipefail
           # Pull-deploy hosts with requireCache deploy with max-jobs 0, so a cache
           # miss fails their upgrade. Mirrors build-all's committed-lock step;
-          # nixos-nvme and orin-nano are left out (they may build locally).
+          # nixos-nvme is left out: build-nvme.yaml builds it.
           # No $NIX_OVERRIDES: this must be the exact closure the device evaluates.
-          HOSTS=(hass-pi core-pi mac-mini nasbook)
+          HOSTS=(hass-pi core-pi orin-nano mac-mini nasbook)
           fail=0
           for h in "${HOSTS[@]}"; do
             echo "::group::dry-run $h"

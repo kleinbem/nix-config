@@ -188,7 +188,7 @@ in
         so a closure the cache lacks fails fast instead of rebuilding a
         kernel on a Pi (same guard my.deploy.autoUpgrade.requireCache uses).
         comin retries every 30 s, so a cache blip costs nothing. Leave false
-        on hosts that build locally (nixos-nvme, orin-nano).
+        only on a host that must build locally.
       '';
     };
 

@@ -61,14 +61,15 @@ in
     # every 5 min + a ping per backup job; missing pings alert from
     # healthchecks.io, outside the fleet. Always-on hosts only.
     heartbeat.enable = true;
-    # comin pull-deploy. This host still compiles its kernel/L4T closure on
-    # device (CI doesn't build it), so no requireCache and a 12 h build timeout.
+    # comin pull-deploy, like the other edge hosts: CI caches the packages
+    # (JetPack kernel included), the host never compiles them.
     deploy = {
       autoUpgrade.enable = false;
       comin = {
         enable = true;
-        requireCache = false;
-        buildTimeout = 12 * 3600;
+        requireCache = true;
+        # CI caches only the packages; the host assembles the system.
+        localAssembly = true;
       };
     };
 
