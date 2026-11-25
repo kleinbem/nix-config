@@ -146,6 +146,18 @@ jobs:
             -f description="Container factory build is pending" \
             -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+      # Before every build: the host evals (orin-nano's JetPack and CUDA set
+      # the most) and the factory eval run near the hosted runner's memory
+      # ceiling; spill to the SSD instead of getting SIGTERM'd. Unconditional,
+      # as PRs build hosts and the factory too.
+      - name: Add swap for heavy evals
+        run: |
+          sudo fallocate -l 12G /swapfile-ci
+          sudo chmod 600 /swapfile-ci
+          sudo mkswap /swapfile-ci
+          sudo swapon /swapfile-ci
+          free -h
+
       - name: Run nix-fast-build
         run: |
           set -o pipefail
@@ -324,18 +336,6 @@ jobs:
             | jq -r '[.. | objects | .path? // empty] | unique | .[]' > "$RUNNER_TEMP/flake-sources.txt"
           echo "flake input sources: $(wc -l < "$RUNNER_TEMP/flake-sources.txt")"
           xargs -a "$RUNNER_TEMP/flake-sources.txt" attic push system
-
-      - name: Add swap for heavy evals
-        # Workstation + container-factory evals run near the hosted runner's
-        # memory ceiling; spill to the SSD instead of getting SIGTERM'd.
-        # Unconditional (PRs included) because the blocking factory eval below
-        # runs on PRs too.
-        run: |
-          sudo fallocate -l 12G /swapfile-ci
-          sudo chmod 600 /swapfile-ci
-          sudo mkswap /swapfile-ci
-          sudo swapon /swapfile-ci
-          free -h
 
       # Factory eval blocks (and runs on PRs): if it doesn't evaluate, nothing
       # is built and changed containers silently drop out of the manifest.
