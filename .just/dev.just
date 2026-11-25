@@ -192,6 +192,19 @@ apply *args="":
 
     # 3. Deploy!
     if [ "$TARGET_HOST" = "$(hostname)" ]; then
+        # A pull deploy switching at the same moment makes one of the two fail.
+        # A running oneshot is "activating", which is-active's exit code misses.
+        waited=0
+        while [[ "$(systemctl is-active nixos-upgrade.service 2>/dev/null)" =~ ^(active|activating|reloading)$ ]] ||
+            { command -v comin >/dev/null && comin status --json 2>/dev/null | jq -e '.deployer.is_deploying' >/dev/null; }; do
+            [ "$waited" -eq 0 ] && echo "⏳ A pull deploy is switching this host; waiting for it to finish..."
+            if [ "$waited" -ge 1800 ]; then
+                echo "❌ The pull deploy is still running after 30 min; not applying." >&2
+                exit 1
+            fi
+            sleep 10
+            waited=$((waited + 10))
+        done
         nh_mode="$MODE"
         [ "$MODE" = "boot" ] && nh_mode="switch-boot" # just nixos:: uses switch-boot mapping
         [ "$DEBUG" -eq 1 ] && nh_mode="$nh_mode-debug"
