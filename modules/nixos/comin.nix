@@ -137,14 +137,20 @@ let
       wait=300
       [ "$boot" = true ] && wait=3600
       deadline=$(($(date +%s) + wait))
+      reached=false
       while :; do
         if st=$(comin status --json 2>/dev/null); then
+          reached=true
           if [ -n "$(jq -r '.deploy_confirmer.submitted // ""' <<<"$st")" ]; then
             exec comin confirmation accept --for deploy
           fi
           [ "$boot" = true ] || exit 0
         fi
         if [ "$(date +%s)" -ge "$deadline" ]; then
+          if [ "$reached" != true ]; then
+            echo "comin-deploy: comin unreachable for $((wait / 60)) min" >&2
+            exit 1
+          fi
           echo "comin-deploy: no generation held after $((wait / 60)) min"
           exit 0
         fi
