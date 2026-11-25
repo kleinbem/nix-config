@@ -315,7 +315,7 @@ in
       (lib.mkIf (cfg.deployAt != null) {
         services.comin = {
           deployConfirmer.mode = "manual";
-          # `accept --for`: upstream: nlewo/comin#TBD. Drop once the comin
+          # `accept --for`: upstream: nlewo/comin#243. Drop once the comin
           # input has it.
           package = inputs.comin.packages.${pkgs.stdenv.hostPlatform.system}.comin.overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [ ./comin-confirm-for.patch ];
