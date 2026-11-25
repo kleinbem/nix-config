@@ -219,7 +219,7 @@ in
         enable = true;
         ip = "${myInventory.network.nodes.coderabbit-steward.ip}/24";
         hostDataDir = "/var/lib/images/coderabbit-steward";
-        mode = "on-demand";
+        mode = "full";
         trustAuthentikHeader = true;
         secretsFile =
           lib.mkIf config.my.containers.coderabbit-steward.enable
