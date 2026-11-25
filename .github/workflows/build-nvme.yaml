@@ -6,7 +6,7 @@ name: "Build nixos-nvme toplevel (best-effort)"
 # Only packages are built, one job per group: the system-assembly steps (etc,
 # units, the toplevel) reference the whole ~57 GiB closure but take seconds,
 # and the host, which has that closure, builds them itself
-# (scripts/heavy-drvs.sh, my.deploy.autoUpgrade.localAssembly).
+# (scripts/heavy-drvs.sh, my.deploy.comin.localAssembly).
 # No pull_request trigger: without a cache push the build would be wasted.
 
 on:
@@ -220,7 +220,7 @@ jobs:
             -H "Title: nixos-nvme package build failed (x86_64-linux)" \
             -H "Tags: warning" \
             -H "Priority: default" \
-            -d "nixos-nvme packages failed: ${CAUSE:-see the run}. What did build was pushed to Attic; the host's auto-upgrade waits until the rest is cached. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d "nixos-nvme packages failed: ${CAUSE:-see the run}. What did build was pushed to Attic; the host's deploy waits until the rest is cached. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             "https://ntfy.kleinbem.dev/$NTFY_TOPIC"
 
       - name: Update commit status

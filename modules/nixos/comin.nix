@@ -117,8 +117,67 @@ let
       # accept takes no id: confirm only if the generation checked here still
       # waits. A newer one slipping in would still fail on max-jobs = 0.
       [ "$(comin status --json | jq -r '.build_confirmer.submitted // ""')" = "$uuid" ] || exit 0
-      comin confirmation accept
+      comin confirmation accept${lib.optionalString (cfg.deployAt != null) " --for build"}
       rm -f "${stateDir}/$uuid" "${stateDir}/$uuid.alerted"
+    '';
+  };
+  # The Persistent catch-up after a night spent off runs at boot, before
+  # comin has its socket or has built anything. It switches only to the
+  # commit comin fetches first after boot (up to an hour), so a commit
+  # promoted later in the morning still waits for the night. A scheduled
+  # run accepts whatever is held and only retries a missing socket.
+  deployHeld = pkgs.writeShellApplication {
+    name = "comin-deploy";
+    runtimeInputs = [
+      config.services.comin.package
+      pkgs.coreutils
+      pkgs.jq
+    ];
+    text = ''
+      now=$(date +%s)
+      boot=false
+      [ "$(cut -d. -f1 /proc/uptime)" -lt 3600 ] && boot=true
+      wait=300
+      [ "$boot" = true ] && wait=3600
+      deadline=$((now + wait))
+      reached=false
+      target=""
+      while :; do
+        if st=$(comin status --json 2>/dev/null); then
+          reached=true
+          held=$(jq -r '.deploy_confirmer.submitted // ""' <<<"$st")
+          if [ "$boot" != true ]; then
+            [ -z "$held" ] || exec comin confirmation accept --for deploy
+            exit 0
+          fi
+          if [ -z "$target" ]; then
+            fetched=$(jq -r '.fetcher.git_repository_status.remotes[0].fetched_at // ""' <<<"$st")
+            if [ -n "$fetched" ] && [ "$(date -d "$fetched" +%s)" -ge "$now" ]; then
+              target=$(jq -r '.fetcher.git_repository_status.selected_commit_id // ""' <<<"$st")
+            fi
+          fi
+          if [ -n "$target" ]; then
+            if [ "$(jq -r '.deployer.deployment.generation.source.git.selected_commit_id // ""' <<<"$st")" = "$target" ]; then
+              echo "comin-deploy: $target is already deployed"
+              exit 0
+            fi
+            if [ -n "$held" ] &&
+              [ "$(jq -r '.builder.generation.uuid // ""' <<<"$st")" = "$held" ] &&
+              [ "$(jq -r '.builder.generation.source.git.selected_commit_id // ""' <<<"$st")" = "$target" ]; then
+              exec comin confirmation accept --for deploy
+            fi
+          fi
+        fi
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+          if [ "$reached" != true ]; then
+            echo "comin-deploy: comin unreachable for $((wait / 60)) min" >&2
+            exit 1
+          fi
+          echo "comin-deploy: no generation held for ''${target:-the first fetch} after $((wait / 60)) min"
+          exit 0
+        fi
+        sleep 30
+      done
     '';
   };
 in
@@ -202,6 +261,19 @@ in
         max-jobs = 0; comin-assemble confirms once no package is missing
         from the cache (scripts/heavy-drvs.sh) and the assembly steps are
         built. A generation waiting over 3 h sends one ntfy alert.
+      '';
+    };
+
+    deployAt = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "*-*-* 04..05:00/15";
+      description = ''
+        systemd calendar spec at which a built generation is switched to.
+        Between those times comin holds it (deployConfirmer manual);
+        `comin confirmation accept --for deploy` switches at once. For a
+        desktop that shouldn't change under its user. null switches as
+        soon as a generation is built.
       '';
     };
 
@@ -296,6 +368,33 @@ in
         systemd.timers.comin-assemble = {
           wantedBy = [ "timers.target" ];
           timerConfig.OnCalendar = "*:0/2";
+        };
+      })
+
+      (lib.mkIf (cfg.deployAt != null) {
+        services.comin = {
+          deployConfirmer.mode = "manual";
+          # `accept --for`: upstream: nlewo/comin#243. Drop once the comin
+          # input has it.
+          package = inputs.comin.packages.${pkgs.stdenv.hostPlatform.system}.comin.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./comin-confirm-for.patch ];
+          });
+        };
+        systemd.services.comin-deploy = {
+          description = "Switch to the generation comin holds for deployAt";
+          after = [ "comin.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = lib.getExe deployHeld;
+          };
+        };
+        systemd.timers.comin-deploy = {
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnCalendar = cfg.deployAt;
+            # Off overnight: switch once at the next boot, like autoUpgrade did.
+            Persistent = true;
+          };
         };
       })
 

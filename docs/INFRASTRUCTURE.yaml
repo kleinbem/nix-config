@@ -1080,10 +1080,11 @@ hosts:
       - device
       - enable
       deploy:
-      - autoUpgrade
-      - autoUpgrade.enable
-      - autoUpgrade.localAssembly
-      - autoUpgrade.requireCache
+      - comin
+      - comin.deployAt
+      - comin.enable
+      - comin.localAssembly
+      - comin.requireCache
       desktop:
       - bottles.enable
       - claude.enable

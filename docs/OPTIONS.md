@@ -391,13 +391,13 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 - **Declared:** `nix-config/modules/nixos/auto-upgrade.nix:79`
 - **Sub-options:** `allowReboot`, `cacheUrl`, `dates`, `enable`, `flakeRef`, `hostName`, `localAssembly`, `maxRuntime`, `ntfy.debounceSec`, `ntfy.enable`, `ntfy.tokenFile`, `ntfy.topicFile`, `ntfy.url`, `randomizedDelaySec`, `requireCache`
-- **Configured in:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
+- **Configured in:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
 
 ### `my.deploy.comin`
 
-- **Declared:** `nix-config/modules/nixos/comin.nix:128`
-- **Sub-options:** `branch`, `buildTimeout`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `localAssembly`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
-- **Configured in:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:orin-nano`
+- **Declared:** `nix-config/modules/nixos/comin.nix:187`
+- **Sub-options:** `branch`, `buildTimeout`, `deployAt`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `localAssembly`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
+- **Configured in:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
 ## `my.desktop`
 
