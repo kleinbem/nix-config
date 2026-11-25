@@ -122,8 +122,10 @@ let
     '';
   };
   # The Persistent catch-up after a night spent off runs at boot, before
-  # comin has its socket or has built anything: wait for a held generation
-  # for up to an hour then. A scheduled run only retries a missing socket.
+  # comin has its socket or has built anything. It switches only to the
+  # commit comin fetches first after boot (up to an hour), so a commit
+  # promoted later in the morning still waits for the night. A scheduled
+  # run accepts whatever is held and only retries a missing socket.
   deployHeld = pkgs.writeShellApplication {
     name = "comin-deploy";
     runtimeInputs = [
@@ -132,26 +134,46 @@ let
       pkgs.jq
     ];
     text = ''
+      now=$(date +%s)
       boot=false
       [ "$(cut -d. -f1 /proc/uptime)" -lt 3600 ] && boot=true
       wait=300
       [ "$boot" = true ] && wait=3600
-      deadline=$(($(date +%s) + wait))
+      deadline=$((now + wait))
       reached=false
+      target=""
       while :; do
         if st=$(comin status --json 2>/dev/null); then
           reached=true
-          if [ -n "$(jq -r '.deploy_confirmer.submitted // ""' <<<"$st")" ]; then
-            exec comin confirmation accept --for deploy
+          held=$(jq -r '.deploy_confirmer.submitted // ""' <<<"$st")
+          if [ "$boot" != true ]; then
+            [ -z "$held" ] || exec comin confirmation accept --for deploy
+            exit 0
           fi
-          [ "$boot" = true ] || exit 0
+          if [ -z "$target" ]; then
+            fetched=$(jq -r '.fetcher.git_repository_status.remotes[0].fetched_at // ""' <<<"$st")
+            if [ -n "$fetched" ] && [ "$(date -d "$fetched" +%s)" -ge "$now" ]; then
+              target=$(jq -r '.fetcher.git_repository_status.selected_commit_id // ""' <<<"$st")
+            fi
+          fi
+          if [ -n "$target" ]; then
+            if [ "$(jq -r '.deployer.deployment.generation.source.git.selected_commit_id // ""' <<<"$st")" = "$target" ]; then
+              echo "comin-deploy: $target is already deployed"
+              exit 0
+            fi
+            if [ -n "$held" ] &&
+              [ "$(jq -r '.builder.generation.uuid // ""' <<<"$st")" = "$held" ] &&
+              [ "$(jq -r '.builder.generation.source.git.selected_commit_id // ""' <<<"$st")" = "$target" ]; then
+              exec comin confirmation accept --for deploy
+            fi
+          fi
         fi
         if [ "$(date +%s)" -ge "$deadline" ]; then
           if [ "$reached" != true ]; then
             echo "comin-deploy: comin unreachable for $((wait / 60)) min" >&2
             exit 1
           fi
-          echo "comin-deploy: no generation held after $((wait / 60)) min"
+          echo "comin-deploy: no generation held for ''${target:-the first fetch} after $((wait / 60)) min"
           exit 0
         fi
         sleep 30
