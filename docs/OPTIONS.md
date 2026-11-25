@@ -395,7 +395,7 @@ Use this index to find (1) where an option is declared and (2) which hosts / use
 
 ### `my.deploy.comin`
 
-- **Declared:** `nix-config/modules/nixos/comin.nix:165`
+- **Declared:** `nix-config/modules/nixos/comin.nix:187`
 - **Sub-options:** `branch`, `buildTimeout`, `deployAt`, `enable`, `exporter.enable`, `exporter.port`, `hostName`, `localAssembly`, `pollPeriod`, `requireCache`, `testingBranch`, `url`, `verifySignatures`
 - **Configured in:** `host:core-pi`, `host:hass-pi`, `host:mac-mini`, `host:nasbook`, `host:nixos-nvme`, `host:orin-nano`
 
