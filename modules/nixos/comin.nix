@@ -121,6 +121,37 @@ let
       rm -f "${stateDir}/$uuid" "${stateDir}/$uuid.alerted"
     '';
   };
+  # The Persistent catch-up after a night spent off runs at boot, before
+  # comin has its socket or has built anything: wait for a held generation
+  # for up to an hour then. A scheduled run only retries a missing socket.
+  deployHeld = pkgs.writeShellApplication {
+    name = "comin-deploy";
+    runtimeInputs = [
+      config.services.comin.package
+      pkgs.coreutils
+      pkgs.jq
+    ];
+    text = ''
+      boot=false
+      [ "$(cut -d. -f1 /proc/uptime)" -lt 3600 ] && boot=true
+      wait=300
+      [ "$boot" = true ] && wait=3600
+      deadline=$(($(date +%s) + wait))
+      while :; do
+        if st=$(comin status --json 2>/dev/null); then
+          if [ -n "$(jq -r '.deploy_confirmer.submitted // ""' <<<"$st")" ]; then
+            exec comin confirmation accept --for deploy
+          fi
+          [ "$boot" = true ] || exit 0
+        fi
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+          echo "comin-deploy: no generation held after $((wait / 60)) min"
+          exit 0
+        fi
+        sleep 30
+      done
+    '';
+  };
 in
 {
   imports = [ inputs.comin.nixosModules.comin ];
@@ -326,7 +357,7 @@ in
           after = [ "comin.service" ];
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = "${lib.getExe config.services.comin.package} confirmation accept --for deploy";
+            ExecStart = lib.getExe deployHeld;
           };
         };
         systemd.timers.comin-deploy = {
