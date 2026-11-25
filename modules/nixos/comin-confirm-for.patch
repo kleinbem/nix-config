@@ -1,0 +1,113 @@
+diff --git a/cmd/confirmation.go b/cmd/confirmation.go
+index e23ab4ff40..4e379946ca 100644
+--- a/cmd/confirmation.go
++++ b/cmd/confirmation.go
+@@ -16,11 +16,32 @@ func acceptTarget(buildUuid, deployUuid, forWhat string) (uuid, scope string) {
+ 	Use: "confirmation",
+ }
+ 
++var confirmationFor string
++
++// acceptTarget picks the generation to confirm and the confirmer(s) to
++// confirm it for. Without forWhat, a generation waiting for building is
++// accepted for deploying too.
++func acceptTarget(buildUuid, deployUuid, forWhat string) (uuid, scope string) {
++	switch forWhat {
++	case "build":
++		return buildUuid, "build"
++	case "deploy":
++		return deployUuid, "deploy"
++	}
++	if buildUuid != "" {
++		return buildUuid, "all"
++	}
++	return deployUuid, "deploy"
++}
++
+ var confirmationAcceptCmd = &cobra.Command{
+ 	Use:   "accept",
+ 	Short: "Accept a generation for building and/or a deploying",
+ 	Args:  cobra.MinimumNArgs(0),
+ 	Run: func(cmd *cobra.Command, args []string) {
++		if confirmationFor != "" && confirmationFor != "build" && confirmationFor != "deploy" {
++			logrus.Fatalf("--for must be build or deploy, not %q", confirmationFor)
++		}
+ 		opts := client.ClientOpts{
+ 			UnixSocketPath: "/run/comin-grpc.sock",
+ 		}
+@@ -32,16 +53,16 @@ func acceptTarget(buildUuid, deployUuid, forWhat string) (uuid, scope string) {
+ 		if err != nil {
+ 			logrus.Fatal(err)
+ 		}
+-		build_uuid := state.BuildConfirmer.Submitted
+-		deploy_uuid := state.DeployConfirmer.Submitted
+-		if build_uuid != "" {
+-			fmt.Printf("Generation %s accepted for building and deploying\n", build_uuid)
+-			c.Confirm(build_uuid, "all") // nolint
+-		} else if deploy_uuid != "" {
+-			fmt.Printf("Generation %s accepted for deploying\n", deploy_uuid)
+-			c.Confirm(deploy_uuid, "deploy") // nolint
+-		} else {
++		uuid, scope := acceptTarget(state.BuildConfirmer.Submitted, state.DeployConfirmer.Submitted, confirmationFor)
++		switch {
++		case uuid == "":
+ 			fmt.Printf("No confirmation is required\n")
++		case scope == "all":
++			fmt.Printf("Generation %s accepted for building and deploying\n", uuid)
++			c.Confirm(uuid, scope) // nolint
++		default:
++			fmt.Printf("Generation %s accepted for %sing\n", uuid, scope)
++			c.Confirm(uuid, scope) // nolint
+ 		}
+ 	},
+ }
+@@ -89,4 +110,7 @@ func init() {
+ 	rootCmd.AddCommand(confirmationCmd)
+ 	confirmationCmd.AddCommand(confirmationShowCmd)
+ 	confirmationCmd.AddCommand(confirmationAcceptCmd)
++	confirmationAcceptCmd.Flags().StringVar(&confirmationFor, "for", "",
++		"accept only the generation waiting for building or for deploying (build or deploy); "+
++			"without it, a generation waiting for building is accepted for both")
+ }
+diff --git a/cmd/confirmation_test.go b/cmd/confirmation_test.go
+new file mode 100644
+index 0000000000..34e468ad95
+--- /dev/null
++++ b/cmd/confirmation_test.go
+@@ -0,0 +1,28 @@ func TestAcceptTarget(t *testing.T) {
++package cmd
++
++import (
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++)
++
++func TestAcceptTarget(t *testing.T) {
++	cases := []struct {
++		name, build, deploy, forWhat, uuid, scope string
++	}{
++		{"default prefers the build and confirms both", "b", "d", "", "b", "all"},
++		{"default falls back to the deploy", "", "d", "", "d", "deploy"},
++		{"default with nothing waiting", "", "", "", "", "deploy"},
++		{"build only", "b", "d", "build", "b", "build"},
++		{"build only with nothing to build", "", "d", "build", "", "build"},
++		{"deploy only skips a waiting build", "b", "d", "deploy", "d", "deploy"},
++		{"deploy only with nothing to deploy", "b", "", "deploy", "", "deploy"},
++	}
++	for _, c := range cases {
++		t.Run(c.name, func(t *testing.T) {
++			uuid, scope := acceptTarget(c.build, c.deploy, c.forWhat)
++			assert.Equal(t, c.uuid, uuid)
++			assert.Equal(t, c.scope, scope)
++		})
++	}
++}
+diff --git a/internal/store/state.json b/internal/store/state.json
+new file mode 100644
+index 0000000000..839c51b4b1
+--- /dev/null
++++ b/internal/store/state.json
+@@ -0,0 +1,1 @@
++{"deployments":[{"uuid":"9a769d8b-cf95-4d5b-aa35-522c4ba96b5e","reason":"","generation":{"uuid":"2","source":null,"repository_path":"","repository_subdir":"","system_attr":"","hostname":"","selected_remote_url":"","selected_remote_name":"","selected_branch_name":"","selected_commit_id":"","selected_commit_msg":"","selected_branch_is_testing":null,"main_commit_id":"","main_remote_name":"","main_branch_name":"","eval_status":"","eval_started_at":null,"eval_ended_at":null,"eval_err":"","out_path":"","drv_path":"","machine_id":"","build_status":"","build_reason":"","build_started_at":null,"build_ended_at":null,"build_err":"","attempt_number":0,"build_attempts_limit":0},"started_at":null,"ended_at":null,"error_msg":"","restart_comin":null,"profile_path":"","status":"init","operation_submitted":"","operation":"","operation_reason":"","created_at":"2026-11-25T19:22:10.192904763Z","current_inhibitors":{},"new_inhibitors":{}},{"uuid":"94e789ea-16bd-4154-882a-61d79f7b283c","reason":"","generation":{"uuid":"1","source":null,"repository_path":"","repository_subdir":"","system_attr":"","hostname":"","selected_remote_url":"","selected_remote_name":"","selected_branch_name":"","selected_commit_id":"","selected_commit_msg":"","selected_branch_is_testing":null,"main_commit_id":"","main_remote_name":"","main_branch_name":"","eval_status":"","eval_started_at":null,"eval_ended_at":null,"eval_err":"","out_path":"","drv_path":"","machine_id":"","build_status":"","build_reason":"","build_started_at":null,"build_ended_at":null,"build_err":"","attempt_number":0,"build_attempts_limit":0},"started_at":null,"ended_at":null,"error_msg":"","restart_comin":null,"profile_path":"","status":"init","operation_submitted":"","operation":"","operation_reason":"","created_at":"2026-11-25T19:22:10.190379470Z","current_inhibitors":{},"new_inhibitors":{}},{"uuid":"fe9c9474-6881-403f-9204-f9bd6bb82a9e","reason":"Empty deployment because the booted storepath  has not be found in the deployment list","generation":{"uuid":"","source":null,"repository_path":"","repository_subdir":"","system_attr":"","hostname":"","selected_remote_url":"","selected_remote_name":"","selected_branch_name":"","selected_commit_id":"","selected_commit_msg":"","selected_branch_is_testing":null,"main_commit_id":"","main_remote_name":"","main_branch_name":"","eval_status":"","eval_started_at":null,"eval_ended_at":null,"eval_err":"","out_path":"","drv_path":"","machine_id":"","build_status":"","build_reason":"","build_started_at":null,"build_ended_at":null,"build_err":"","attempt_number":0,"build_attempts_limit":0},"started_at":null,"ended_at":null,"error_msg":"","restart_comin":null,"profile_path":"","status":"done","operation_submitted":"","operation":"boot","operation_reason":"","created_at":null,"current_inhibitors":{},"new_inhibitors":{}}],"generations":[],"deployment_switched":"fe9c9474-6881-403f-9204-f9bd6bb82a9e","deployment_booted":"fe9c9474-6881-403f-9204-f9bd6bb82a9e","deployments_boot_entry":["fe9c9474-6881-403f-9204-f9bd6bb82a9e"],"deployments_successful":["fe9c9474-6881-403f-9204-f9bd6bb82a9e"],"deployments_any":["9a769d8b-cf95-4d5b-aa35-522c4ba96b5e","94e789ea-16bd-4154-882a-61d79f7b283c","fe9c9474-6881-403f-9204-f9bd6bb82a9e"],"deployer":{"is_suspended":false,"suspend_reason":""},"deployment_boot_entry_capacity":2,"deployment_successful_capacity":2,"deployment_any_capacity":5}
+\ No newline at end of file

@@ -132,12 +132,14 @@
       enable = true;
       device = "/dev/disk/by-id/ata-WD_Red_SA500_2.5_2TB_2548TKD00121";
     };
-    deploy.autoUpgrade = {
+    deploy.comin = {
       enable = true;
       # CI builds this host's packages (build-nvme.yaml), the host only
-      # assembles the system; a missing package skips the cycle.
+      # assembles the system.
       requireCache = true;
       localAssembly = true;
+      # A desktop: switch only overnight, not under its user.
+      deployAt = "*-*-* 04..05:00/15";
     };
     # Claude Code's permission and auto-mode policy, as read-only managed
     # settings (modules/nixos/claude-code.nix).

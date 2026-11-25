@@ -117,7 +117,7 @@ let
       # accept takes no id: confirm only if the generation checked here still
       # waits. A newer one slipping in would still fail on max-jobs = 0.
       [ "$(comin status --json | jq -r '.build_confirmer.submitted // ""')" = "$uuid" ] || exit 0
-      comin confirmation accept
+      comin confirmation accept${lib.optionalString (cfg.deployAt != null) " --for build"}
       rm -f "${stateDir}/$uuid" "${stateDir}/$uuid.alerted"
     '';
   };
@@ -202,6 +202,19 @@ in
         max-jobs = 0; comin-assemble confirms once no package is missing
         from the cache (scripts/heavy-drvs.sh) and the assembly steps are
         built. A generation waiting over 3 h sends one ntfy alert.
+      '';
+    };
+
+    deployAt = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "*-*-* 04..05:00/15";
+      description = ''
+        systemd calendar spec at which a built generation is switched to.
+        Between those times comin holds it (deployConfirmer manual);
+        `comin confirmation accept --for deploy` switches at once. For a
+        desktop that shouldn't change under its user. null switches as
+        soon as a generation is built.
       '';
     };
 
@@ -296,6 +309,33 @@ in
         systemd.timers.comin-assemble = {
           wantedBy = [ "timers.target" ];
           timerConfig.OnCalendar = "*:0/2";
+        };
+      })
+
+      (lib.mkIf (cfg.deployAt != null) {
+        services.comin = {
+          deployConfirmer.mode = "manual";
+          # `accept --for`: upstream: nlewo/comin#TBD. Drop once the comin
+          # input has it.
+          package = inputs.comin.packages.${pkgs.stdenv.hostPlatform.system}.comin.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./comin-confirm-for.patch ];
+          });
+        };
+        systemd.services.comin-deploy = {
+          description = "Switch to the generation comin holds for deployAt";
+          after = [ "comin.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${lib.getExe config.services.comin.package} confirmation accept --for deploy";
+          };
+        };
+        systemd.timers.comin-deploy = {
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnCalendar = cfg.deployAt;
+            # Off overnight: switch once at the next boot, like autoUpgrade did.
+            Persistent = true;
+          };
         };
       })
 
