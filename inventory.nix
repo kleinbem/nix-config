@@ -921,12 +921,15 @@ in
         domain = "steward.kleinbem.dev";
         public = true; # tunnel ingress (modules/nixos/services/cloudflare-tunnel.nix)
         publicCert = true;
-        # Dashboard & API stay behind Authentik; GitHub webhooks verify HMAC-SHA256.
+        # Dashboard stays behind Authentik; Bearer API callers bypass forward_auth
+        # (with X-Authentik-* stripped) and authenticate against cr-steward directly.
+        # GitHub webhooks verify HMAC-SHA256.
         auth = true;
         authExcludePaths = [
           "/webhook"
           "/health"
         ];
+        authBearerPaths = [ "/api/*" ];
         meta = {
           name = "CodeRabbit Steward";
           category = "Dev";
