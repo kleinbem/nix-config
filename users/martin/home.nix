@@ -121,6 +121,8 @@ in
       (pkgs.writeShellScriptBin "chrome" ''
         exec ${pkgs.google-chrome}/bin/google-chrome-stable "$@"
       '')
+      pkgs.dissent # Native GTK4 Discord client (text chat)
+      pkgs.discordo # Lightweight terminal (TUI) Discord client
     ];
 
     # Personal System Control Center — `os <ns>::<recipe>`. The `os`
