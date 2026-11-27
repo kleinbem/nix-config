@@ -11,10 +11,10 @@
 - **nixpkgs**: [`2786a2a7`](https://github.com/NixOS/nixpkgs/commit/2786a2a7)
 - **home-manager**: `54f903fd`
 - **sops-nix**: `d5abe5e5`
-- **devenv**: `09273b25`
+- **devenv**: `8566ba53`
 - **nix-packages**: `ce650d2e`
 - **nix-hardware**: `fd76748f`
-- **nix-presets**: `3a235ea2`
+- **nix-presets**: `d13b8878`
 - **nix-devshells**: `8f6ad927`
 - **nix-gantry**: `e2f42430`
 
