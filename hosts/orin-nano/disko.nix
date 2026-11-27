@@ -39,11 +39,10 @@
                   crypttabExtraOpts = [
                     "fido2-device=auto"
                     "x-systemd.device-timeout=60s"
-                    # Bypass dm-crypt read/write workqueues on NVMe for lower O_DIRECT latency
-                    # (layerstream NVMe streaming).
-                    "no-read-workqueue"
-                    "no-write-workqueue"
                   ];
+                  # Keep default dm-crypt kcryptd workqueues enabled: on 6-core Cortex-A78AE,
+                  # kcryptd spreads AES-XTS decryption across all cores (~2.9 GiB/s O_DIRECT),
+                  # whereas no-read-workqueue bottlenecks decryption onto 1-2 IRQ cores (~1.8 GiB/s).
                   # No tpm2-device: this Jetson has no /dev/tpm0. FIDO2 is the
                   # interactive unlock, Tang/clevis the unattended one.
                 };
