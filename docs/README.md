@@ -10,6 +10,7 @@
 | [SYSTEM_REFERENCE.md](SYSTEM_REFERENCE.md) | Pinned revisions, hosts, enabled services per host. |
 | [OPTIONS.md](OPTIONS.md) | Every `my.*` option, where it's declared and who sets it. |
 | [IMPORTS.md](IMPORTS.md) | Per-host import map and reverse index. |
+| [REVDEPS.md](REVDEPS.md) | Evaluated module graph: which hosts and home-manager users load each file. |
 
 ## Guides
 

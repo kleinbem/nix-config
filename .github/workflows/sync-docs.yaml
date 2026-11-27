@@ -1,5 +1,5 @@
 name: Sync reference docs
-# Keeps docs/SYSTEM_REFERENCE.md, OPTIONS.md, IMPORTS.md and
+# Keeps docs/SYSTEM_REFERENCE.md, OPTIONS.md, IMPORTS.md, REVDEPS.md and
 # INFRASTRUCTURE.yaml in step with the code.
 # - On a PR: commits regenerated docs onto the PR branch (GitHub-signed).
 #   A separate docs PR per merge would put every other open PR behind main.
@@ -90,7 +90,7 @@ jobs:
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           cd nix-config
-          files=(docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md docs/INFRASTRUCTURE.yaml)
+          files=(docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md docs/REVDEPS.md docs/INFRASTRUCTURE.yaml)
           if git diff --quiet -- "${files[@]}"; then
             echo "Docs unchanged."
             exit 0

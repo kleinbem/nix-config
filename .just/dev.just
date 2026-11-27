@@ -304,11 +304,11 @@ sync-agent:
     # activity (e.g. a jj-aware shell prompt polling status) — retry once
     # after a short wait before giving up, rather than treating one 30s
     # stall as a deadlock.
-    timeout 15 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null
+    timeout 15 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md docs/REVDEPS.md 2>/dev/null
     rc=$?
     if [ "$rc" -eq 124 ]; then
         sleep 2
-        timeout 15 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md 2>/dev/null
+        timeout 15 jj diff --quiet docs/SYSTEM_REFERENCE.md docs/OPTIONS.md docs/IMPORTS.md docs/REVDEPS.md 2>/dev/null
         rc=$?
     fi
     if [ "$rc" -eq 124 ]; then
