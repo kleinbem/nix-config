@@ -246,6 +246,7 @@ in
       libuuid
       icu
       libuv
+      vulkan-loader
       stdenv.cc.cc.lib
     ];
 
