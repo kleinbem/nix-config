@@ -110,6 +110,7 @@ in
           ${pkgs.findutils}/bin/find ${home} \
             -mtime -1 -type f \
             -not -path "*/.cache/*" -not -path "*/.git/*" -not -path "*/node_modules/*" \
+            -not -path "*/.cargo/registry/*" \
             > "$list" || true # files vanishing mid-walk must not abort the scan
           if [ -s "$list" ]; then
             ${pkgs.clamav}/bin/clamdscan -c ${scanConfig} --multiscan --fdpass --infected --file-list="$list" || true
