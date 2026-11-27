@@ -208,7 +208,7 @@ def write(hosts, files, disabled, owned) -> None:
         ),
         "",
         f"**Hosts evaluated:** {len(hosts)}  ",
-        f"**Files indexed:** {sum(1 for (l, _) in files if l in owned)}",
+        f"**Files indexed:** {sum(1 for (lbl, _) in files if lbl in owned)}",
         "",
     ]
     lines += ["## Inputs → consumers", ""]
@@ -219,7 +219,7 @@ def write(hosts, files, disabled, owned) -> None:
     lines.append("")
 
     for label in sorted(owned):
-        paths = sorted({p for (l, p) in [*files, *disabled] if l == label})
+        paths = sorted({p for (lbl, p) in [*files, *disabled] if lbl == label})
         if not paths:
             continue
         lines += [f"## `{label}`", ""]
@@ -232,7 +232,7 @@ def write(hosts, files, disabled, owned) -> None:
             lines.append(f"- `{path}` ← {loaded_by or '—'}{mark}")
         lines.append("")
 
-    loaded = {p for (l, p) in files if l == "nix-config"}
+    loaded = {p for (lbl, p) in files if lbl == "nix-config"}
     unused = sorted(
         f.relative_to(NIX_CONFIG).as_posix()
         for d in UNUSED_SCAN
