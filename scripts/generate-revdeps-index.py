@@ -208,7 +208,7 @@ def write(hosts, files, disabled, owned) -> None:
         ),
         "",
         f"**Hosts evaluated:** {len(hosts)}  ",
-        f"**Files indexed:** {sum(1 for (lbl, _) in files if lbl in owned)}",
+        f"**Files indexed:** {len({loc for loc in (*files, *disabled) if loc[0] in owned})}",
         "",
     ]
     lines += ["## Inputs → consumers", ""]
