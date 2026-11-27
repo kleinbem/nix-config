@@ -2455,7 +2455,7 @@ developer_recipes:
   - 'Step 4: Register in `nix-config/hosts/container-factory/default.nix` (ADR-002: built centrally).'
   - 'Step 5: Run `just dev::sync-agent` to refresh ground-truth manifests.'
   modify_system_module:
-  - 'Step 1: Check blast radius in `docs/OPTIONS.md` and `docs/IMPORTS.md`.'
+  - 'Step 1: Check blast radius in `docs/OPTIONS.md` and `docs/REVDEPS.md`.'
   - 'Step 2: Edit `nix-config/modules/nixos/<module>.nix`.'
   - 'Step 3: Test build with `just in nix-config nixos::test` or `nixos-rebuild dry-build`.'
   - 'Step 4: Run `just dev::sync-agent` to update options index.'
