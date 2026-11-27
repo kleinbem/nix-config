@@ -55,9 +55,11 @@ def nix_json(args: list[str], timeout: int = 600):
         capture_output=True,
         text=True,
         timeout=timeout,
+        check=False,
     )
     if res.returncode != 0:
-        raise RuntimeError(res.stderr.strip().splitlines()[-1] if res.stderr else "")
+        lines = (res.stderr or "").strip().splitlines()
+        raise RuntimeError(lines[-1] if lines else f"nix exited {res.returncode}")
     return json.loads(res.stdout)
 
 
@@ -95,11 +97,12 @@ def locate(file: str, roots: dict[str, str]) -> tuple[str, str] | None:
     if root not in roots or roots[root] in SKIP_INPUTS:
         return None
     path = parts[4] if len(parts) > 4 else ""
-    # Modules declared inline in a flake output: "flake.nix, via option flake.x".
+    # Modules declared inline in a flake output: "<file>, via option flake.x".
     if ", via option flake." in path:
-        path = "flake.nix#" + path.split(", via option flake.", 1)[1]
+        src, opt = path.split(", via option flake.", 1)
+        path = f"{src}#{opt}"
     elif os.path.isdir(file):
-        path = f"{path}/default.nix"
+        path = f"{path}/default.nix" if path else "default.nix"
     return roots[root], path
 
 
@@ -127,8 +130,7 @@ def main() -> int:
 
     # (label, path) → consumers; consumers are "host" or "user@host".
     files: dict[tuple[str, str], set[str]] = defaultdict(set)
-    disabled: set[tuple[str, str]] = set()
-    unknown: set[str] = set()
+    disabled: dict[tuple[str, str], set[str]] = defaultdict(set)
     failed: dict[str, str] = {}
 
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -145,13 +147,18 @@ def main() -> int:
             for node in graph:
                 loc = locate(node["file"], roots)
                 if loc is None:
-                    if node["file"].startswith("/nix/store/"):
-                        unknown.add(node["file"].split("/")[3])
                     continue
-                if node["disabled"]:
-                    disabled.add(loc)
-                files[loc].add(consumer)
+                (disabled if node["disabled"] else files)[loc].add(consumer)
 
+    # A partial index would read as "nothing else loads this"; keep the old one.
+    if failed:
+        for host, msg in sorted(failed.items()):
+            print(f"❌ revdeps: {host}: {msg}", file=sys.stderr)
+        print(
+            "Some hosts failed to evaluate — refusing to overwrite REVDEPS.md",
+            file=sys.stderr,
+        )
+        return 1
     if not files:
         print(
             "No module graphs evaluated — refusing to overwrite REVDEPS.md",
@@ -159,7 +166,7 @@ def main() -> int:
         )
         return 1
 
-    write(hosts, files, disabled, owned, failed)
+    write(hosts, files, disabled, owned)
     return 0
 
 
@@ -181,8 +188,8 @@ def fmt_consumers(consumers: set[str], all_hosts: set[str]) -> str:
     return "; ".join(parts)
 
 
-def write(hosts, files, disabled, owned, failed) -> None:
-    ok_hosts = set(hosts) - set(failed)
+def write(hosts, files, disabled, owned) -> None:
+    ok_hosts = set(hosts)
     by_input: dict[str, set[str]] = defaultdict(set)
     for (label, _), consumers in files.items():
         by_input[label] |= consumers
@@ -194,19 +201,16 @@ def write(hosts, files, disabled, owned, failed) -> None:
         ">",
         "> Regenerate with `just dev::sync-agent`.",
         "",
-        "Which hosts (and home-manager `user@host`s) load each module file, read from the "
-        "evaluated module graph. Unlike `IMPORTS.md` this includes transitive imports. "
-        "Grep a path to see who a change reaches. nix-on-droid hosts are not covered.",
+        (
+            "Which hosts (and home-manager `user@host`s) load each module file, read from the "
+            "evaluated module graph. Unlike `IMPORTS.md` this includes transitive imports. "
+            "Grep a path to see who a change reaches. nix-on-droid hosts are not covered."
+        ),
         "",
-        f"**Hosts evaluated:** {len(ok_hosts)} of {len(hosts)}  ",
+        f"**Hosts evaluated:** {len(hosts)}  ",
         f"**Files indexed:** {sum(1 for (l, _) in files if l in owned)}",
         "",
     ]
-    if failed:
-        lines += ["**Evaluation failed (not indexed):**", ""]
-        lines += [f"- `{h}`: {msg}" for h, msg in sorted(failed.items())]
-        lines.append("")
-
     lines += ["## Inputs → consumers", ""]
     for label in sorted(by_input):
         if label in OMIT_INPUTS:
@@ -215,29 +219,35 @@ def write(hosts, files, disabled, owned, failed) -> None:
     lines.append("")
 
     for label in sorted(owned):
-        entries = sorted((p, c) for (l, p), c in files.items() if l == label)
-        if not entries:
+        paths = sorted({p for (l, p) in [*files, *disabled] if l == label})
+        if not paths:
             continue
         lines += [f"## `{label}`", ""]
-        for path, consumers in entries:
-            mark = " _(disabledModules)_" if (label, path) in disabled else ""
-            lines.append(f"- `{path}` ← {fmt_consumers(consumers, ok_hosts)}{mark}")
+        for path in paths:
+            loaded_by = fmt_consumers(files.get((label, path), set()), ok_hosts)
+            off = disabled.get((label, path))
+            mark = (
+                f" _(disabledModules: {fmt_consumers(off, ok_hosts)})_" if off else ""
+            )
+            lines.append(f"- `{path}` ← {loaded_by or '—'}{mark}")
         lines.append("")
 
     loaded = {p for (l, p) in files if l == "nix-config"}
     unused = sorted(
-        relpath(f).removeprefix("nix-config/")
+        f.relative_to(NIX_CONFIG).as_posix()
         for d in UNUSED_SCAN
         for f in (NIX_CONFIG / d).rglob("*.nix")
-        if str(f.relative_to(NIX_CONFIG)) not in loaded
+        if f.relative_to(NIX_CONFIG).as_posix() not in loaded
     )
-    if unused and not failed:
+    if unused:
         lines += [
             "## Unused in nix-config",
             "",
-            f"Files under {', '.join(f'`{d}/`' for d in UNUSED_SCAN)} that no evaluated "
-            "host or user loads: nix-on-droid or colmena-only modules, data files read with a "
-            "plain `import`, or dead code.",
+            (
+                f"Files under {', '.join(f'`{d}/`' for d in UNUSED_SCAN)} that no evaluated "
+                "host or user loads: nix-on-droid or colmena-only modules, data files read with a "
+                "plain `import`, or dead code."
+            ),
             "",
         ]
         lines += [f"- `{p}`" for p in unused]

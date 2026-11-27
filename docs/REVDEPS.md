@@ -6,7 +6,7 @@
 
 Which hosts (and home-manager `user@host`s) load each module file, read from the evaluated module graph. Unlike `IMPORTS.md` this includes transitive imports. Grep a path to see who a change reaches. nix-on-droid hosts are not covered.
 
-**Hosts evaluated:** 9 of 9  
+**Hosts evaluated:** 9  
 **Files indexed:** 186
 
 ## Inputs → consumers
