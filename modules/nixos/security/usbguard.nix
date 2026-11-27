@@ -40,6 +40,9 @@ _: {
       # VIA Labs USB Hub (3.0 and 2.0 components)
       allow id 2109:0817
       allow id 2109:2817
+      # VIA Labs VL822 USB3.1 Hub; the multi-TT 2.0 side misses the hub-class rule
+      allow id 2109:0822
+      allow id 2109:2822
       # Hub Internal Components (SD Reader & Ethernet)
       allow id 2537:1081
       allow id 0bda:8151
