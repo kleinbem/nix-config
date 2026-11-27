@@ -36,10 +36,14 @@ UNUSED_SCAN = ["modules/nixos", "modules/home-manager"]
 OVERRIDES = shlex.split(os.environ.get("NIX_OVERRIDES", ""))
 
 # Flattens a module graph to the files it loaded; anonymous modules share
-# their file. The home-manager user graphs sit behind the submodule's valueMeta.
+# their file. A disabled module's imports aren't loaded through it, so the walk
+# stops there. The home-manager user graphs sit behind the submodule's valueMeta.
 APPLY = r"""
 c: let
-  flat = n: [ { inherit (n) file disabled; } ] ++ builtins.concatMap flat n.imports;
+  flat =
+    n:
+    [ { inherit (n) file disabled; } ]
+    ++ (if n.disabled then [ ] else builtins.concatMap flat n.imports);
   hm = c.options.home-manager.users.valueMeta.attrs or { };
 in {
   nixos = builtins.concatMap flat c.graph;
