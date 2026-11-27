@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Generates the ground-truth docs for AI assistants in docs/: SYSTEM_REFERENCE.md,
-# OPTIONS.md, IMPORTS.md and INFRASTRUCTURE.yaml (one generate-*.py each).
+# OPTIONS.md, IMPORTS.md, REVDEPS.md and INFRASTRUCTURE.yaml (one generate-*.py each).
 # Paths resolve from the script's location. --no-ci skips the gh calls
 # (faster, but no CI Status section).
 
@@ -38,4 +38,5 @@ echo "🔍 Generating System Reference for AI assistants…"
 # Regenerate the machine-readable my.* options + imports indexes + AI infrastructure manifest.
 "$PYTHON" "$SCRIPT_DIR/generate-options-index.py" || echo "⚠️  Options index generation failed (non-fatal)"
 "$PYTHON" "$SCRIPT_DIR/generate-imports-index.py" || echo "⚠️  Imports index generation failed (non-fatal)"
+"$PYTHON" "$SCRIPT_DIR/generate-revdeps-index.py" || echo "⚠️  Reverse-dependency index generation failed (non-fatal)"
 "$PYTHON" "$SCRIPT_DIR/generate-infra-yaml.py" || echo "⚠️  Infrastructure YAML generation failed (non-fatal)"
