@@ -39,6 +39,10 @@
                   crypttabExtraOpts = [
                     "fido2-device=auto"
                     "x-systemd.device-timeout=60s"
+                    # Bypass dm-crypt read/write workqueues on NVMe for lower O_DIRECT latency
+                    # (layerstream NVMe streaming).
+                    "no-read-workqueue"
+                    "no-write-workqueue"
                   ];
                   # No tpm2-device: this Jetson has no /dev/tpm0. FIDO2 is the
                   # interactive unlock, Tang/clevis the unattended one.
